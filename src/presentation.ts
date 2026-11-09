@@ -56,7 +56,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    // Strips that reach forward are generated from the padded base (mogurodon-s1-pad: 205px wide at x=10), so they carry
    // scale 205/256 and anchor 10+128*scale to draw at the same size and position as the full-frame strips.
    light1:{src:'assets/mogurodon-s1-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s1-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s1-light3.png',frames:8,fps:20,once:true,...S1_PAD},
-   // Heavy release: rear up and slam both paws down (no rear/hold strips yet, so charging shows the idle).
+   // Heavy: rear onto the hind legs, hold (straining loop) while charging, slam both paws down on release. Rear and slam are cut
+   // from one generated strip, so the slam starts at the crash; its frames are held to keep Stage 2's 0.5s recovery.
+   heavyRear:{src:'assets/mogurodon-s1-heavy-rear.png',frames:5,fps:20,once:true,...S1_PAD},heavyHold:{src:'assets/mogurodon-s1-heavy-hold.png',frames:4,fps:10,...S1_PAD},
    heavySlam:{src:'assets/mogurodon-s1-heavy-slam.png',frames:8,fps:16,once:true,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
