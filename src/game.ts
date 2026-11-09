@@ -53,6 +53,8 @@ let loopAnim='idle',loopT=0;
 let heavyT=0;
 // Crouch: entering plays crouchDown, leaving plays crouchUp, before the next loop starts. Crouch-native art is not squashed.
 const CROUCH_ANIMS=['crouch','crouchDown','rangedCrouch'];let loopIntro:string|null=null;
+// Airborne: jumpRise (only when launched upward) into the jumpAir loop; touching down plays jumpLand. Climbing walls uses walk.
+let isClimbing=false;
 function currentAnim():[string,number]{
  if(attack)return [attack.anim,attack.t];
  if(combat.charging){const rear=animDuration(activeKaiju,'heavyRear');return heavyT<rear?['heavyRear',heavyT]:['heavyHold',heavyT-rear];}
@@ -192,9 +194,9 @@ function update(dt:number){
  actionTime=Math.max(0,actionTime-dt);shake=Math.max(0,shake-dt*14);player.pose=Math.max(0,player.pose-dt);
  if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim))attack=null;}
  heavyT=combat.charging?heavyT+dt:0;
- {const next=player.crouched?'crouch':walking?'walk':'idle';
+ {const next=isClimbing?'walk':!player.grounded?'jumpAir':player.crouched?'crouch':walking?'walk':'idle';
   if(attack||combat.charging){loopAnim=next;loopT=0;loopIntro=null;}
-  else if(next!==loopAnim){loopIntro=next==='crouch'?'crouchDown':loopAnim==='crouch'?'crouchUp':null;loopAnim=next;loopT=0;}
+  else if(next!==loopAnim){loopIntro=next==='jumpAir'?(player.vy<0?'jumpRise':null):loopAnim==='jumpAir'?'jumpLand':next==='crouch'?'crouchDown':loopAnim==='crouch'?'crouchUp':null;loopAnim=next;loopT=0;}
   else loopT+=dt;}
  const crouch=keys.has('KeyS')&&player.grounded;
  if(canAct(combat))player.crouched=crouch;
@@ -221,6 +223,7 @@ function update(dt:number){
  if(player.y+h<=roof+8){player.y=roof-h-.01;player.x=Math.max(b.x-w*.4,Math.min(b.x+b.w-w*.6,player.x+(player.x+w/2<b.x+b.w/2?w*.3:-w*.3)));player.vy=0;climbing=false;prevBottom=roof-.01;}
  break;}}}
  if(!climbing){player.vy+=C.gravity*dt;player.y+=player.vy*dt;}
+ isClimbing=climbing;
  }
  if(!climbing&&player.vy>=0)for(const b of buildings){if(!solid(b))continue;const roof=C.ground-b.h;
  if(player.x+w>b.x&&player.x<b.x+b.w&&prevBottom<=roof+1&&player.y+h>=roof){player.y=roof-h-.01;player.vy=0;player.grounded=true;}}
