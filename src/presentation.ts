@@ -32,7 +32,8 @@ type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number};
 type Form={width:number,anims:Record<string,Strip>};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10},
-  swipeLeft:{src:'assets/mogurodon-swipe-left.png',frames:10,fps:26,once:true},swipeRight:{src:'assets/mogurodon-swipe-right.png',frames:8,fps:24,once:true},bite:{src:'assets/mogurodon-bite.png',frames:8,fps:20,once:true},
+  // Light combo by hit order (each form picks its own moves): Stage 2 = right-arm swipe, left-arm swipe, bite.
+  light1:{src:'assets/mogurodon-swipe-right.png',frames:8,fps:24,once:true},light2:{src:'assets/mogurodon-swipe-left.png',frames:10,fps:26,once:true},light3:{src:'assets/mogurodon-bite.png',frames:8,fps:20,once:true},
   // Heavy strips are 256x192 (extra headroom for rearing); feet share the same baseline as the 256x144 strips.
   heavyRear:{src:'assets/mogurodon-heavy-rear.png',frames:5,fps:20,once:true},heavyHold:{src:'assets/mogurodon-heavy-hold.png',frames:4,fps:10},heavySlam:{src:'assets/mogurodon-heavy-slam.png',frames:9,fps:18,once:true},
   rangedStand:{src:'assets/mogurodon-ranged-stand.png',frames:9,fps:20,once:true},rangedCrouch:{src:'assets/mogurodon-ranged-crouch.png',frames:8,fps:20,once:true},
@@ -47,7 +48,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   stages:{1:{width:120,anims:{
    // Stage 1 form: 256x192 strips, feet on the bottom row, generated from the mogurodon-s1 base still. Add further strips here as they land.
    idle:{src:'assets/mogurodon-s1-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s1-walk.png',frames:8,fps:10},
-   jumpRise:{src:'assets/mogurodon-s1-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-s1-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-s1-jump-land.png',frames:5,fps:20,once:true}}}}},
+   jumpRise:{src:'assets/mogurodon-s1-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-s1-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-s1-jump-land.png',frames:5,fps:20,once:true},
+   // Light combo: near (left) paw swipe, far (right) paw swipe, lunging bite. fps chosen so each hit lasts as long as Stage 2's.
+   light1:{src:'assets/mogurodon-s1-light1.png',frames:7,fps:21,once:true},light2:{src:'assets/mogurodon-s1-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s1-light3.png',frames:8,fps:20,once:true}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
