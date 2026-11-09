@@ -47,7 +47,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   stages:{1:{width:120,anims:{
    // Stage 1 form: 256x192 strips, feet on the bottom row, generated from the mogurodon-s1 base still. Add further strips here as they land.
    idle:{src:'assets/mogurodon-s1-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s1-walk.png',frames:8,fps:10},
-   jumpRise:{src:'assets/mogurodon-s1-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-s1-jump-air.png',frames:4,fps:8}}}}},
+   jumpRise:{src:'assets/mogurodon-s1-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-s1-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-s1-jump-land.png',frames:5,fps:20,once:true}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}

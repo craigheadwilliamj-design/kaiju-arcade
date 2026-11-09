@@ -2,12 +2,13 @@
 """Restore a detail that a PixelLab strip washed out (e.g. Mogurodon Stage 1's gold eye) by tracking the head.
 
 Usage:
-  python3 tools/fix_eye.py strip.png out.png [--ref base.png] [--radius 8]
+  python3 tools/fix_eye.py strip.png out.png [--ref base.png] [--radius 8] [--offset FRAME:DY,DX ...]
 
 The eye pixels and the head patch around them come from --ref (a single 256-wide frame with the eye intact;
 defaults to the strip's own frame 0). Each frame is searched within +-radius px for the best head match and
-the eye is stamped there. Frames identical to the ref in that patch are left alone. The eye colour test and
-search region are set for Mogurodon Stage 1; adjust `region` / `is_eye` for other forms.
+the eye is stamped there. Check the result and pass --offset for any mis-tracked frame (big squashes can move
+the head past the radius). The eye colour test and search region are set for Mogurodon Stage 1; adjust `region`
+/ `is_eye` for other forms.
 """
 import argparse, numpy as np
 from PIL import Image
@@ -16,6 +17,7 @@ FW = 256
 ap = argparse.ArgumentParser()
 ap.add_argument('src'); ap.add_argument('out')
 ap.add_argument('--ref'); ap.add_argument('--radius', type=int, default=8)
+ap.add_argument('--offset', action='append', default=[], help='manual override for a mis-tracked frame: FRAME:DY,DX')
 a = ap.parse_args()
 
 im = np.asarray(Image.open(a.src).convert('RGBA')).copy(); H = im.shape[0]; n = im.shape[1] // FW
@@ -33,7 +35,10 @@ y0, y1, x0, x1 = ys.min() - 5, ys.max() + 6, xs.min() - 6, xs.max() + 7
 tpl = ref[y0:y1, x0:x1, :3]; tm = (ref[y0:y1, x0:x1, 3] > 128) & ~is_eye[y0:y1, x0:x1]
 
 R = a.radius
+manual = {int(k): tuple(map(int, v.split(','))) for k, v in (o.split(':') for o in a.offset)}
 for i in range(n):
+    if i in manual:
+        dy, dx = manual[i]; F[i][ys + dy, xs + dx] = ref[ys, xs].astype(np.uint8); print(i, 'offset', dy, dx, '(manual)'); continue
     f = F[i].astype(int); best = None
     for dy in range(-R, R + 1):
         for dx in range(-R, R + 1):
