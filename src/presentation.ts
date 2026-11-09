@@ -21,23 +21,27 @@ export function canViewEnding(p:Permanent,name:string){return KAIJU.includes(nam
 export function endingFor(name:string){return ENDINGS.find(e=>e.name===name)||ENDINGS[0];}
 const images=new Map<string,HTMLImageElement>();
 // Final kaiju sprites. Bottom-center anchored, drawn nearest-neighbor. `width` is world units at Stage 1 (hitbox is unchanged).
-// `frames` > 1 means a horizontal strip of equal-width frames looped at `fps` (idle generated with PixelLab, see tools/pixellab_animate.py).
-export const SPRITES:Record<string,{src:string,width:number,frames:number,fps:number}>={
- Mogurodon:{src:'assets/mogurodon-idle.png',width:120,frames:8,fps:8},
+// Each animation is a horizontal strip of equal-width frames looped at `fps` (generated with PixelLab, see tools/pixellab_animate.py).
+// `idle` is required; any other animation falls back to idle until it exists and has loaded.
+type Strip={src:string,frames:number,fps:number};
+export const SPRITES:Record<string,{width:number,anims:Record<string,Strip>}>={
+ Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:9,fps:10}}},
 };
 function preload(src:string){if(typeof Image==='undefined'||images.has(src))return;const img=new Image();img.src=src;images.set(src,img);}
-export function loadPresentationArt(){for(const src of [ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).map(s=>s.src)])if(src)preload(src);}
-export function hasSprite(name:string){const s=SPRITES[name],img=s?images.get(s.src):null;return !!img?.complete&&!!img.naturalWidth;}
+function ready(src?:string){const img=src?images.get(src):null;return !!img?.complete&&!!img.naturalWidth;}
+export function loadPresentationArt(){for(const src of [ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).flatMap(s=>Object.values(s.anims).map(a=>a.src))])if(src)preload(src);}
+export function hasSprite(name:string){return ready(SPRITES[name]?.anims.idle?.src);}
+function strip(name:string,anim:string){const a=SPRITES[name]?.anims;return a?.[anim]&&ready(a[anim].src)?a[anim]:a?.idle;}
+export function spriteFrame(name:string,t:number,anim='idle'){const a=strip(name,anim);return a?Math.floor(Math.max(0,t)*a.fps)%a.frames:0;}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
-export function spriteFrame(name:string,t:number){const s=SPRITES[name];return s?Math.floor(Math.max(0,t)*s.fps)%s.frames:0;}
-export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0){if(!hasSprite(name))return false;const s=SPRITES[name],img=images.get(s.src)!,fw=img.naturalWidth/s.frames,h=s.width*img.naturalHeight/fw;const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t)*fw,0,fw,img.naturalHeight,-s.width/2,-h,s.width,h);ctx.imageSmoothingEnabled=smooth;return true;}
+export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle'){if(!hasSprite(name))return false;const s=SPRITES[name],a=strip(name,anim)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,h=s.width*img.naturalHeight/fw;const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim)*fw,0,fw,img.naturalHeight,-s.width/2,-h,s.width,h);ctx.imageSmoothingEnabled=smooth;return true;}
 function art(ctx:CanvasRenderingContext2D,src:string|null){const img=src?images.get(src):null;if(!img?.complete||!img.naturalWidth)return false;ctx.drawImage(img,0,0,960,540);return true;}
 function box(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function polygon(ctx:CanvasRenderingContext2D,points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();}
 // Deliberately simple replaceable geometric stand-ins, not final sprite designs.
-export function drawSilhouette(ctx:CanvasRenderingContext2D,name:string,x:number,y:number,size:number,t:number,locked=false){
+export function drawSilhouette(ctx:CanvasRenderingContext2D,name:string,x:number,y:number,size:number,t:number,locked=false,anim='idle'){
  const index=Math.max(0,KAIJU.indexOf(name)),color=locked?'#172022':ROSTER[index].color;
- if(!locked&&hasSprite(name)){ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(size,size);drawSprite(ctx,name,t);ctx.restore();return;}
+ if(!locked&&hasSprite(name)){ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(size,size);drawSprite(ctx,name,t,anim);ctx.restore();return;}
  ctx.save();ctx.translate(Math.round(x),Math.round(y+(locked?0:Math.sin(t*2)*1.5)));ctx.scale(size,size);
  if(index===0){polygon(ctx,[[-27,-12],[-38,-24],[-29,-25],[-34,-42],[-23,-38],[-22,-59],[-10,-48],[0,-65],[12,-48],[25,-38],[37,-25],[26,-12]],color);box(ctx,16,-35,29,13,color);box(ctx,36,-32,10,9,color);}
  if(index===1){polygon(ctx,[[-44,-8],[-23,-30],[-17,-57],[2,-67],[13,-50],[14,-33],[39,-43],[43,-27],[23,-16],[18,-3]],color);polygon(ctx,[[-17,-44],[-32,-65],[-7,-51]],color);box(ctx,9,-60,27,13,color);polygon(ctx,[[21,-60],[24,-74],[29,-60]],color);}
