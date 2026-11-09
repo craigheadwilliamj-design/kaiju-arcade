@@ -69,4 +69,6 @@ export const BUILDING_PRESETS={
  l:{w:130,h:240,hp:175,value:210,kind:'large'},
  t:{w:32,h:43,hp:20,value:20,kind:'tiny'},
  b:{w:42,h:48,hp:95,value:50,kind:'large'},
+ x:{w:96,h:285,hp:190,value:230,kind:'medium'},
+ n:{w:58,h:232,hp:110,value:140,kind:'medium'},
 } as const;

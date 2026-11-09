@@ -243,6 +243,9 @@ function background(){
  // Decorative parallax silhouettes, deterministic and noninteractive.
  for(let i=-1;i<21;i++){const x=i*79-(camera*.13)%79,h=50+((i+22)*47%115);rect(x,315-h,50,h,'#80999c');rect(x+18,305-h,10,10,'#80999c');}
  for(let i=-1;i<16;i++){const x=i*102-(camera*.26)%102,h=80+((i+17)*37%110);rect(x,370-h,65,h,'#6b8588');rect(x+4,374-h,56,4,'#8ba2a1');for(let yy=390-h;yy<360;yy+=15)for(let xx=8;xx<59;xx+=15)rect(x+xx,yy,5,7,'#a6b4a7');}
+ // Dense near-layer towers crowd the street and close in the skyline.
+ for(let i=-1;i<12;i++){const x=i*88-(camera*.5)%88,h=170+((i+31)*53%150);rect(x,C.ground-4-h,78,h,'#4f6469');rect(x+78,C.ground-4-h,10,h,'#435659');rect(x-2,C.ground-4-h,82,5,'#6d8185');for(let yy=C.ground-h+4;yy<C.ground-20;yy+=17)for(let xx=7;xx<72;xx+=16)rect(x+xx,yy,7,9,(i+yy)%5===0?'#c9b77a':'#38494d');}
+ rect(0,0,960,70,'#1a2a2e22');rect(0,0,960,34,'#1a2a2e33');
  rect(0,C.ground-4,960,10,'#c9c5ab');rect(0,C.ground+6,960,99,'#4c5755');rect(0,C.ground+8,960,3,'#202e31');
  for(let i=-1;i<18;i++)rect(i*85-camera%85,487,37,3,'#b4b294');rect(0,513,960,27,'#34413f');
  // Railings and lamps belong to background decoration.
