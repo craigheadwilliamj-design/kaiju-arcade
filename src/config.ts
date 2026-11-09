@@ -10,7 +10,7 @@ export const CONFIG = {
 
 // Provisional M2 combat/evolution tuning; these are implementation defaults.
 export const COMBAT = {
- maxHP:100,startHP:24,up:[35,75],down:[25,65],stageScale:[1,2,4],
+ maxHP:100,startHP:24,up:[35,75],down:[25,65],stageScale:[1,1.4,2.8],
  stageDamage:[1,1.25,1.55],stageResistance:[1,.9,.8],transformSeconds:1,
  comboTimeout:.8,inputBuffer:.15,comboDamage:[1,1.1,1.7],comboKnockback:[70,95,200],
  maxCharge:1.5,chargeSlow:.3,chargeDamageBonus:1.6,heavyKnockback:220,
