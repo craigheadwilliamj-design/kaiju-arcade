@@ -1,7 +1,7 @@
 // Provisional M1 values. Future balance changes belong here.
 export const CONFIG = {
  width:960,height:540,ground:435,screenCount:4,moveSpeed:205,crouchHeight:38,
- playerWidth:48,playerHeight:69,gravity:1250,jumpVelocity:530,
+ playerWidth:48,playerHeight:69,gravity:1250,jumpVelocity:530,climbSpeed:170,
  lightDamage:30,heavyDamage:68,rangedDamage:23,attackCooldown:.28,
  heavyCooldown:.62,rangedCooldown:.48,projectileSpeed:540,
  meleeReach:76,exitThreshold:.75,perfectBonus:1500,
@@ -63,12 +63,12 @@ export const CAMPAIGN = {
  bossWidth:78,bossHeight:106,bossRange:90,bossShotLife:5,bossShotCap:12,
 };
 export const BUILDING_PRESETS={
- s:{w:70,h:92,hp:65,value:75,kind:'medium'},
- m:{w:102,h:145,hp:100,value:120,kind:'medium'},
- h:{w:118,h:185,hp:125,value:150,kind:'medium'},
- l:{w:130,h:240,hp:175,value:210,kind:'large'},
+ s:{w:80,h:120,hp:85,value:95,kind:'medium'},
+ m:{w:112,h:185,hp:130,value:150,kind:'medium'},
+ h:{w:130,h:235,hp:160,value:190,kind:'medium'},
+ l:{w:150,h:285,hp:225,value:270,kind:'large'},
  t:{w:32,h:43,hp:20,value:20,kind:'tiny'},
  b:{w:42,h:48,hp:95,value:50,kind:'large'},
- x:{w:96,h:285,hp:190,value:230,kind:'medium'},
- n:{w:58,h:232,hp:110,value:140,kind:'medium'},
+ x:{w:108,h:305,hp:245,value:295,kind:'medium'},
+ n:{w:64,h:270,hp:140,value:180,kind:'medium'},
 } as const;

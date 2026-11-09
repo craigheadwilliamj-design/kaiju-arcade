@@ -18,8 +18,8 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  const startX=state().x;hold('KeyD',60);assert.ok(state().x>startX+190);
  const beforeCrouch=state().y;key('KeyS');step();assert.equal(state().crouched,true);assert.ok(state().y>beforeCrouch);hold('KeyD',20);key('KeyS','keyup');step();assert.equal(state().crouched,false);
  key('Space');step(10);assert.ok(state().y<beforeCrouch-20);key('Space','keyup');step(80);
- // Move to the first solid tower. No climbing or phasing through it.
- hold('KeyD',150);assert.equal(state().x,522);assert.equal(state().exitOpen,false);
+ // Move to the first solid building. It blocks horizontal movement.
+ hold('KeyD',150);assert.equal(state().x,352);assert.equal(state().exitOpen,false);
  key('Escape');assert.equal(state().mode,'paused');const px=state().x;step(60);assert.equal(state().x,px);callbacks.get('#resume:click')!();
  // Walk the district, destroying all structures with the actual attack path.
  // Strike both directions at regular intervals so passable targets are included.

@@ -162,7 +162,7 @@ function syncBody(){
 window.addEventListener('keydown',e=>{
  if(mode==='intro'){e.preventDefault();if(!e.repeat)finishIntro();return;}
  if(['INPUT','SELECT'].includes((e.target as HTMLElement)?.tagName))return;
- const k=e.code;if(['Space','KeyA','KeyD','KeyS','KeyJ','KeyK','KeyL','KeyU','KeyI','Escape'].includes(k))e.preventDefault();
+ const k=e.code;if(['Space','KeyA','KeyD','KeyW','KeyS','KeyJ','KeyK','KeyL','KeyU','KeyI','Escape'].includes(k))e.preventDefault();
  if(k==='Escape'&&!e.repeat){if(mode==='playing')pause();else if(mode==='paused')resume();return;}
  if(mode!=='playing')return;keys.add(k);if(e.repeat)return;
  if(k==='Space'&&player.grounded&&!keys.has('KeyS')&&canAct(combat)&&!combat.charging){player.vy=-C.jumpVelocity;player.grounded=false;}
@@ -189,7 +189,18 @@ function update(dt:number){
  if(b.kind!=='large'){damageBuilding(b,Math.abs(combat.knockback)*M.collisionBuildingDamage,'impact');releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);}
  receiveHit(combat,Math.abs(combat.knockback)*M.collisionPlayerDamage,'environment');combat.knockback=0;break;
  }}
- if(combat.transform<=0&&combat.ultimateTime<=0){player.vy+=C.gravity*dt;player.y+=player.vy*dt;}
+ let prevBottom=player.y+h,climbing=false;
+ if(combat.transform<=0&&combat.ultimateTime<=0){
+ player.grounded=false;
+ if(keys.has('KeyW')&&canAct(combat)&&!combat.charging){
+ for(const b of buildings){if(!solid(b))continue;const roof=C.ground-b.h;
+ if(player.x+w>=b.x-4&&player.x<=b.x+b.w+4&&player.y+h>roof+2){climbing=true;player.vy=-C.climbSpeed;player.y+=player.vy*dt;
+ if(player.y+h<=roof+8){player.y=roof-h-.01;player.x=Math.max(b.x-w*.4,Math.min(b.x+b.w-w*.6,player.x+(player.x+w/2<b.x+b.w/2?w*.3:-w*.3)));player.vy=0;climbing=false;prevBottom=roof-.01;}
+ break;}}}
+ if(!climbing){player.vy+=C.gravity*dt;player.y+=player.vy*dt;}
+ }
+ if(!climbing&&player.vy>=0)for(const b of buildings){if(!solid(b))continue;const roof=C.ground-b.h;
+ if(player.x+w>b.x&&player.x<b.x+b.w&&prevBottom<=roof+1&&player.y+h>=roof){player.y=roof-h-.01;player.vy=0;player.grounded=true;}}
  if(player.y+h>=C.ground){player.y=C.ground-h;player.vy=0;player.grounded=true;}
  player.x=separateHorizontal({x:player.x,y:player.y,w,h},solidBodies(),worldWidth);
  for(const b of buildings){b.collapse=Math.max(0,b.collapse-dt);if(b.kind==='tiny'&&b.hpNow>0&&overlaps({x:player.x,y:player.y,w,h},{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){if(Math.abs(kb)>.01){damageBuilding(b,b.hpNow,'impact');releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);}else hit(b,b.hpNow);}}

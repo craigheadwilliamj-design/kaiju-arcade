@@ -12,7 +12,7 @@ export function damageBuilding(b:Building,amount:number,source='player'):{damage
 export function destruction(buildings:Building[]):number {const total=buildings.reduce((n,b)=>n+b.value,0);return total?buildings.reduce((n,b)=>n+(b.rewarded?b.value:0),0)/total:0;}
 export function exitUnlocked(buildings:Building[]):boolean{return destruction(buildings)>=CONFIG.exitThreshold;}
 export function perfectBonus(buildings:Building[]):number{return destruction(buildings)===1?CONFIG.perfectBonus:0;}
-export function solid(b:Building):boolean{return b.kind==='large'&&b.hpNow>0;}
+export function solid(b:Building):boolean{return b.kind!=='tiny'&&b.hpNow>0;}
 export function overlaps(a:{x:number,y:number,w:number,h:number},b:{x:number,y:number,w:number,h:number}){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
 
 export type CrystalObjective={x:number,hp:number,maxHP:number,shattered:boolean};
@@ -23,7 +23,7 @@ export function damageObjective(objective:CrystalObjective,damage:number,shardCo
  objective.shattered=true;return shardCount;
 }
 
-// No climbing/standing on buildings: resolve a landing or size swap sideways.
+// Buildings can be stood on and climbed; this resolves a size swap sideways so the body never ends inside one.
 // Consider all solid edges together so growing in a narrow gap cannot push into a neighbor.
 export function separateHorizontal(body:{x:number,y:number,w:number,h:number},obstacles:{x:number,y:number,w:number,h:number}[],worldWidth:number){
  const limit=Math.max(0,worldWidth-body.w),clamp=(x:number)=>Math.max(0,Math.min(limit,x));
