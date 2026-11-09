@@ -30,7 +30,7 @@ export const SPRITES:Record<string,{width:number,anims:Record<string,Strip>}>={
   swipeLeft:{src:'assets/mogurodon-swipe-left.png',frames:10,fps:26,once:true},swipeRight:{src:'assets/mogurodon-swipe-right.png',frames:8,fps:24,once:true},bite:{src:'assets/mogurodon-bite.png',frames:8,fps:20,once:true},
   // Heavy strips are 256x192 (extra headroom for rearing); feet share the same baseline as the 256x144 strips.
   heavyRear:{src:'assets/mogurodon-heavy-rear.png',frames:5,fps:20,once:true},heavyHold:{src:'assets/mogurodon-heavy-hold.png',frames:4,fps:10},heavySlam:{src:'assets/mogurodon-heavy-slam.png',frames:9,fps:18,once:true},
-  rangedStand:{src:'assets/mogurodon-ranged-stand.png',frames:8,fps:20,once:true},rangedCrouch:{src:'assets/mogurodon-ranged-crouch.png',frames:8,fps:20,once:true},
+  rangedStand:{src:'assets/mogurodon-ranged-stand.png',frames:9,fps:20,once:true},rangedCrouch:{src:'assets/mogurodon-ranged-crouch.png',frames:8,fps:20,once:true},
   // Crouch art is drawn at full size (~60% of standing height); crouchUp is crouchDown reversed.
   crouch:{src:'assets/mogurodon-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-crouch-up.png',frames:5,fps:22,once:true}}},
 };
