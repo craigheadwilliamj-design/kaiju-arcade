@@ -24,7 +24,8 @@ const images=new Map<string,HTMLImageElement>();
 // Each animation is a horizontal strip of equal-width frames looped at `fps` (generated with PixelLab, see tools/pixellab_animate.py).
 // `idle` is required; any other animation falls back to idle until it exists and has loaded.
 // `once` strips (attacks) play a single time from t=0 and hold their last frame; the caller ends them via animDuration.
-type Strip={src:string,frames:number,fps:number,once?:boolean};
+// `impact` marks the frame where a hit lands, for syncing gameplay effects to the art.
+type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number};
 export const SPRITES:Record<string,{width:number,anims:Record<string,Strip>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10},
   swipeLeft:{src:'assets/mogurodon-swipe-left.png',frames:10,fps:26,once:true},swipeRight:{src:'assets/mogurodon-swipe-right.png',frames:8,fps:24,once:true},bite:{src:'assets/mogurodon-bite.png',frames:8,fps:20,once:true},
@@ -36,7 +37,9 @@ export const SPRITES:Record<string,{width:number,anims:Record<string,Strip>}>={
   // Jump strips are 256x192, bottom-aligned: physics moves him, the art only changes pose.
   jumpRise:{src:'assets/mogurodon-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-jump-land.png',frames:5,fps:20,once:true},
   // Seismic Rupture (U): roar then ground-pounding loop for the rest of the 2.4s Ultimate. 256x192.
-  ultRoar:{src:'assets/mogurodon-ult-roar.png',frames:8,fps:14,once:true},ultPound:{src:'assets/mogurodon-ult-pound.png',frames:8,fps:16}}},
+  ultRoar:{src:'assets/mogurodon-ult-roar.png',frames:8,fps:14,once:true,impact:5},ultPound:{src:'assets/mogurodon-ult-pound.png',frames:8,fps:16},
+  // Climb (W): 256x256 strips, body vertical with claws at the hitbox edge where the wall is.
+  climbGrab:{src:'assets/mogurodon-climb-grab.png',frames:5,fps:20,once:true},climb:{src:'assets/mogurodon-climb.png',frames:8,fps:12},climbMantle:{src:'assets/mogurodon-climb-mantle.png',frames:9,fps:20,once:true}}},
 };
 function preload(src:string){if(typeof Image==='undefined'||images.has(src))return;const img=new Image();img.src=src;images.set(src,img);}
 function ready(src?:string){const img=src?images.get(src):null;return !!img?.complete&&!!img.naturalWidth;}
@@ -46,6 +49,8 @@ export function hasSprite(name:string){return ready(SPRITES[name]?.anims.idle?.s
 function strip(name:string,anim:string){const a=SPRITES[name]?.anims;return a?.[anim]&&ready(a[anim].src)?a[anim]:a?.idle;}
 export function spriteFrame(name:string,t:number,anim='idle'){const a=strip(name,anim);if(!a)return 0;const f=Math.floor(Math.max(0,t)*a.fps);return a.once?Math.min(f,a.frames-1):f%a.frames;}
 // Seconds a one-shot animation runs; 0 if this kaiju has no such strip (callers then skip it).
+// Seconds from the start of a strip to its impact frame (data only, so headless runs match the browser); 0 if none.
+export function animImpact(name:string,anim:string){const a=SPRITES[name]?.anims[anim];return a?.impact?a.impact/a.fps:0;}
 export function animDuration(name:string,anim:string){const a=SPRITES[name]?.anims[anim];return a?a.frames/a.fps:0;}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
 export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle'){if(!hasSprite(name))return false;const s=SPRITES[name],a=strip(name,anim)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,h=s.width*img.naturalHeight/fw;const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim)*fw,0,fw,img.naturalHeight,-s.width/2,-h,s.width,h);ctx.imageSmoothingEnabled=smooth;return true;}
