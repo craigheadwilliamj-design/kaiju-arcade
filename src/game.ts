@@ -10,7 +10,7 @@ import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,res
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
 import {createRival,hitRival,tickRival} from './rival.ts';
 import type {Rival} from './rival.ts';
-import {ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,hasSprite,animDuration,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
+import {ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,hasSprite,hasAnim,animDuration,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
 import type {FreePlayChoice} from './presentation.ts';
 const canvas=document.querySelector<HTMLCanvasElement>('#game')!;
 const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=false;
@@ -51,6 +51,14 @@ const LIGHT_ANIMS=['swipeRight','swipeLeft','bite'];let attack:{anim:string,t:nu
 let loopAnim='idle',loopT=0;
 // Holding heavy: rear back once, then loop the hold pose until release triggers heavySlam.
 let heavyT=0;
+// Crouch: entering plays crouchDown, leaving plays crouchUp, before the next loop starts. Crouch-native art is not squashed.
+const CROUCH_ANIMS=['crouch','crouchDown','rangedCrouch'];let loopIntro:string|null=null;
+function currentAnim():[string,number]{
+ if(attack)return [attack.anim,attack.t];
+ if(combat.charging){const rear=animDuration(activeKaiju,'heavyRear');return heavyT<rear?['heavyRear',heavyT]:['heavyHold',heavyT-rear];}
+ const intro=loopIntro?animDuration(activeKaiju,loopIntro):0;
+ return loopIntro&&loopT<intro?[loopIntro,loopT]:[loopAnim,loopT-intro];
+}
 let player={x:110,y:C.ground-C.playerHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
 type Particle={x:number,y:number,vx:number,vy:number,life:number,color:string,size:number};
 let particles:Particle[]=[],shots:{x:number,y:number,vx:number,life:number,damage:number,knockback:number}[]=[];
@@ -142,7 +150,7 @@ function strikeRival(damage:number,strength=0,direction=1,ultimate=false){if(!ri
 function performStrike(strike:Strike|null){
  if(!strike||mode!=='playing')return;
  const {kind,damage}=strike;player.pose=kind==='heavy'?.3:.18;
- attack=kind==='light'?{anim:LIGHT_ANIMS[strike.combo-1],t:0}:kind==='heavy'?{anim:'heavySlam',t:0}:null;
+ attack=kind==='light'?{anim:LIGHT_ANIMS[strike.combo-1],t:0}:kind==='heavy'?{anim:'heavySlam',t:0}:{anim:player.crouched?'rangedCrouch':'rangedStand',t:0};
  const w=bodyWidth(),h=bodyHeight(),y=player.y+h*.45;
  if(kind==='ranged'){if(shots.length<B.rangedMax)shots.push({x:player.x+w/2+player.face*w*.52,y,vx:player.face*C.projectileSpeed,life:1.8,damage,knockback:strike.knockback});return;}
  const reach=(C.meleeReach+(kind==='heavy'?20:0))*scale(combat);
@@ -184,7 +192,10 @@ function update(dt:number){
  actionTime=Math.max(0,actionTime-dt);shake=Math.max(0,shake-dt*14);player.pose=Math.max(0,player.pose-dt);
  if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim))attack=null;}
  heavyT=combat.charging?heavyT+dt:0;
- {const next=walking?'walk':'idle';if(attack||combat.charging||next!==loopAnim){loopAnim=next;loopT=0;}else loopT+=dt;}
+ {const next=player.crouched?'crouch':walking?'walk':'idle';
+  if(attack||combat.charging){loopAnim=next;loopT=0;loopIntro=null;}
+  else if(next!==loopAnim){loopIntro=next==='crouch'?'crouchDown':loopAnim==='crouch'?'crouchUp':null;loopAnim=next;loopT=0;}
+  else loopT+=dt;}
  const crouch=keys.has('KeyS')&&player.grounded;
  if(canAct(combat))player.crouched=crouch;
  syncBody();const w=bodyWidth(),h=bodyHeight();
@@ -287,7 +298,7 @@ function drawBuilding(b:typeof buildings[number]){
  if(b.collapse>0){rect(x-5,C.ground-14,b.w+10,14,'#b1ac91');}
 }
 function monster(x:number,y:number,face:number,crouched:boolean,pose:number){
- if(activeKaiju!=='Mogurodon'||hasSprite('Mogurodon')){ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched?.6:1);if(attack)drawSilhouette(ctx,activeKaiju,0,0,scale(combat),attack.t,false,attack.anim);else if(combat.charging){const rear=animDuration(activeKaiju,'heavyRear');drawSilhouette(ctx,activeKaiju,0,0,scale(combat),heavyT<rear?heavyT:heavyT-rear,false,heavyT<rear?'heavyRear':'heavyHold');}else drawSilhouette(ctx,activeKaiju,0,0,scale(combat),loopT,false,loopAnim);ctx.restore();return;}
+ if(activeKaiju!=='Mogurodon'||hasSprite('Mogurodon')){const [anim,t]=currentAnim();ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched&&!(CROUCH_ANIMS.includes(anim)&&hasAnim(activeKaiju,anim))?.6:1);drawSilhouette(ctx,activeKaiju,0,0,scale(combat),t,false,anim);ctx.restore();return;}
 
  const h=crouched?C.crouchHeight:C.playerHeight,step=(keys.has('KeyA')||keys.has('KeyD'))&&mode==='playing'?Math.sin(time*13)*4:0;
  ctx.save();ctx.translate(Math.round(x+bodyWidth()/2),Math.round(y+bodyHeight()));ctx.scale(face*scale(combat),scale(combat));
@@ -388,7 +399,8 @@ function render(){
  monster(player.x-camera,player.y,player.face,player.crouched,player.pose);
  if(combat.transform>0){const x=player.x-camera+bodyWidth()/2,y=player.y+bodyHeight()/2;const radius=bodyHeight()*.75;poly([[x,y-radius],[x+radius*.6,y],[x,y+radius],[x-radius*.6,y]],'#f4b0d8');poly([[x,y-radius*.85],[x+radius*.35,y],[x,y+radius*.8],[x-radius*.35,y]],'#ffe0f1');}
  if(combat.ultimateTime>0)text(ultimateLabel(),player.x-camera+bodyWidth()/2,player.y-24,10,'#fff1d8','center');
- for(const s of shots){rect(s.x-camera-8,s.y-2,16,4,'#efe2ba');rect(s.x-camera-12,s.y-1,7,2,'#c2e785');}
+ // Launched tail quill: bone-white spike pointing along its flight, dark base, faint motion streak.
+ for(const s of shots){const sx=s.x-camera,d=Math.sign(s.vx)||1;rect(Math.min(sx-26*d,sx-14*d),s.y-1,12,2,'#efe2ba55');poly([[sx+16*d,s.y],[sx-4*d,s.y-3],[sx-14*d,s.y-2],[sx-14*d,s.y+2],[sx-4*d,s.y+3]],'#efe2ba');poly([[sx-14*d,s.y-2],[sx-9*d,s.y-2.5],[sx-9*d,s.y+2.5],[sx-14*d,s.y+2]],'#6a2f45');}
  for(const p of particles)rect(p.x-camera,p.y,p.size,p.size,p.color);
  ctx.restore();ctx.restore();hud();
 }
