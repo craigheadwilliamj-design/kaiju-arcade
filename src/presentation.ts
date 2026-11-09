@@ -20,13 +20,42 @@ export function unlockEnding(p:Permanent,name:string){if(!KAIJU.includes(name)||
 export function canViewEnding(p:Permanent,name:string){return KAIJU.includes(name)&&p.gallery.includes(name);}
 export function endingFor(name:string){return ENDINGS.find(e=>e.name===name)||ENDINGS[0];}
 const images=new Map<string,HTMLImageElement>();
-export function loadPresentationArt(){for(const src of [ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings)])if(src&&!images.has(src)){const img=new Image();img.src=src;images.set(src,img);}}
+// Final kaiju sprites. Bottom-center anchored, drawn nearest-neighbor. `width` is world units at Stage 1 (hitbox is unchanged).
+// Each animation is a horizontal strip of equal-width frames looped at `fps` (generated with PixelLab, see tools/pixellab_animate.py).
+// `idle` is required; any other animation falls back to idle until it exists and has loaded.
+// `once` strips (attacks) play a single time from t=0 and hold their last frame; the caller ends them via animDuration.
+type Strip={src:string,frames:number,fps:number,once?:boolean};
+export const SPRITES:Record<string,{width:number,anims:Record<string,Strip>}>={
+ Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10},
+  swipeLeft:{src:'assets/mogurodon-swipe-left.png',frames:10,fps:26,once:true},swipeRight:{src:'assets/mogurodon-swipe-right.png',frames:8,fps:24,once:true},bite:{src:'assets/mogurodon-bite.png',frames:8,fps:20,once:true},
+  // Heavy strips are 256x192 (extra headroom for rearing); feet share the same baseline as the 256x144 strips.
+  heavyRear:{src:'assets/mogurodon-heavy-rear.png',frames:5,fps:20,once:true},heavyHold:{src:'assets/mogurodon-heavy-hold.png',frames:4,fps:10},heavySlam:{src:'assets/mogurodon-heavy-slam.png',frames:9,fps:18,once:true},
+  rangedStand:{src:'assets/mogurodon-ranged-stand.png',frames:9,fps:20,once:true},rangedCrouch:{src:'assets/mogurodon-ranged-crouch.png',frames:8,fps:20,once:true},
+  // Crouch art is drawn at full size (~60% of standing height); crouchUp is crouchDown reversed.
+  crouch:{src:'assets/mogurodon-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-crouch-up.png',frames:5,fps:22,once:true},
+  // Jump strips are 256x192, bottom-aligned: physics moves him, the art only changes pose.
+  jumpRise:{src:'assets/mogurodon-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-jump-land.png',frames:5,fps:20,once:true},
+  // Seismic Rupture (U): roar then ground-pounding loop for the rest of the 2.4s Ultimate. 256x192.
+  ultRoar:{src:'assets/mogurodon-ult-roar.png',frames:8,fps:14,once:true},ultPound:{src:'assets/mogurodon-ult-pound.png',frames:8,fps:16}}},
+};
+function preload(src:string){if(typeof Image==='undefined'||images.has(src))return;const img=new Image();img.src=src;images.set(src,img);}
+function ready(src?:string){const img=src?images.get(src):null;return !!img?.complete&&!!img.naturalWidth;}
+export function loadPresentationArt(){for(const src of [ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).flatMap(s=>Object.values(s.anims).map(a=>a.src))])if(src)preload(src);}
+export function hasAnim(name:string,anim:string){return ready(SPRITES[name]?.anims[anim]?.src);}
+export function hasSprite(name:string){return ready(SPRITES[name]?.anims.idle?.src);}
+function strip(name:string,anim:string){const a=SPRITES[name]?.anims;return a?.[anim]&&ready(a[anim].src)?a[anim]:a?.idle;}
+export function spriteFrame(name:string,t:number,anim='idle'){const a=strip(name,anim);if(!a)return 0;const f=Math.floor(Math.max(0,t)*a.fps);return a.once?Math.min(f,a.frames-1):f%a.frames;}
+// Seconds a one-shot animation runs; 0 if this kaiju has no such strip (callers then skip it).
+export function animDuration(name:string,anim:string){const a=SPRITES[name]?.anims[anim];return a?a.frames/a.fps:0;}
+// Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
+export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle'){if(!hasSprite(name))return false;const s=SPRITES[name],a=strip(name,anim)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,h=s.width*img.naturalHeight/fw;const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim)*fw,0,fw,img.naturalHeight,-s.width/2,-h,s.width,h);ctx.imageSmoothingEnabled=smooth;return true;}
 function art(ctx:CanvasRenderingContext2D,src:string|null){const img=src?images.get(src):null;if(!img?.complete||!img.naturalWidth)return false;ctx.drawImage(img,0,0,960,540);return true;}
 function box(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function polygon(ctx:CanvasRenderingContext2D,points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();}
 // Deliberately simple replaceable geometric stand-ins, not final sprite designs.
-export function drawSilhouette(ctx:CanvasRenderingContext2D,name:string,x:number,y:number,size:number,t:number,locked=false){
+export function drawSilhouette(ctx:CanvasRenderingContext2D,name:string,x:number,y:number,size:number,t:number,locked=false,anim='idle'){
  const index=Math.max(0,KAIJU.indexOf(name)),color=locked?'#172022':ROSTER[index].color;
+ if(!locked&&hasSprite(name)){ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(size,size);drawSprite(ctx,name,t,anim);ctx.restore();return;}
  ctx.save();ctx.translate(Math.round(x),Math.round(y+(locked?0:Math.sin(t*2)*1.5)));ctx.scale(size,size);
  if(index===0){polygon(ctx,[[-27,-12],[-38,-24],[-29,-25],[-34,-42],[-23,-38],[-22,-59],[-10,-48],[0,-65],[12,-48],[25,-38],[37,-25],[26,-12]],color);box(ctx,16,-35,29,13,color);box(ctx,36,-32,10,9,color);}
  if(index===1){polygon(ctx,[[-44,-8],[-23,-30],[-17,-57],[2,-67],[13,-50],[14,-33],[39,-43],[43,-27],[23,-16],[18,-3]],color);polygon(ctx,[[-17,-44],[-32,-65],[-7,-51]],color);box(ctx,9,-60,27,13,color);polygon(ctx,[[21,-60],[24,-74],[29,-60]],color);}

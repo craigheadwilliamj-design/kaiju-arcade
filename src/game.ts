@@ -10,7 +10,7 @@ import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,res
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
 import {createRival,hitRival,tickRival} from './rival.ts';
 import type {Rival} from './rival.ts';
-import {ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
+import {ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,hasSprite,hasAnim,animDuration,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
 import type {FreePlayChoice} from './presentation.ts';
 const canvas=document.querySelector<HTMLCanvasElement>('#game')!;
 const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=false;
@@ -44,6 +44,24 @@ function bodyWidth(){return C.playerWidth*scale(combat);}
 function bodyHeight(){return (player.crouched?C.crouchHeight:C.playerHeight)*scale(combat);}
 let oldWidth=C.playerWidth,oldHeight=C.playerHeight;
 function netScore(){return Math.round((run?.banked||0)+(citySettled?0:cityScore()));}
+let walking=false;
+// Light combo hits 1/2/3 each play a one-shot strip; heavy/ranged cancel it.
+const LIGHT_ANIMS=['swipeRight','swipeLeft','bite'];let attack:{anim:string,t:number}|null=null;
+// Idle/walk loops restart at frame 0 whenever they begin (attacks start and end on idle frame 0).
+let loopAnim='idle',loopT=0;
+// Holding heavy: rear back once, then loop the hold pose until release triggers heavySlam.
+let heavyT=0;
+// Crouch: entering plays crouchDown, leaving plays crouchUp, before the next loop starts. Crouch-native art is not squashed.
+const CROUCH_ANIMS=['crouch','crouchDown','rangedCrouch'];let loopIntro:string|null=null;
+// Airborne: jumpRise (only when launched upward) into the jumpAir loop; touching down plays jumpLand. Climbing walls uses walk.
+let isClimbing=false;
+function currentAnim():[string,number]{
+ if(attack)return [attack.anim,attack.t];
+ if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar')){const el=B.ultimateDuration-combat.ultimateTime,roar=animDuration(activeKaiju,'ultRoar');return el<roar?['ultRoar',el]:['ultPound',el-roar];}
+ if(combat.charging){const rear=animDuration(activeKaiju,'heavyRear');return heavyT<rear?['heavyRear',heavyT]:['heavyHold',heavyT-rear];}
+ const intro=loopIntro?animDuration(activeKaiju,loopIntro):0;
+ return loopIntro&&loopT<intro?[loopIntro,loopT]:[loopAnim,loopT-intro];
+}
 let player={x:110,y:C.ground-C.playerHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
 type Particle={x:number,y:number,vx:number,vy:number,life:number,color:string,size:number};
 let particles:Particle[]=[],shots:{x:number,y:number,vx:number,life:number,damage:number,knockback:number}[]=[];
@@ -97,7 +115,7 @@ function drills(){mode='setup';panel(`<div class="eyebrow">PRACTICE / NO CAMPAIG
 function start(){session='drill';run=null;activeKaiju='Mogurodon';cityIndex=0;blockIndex=0;citySettled=false;score=0;combat=createCombat();loadBlock(true);}
 function loadBlock(drill=false){
  block=LEVELS[cityIndex][blockIndex];worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:blockIndex+1,cityIndex);population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];shots=[];keys.clear();shards=[];growths=[];waves=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
- cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
+ cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
  oldWidth=bodyWidth();oldHeight=C.playerHeight*scale(combat);player={x:110,y:C.ground-oldHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
  objective=!drill&&block.kind==='stronghold'?{x:worldWidth/2,hp:P.strongholdHP,maxHP:P.strongholdHP,shattered:false}:null;
  rival=!drill&&block.kind==='boss'?createRival(worldWidth,cityIndex):null;
@@ -135,6 +153,7 @@ function strikeRival(damage:number,strength=0,direction=1,ultimate=false){if(!ri
 function performStrike(strike:Strike|null){
  if(!strike||mode!=='playing')return;
  const {kind,damage}=strike;player.pose=kind==='heavy'?.3:.18;
+ attack=kind==='light'?{anim:LIGHT_ANIMS[strike.combo-1],t:0}:kind==='heavy'?{anim:'heavySlam',t:0}:{anim:player.crouched?'rangedCrouch':'rangedStand',t:0};
  const w=bodyWidth(),h=bodyHeight(),y=player.y+h*.45;
  if(kind==='ranged'){if(shots.length<B.rangedMax)shots.push({x:player.x+w/2+player.face*w*.52,y,vx:player.face*C.projectileSpeed,life:1.8,damage,knockback:strike.knockback});return;}
  const reach=(C.meleeReach+(kind==='heavy'?20:0))*scale(combat);
@@ -152,7 +171,7 @@ function performStrike(strike:Strike|null){
 }
 function destroyCar(car:typeof population.cars[number],fromUltimate=false,playerCaused=true){const reward=crushCar(car);if(!reward)return;if(!playerCaused){burst(car.x+16,C.ground-8,'#b5aa8e',5);return;}score+=reward;creditDamage(combat,M.carHP,'player',fromUltimate);dropShards(car.x+16,M.carShards);burst(car.x+16,C.ground-8,'#e6b983',8);}
 function drainMilitary(){for(const e of military.events){if(e.kind==='reward'){score+=e.points;creditDamage(combat,e.damage,'player',e.ultimate);if(e.shards)dropShards(e.x,e.shards);}else if(e.kind==='playerHit'){const actual=receiveHit(combat,e.damage,'military',e.strength,e.direction);if(actual>0){shake=Math.max(shake,e.strength>0?6:1);burst(player.x+bodyWidth()/2,player.y+bodyHeight()/2,'#f197b8',4);}}else burst(e.x,e.y,'#f6dba1',3);}military.events=[];}
-function useUltimate(){if(!activateUltimate(combat))return;ultimateTimer=0;player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;}
+function useUltimate(){if(!activateUltimate(combat))return;attack=null;ultimateTimer=0;player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;}
 function useSuper(){if(activateSuper(combat)){action='SUPER FORM';actionTime=2;burst(player.x+bodyWidth()/2,player.y,'#f7a2d3',35);}}
 function solidBodies(){return [...buildings.filter(solid).map(b=>({x:b.x,y:C.ground-b.h,w:b.w,h:b.h})),...(rival&&!rival.dead?[rival]:[])];}
 function syncBody(){
@@ -174,16 +193,23 @@ function update(dt:number){
  performStrike(tickCombat(combat,dt));
  if(endIfDead())return;
  actionTime=Math.max(0,actionTime-dt);shake=Math.max(0,shake-dt*14);player.pose=Math.max(0,player.pose-dt);
+ if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim))attack=null;}
+ heavyT=combat.charging?heavyT+dt:0;
+ {const next=isClimbing?'walk':!player.grounded?'jumpAir':player.crouched?'crouch':walking?'walk':'idle';
+  if(attack||combat.charging||combat.ultimateTime>0){loopAnim=next;loopT=0;loopIntro=null;}
+  else if(next!==loopAnim){loopIntro=next==='jumpAir'?(player.vy<0?'jumpRise':null):loopAnim==='jumpAir'?'jumpLand':next==='crouch'?'crouchDown':loopAnim==='crouch'?'crouchUp':null;loopAnim=next;loopT=0;}
+  else loopT+=dt;}
  const crouch=keys.has('KeyS')&&player.grounded;
  if(canAct(combat))player.crouched=crouch;
  syncBody();const w=bodyWidth(),h=bodyHeight();
  let dx=!canAct(combat)||player.crouched?0:((keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0))*C.moveSpeed*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*dt;
  if(dx)player.face=dx>0?1:-1;
+ const inputDx=dx;
  const kb=combat.transform>0||combat.ultimateTime>0?0:combat.knockback*dt;
  dx+=kb;let nx=Math.max(0,Math.min(worldWidth-w,player.x+dx));
  for(const b of buildings)if(solid(b)&&overlaps({x:nx,y:player.y,w,h},{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){nx=dx>0?Math.min(nx,b.x-w):dx<0?Math.max(nx,b.x+b.w):player.x;if(Math.abs(combat.knockback)>M.collisionImpactMin)receiveHit(combat,Math.abs(combat.knockback)*M.collisionPlayerDamage,'environment');combat.knockback=0;}
  if(rival&&!rival.dead&&overlaps({x:nx,y:player.y,w,h},rival))nx=dx>0?rival.x-w:dx<0?rival.x+rival.w:player.x;
- player.x=nx;
+ walking=inputDx!==0&&player.grounded&&Math.abs(nx-player.x)>.01;player.x=nx;
  if(Math.abs(kb)>0&&Math.abs(combat.knockback)>M.collisionImpactMin){
  for(const b of buildings)if(b.hpNow>0&&overlaps({x:player.x,y:player.y,w,h},{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){
  if(b.kind!=='large'){damageBuilding(b,Math.abs(combat.knockback)*M.collisionBuildingDamage,'impact');releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);}
@@ -198,6 +224,7 @@ function update(dt:number){
  if(player.y+h<=roof+8){player.y=roof-h-.01;player.x=Math.max(b.x-w*.4,Math.min(b.x+b.w-w*.6,player.x+(player.x+w/2<b.x+b.w/2?w*.3:-w*.3)));player.vy=0;climbing=false;prevBottom=roof-.01;}
  break;}}}
  if(!climbing){player.vy+=C.gravity*dt;player.y+=player.vy*dt;}
+ isClimbing=climbing;
  }
  if(!climbing&&player.vy>=0)for(const b of buildings){if(!solid(b))continue;const roof=C.ground-b.h;
  if(player.x+w>b.x&&player.x<b.x+b.w&&prevBottom<=roof+1&&player.y+h>=roof){player.y=roof-h-.01;player.vy=0;player.grounded=true;}}
@@ -275,7 +302,7 @@ function drawBuilding(b:typeof buildings[number]){
  if(b.collapse>0){rect(x-5,C.ground-14,b.w+10,14,'#b1ac91');}
 }
 function monster(x:number,y:number,face:number,crouched:boolean,pose:number){
- if(activeKaiju!=='Mogurodon'){ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched?.6:1);drawSilhouette(ctx,activeKaiju,0,0,scale(combat),time);ctx.restore();return;}
+ if(activeKaiju!=='Mogurodon'||hasSprite('Mogurodon')){const [anim,t]=currentAnim();ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched&&!(CROUCH_ANIMS.includes(anim)&&hasAnim(activeKaiju,anim))?.6:1);drawSilhouette(ctx,activeKaiju,0,0,scale(combat),t,false,anim);ctx.restore();return;}
 
  const h=crouched?C.crouchHeight:C.playerHeight,step=(keys.has('KeyA')||keys.has('KeyD'))&&mode==='playing'?Math.sin(time*13)*4:0;
  ctx.save();ctx.translate(Math.round(x+bodyWidth()/2),Math.round(y+bodyHeight()));ctx.scale(face*scale(combat),scale(combat));
@@ -376,7 +403,8 @@ function render(){
  monster(player.x-camera,player.y,player.face,player.crouched,player.pose);
  if(combat.transform>0){const x=player.x-camera+bodyWidth()/2,y=player.y+bodyHeight()/2;const radius=bodyHeight()*.75;poly([[x,y-radius],[x+radius*.6,y],[x,y+radius],[x-radius*.6,y]],'#f4b0d8');poly([[x,y-radius*.85],[x+radius*.35,y],[x,y+radius*.8],[x-radius*.35,y]],'#ffe0f1');}
  if(combat.ultimateTime>0)text(ultimateLabel(),player.x-camera+bodyWidth()/2,player.y-24,10,'#fff1d8','center');
- for(const s of shots){rect(s.x-camera-8,s.y-2,16,4,'#efe2ba');rect(s.x-camera-12,s.y-1,7,2,'#c2e785');}
+ // Launched tail quill: bone-white spike pointing along its flight, dark base, faint motion streak.
+ for(const s of shots){const sx=s.x-camera,d=Math.sign(s.vx)||1;rect(Math.min(sx-26*d,sx-14*d),s.y-1,12,2,'#efe2ba55');poly([[sx+16*d,s.y],[sx-4*d,s.y-3],[sx-14*d,s.y-2],[sx-14*d,s.y+2],[sx-4*d,s.y+3]],'#efe2ba');poly([[sx-14*d,s.y-2],[sx-9*d,s.y-2.5],[sx-9*d,s.y+2.5],[sx-14*d,s.y+2]],'#6a2f45');}
  for(const p of particles)rect(p.x-camera,p.y,p.size,p.size,p.color);
  ctx.restore();ctx.restore();hud();
 }

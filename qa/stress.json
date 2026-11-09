@@ -2,7 +2,7 @@
   "scope": "World simulation only; no browser/GPU FPS claim",
   "totalSimulatedSeconds": 1800,
   "ticks": 45000,
-  "nodeWorldUpdateMilliseconds": 123,
+  "nodeWorldUpdateMilliseconds": 147,
   "rows": [
     {
       "city": 1,
