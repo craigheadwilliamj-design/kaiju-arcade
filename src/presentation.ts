@@ -26,7 +26,11 @@ const images=new Map<string,HTMLImageElement>();
 // `once` strips (attacks) play a single time from t=0 and hold their last frame; the caller ends them via animDuration.
 // `impact` marks the frame where a hit lands, for syncing gameplay effects to the art.
 type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number};
-export const SPRITES:Record<string,{width:number,anims:Record<string,Strip>}>={
+// Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
+// Mogurodon: the base art is its Stage 2 form (used for Stages 2 and 3); `stages[1]` is the Stage 1 form, animated incrementally.
+// Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
+type Form={width:number,anims:Record<string,Strip>};
+export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10},
   swipeLeft:{src:'assets/mogurodon-swipe-left.png',frames:10,fps:26,once:true},swipeRight:{src:'assets/mogurodon-swipe-right.png',frames:8,fps:24,once:true},bite:{src:'assets/mogurodon-bite.png',frames:8,fps:20,once:true},
   // Heavy strips are 256x192 (extra headroom for rearing); feet share the same baseline as the 256x144 strips.
@@ -39,28 +43,36 @@ export const SPRITES:Record<string,{width:number,anims:Record<string,Strip>}>={
   // Seismic Rupture (U): roar then ground-pounding loop for the rest of the 2.4s Ultimate. 256x192.
   ultRoar:{src:'assets/mogurodon-ult-roar.png',frames:8,fps:14,once:true,impact:5},ultPound:{src:'assets/mogurodon-ult-pound.png',frames:8,fps:16},
   // Climb (W): 256x256 strips, body vertical with claws at the hitbox edge where the wall is.
-  climbGrab:{src:'assets/mogurodon-climb-grab.png',frames:5,fps:20,once:true},climb:{src:'assets/mogurodon-climb.png',frames:8,fps:12},climbMantle:{src:'assets/mogurodon-climb-mantle.png',frames:9,fps:20,once:true}}},
+  climbGrab:{src:'assets/mogurodon-climb-grab.png',frames:5,fps:20,once:true},climb:{src:'assets/mogurodon-climb.png',frames:8,fps:12},climbMantle:{src:'assets/mogurodon-climb-mantle.png',frames:9,fps:20,once:true}},
+  stages:{1:{width:120,anims:{
+   // Stage 1 form: static 256x192 base until its strips are animated (see tools/pixellab_animate.py); add idle/walk/... here as they land.
+   idle:{src:'assets/mogurodon-s1.png',frames:1,fps:1}}}}},
 };
+// Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
+function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
 function preload(src:string){if(typeof Image==='undefined'||images.has(src))return;const img=new Image();img.src=src;images.set(src,img);}
 function ready(src?:string){const img=src?images.get(src):null;return !!img?.complete&&!!img.naturalWidth;}
-export function loadPresentationArt(){for(const src of [ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).flatMap(s=>Object.values(s.anims).map(a=>a.src))])if(src)preload(src);}
-export function hasAnim(name:string,anim:string){return ready(SPRITES[name]?.anims[anim]?.src);}
-export function hasSprite(name:string){return ready(SPRITES[name]?.anims.idle?.src);}
-function strip(name:string,anim:string){const a=SPRITES[name]?.anims;return a?.[anim]&&ready(a[anim].src)?a[anim]:a?.idle;}
-export function spriteFrame(name:string,t:number,anim='idle'){const a=strip(name,anim);if(!a)return 0;const f=Math.floor(Math.max(0,t)*a.fps);return a.once?Math.min(f,a.frames-1):f%a.frames;}
+export function loadPresentationArt(){for(const src of [ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).flatMap(s=>[s,...Object.values(s.stages??{})].flatMap(f=>Object.values(f.anims).map(a=>a.src)))])if(src)preload(src);}
+export function hasAnim(name:string,anim:string,stage?:number){return ready(form(name,stage)?.anims[anim]?.src);}
+export function hasSprite(name:string,stage?:number){return ready(form(name,stage)?.anims.idle?.src);}
+function strip(name:string,anim:string,stage?:number){const a=form(name,stage)?.anims;return a?.[anim]&&ready(a[anim].src)?a[anim]:a?.idle;}
+export function spriteFrame(name:string,t:number,anim='idle',stage?:number){const a=strip(name,anim,stage);if(!a)return 0;const f=Math.floor(Math.max(0,t)*a.fps);return a.once?Math.min(f,a.frames-1):f%a.frames;}
+// Gameplay timing (attack length, intros, impact frame) is data only so headless runs match the browser. A stage form that has not
+// animated a strip yet borrows the base form's timing, so combat plays identically while the art catches up.
+function timing(name:string,anim:string,stage?:number){return form(name,stage)?.anims[anim]??SPRITES[name]?.anims[anim];}
+// Seconds from the start of a strip to its impact frame; 0 if none.
+export function animImpact(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?.impact?a.impact/a.fps:0;}
 // Seconds a one-shot animation runs; 0 if this kaiju has no such strip (callers then skip it).
-// Seconds from the start of a strip to its impact frame (data only, so headless runs match the browser); 0 if none.
-export function animImpact(name:string,anim:string){const a=SPRITES[name]?.anims[anim];return a?.impact?a.impact/a.fps:0;}
-export function animDuration(name:string,anim:string){const a=SPRITES[name]?.anims[anim];return a?a.frames/a.fps:0;}
+export function animDuration(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?a.frames/a.fps:0;}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
-export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle'){if(!hasSprite(name))return false;const s=SPRITES[name],a=strip(name,anim)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,h=s.width*img.naturalHeight/fw;const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim)*fw,0,fw,img.naturalHeight,-s.width/2,-h,s.width,h);ctx.imageSmoothingEnabled=smooth;return true;}
+export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;const s=form(name,stage)!,a=strip(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,h=s.width*img.naturalHeight/fw;const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim,stage)*fw,0,fw,img.naturalHeight,-s.width/2,-h,s.width,h);ctx.imageSmoothingEnabled=smooth;return true;}
 function art(ctx:CanvasRenderingContext2D,src:string|null){const img=src?images.get(src):null;if(!img?.complete||!img.naturalWidth)return false;ctx.drawImage(img,0,0,960,540);return true;}
 function box(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function polygon(ctx:CanvasRenderingContext2D,points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();}
 // Deliberately simple replaceable geometric stand-ins, not final sprite designs.
-export function drawSilhouette(ctx:CanvasRenderingContext2D,name:string,x:number,y:number,size:number,t:number,locked=false,anim='idle'){
+export function drawSilhouette(ctx:CanvasRenderingContext2D,name:string,x:number,y:number,size:number,t:number,locked=false,anim='idle',stage?:number){
  const index=Math.max(0,KAIJU.indexOf(name)),color=locked?'#172022':ROSTER[index].color;
- if(!locked&&hasSprite(name)){ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(size,size);drawSprite(ctx,name,t,anim);ctx.restore();return;}
+ if(!locked&&hasSprite(name,stage)){ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(size,size);drawSprite(ctx,name,t,anim,stage);ctx.restore();return;}
  ctx.save();ctx.translate(Math.round(x),Math.round(y+(locked?0:Math.sin(t*2)*1.5)));ctx.scale(size,size);
  if(index===0){polygon(ctx,[[-27,-12],[-38,-24],[-29,-25],[-34,-42],[-23,-38],[-22,-59],[-10,-48],[0,-65],[12,-48],[25,-38],[37,-25],[26,-12]],color);box(ctx,16,-35,29,13,color);box(ctx,36,-32,10,9,color);}
  if(index===1){polygon(ctx,[[-44,-8],[-23,-30],[-17,-57],[2,-67],[13,-50],[14,-33],[39,-43],[43,-27],[23,-16],[18,-3]],color);polygon(ctx,[[-17,-44],[-32,-65],[-7,-51]],color);box(ctx,9,-60,27,13,color);polygon(ctx,[[21,-60],[24,-74],[29,-60]],color);}

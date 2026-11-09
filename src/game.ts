@@ -60,9 +60,9 @@ const CROUCH_ANIMS=['crouch','crouchDown','rangedCrouch'];let loopIntro:string|n
 let isClimbing=false,clingTo:ReturnType<typeof createBuildings>[number]|null=null,grabLock=false,climbDir=0,mantled=false;
 function currentAnim():[string,number]{
  if(attack)return [attack.anim,attack.t];
- if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar')){const el=B.ultimateDuration-combat.ultimateTime,roar=animDuration(activeKaiju,'ultRoar');return el<roar?['ultRoar',el]:['ultPound',el-roar];}
- if(combat.charging){const rear=animDuration(activeKaiju,'heavyRear');return heavyT<rear?['heavyRear',heavyT]:['heavyHold',heavyT-rear];}
- const intro=loopIntro?animDuration(activeKaiju,loopIntro):0;
+ if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar',combat.stage)){const el=B.ultimateDuration-combat.ultimateTime,roar=animDuration(activeKaiju,'ultRoar',combat.stage);return el<roar?['ultRoar',el]:['ultPound',el-roar];}
+ if(combat.charging){const rear=animDuration(activeKaiju,'heavyRear',combat.stage);return heavyT<rear?['heavyRear',heavyT]:['heavyHold',heavyT-rear];}
+ const intro=loopIntro?animDuration(activeKaiju,loopIntro,combat.stage):0;
  return loopIntro&&loopT<intro?[loopIntro,loopT]:[loopAnim,loopT-intro];
 }
 let player={x:110,y:C.ground-C.playerHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
@@ -80,7 +80,7 @@ function selectionScreen(){mode='selection';if(!selectable(permanent,selectedKai
  ROSTER.forEach((r,i)=>document.querySelector(`#kaiju-${i}`)!.addEventListener('click',()=>{if(!selectable(permanent,r.name))return;selectedKaiju=r.name;selectionScreen();}));
  document.querySelector('#confirm-kaiju')!.addEventListener('click',()=>{if(!selectable(permanent,selectedKaiju)||!initialsValid(pendingInitials))return;session='campaign';activeKaiju=selectedKaiju;run=newRun(pendingInitials,activeKaiju);score=0;combat=createCombat();cityIndex=0;blockIndex=0;citySettled=false;writeCheckpoint(checkpointOf(run));progressScreen();});document.querySelector('#back')!.addEventListener('click',setup);
 }
-function paintPreviews(){for(const stage of [1,2,3]){const preview=document.querySelector<HTMLCanvasElement>(`#preview-stage-${stage}`);if(!preview)return;const c=preview.getContext('2d')!;c.imageSmoothingEnabled=false;c.clearRect(0,0,240,120);c.fillStyle='#1d3031';c.fillRect(0,0,240,120);c.fillStyle='#46604f';c.fillRect(15,106,210,1);drawSilhouette(c,selectedKaiju,120,105,[.85,1.1,1.4][stage-1],time);}}
+function paintPreviews(){for(const stage of [1,2,3]){const preview=document.querySelector<HTMLCanvasElement>(`#preview-stage-${stage}`);if(!preview)return;const c=preview.getContext('2d')!;c.imageSmoothingEnabled=false;c.clearRect(0,0,240,120);c.fillStyle='#1d3031';c.fillRect(0,0,240,120);c.fillStyle='#46604f';c.fillRect(15,106,210,1);drawSilhouette(c,selectedKaiju,120,105,[.85,1.1,1.4][stage-1],time,false,'idle',stage);}}
 function freePlayScreen(){mode='freeplay-select';if(!selectable(permanent,freeChoice.kaiju))freeChoice.kaiju='Mogurodon';if(!selectable(permanent,freeChoice.boss))freeChoice.boss='Mogurodon';if(!permanent.conquered.includes(freeChoice.city))freeChoice.city=permanent.conquered[0]??0;
  const unlocked=KAIJU.filter(k=>selectable(permanent,k));
  panel(`<div class="eyebrow">ONE CITY / NO CAMPAIGN SCORE</div><h1>FREE <span>PLAY.</span></h1>${permanent.conquered.length?'':'<p>Conquer a campaign city to unlock it here.</p>'}<div class="freeplay-fields"><label for="free-kaiju">PLAYABLE KAIJU</label><select id="free-kaiju">${unlocked.map(k=>`<option ${k===freeChoice.kaiju?'selected':''}>${k}</option>`).join('')}</select><label for="free-city">CONQUERED CITY</label><select id="free-city">${permanent.conquered.length?permanent.conquered.slice().sort().map(i=>`<option value="${i}" ${i===freeChoice.city?'selected':''}>${CITIES[i].name}</option>`).join(''):'<option value="">NO CITIES UNLOCKED</option>'}</select><label for="free-boss">UNLOCKED RIVAL</label><select id="free-boss">${unlocked.map(k=>`<option ${k===freeChoice.boss?'selected':''}>${k}</option>`).join('')}</select></div><p>Five blocks · Stage 1 start · City difficulty unchanged<br>Mirror matches permitted. Campaign checkpoint stays untouched.</p><p class="asset-notice">All selected kaiju currently use shared combat pending Phase 5.</p><button id="free-start" class="primary" ${validFreePlay(permanent,freeChoice)?'':'disabled'}>ENTER CITY →</button><button id="back">MAIN MENU</button>`);
@@ -175,7 +175,7 @@ function performStrike(strike:Strike|null){
 function destroyCar(car:typeof population.cars[number],fromUltimate=false,playerCaused=true){const reward=crushCar(car);if(!reward)return;if(!playerCaused){burst(car.x+16,C.ground-8,'#b5aa8e',5);return;}score+=reward;creditDamage(combat,M.carHP,'player',fromUltimate);dropShards(car.x+16,M.carShards);burst(car.x+16,C.ground-8,'#e6b983',8);}
 function drainMilitary(){for(const e of military.events){if(e.kind==='reward'){score+=e.points;creditDamage(combat,e.damage,'player',e.ultimate);if(e.shards)dropShards(e.x,e.shards);}else if(e.kind==='playerHit'){const actual=receiveHit(combat,e.damage,'military',e.strength,e.direction);if(actual>0){shake=Math.max(shake,e.strength>0?6:1);burst(player.x+bodyWidth()/2,player.y+bodyHeight()/2,'#f197b8',4);}}else burst(e.x,e.y,'#f6dba1',3);}military.events=[];}
 // First fissure waits for the roar's crash-down so the waves come out of the slam.
-function useUltimate(){if(!activateUltimate(combat))return;attack=null;ultimateTimer=animImpact(activeKaiju,'ultRoar');player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;}
+function useUltimate(){if(!activateUltimate(combat))return;attack=null;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;}
 function useSuper(){if(activateSuper(combat)){action='SUPER FORM';actionTime=2;burst(player.x+bodyWidth()/2,player.y,'#f7a2d3',35);}}
 function solidBodies(){return [...buildings.filter(solid).map(b=>({x:b.x,y:C.ground-b.h,w:b.w,h:b.h})),...(rival&&!rival.dead?[rival]:[])];}
 function syncBody(){
@@ -198,7 +198,7 @@ function update(dt:number){
  performStrike(tickCombat(combat,dt));
  if(endIfDead())return;
  actionTime=Math.max(0,actionTime-dt);shake=Math.max(0,shake-dt*14);player.pose=Math.max(0,player.pose-dt);
- if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim))attack=null;}
+ if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim,combat.stage))attack=null;}
  heavyT=combat.charging?heavyT+dt:0;
  {const next=isClimbing?'climb':!player.grounded?'jumpAir':player.crouched?'crouch':walking?'walk':'idle';
   if(attack||combat.charging||combat.ultimateTime>0){loopAnim=next;loopT=0;loopIntro=null;}
@@ -312,7 +312,7 @@ function drawBuilding(b:typeof buildings[number]){
  if(b.collapse>0){rect(x-5,C.ground-14,b.w+10,14,'#b1ac91');}
 }
 function monster(x:number,y:number,face:number,crouched:boolean,pose:number){
- if(activeKaiju!=='Mogurodon'||hasSprite('Mogurodon')){const [anim,t]=currentAnim();ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched&&!(CROUCH_ANIMS.includes(anim)&&hasAnim(activeKaiju,anim))?.6:1);drawSilhouette(ctx,activeKaiju,0,0,scale(combat),t,false,anim);ctx.restore();return;}
+ if(activeKaiju!=='Mogurodon'||hasSprite('Mogurodon',combat.stage)){const [anim,t]=currentAnim();ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched&&!(CROUCH_ANIMS.includes(anim)&&hasAnim(activeKaiju,anim,combat.stage))?.6:1);drawSilhouette(ctx,activeKaiju,0,0,scale(combat),t,false,anim,combat.stage);ctx.restore();return;}
 
  const h=crouched?C.crouchHeight:C.playerHeight,step=(keys.has('KeyA')||keys.has('KeyD'))&&mode==='playing'?Math.sin(time*13)*4:0;
  ctx.save();ctx.translate(Math.round(x+bodyWidth()/2),Math.round(y+bodyHeight()));ctx.scale(face*scale(combat),scale(combat));
