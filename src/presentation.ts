@@ -59,7 +59,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    // Heavy: rear onto the hind legs, hold (straining loop) while charging, slam both paws down on release. Rear and slam are cut
    // from one generated strip, so the slam starts at the crash; its frames are held to keep Stage 2's 0.5s recovery.
    heavyRear:{src:'assets/mogurodon-s1-heavy-rear.png',frames:5,fps:20,once:true,...S1_PAD},heavyHold:{src:'assets/mogurodon-s1-heavy-hold.png',frames:4,fps:10,...S1_PAD},
-   heavySlam:{src:'assets/mogurodon-s1-heavy-slam.png',frames:8,fps:16,once:true,...S1_PAD}}}}},
+   heavySlam:{src:'assets/mogurodon-s1-heavy-slam.png',frames:8,fps:16,once:true,...S1_PAD},
+   // Ranged: no tail at Stage 1. Head down, back arched like a hissing cat, quills fire off the back. The projectile spawn is unchanged.
+   rangedStand:{src:'assets/mogurodon-s1-ranged-stand.png',frames:8,fps:18,once:true,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
