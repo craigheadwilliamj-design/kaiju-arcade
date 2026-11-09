@@ -51,6 +51,8 @@ Score is earned points minus actual HP damage penalty, including healed damage. 
 - `src/game.ts`: input, simulation composition, camera, UI, Canvas rendering; update separated from rendering.
 - `public/`: responsive 16:9 shell and asset slots. Art hooks are `monster`, `drawBuilding`, `drawCampaignObjective`, `drawMilitary`, `drawPopulation` and `background`.
 
+**Art:** `public/assets/mogurodon.png` is the first final sprite (transparent, keyed from the supplied render and downscaled to 444×231). Sprites are registered in `SPRITES` in `src/presentation.ts` and used by gameplay, selection previews and the ending scene; kaiju without a sprite fall back to the geometric silhouettes. Mogurodon currently uses one static pose (no walk/attack frames yet).
+
 No user sprites were imported or overwritten; supplied documents were preserved. All current art is explicitly temporary Canvas geometry, with no AI asset generation or sound. Put final hand-drawn sprites in `public/assets/`, preserve transparent originals, use bottom-center anchors, integer frame rectangles and nearest-neighbor filtering. Final kaiju sheets, building/unit sprites, intro/menu and six ending illustrations remain missing.
 
 ## Milestones
