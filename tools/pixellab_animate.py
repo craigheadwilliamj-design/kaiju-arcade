@@ -30,12 +30,14 @@ def main():
     ap.add_argument('--subject'); ap.add_argument('--pose')
     ap.add_argument('--direction', default='east'); ap.add_argument('--view', default='side')
     ap.add_argument('--seed', type=int, default=0)
+    ap.add_argument('--last', help='optional end pose (same size); pass the first frame again to force a closed loop')
     a = ap.parse_args()
     body = {'first_frame': {'type': 'base64', 'format': 'png', 'base64': base64.b64encode(open(a.first, 'rb').read()).decode()},
             'description': a.motion, 'frame_count': a.frames, 'no_background': True,
             'direction': a.direction, 'view': a.view, 'seed': a.seed}
     if a.subject: body['subject_description'] = a.subject
     if a.pose: body['initial_pose'] = a.pose
+    if a.last: body['last_frame'] = {'type': 'base64', 'format': 'png', 'base64': base64.b64encode(open(a.last, 'rb').read()).decode()}
     job = call('POST', '/animate-pixminimax', body)['background_job_id']
     while (j := call('GET', f'/background-jobs/{job}'))['status'] == 'processing':
         time.sleep(6)

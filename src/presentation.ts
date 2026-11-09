@@ -25,7 +25,7 @@ const images=new Map<string,HTMLImageElement>();
 // `idle` is required; any other animation falls back to idle until it exists and has loaded.
 type Strip={src:string,frames:number,fps:number};
 export const SPRITES:Record<string,{width:number,anims:Record<string,Strip>}>={
- Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:9,fps:10}}},
+ Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10}}},
 };
 function preload(src:string){if(typeof Image==='undefined'||images.has(src))return;const img=new Image();img.src=src;images.set(src,img);}
 function ready(src?:string){const img=src?images.get(src):null;return !!img?.complete&&!!img.naturalWidth;}
