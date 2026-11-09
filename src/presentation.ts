@@ -34,7 +34,9 @@ export const SPRITES:Record<string,{width:number,anims:Record<string,Strip>}>={
   // Crouch art is drawn at full size (~60% of standing height); crouchUp is crouchDown reversed.
   crouch:{src:'assets/mogurodon-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-crouch-up.png',frames:5,fps:22,once:true},
   // Jump strips are 256x192, bottom-aligned: physics moves him, the art only changes pose.
-  jumpRise:{src:'assets/mogurodon-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-jump-land.png',frames:5,fps:20,once:true}}},
+  jumpRise:{src:'assets/mogurodon-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-jump-land.png',frames:5,fps:20,once:true},
+  // Seismic Rupture (U): roar then ground-pounding loop for the rest of the 2.4s Ultimate. 256x192.
+  ultRoar:{src:'assets/mogurodon-ult-roar.png',frames:8,fps:14,once:true},ultPound:{src:'assets/mogurodon-ult-pound.png',frames:8,fps:16}}},
 };
 function preload(src:string){if(typeof Image==='undefined'||images.has(src))return;const img=new Image();img.src=src;images.set(src,img);}
 function ready(src?:string){const img=src?images.get(src):null;return !!img?.complete&&!!img.naturalWidth;}

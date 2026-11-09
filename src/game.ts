@@ -57,6 +57,7 @@ const CROUCH_ANIMS=['crouch','crouchDown','rangedCrouch'];let loopIntro:string|n
 let isClimbing=false;
 function currentAnim():[string,number]{
  if(attack)return [attack.anim,attack.t];
+ if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar')){const el=B.ultimateDuration-combat.ultimateTime,roar=animDuration(activeKaiju,'ultRoar');return el<roar?['ultRoar',el]:['ultPound',el-roar];}
  if(combat.charging){const rear=animDuration(activeKaiju,'heavyRear');return heavyT<rear?['heavyRear',heavyT]:['heavyHold',heavyT-rear];}
  const intro=loopIntro?animDuration(activeKaiju,loopIntro):0;
  return loopIntro&&loopT<intro?[loopIntro,loopT]:[loopAnim,loopT-intro];
@@ -170,7 +171,7 @@ function performStrike(strike:Strike|null){
 }
 function destroyCar(car:typeof population.cars[number],fromUltimate=false,playerCaused=true){const reward=crushCar(car);if(!reward)return;if(!playerCaused){burst(car.x+16,C.ground-8,'#b5aa8e',5);return;}score+=reward;creditDamage(combat,M.carHP,'player',fromUltimate);dropShards(car.x+16,M.carShards);burst(car.x+16,C.ground-8,'#e6b983',8);}
 function drainMilitary(){for(const e of military.events){if(e.kind==='reward'){score+=e.points;creditDamage(combat,e.damage,'player',e.ultimate);if(e.shards)dropShards(e.x,e.shards);}else if(e.kind==='playerHit'){const actual=receiveHit(combat,e.damage,'military',e.strength,e.direction);if(actual>0){shake=Math.max(shake,e.strength>0?6:1);burst(player.x+bodyWidth()/2,player.y+bodyHeight()/2,'#f197b8',4);}}else burst(e.x,e.y,'#f6dba1',3);}military.events=[];}
-function useUltimate(){if(!activateUltimate(combat))return;ultimateTimer=0;player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;}
+function useUltimate(){if(!activateUltimate(combat))return;attack=null;ultimateTimer=0;player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;}
 function useSuper(){if(activateSuper(combat)){action='SUPER FORM';actionTime=2;burst(player.x+bodyWidth()/2,player.y,'#f7a2d3',35);}}
 function solidBodies(){return [...buildings.filter(solid).map(b=>({x:b.x,y:C.ground-b.h,w:b.w,h:b.h})),...(rival&&!rival.dead?[rival]:[])];}
 function syncBody(){
@@ -195,7 +196,7 @@ function update(dt:number){
  if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim))attack=null;}
  heavyT=combat.charging?heavyT+dt:0;
  {const next=isClimbing?'walk':!player.grounded?'jumpAir':player.crouched?'crouch':walking?'walk':'idle';
-  if(attack||combat.charging){loopAnim=next;loopT=0;loopIntro=null;}
+  if(attack||combat.charging||combat.ultimateTime>0){loopAnim=next;loopT=0;loopIntro=null;}
   else if(next!==loopAnim){loopIntro=next==='jumpAir'?(player.vy<0?'jumpRise':null):loopAnim==='jumpAir'?'jumpLand':next==='crouch'?'crouchDown':loopAnim==='crouch'?'crouchUp':null;loopAnim=next;loopT=0;}
   else loopT+=dt;}
  const crouch=keys.has('KeyS')&&player.grounded;
