@@ -46,7 +46,7 @@ let oldWidth=C.playerWidth,oldHeight=C.playerHeight;
 function netScore(){return Math.round((run?.banked||0)+(citySettled?0:cityScore()));}
 let walking=false;
 // Light combo hits 1/2/3 each play a one-shot strip; heavy/ranged cancel it.
-const LIGHT_ANIMS=['swipeLeft','swipeRight','bite'];let attack:{anim:string,t:number}|null=null;
+const LIGHT_ANIMS=['swipeRight','swipeLeft','bite'];let attack:{anim:string,t:number}|null=null;
 let player={x:110,y:C.ground-C.playerHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
 type Particle={x:number,y:number,vx:number,vy:number,life:number,color:string,size:number};
 let particles:Particle[]=[],shots:{x:number,y:number,vx:number,life:number,damage:number,knockback:number}[]=[];
