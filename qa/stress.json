@@ -1,0 +1,308 @@
+{
+  "scope": "World simulation only; no browser/GPU FPS claim",
+  "totalSimulatedSeconds": 1800,
+  "ticks": 45000,
+  "nodeWorldUpdateMilliseconds": 121,
+  "rows": [
+    {
+      "city": 1,
+      "tier": 1,
+      "simulatedSeconds": 72,
+      "spawns": 18,
+      "peaks": {
+        "units": 1,
+        "shots": 1,
+        "wrecks": 1,
+        "effects": 1
+      }
+    },
+    {
+      "city": 1,
+      "tier": 2,
+      "simulatedSeconds": 72,
+      "spawns": 22,
+      "peaks": {
+        "units": 2,
+        "shots": 6,
+        "wrecks": 2,
+        "effects": 2
+      }
+    },
+    {
+      "city": 1,
+      "tier": 3,
+      "simulatedSeconds": 72,
+      "spawns": 26,
+      "peaks": {
+        "units": 3,
+        "shots": 6,
+        "wrecks": 3,
+        "effects": 2
+      }
+    },
+    {
+      "city": 1,
+      "tier": 4,
+      "simulatedSeconds": 72,
+      "spawns": 31,
+      "peaks": {
+        "units": 3,
+        "shots": 6,
+        "wrecks": 3,
+        "effects": 5
+      }
+    },
+    {
+      "city": 1,
+      "tier": 5,
+      "simulatedSeconds": 72,
+      "spawns": 10,
+      "peaks": {
+        "units": 1,
+        "shots": 6,
+        "wrecks": 1,
+        "effects": 3
+      }
+    },
+    {
+      "city": 2,
+      "tier": 1,
+      "simulatedSeconds": 72,
+      "spawns": 20,
+      "peaks": {
+        "units": 1,
+        "shots": 1,
+        "wrecks": 1,
+        "effects": 1
+      }
+    },
+    {
+      "city": 2,
+      "tier": 2,
+      "simulatedSeconds": 72,
+      "spawns": 23,
+      "peaks": {
+        "units": 2,
+        "shots": 6,
+        "wrecks": 2,
+        "effects": 2
+      }
+    },
+    {
+      "city": 2,
+      "tier": 3,
+      "simulatedSeconds": 72,
+      "spawns": 28,
+      "peaks": {
+        "units": 3,
+        "shots": 6,
+        "wrecks": 3,
+        "effects": 3
+      }
+    },
+    {
+      "city": 2,
+      "tier": 4,
+      "simulatedSeconds": 72,
+      "spawns": 32,
+      "peaks": {
+        "units": 4,
+        "shots": 8,
+        "wrecks": 4,
+        "effects": 4
+      }
+    },
+    {
+      "city": 2,
+      "tier": 5,
+      "simulatedSeconds": 72,
+      "spawns": 11,
+      "peaks": {
+        "units": 2,
+        "shots": 6,
+        "wrecks": 2,
+        "effects": 2
+      }
+    },
+    {
+      "city": 3,
+      "tier": 1,
+      "simulatedSeconds": 72,
+      "spawns": 21,
+      "peaks": {
+        "units": 1,
+        "shots": 1,
+        "wrecks": 1,
+        "effects": 1
+      }
+    },
+    {
+      "city": 3,
+      "tier": 2,
+      "simulatedSeconds": 72,
+      "spawns": 24,
+      "peaks": {
+        "units": 2,
+        "shots": 7,
+        "wrecks": 2,
+        "effects": 2
+      }
+    },
+    {
+      "city": 3,
+      "tier": 3,
+      "simulatedSeconds": 72,
+      "spawns": 30,
+      "peaks": {
+        "units": 4,
+        "shots": 6,
+        "wrecks": 4,
+        "effects": 3
+      }
+    },
+    {
+      "city": 3,
+      "tier": 4,
+      "simulatedSeconds": 72,
+      "spawns": 34,
+      "peaks": {
+        "units": 4,
+        "shots": 9,
+        "wrecks": 4,
+        "effects": 3
+      }
+    },
+    {
+      "city": 3,
+      "tier": 5,
+      "simulatedSeconds": 72,
+      "spawns": 11,
+      "peaks": {
+        "units": 2,
+        "shots": 6,
+        "wrecks": 2,
+        "effects": 3
+      }
+    },
+    {
+      "city": 4,
+      "tier": 1,
+      "simulatedSeconds": 72,
+      "spawns": 22,
+      "peaks": {
+        "units": 2,
+        "shots": 1,
+        "wrecks": 1,
+        "effects": 2
+      }
+    },
+    {
+      "city": 4,
+      "tier": 2,
+      "simulatedSeconds": 72,
+      "spawns": 26,
+      "peaks": {
+        "units": 3,
+        "shots": 6,
+        "wrecks": 2,
+        "effects": 3
+      }
+    },
+    {
+      "city": 4,
+      "tier": 3,
+      "simulatedSeconds": 72,
+      "spawns": 32,
+      "peaks": {
+        "units": 4,
+        "shots": 8,
+        "wrecks": 4,
+        "effects": 3
+      }
+    },
+    {
+      "city": 4,
+      "tier": 4,
+      "simulatedSeconds": 72,
+      "spawns": 36,
+      "peaks": {
+        "units": 5,
+        "shots": 9,
+        "wrecks": 4,
+        "effects": 4
+      }
+    },
+    {
+      "city": 4,
+      "tier": 5,
+      "simulatedSeconds": 72,
+      "spawns": 12,
+      "peaks": {
+        "units": 2,
+        "shots": 6,
+        "wrecks": 2,
+        "effects": 2
+      }
+    },
+    {
+      "city": 5,
+      "tier": 1,
+      "simulatedSeconds": 72,
+      "spawns": 21,
+      "peaks": {
+        "units": 1,
+        "shots": 1,
+        "wrecks": 1,
+        "effects": 1
+      }
+    },
+    {
+      "city": 5,
+      "tier": 2,
+      "simulatedSeconds": 72,
+      "spawns": 28,
+      "peaks": {
+        "units": 2,
+        "shots": 6,
+        "wrecks": 2,
+        "effects": 2
+      }
+    },
+    {
+      "city": 5,
+      "tier": 3,
+      "simulatedSeconds": 72,
+      "spawns": 31,
+      "peaks": {
+        "units": 3,
+        "shots": 6,
+        "wrecks": 3,
+        "effects": 3
+      }
+    },
+    {
+      "city": 5,
+      "tier": 4,
+      "simulatedSeconds": 72,
+      "spawns": 38,
+      "peaks": {
+        "units": 5,
+        "shots": 10,
+        "wrecks": 5,
+        "effects": 3
+      }
+    },
+    {
+      "city": 5,
+      "tier": 5,
+      "simulatedSeconds": 72,
+      "spawns": 12,
+      "peaks": {
+        "units": 2,
+        "shots": 6,
+        "wrecks": 2,
+        "effects": 2
+      }
+    }
+  ]
+}

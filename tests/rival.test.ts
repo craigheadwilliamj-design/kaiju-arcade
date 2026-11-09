@@ -1,0 +1,5 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {createRival,hitRival,tickRival} from '../src/rival.ts';import {CONFIG} from '../src/config.ts';
+test('temporary rival uses conventional HP and military cannot hurt it',()=>{const r=createRival(3840,0),hp=r.hp;assert.equal(hitRival(r,100,'military'),0);assert.equal(r.hp,hp);assert.equal(hitRival(r,100),100);assert.equal(r.hp,hp-100);});
+test('rival death immediately cancels pending attacks and further damage events',()=>{const r=createRival(3840,0);r.windup=.01;r.shots.push({x:10,y:10,vx:100,life:5});assert.equal(hitRival(r,9999),r.maxHP);assert.equal(r.dead,true);assert.equal(r.windup,0);assert.equal(r.shots.length,0);assert.deepEqual(tickRival(r,.1,{x:r.x-50,y:r.y,w:48,h:69},3840,[]),[]);assert.equal(hitRival(r,99),0);});
+test('rival pursues on foot, telegraphs, blocks contact and can be interrupted',()=>{const r=createRival(3840,0),p={x:3300,y:CONFIG.ground-69,w:48,h:69},start=r.x;for(let i=0;i<100;i++)tickRival(r,.02,p,3840,[]);assert.ok(r.x<start);assert.equal(r.y,CONFIG.ground-r.h);r.windup=.5;hitRival(r,10,'player',200,-1);assert.equal(r.windup,0);assert.ok(r.stagger>0);});

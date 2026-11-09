@@ -1,0 +1,83 @@
+# Kaiju Arcade — M7 QA build / M5 combat pending
+
+Browser arcade destruction game, implemented incrementally from the supplied Master Prompt and Final GDD. Current build has a five-city campaign, 25 fixed layouts, military/civilians, local persistence, roster previews, Free Play, intro and ending/gallery flows. **The user requested M6 after M4; M5 was skipped.** All unlocked identities can now be selected with temporary geometric visuals, but they share the existing player combat, stage dimensions/stats and Seismic-style Ultimate preview. Ratings are provisional display data, not implemented per-kaiju tuning. Rivals still use the basic shared M4 preview moveset. Individual kaiju movesets, boss evolution/Ultimates, full knockback interactions and boss introductions remain M5. No claim that M5 is complete.
+
+## Launch and checks
+Requires Node.js 24+; no package downloads or runtime dependencies.
+
+```
+npm run build
+python3 -m http.server 8080 --directory dist
+```
+
+Open http://localhost:8080. `npm test` builds then runs deterministic rule/state and actual-game-loop tests. `npm run check` checks emitted JavaScript syntax. `npm run qa` runs the complete 25-block keyboard simulation and writes `qa/playthrough.json`. See `QA_REPORT.md` for exact results and release blockers. Native Node TypeScript stripping is used; no TypeScript typechecker or lint tool is configured. Production is a static site. HTTP previews use a non-security-sensitive local ID fallback when crypto.randomUUID is unavailable.
+
+## Controls and flow
+A/D move; S stationary crouch; Space jump; J repeated presses for the three-hit light combo; K tap/hold and release heavy; L horizontal ranged spine; U full-meter Seismic Rupture; I full Stage-3 HP and full Super charge; Esc pause. No crouch-jump. Fullscreen button on the page. Keyboard required.
+
+Main Menu → New Campaign → skippable 12-second asteroid intro → exactly three letters → unlocked kaiju selection → campaign route → Begin City → five blocks → City Conquered → campaign route → next city. Continue loads the last city-boundary checkpoint. New Campaign confirms before replacing an unfinished run. Mogurodon is initially selectable; existing and newly earned rival unlocks enable their identities in Campaign and Free Play. Their distinct attacks/stats remain M5 and this limitation is shown at selection. Locked characters show static silhouettes/question marks, cannot be selected or previewed. An unlocked selection has animated idle stand-ins for all three stages and four provisional 1–5 ratings. Combat Drills retain the M3 tier selector on the original NYC map, do not touch campaign state, and are not leaderboard eligible.
+
+## Campaign rules
+- Order: New York/Kaiban, Mexico City/Tlézcatl, Paris/Belial, Hong Kong/Myrmex, Tokyo/Sargathoth. Order after NYC remains an editable implementation default.
+- Every city has five hand-authored building/population layouts with 4/6/8/8/4 screen widths. Block 1's original authored NYC buildings are preserved. Runtime expands reusable building presets, never generates layouts procedurally.
+- Blocks 1/2/4 require 75% of building value, then the player must physically enter the eastern exit. 100% earns one Perfect bonus. Block results show destruction/objective status and block/campaign totals. Backtracking stays within the current block.
+- Block 3: fortified central crystal, 700 provisional HP, fixed defenses and normal reinforcements. Destroying the crystal latches the objective and drops 35 collectible shards; it does not fill HP directly. Walk to the eastern exit to advance. Building quota does not gate this block.
+- Block 5: locked four-screen destructible arena, limited military, basic rival conventional HP bar, shared telegraphed melee/ranged attacks, foot pursuit, physical blocking and no contact damage. Only player damage hurts rival. Rival death immediately wins the city before later incoming hits. No boss crystal drops. These encounters intentionally lack M5 character-specific/evolution/Ultimate behavior and skippable boss intros.
+- HP/evolution, Ultimate, stored Super charge and active Super duration carry across blocks. Interstitials freeze simulation. Transient input/charge/cooldowns and per-block entities reset. Beginning the next city resets HP to Stage 1, Ultimate/Super and city score; previous city totals remain banked.
+- Pause Restart City requires confirmation and resets Block 1, all current city points/damage penalty, HP/evolution/Ultimate/Super. Earlier banked scores remain. Quit warns that current city progress is lost; Continue starts its Block 1. No individual block restart in campaign.
+- Death finalizes the run, removes its checkpoint and records its total once. No campaign retry after death. New campaigns remain available; drills can retry.
+
+## Local storage and scores
+Two independent versioned keys: `kaiju-arcade:permanent:v1` (unlocks, conquered cities, gallery slots, Top 10) and `kaiju-arcade:campaign:v1` (run ID, initials, kaiju, next city, banked score). Saves occur at the initial pre-city boundary and after a city is conquered. No mid-block writes. Between-city Continue starts the next city at Stage 1. Permanent progress survives death/restart/new campaigns. Corrupt/unsupported saves and blocked storage are handled without crashing; failed storage displays a notice and in-memory play still works.
+
+Score is earned points minus actual HP damage penalty, including healed damage. Current city penalty persists across blocks. Top 10 includes completed and failed campaigns, sorted by total (negative scores allowed), with initials, kaiju, cities and outcome. Run IDs and completion latches prevent duplicate records/rewards. Drills never write records, unlocks or checkpoints.
+
+## Combat and military
+- One crystal meter is HP/evolution. Provisional start 24/100; upward 35/75 and downward 25/65 thresholds, one-second protected transform. Stage dimensions/reach/projectile origins scale; fixed camera zoom. Full HP overflow charges Super, which lasts ~20 seconds and cannot be extended/recharged during activation. Inactive stored Super survives devolution provisionally; activation requires full HP at Stage 3. Active Super ends below 65.
+- Player Ultimate is invulnerable/uninterruptible; its damage cannot recharge its meter even after fissures outlive activation. Minor shots do not stagger; strong blasts interrupt charges and knock back with anti-stunlock protection. No self-damage.
+- Fixed block-tier rosters: police/patrol; soldiers/APCs; tanks/helicopters/artillery/emplacements; jets/bombers; low-cap arena support. Offscreen reinforcements from either side, bounded active/projectile/wreck counts, indefinite replenishment, city scaling and destruction pressure. Mobile pursuit and aircraft passes; stationary guns remain fixed. All military may only fire while onscreen; launched shots continue.
+- Weapon-specific rhythms and visible projectiles; bombs/artillery mark ground impact. Only rockets/bombs are interceptable; cosmetic harmless interception, no reward. Full-radius one-time explosive damage affects player/military, never building HP. Friendly-fire kills grant no player points/crystals/Ultimate/quota. Rival military hits are cosmetic.
+- Only police/soldiers auto-squash. Military vehicles are passable and do no contact damage. Damaged vehicles smoke; defeated vehicles leave brief harmless wrecks/falling debris. Three tiny civilian variants, fixed street/cars per layout, one-time 1–3 building occupants, escape/squash with no replenishment or crystal/Ultimate rewards. Cars crumple permanently. Enemy-induced collision destruction grants no player rewards.
+
+## Architecture / replacement hooks
+- `src/config.ts`: provisional building, combat, military/weapon and campaign tuning.
+- `src/levels.ts`: city themes, presets expanded into 25 fixed layouts, civilians and parked cars.
+- `src/campaign.ts`: pure campaign transitions, versioned persistence, validation and leaderboard.
+- `src/presentation.ts`: roster metadata/provisional ratings, confirmed ending titles, intro timing, selection/Free Play/gallery gating, optional art slots and temporary Canvas presentation.
+- `src/rival.ts`: basic conventional-HP M4 boss preview, isolated for M5 expansion.
+- `src/combat.ts`: HP/evolution, attacks/combos/charge, Ultimate/Super, damage attribution/penalties and stagger.
+- `src/rules.ts`: building damage/collision, quota/perfect rules, stronghold damage and objective gating.
+- `src/military.ts`, `src/population.ts`: entity simulation and attribution.
+- `src/game.ts`: input, simulation composition, camera, UI, Canvas rendering; update separated from rendering.
+- `public/`: responsive 16:9 shell and asset slots. Art hooks are `monster`, `drawBuilding`, `drawCampaignObjective`, `drawMilitary`, `drawPopulation` and `background`.
+
+No user sprites were imported or overwritten; supplied documents were preserved. All current art is explicitly temporary Canvas geometry, with no AI asset generation or sound. Put final hand-drawn sprites in `public/assets/`, preserve transparent originals, use bottom-center anchors, integer frame rectangles and nearest-neighbor filtering. Final kaiju sheets, building/unit sprites, intro/menu and six ending illustrations remain missing.
+
+## Milestones
+- [x] M0 audit/scaffold: workspace originally only supplied master prompt; chose dependency-free TypeScript + Canvas.
+- [x] M1 playable NYC block, movement/attacks, persistent damage/collapse/rubble, quota/exit/results.
+- [x] M2 HP/crystals/evolution, combo/charge, ranged, Ultimate/Super, damage/scoring foundation.
+- [x] M3 military, weapons/projectiles, interception/explosions, civilians/cars and drills.
+- [x] M4 25 layouts, strongholds, city/campaign flow, initials, restart/quit/Continue, saves, Game Over and Top 10. Basic shared rival encounters bridge the M4 progression dependency on M5 combat.
+- [ ] M5 all six playable kaiju and individual boss movesets, boss evolution/Ultimates, knockback interactions, intro/unlock presentation.
+- [x] M6 presentation systems: unlocked roster selection, three-stage animated previews/locked silhouettes, Free Play/mirrors, four-scene skippable intro, six ending/gallery slots, menu backdrop, fullscreen controls and saved display preferences. Final illustrations and original epilogues are still missing.
+- [ ] M7 full-campaign/all-character/save/input/performance balancing QA.
+
+## M6 Free Play and presentation details
+- Free Play independently chooses an unlocked playable identity, a previously conquered city and an unlocked rival identity. Mirror matches (including Mogurodon) are allowed. The five authored city blocks run at the selected city’s unchanged difficulty. Starts Stage 1, carries combat resources within the city, and uses a separate session score. Defeat offers Retry City with the same choices and reset meters; success offers city selection or replay. No campaign checkpoint, leaderboard, unlock, conquest or gallery writes occur in Free Play. Drills remain a separate development shortcut.
+- Every New Campaign runs the four static asteroid/crystal scenes (~12 seconds total), skippable with any non-repeat key or Skip button. Continue, Free Play and drills skip it. No save replacement occurs until a valid unlocked character is confirmed. New Campaign still confirms replacement when a checkpoint exists.
+- Main menu has New/Continue/Free Play/Top 10/Settings/Gallery, plus a small drills link. Its temporary code-drawn backdrop shows ruined city/flames and pink foreground crystals. Gameplay daytime/weather rules are unchanged.
+- Finishing the campaign unlocks the selected kaiju’s corresponding ending/gallery slot. Six original titles are preserved exactly. Known completed M4 Top 10 records also restore the appropriate gallery slot; failures do not. Locked slots remain question marks and cannot be opened. Free Play never unlocks endings.
+- **Missing source content:** original six epilogues and final single-illustration ending assets were not supplied. `ENDINGS[].epilogue` is explicitly null and the screen says “Original epilogue not yet supplied.” Each ending has one static temporary geometric illustration; no replacement final lore or AI artwork was invented. Add original text to `ENDINGS` and image paths to `ART_SLOTS.endings` in `src/presentation.ts` when supplied. `ART_SLOTS.menu` and four `ART_SLOTS.intro` entries similarly replace the current stand-ins. Files go in `public/assets/`; no user assets were altered or imported implicitly.
+- Display keeps 16:9 fit and nearest-neighbor rendering. Settings has optional integer pixel scaling when there is sufficient allocated space, screen-shake toggle, and fullscreen request. Resize reapplies scaling. Preferences live in separate `kaiju-arcade:display:v1`, never campaign keys. Unsupported fullscreen requests show an accessible status and retain fit display. Audio controls remain deferred until audio assets exist. Overflowing small-screen menus scroll; keyboard remains required for gameplay.
+
+## Validation and remaining limits
+**81 automated tests pass**, including the earlier 25-layout/campaign/combat/military rules. New tests verify intro boundaries, exact ending titles, all roster unlock guards, independent Free Play choices/mirrors, ending unlocks for all six identities, migration of known M4 completions and absent original-text slots. A new actual-game-loop UI test starts/finishes or skips the intro, rejects locked selection, selects unlocked Kaiban, starts a Kaiban Free Play mirror in Mexico City, dies/retries, clears a district and advances while preserving meters, restarts/quits the city, opens an unlocked ending, rejects locked gallery entries, saves display preferences and exercises fullscreen failure feedback. It verifies that Free Play leaves the active campaign and permanent data byte-for-byte unchanged. Existing integration verifies Campaign Block 1 completion and Block 2 carry, restart/quit/Continue/death/high-score behavior. Phase 7 additionally completes all 25 gameplay blocks through keyboard simulation; this is not a claim of a manual browser playthrough.
+
+Browser smoke checks verify the main menu, locked Free Play city gating, six locked gallery slots, New Campaign confirmation, keyboard intro skip, initials entry, six roster slots, three-stage preview rendering and Settings. The fitted frame measured 1160×652.5 (16:9). Fullscreen activation could not be confirmed in this preview browser; the request/failure path is supported, and real-device fullscreen/resize QA remains. No new application runtime errors were observed; browser-extension metadata errors are unrelated to the game. Build, emitted-JS syntax and whitespace checks pass. No TypeScript typechecker/linter is configured.
+
+M5 combat, original ending text and final assets remain unfinished. Final M7 release signoff for distinct combat, human balance and real-device performance remains pending. No audio, online services, procedural city layouts or environmental hazards were added.
+
+## Phase 7 audit update
+
+The full current shared-combat campaign now has a successful 25-block keyboard simulation through ending/unlocks, rather than only state-transition coverage. Phase 7 reproduced and fixed landing/evolution penetration of short or adjacent solids, and clears transient stagger guard at block transitions. `QA_REPORT.md`, `qa/playthrough.json` and `qa/stress.json` contain the actual scope, measurements and remaining blockers. No final balance claim is made for the missing Phase 5 movesets or boss Ultimates.

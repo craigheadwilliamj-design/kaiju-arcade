@@ -1,0 +1,11 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {createBuildings,damageBuilding,destruction,exitUnlocked,perfectBonus,solid} from '../src/rules.ts';
+import {NEW_YORK_BLOCK_ONE} from '../src/levels.ts';
+const spec=(value:number)=>({...NEW_YORK_BLOCK_ONE[0],value});
+test('quota uses destroyed building value, not damage or count',()=>{const b=createBuildings([spec(75),spec(25)]);damageBuilding(b[0],1);assert.equal(destruction(b),0);damageBuilding(b[0],1000);assert.equal(destruction(b),.75);assert.equal(exitUnlocked(b),true);});
+test('below 75% does not unlock exit',()=>{const b=createBuildings([spec(74),spec(26)]);damageBuilding(b[0],1000);assert.equal(exitUnlocked(b),false);});
+test('destroyed structures cannot reward repeatedly',()=>{const b=createBuildings([spec(100)])[0];assert.equal(damageBuilding(b,1000).points,1000);assert.equal(damageBuilding(b,1000).points,0);assert.equal(b.hpNow,0);});
+test('military cannot damage buildings or earn quota',()=>{const b=createBuildings([spec(100)]);damageBuilding(b[0],1000,'military');assert.equal(b[0].hpNow,b[0].hp);assert.equal(destruction(b),0);});
+test('perfect bonus requires 100% destruction',()=>{const b=createBuildings([spec(75),spec(25)]);damageBuilding(b[0],1000);assert.equal(perfectBonus(b),0);damageBuilding(b[1],1000);assert.equal(perfectBonus(b),1500);});
+test('only intact large buildings are solid; rubble passable immediately',()=>{const b=createBuildings(NEW_YORK_BLOCK_ONE);assert.equal(solid(b[0]),false);assert.equal(solid(b[2]),true);damageBuilding(b[2],1000);assert.equal(solid(b[2]),false);});
+test('damage persists and original layout is not mutated',()=>{const b=createBuildings(NEW_YORK_BLOCK_ONE);damageBuilding(b[0],20);assert.equal(b[0].hpNow,40);assert.equal(NEW_YORK_BLOCK_ONE[0].hp,60);assert.equal(createBuildings(NEW_YORK_BLOCK_ONE)[0].hpNow,60);});
