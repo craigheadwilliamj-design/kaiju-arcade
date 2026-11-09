@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "build": "node build.mjs",
+    "build:artifact": "node build-artifact.mjs",
     "test": "node build.mjs && node --experimental-strip-types --test tests/*.test.ts",
     "check": "node --check dist/game.js && node --check dist/rules.js && node --check dist/combat.js && node --check dist/military.js && node --check dist/population.js && node --check dist/campaign.js && node --check dist/rival.js && node --check dist/presentation.js",
     "qa": "node build.mjs && node --experimental-strip-types tests/qa-playthrough.ts"
