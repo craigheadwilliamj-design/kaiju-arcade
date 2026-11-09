@@ -47,6 +47,8 @@ function netScore(){return Math.round((run?.banked||0)+(citySettled?0:cityScore(
 let walking=false;
 // Light combo hits 1/2/3 each play a one-shot strip; heavy/ranged cancel it.
 const LIGHT_ANIMS=['swipeRight','swipeLeft','bite'];let attack:{anim:string,t:number}|null=null;
+// Idle/walk loops restart at frame 0 whenever they begin (attacks start and end on idle frame 0).
+let loopAnim='idle',loopT=0;
 let player={x:110,y:C.ground-C.playerHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
 type Particle={x:number,y:number,vx:number,vy:number,life:number,color:string,size:number};
 let particles:Particle[]=[],shots:{x:number,y:number,vx:number,life:number,damage:number,knockback:number}[]=[];
@@ -179,6 +181,7 @@ function update(dt:number){
  if(endIfDead())return;
  actionTime=Math.max(0,actionTime-dt);shake=Math.max(0,shake-dt*14);player.pose=Math.max(0,player.pose-dt);
  if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim))attack=null;}
+ {const next=walking?'walk':'idle';if(attack||next!==loopAnim){loopAnim=next;loopT=0;}else loopT+=dt;}
  const crouch=keys.has('KeyS')&&player.grounded;
  if(canAct(combat))player.crouched=crouch;
  syncBody();const w=bodyWidth(),h=bodyHeight();
@@ -281,7 +284,7 @@ function drawBuilding(b:typeof buildings[number]){
  if(b.collapse>0){rect(x-5,C.ground-14,b.w+10,14,'#b1ac91');}
 }
 function monster(x:number,y:number,face:number,crouched:boolean,pose:number){
- if(activeKaiju!=='Mogurodon'||hasSprite('Mogurodon')){ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched?.6:1);if(attack)drawSilhouette(ctx,activeKaiju,0,0,scale(combat),attack.t,false,attack.anim);else drawSilhouette(ctx,activeKaiju,0,0,scale(combat),time,false,walking&&mode==='playing'?'walk':'idle');ctx.restore();return;}
+ if(activeKaiju!=='Mogurodon'||hasSprite('Mogurodon')){ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched?.6:1);if(attack)drawSilhouette(ctx,activeKaiju,0,0,scale(combat),attack.t,false,attack.anim);else drawSilhouette(ctx,activeKaiju,0,0,scale(combat),loopT,false,loopAnim);ctx.restore();return;}
 
  const h=crouched?C.crouchHeight:C.playerHeight,step=(keys.has('KeyA')||keys.has('KeyD'))&&mode==='playing'?Math.sin(time*13)*4:0;
  ctx.save();ctx.translate(Math.round(x+bodyWidth()/2),Math.round(y+bodyHeight()));ctx.scale(face*scale(combat),scale(combat));
