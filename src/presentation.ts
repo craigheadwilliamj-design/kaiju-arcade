@@ -63,7 +63,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    // Ranged: no tail at Stage 1. Head down, back arched like a hissing cat, quills fire off the back. The projectile spawn is unchanged.
    rangedStand:{src:'assets/mogurodon-s1-ranged-stand.png',frames:8,fps:18,once:true,...S1_PAD},rangedCrouch:{src:'assets/mogurodon-s1-ranged-crouch.png',frames:8,fps:20,once:true},
    // Crouch: flat stalking crouch at ~61% of standing height (Stage 2 matches); crouchUp is crouchDown reversed.
-   crouch:{src:'assets/mogurodon-s1-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-s1-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-s1-crouch-up.png',frames:5,fps:22,once:true}}}}},
+   crouch:{src:'assets/mogurodon-s1-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-s1-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-s1-crouch-up.png',frames:5,fps:22,once:true},
+   // Climb: 256x256 padded strips, body upright with the front claws on the hitbox edge (x=154). The mantle is pre-shifted 25px back,
+   // easing to 0, to cancel the game sliding the hitbox onto the roof when it starts.
+   climbGrab:{src:'assets/mogurodon-s1-climb-grab.png',frames:5,fps:20,once:true,...S1_PAD},climb:{src:'assets/mogurodon-s1-climb.png',frames:8,fps:12,...S1_PAD},
+   climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}

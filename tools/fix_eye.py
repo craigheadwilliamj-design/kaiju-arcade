@@ -20,6 +20,7 @@ ap.add_argument('--ref'); ap.add_argument('--radius', type=int, default=8)
 ap.add_argument('--pad', type=int, default=6, help='head-patch margin around the eye used for matching')
 ap.add_argument('--region', default='70,110,200,240', help='y0,y1,x0,x1 box in the ref that contains the eye')
 ap.add_argument('--offset', action='append', default=[], help='manual override for a mis-tracked frame: FRAME:DY,DX')
+ap.add_argument('--only', help='comma list of frames to touch (others are left as they are); lets one strip use several refs')
 a = ap.parse_args()
 
 im = np.asarray(Image.open(a.src).convert('RGBA')).copy(); H = im.shape[0]; n = im.shape[1] // FW
@@ -39,7 +40,9 @@ tpl = ref[y0:y1, x0:x1, :3]; tm = (ref[y0:y1, x0:x1, 3] > 128) & ~is_eye[y0:y1, 
 
 R = a.radius
 manual = {int(k): tuple(map(int, v.split(','))) for k, v in (o.split(':') for o in a.offset)}
+only = set(map(int, a.only.split(','))) if a.only else set(range(n))
 for i in range(n):
+    if i not in only: continue
     if i in manual:
         dy, dx = manual[i]; F[i][ys + dy, xs + dx] = ref[ys, xs].astype(np.uint8); print(i, 'offset', dy, dx, '(manual)'); continue
     f = F[i].astype(int); best = None
