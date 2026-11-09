@@ -45,7 +45,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // Climb (W): 256x256 strips, body vertical with claws at the hitbox edge where the wall is.
   climbGrab:{src:'assets/mogurodon-climb-grab.png',frames:5,fps:20,once:true},climb:{src:'assets/mogurodon-climb.png',frames:8,fps:12},climbMantle:{src:'assets/mogurodon-climb-mantle.png',frames:9,fps:20,once:true}},
   stages:{1:{width:120,anims:{
-   // Stage 1 form: 256x192 strips, feet on the bottom row, generated from assets/mogurodon-s1.png. Add walk/... here as they land.
+   // Stage 1 form: 256x192 strips, feet on the bottom row, generated from the mogurodon-s1 base still. Add walk/... here as they land.
    idle:{src:'assets/mogurodon-s1-idle.png',frames:8,fps:8}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
