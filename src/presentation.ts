@@ -25,11 +25,14 @@ const images=new Map<string,HTMLImageElement>();
 // `idle` is required; any other animation falls back to idle until it exists and has loaded.
 // `once` strips (attacks) play a single time from t=0 and hold their last frame; the caller ends them via animDuration.
 // `impact` marks the frame where a hit lands, for syncing gameplay effects to the art.
-type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number};
+// `scale`/`anchor` are for padded strips generated from a shrunken base (room for lunges): `scale` is the art's size relative to a
+// full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
+type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
 // Mogurodon: the base art is its Stage 2 form (used for Stages 2 and 3); `stages[1]` is the Stage 1 form, animated incrementally.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
 type Form={width:number,anims:Record<string,Strip>};
+const S1_PAD={scale:205/256,anchor:10+128*205/256};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10},
   // Light combo by hit order (each form picks its own moves): Stage 2 = right-arm swipe, left-arm swipe, bite.
@@ -50,7 +53,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    idle:{src:'assets/mogurodon-s1-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s1-walk.png',frames:8,fps:10},
    jumpRise:{src:'assets/mogurodon-s1-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-s1-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-s1-jump-land.png',frames:5,fps:20,once:true},
    // Light combo: near (left) paw swipe, far (right) paw swipe, lunging bite. fps chosen so each hit lasts as long as Stage 2's.
-   light1:{src:'assets/mogurodon-s1-light1.png',frames:7,fps:21,once:true},light2:{src:'assets/mogurodon-s1-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s1-light3.png',frames:8,fps:20,once:true}}}}},
+   // Strips that reach forward are generated from the padded base (mogurodon-s1-pad: 205px wide at x=10), so they carry
+   // scale 205/256 and anchor 10+128*scale to draw at the same size and position as the full-frame strips.
+   light1:{src:'assets/mogurodon-s1-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s1-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s1-light3.png',frames:8,fps:20,once:true,...S1_PAD},
+   // Heavy release: rear up and slam both paws down (no rear/hold strips yet, so charging shows the idle).
+   heavySlam:{src:'assets/mogurodon-s1-heavy-slam.png',frames:8,fps:16,once:true,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -69,7 +76,9 @@ export function animImpact(name:string,anim:string,stage?:number){const a=timing
 // Seconds a one-shot animation runs; 0 if this kaiju has no such strip (callers then skip it).
 export function animDuration(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?a.frames/a.fps:0;}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
-export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;const s=form(name,stage)!,a=strip(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,h=s.width*img.naturalHeight/fw;const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim,stage)*fw,0,fw,img.naturalHeight,-s.width/2,-h,s.width,h);ctx.imageSmoothingEnabled=smooth;return true;}
+export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;
+ const s=form(name,stage)!,a=strip(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),w=fw*k,h=img.naturalHeight*k;
+ const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim,stage)*fw,0,fw,img.naturalHeight,-(a.anchor??fw/2)*k,-h,w,h);ctx.imageSmoothingEnabled=smooth;return true;}
 function art(ctx:CanvasRenderingContext2D,src:string|null){const img=src?images.get(src):null;if(!img?.complete||!img.naturalWidth)return false;ctx.drawImage(img,0,0,960,540);return true;}
 function box(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function polygon(ctx:CanvasRenderingContext2D,points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();}

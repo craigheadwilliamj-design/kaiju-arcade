@@ -2,13 +2,13 @@
 """Restore a detail that a PixelLab strip washed out (e.g. Mogurodon Stage 1's gold eye) by tracking the head.
 
 Usage:
-  python3 tools/fix_eye.py strip.png out.png [--ref base.png] [--radius 8] [--offset FRAME:DY,DX ...]
+  python3 tools/fix_eye.py strip.png out.png [--ref base.png] [--radius 8] [--region Y0,Y1,X0,X1] [--offset FRAME:DY,DX ...]
 
 The eye pixels and the head patch around them come from --ref (a single 256-wide frame with the eye intact;
 defaults to the strip's own frame 0). Each frame is searched within +-radius px for the best head match and
 the eye is stamped there. Check the result and pass --offset for any mis-tracked frame (big squashes can move
-the head past the radius). The eye colour test and search region are set for Mogurodon Stage 1; adjust `region`
-/ `is_eye` for other forms.
+the head past the radius). The eye colour test is set for Mogurodon Stage 1; the default --region fits the full-frame
+Stage 1 base (use 100,130,175,205 for the padded mogurodon-s1-pad base). Adjust `is_eye` for other forms.
 """
 import argparse, numpy as np
 from PIL import Image
@@ -17,6 +17,8 @@ FW = 256
 ap = argparse.ArgumentParser()
 ap.add_argument('src'); ap.add_argument('out')
 ap.add_argument('--ref'); ap.add_argument('--radius', type=int, default=8)
+ap.add_argument('--pad', type=int, default=6, help='head-patch margin around the eye used for matching')
+ap.add_argument('--region', default='70,110,200,240', help='y0,y1,x0,x1 box in the ref that contains the eye')
 ap.add_argument('--offset', action='append', default=[], help='manual override for a mis-tracked frame: FRAME:DY,DX')
 a = ap.parse_args()
 
@@ -27,11 +29,12 @@ if ref.shape[0] != H:  # ref may be a different height; align bottoms
     pad = np.zeros((H, FW, 4), int); h = min(H, ref.shape[0]); pad[H - h:] = ref[ref.shape[0] - h:]; ref = pad
 
 r, g, b, al = [ref[..., k] for k in range(4)]
-region = np.zeros(al.shape, bool); region[70:110, 200:240] = True
+ry0, ry1, rx0, rx1 = map(int, a.region.split(','))
+region = np.zeros(al.shape, bool); region[ry0:ry1, rx0:rx1] = True
 is_eye = region & (al > 200) & (r > 170) & (g > 100) & (b < 80) & (g - b > 60)
 ys, xs = np.where(is_eye)
 if not len(xs): raise SystemExit('no eye pixels found in ref')
-y0, y1, x0, x1 = ys.min() - 5, ys.max() + 6, xs.min() - 6, xs.max() + 7
+P = a.pad; y0, y1, x0, x1 = ys.min() - P + 1, ys.max() + P, xs.min() - P, xs.max() + P + 1
 tpl = ref[y0:y1, x0:x1, :3]; tm = (ref[y0:y1, x0:x1, 3] > 128) & ~is_eye[y0:y1, x0:x1]
 
 R = a.radius
