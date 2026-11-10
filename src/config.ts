@@ -88,7 +88,10 @@ export const FEEL = {
  hitstopBase:.02,hitstopPerDamage:.0004,hitstopMax:.1,hitstopCollapse:.07,hitstopTopple:.11,
  joltSeconds:.14,joltPixels:5,holeCap:14,holeMin:9,holeMax:24,holeDamage:7,holeInset:14,
  chunkCap:160,chunkLife:2.6,chunkGravity:900,
- liftHeight:50,toppleMinHeight:200,toppleKick:.35,toppleAccel:5.5,toppleUnitFactor:.6,
+ liftHeight:50,
+ // Stage 3 can rip up whole small buildings (no landmarks): up to this height/width, thrown with mass = area/liftMassArea clamped.
+ liftHeightStage3:150,liftWidthStage3:115,liftMassArea:2500,liftMassRange:[3,6] as [number,number],
+ toppleMinHeight:200,toppleKick:.35,toppleAccel:5.5,toppleUnitFactor:.6,
  // Crush damage: height × toppleDamage for the first building hit; each further building in the path takes toppleFalloff of the last,
  // and a building toppled by another falls at toppleChain^generation strength, so chains die out. Kaiju stage does not scale it.
  toppleDamage:.5,toppleFalloff:.35,toppleChain:.35,

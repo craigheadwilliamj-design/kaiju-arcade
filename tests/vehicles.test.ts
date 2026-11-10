@@ -86,3 +86,13 @@ test('real loop: rip a lamppost out with H and throw it point-first',async()=>{
   assert.ok(Math.abs(Math.abs(flying.angle)-Math.PI)<.6,`thrown west, pointing along its flight (angle ${flying.angle})`);
  }finally{h.release();h.cleanup();}
 });
+
+test('only Stage 3 can lift small buildings; landmarks and tall buildings stay put',async()=>{
+ const {createBuildings,liftable}=await import('../src/rules.ts');
+ const [deli,hotel,landmark,stand]=createBuildings([{x:0,w:64,h:82,hp:60,value:70,kind:'medium',label:'DELI',color:'#577b84'},{x:200,w:110,h:180,hp:120,value:140,kind:'medium',label:'HOTEL',color:'#8b7688'},
+  {x:400,w:80,h:120,hp:90,value:100,kind:'medium',label:'HALL',color:'#8b7688',landmark:true},{x:600,w:32,h:42,hp:20,value:20,kind:'tiny',label:'NEWS',color:'#ca9a50'}]);
+ for(const stage of [1,2])assert.equal(liftable(deli,stage),false,`Stage ${stage} cannot lift the deli`);
+ assert.equal(liftable(deli,3),true);assert.equal(liftable(hotel,3),false,'too tall');assert.equal(liftable(landmark,3),false,'landmarks are never lifted');
+ assert.equal(liftable(stand,1),true,'newsstands stay liftable at every stage');
+});
+

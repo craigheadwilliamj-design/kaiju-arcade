@@ -5,8 +5,9 @@ export type Hole={x:number,y:number,r:number,seed:number};
 // topple: 0 standing/squash, 1 falling (rigid rotation about the base corner on the tiltDir side), 2 lying as rubble.
 export type Building=BuildingSpec & {hpNow:number,collapse:number,rewarded:boolean,jolt:number,joltDir:number,holes:Hole[],topple:0|1|2,tilt:number,tiltV:number,tiltDir:number,toppleUlt:boolean,toppleGen:number,lifted:boolean};
 export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.map(b=>({...b,hpNow:b.hp,collapse:0,rewarded:false,jolt:0,joltDir:1,holes:[],topple:0,tilt:0,tiltV:0,tiltDir:1,toppleUlt:false,toppleGen:0,lifted:false}));}
-// Small enough for the kaiju to pick up whole (newsstands, stronghold barricades).
-export function liftable(b:Building){return b.hpNow>0&&!b.lifted&&b.h<=FEEL.liftHeight;}
+// Small enough for the kaiju to pick up whole (newsstands, stronghold barricades); Stage 3 can lift small buildings too.
+export function liftable(b:Building,stage=1){if(b.hpNow<=0||b.lifted)return false;if(b.h<=FEEL.liftHeight)return true;
+ return stage>=3&&!b.landmark&&b.h<=FEEL.liftHeightStage3&&b.w<=FEEL.liftWidthStage3;}
 export function canTopple(b:Building){return b.kind!=='tiny'&&b.h>=FEEL.toppleMinHeight;}
 // Ground span [from,to] a fallen building covers: its pivot edge out to its full height in the fall direction.
 // Damage to the index-th building (0 = nearest the pivot) under a faller of this height and chain generation.
