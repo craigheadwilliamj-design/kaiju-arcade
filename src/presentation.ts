@@ -104,7 +104,21 @@ export function animDuration(name:string,anim:string,stage?:number){const a=timi
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
 export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;
  const s=form(name,stage)!,a=strip(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),w=fw*k,h=img.naturalHeight*k;
- const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim,stage)*fw,0,fw,img.naturalHeight,-(a.anchor??fw/2)*k,-h,w,h);ctx.imageSmoothingEnabled=smooth;return true;}
+ const smooth=ctx.imageSmoothingEnabled,sx=spriteFrame(name,t,anim,stage)*fw,fh=img.naturalHeight,dx=-(a.anchor??fw/2)*k;
+ // Enlarged sprites (Stage 3, title art): nearest-neighbour at a non-integer zoom doubles some source pixels and not others, so
+ // lines change thickness and crawl as the sprite moves. Scale up by a whole number first, then smooth down to the target size.
+ const m=ctx.getTransform?.(),zoom=m?Math.hypot(m.a,m.b)*k:0,even=zoom>1.01?evenPixels(img,sx,fw,fh,Math.ceil(zoom)):null;
+ if(even){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(even,0,0,even.width,even.height,dx,-h,w,h);}
+ else{ctx.imageSmoothingEnabled=false;ctx.drawImage(img,sx,0,fw,fh,dx,-h,w,h);}
+ ctx.imageSmoothingEnabled=smooth;return true;}
+let scratch:HTMLCanvasElement|null=null;
+// One frame of a strip, enlarged n times with hard pixel edges, on a reused scratch canvas. Null where there is no DOM (headless tests).
+function evenPixels(img:HTMLImageElement,sx:number,fw:number,fh:number,n:number){
+ if(typeof document==='undefined')return null;
+ scratch??=document.createElement('canvas');const W=Math.round(fw*n),H=fh*n;
+ if(scratch.width!==W||scratch.height!==H){scratch.width=W;scratch.height=H;}
+ const c=scratch.getContext('2d');if(!c)return null;
+ c.imageSmoothingEnabled=false;c.clearRect(0,0,W,H);c.drawImage(img,sx,0,fw,fh,0,0,W,H);return scratch;}
 function art(ctx:CanvasRenderingContext2D,src:string|null){const img=src?images.get(src):null;if(!img?.complete||!img.naturalWidth)return false;ctx.drawImage(img,0,0,960,540);return true;}
 function box(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function polygon(ctx:CanvasRenderingContext2D,points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();}
