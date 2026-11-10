@@ -67,7 +67,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    // Climb: 256x256 padded strips, body upright with the front claws on the hitbox edge (x=154). The mantle is pre-shifted 25px back,
    // easing to 0, to cancel the game sliding the hitbox onto the roof when it starts.
    climbGrab:{src:'assets/mogurodon-s1-climb-grab.png',frames:5,fps:20,once:true,...S1_PAD},climb:{src:'assets/mogurodon-s1-climb.png',frames:8,fps:12,...S1_PAD},
-   climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD}}}}},
+   climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD},
+   // Seismic Rupture (any stage): rear up and roar, crash down in a shockwave (impact frame 5 = 0.357s, same first-fissure timing as
+   // Stage 2), then a ground-pounding loop with two slams per cycle for the rest of the 2.4s Ultimate.
+   ultRoar:{src:'assets/mogurodon-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s1-ult-pound.png',frames:8,fps:16,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
