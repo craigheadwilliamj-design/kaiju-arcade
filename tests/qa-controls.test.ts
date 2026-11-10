@@ -12,3 +12,12 @@ test('all six shared-combat identities: selection, held input, crouch/jump, fram
  }
 });
 test('resize keeps integer scaling within allocated desktop space and falls back on small screens',async()=>{const h=await bootGame();try{h.click('#settings');h.callbacks.get('#integer-scale:change')!({target:{checked:true}});assert.equal(h.node('#frame').style.width,'960px');(globalThis as any).window.innerWidth=400;h.events.get('resize')!();assert.equal(h.node('#frame').style.width,'');(globalThis as any).window.innerWidth=1280;h.events.get('resize')!();assert.equal(h.node('#frame').style.width,'960px');}finally{h.cleanup();}});
+test('duck or charge, not both: crouch is ignored while a heavy charges and returns on release',async()=>{
+ const h=await bootGame();
+ try{h.click('#drills');h.click('#start');h.step(200);
+  h.down('KeyK');h.step(6);assert.equal(h.state().charging,true);h.down('KeyS');h.step(6);assert.equal(h.state().crouched,false,'S during a charge does not duck');
+  h.up('KeyK');h.step(2);assert.equal(h.state().charging,false);assert.equal(h.state().crouched,true,'still holding S ducks after release');
+  h.step(60);h.down('KeyK');h.step(2);assert.equal(h.state().charging,true);assert.equal(h.state().crouched,false,'charging from a duck stands up');
+  h.up('KeyK');h.up('KeyS');
+ }finally{h.release();h.cleanup();}
+});
