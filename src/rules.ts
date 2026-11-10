@@ -1,7 +1,17 @@
-import {CONFIG} from './config.ts';
+import {CONFIG,FEEL} from './config.ts';
 import type {BuildingSpec} from './levels.ts';
-export type Building=BuildingSpec & {hpNow:number,collapse:number,rewarded:boolean};
-export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.map(b=>({...b,hpNow:b.hp,collapse:0,rewarded:false}));}
+// Hole positions are relative to the building: x from its left edge, y as height above the street.
+export type Hole={x:number,y:number,r:number,seed:number};
+// topple: 0 standing/squash, 1 falling (rigid rotation about the base corner on the tiltDir side), 2 lying as rubble.
+export type Building=BuildingSpec & {hpNow:number,collapse:number,rewarded:boolean,jolt:number,joltDir:number,holes:Hole[],topple:0|1|2,tilt:number,tiltV:number,tiltDir:number,toppleUlt:boolean,toppleGen:number,lifted:boolean};
+export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.map(b=>({...b,hpNow:b.hp,collapse:0,rewarded:false,jolt:0,joltDir:1,holes:[],topple:0,tilt:0,tiltV:0,tiltDir:1,toppleUlt:false,toppleGen:0,lifted:false}));}
+// Small enough for the kaiju to pick up whole (newsstands, stronghold barricades).
+export function liftable(b:Building){return b.hpNow>0&&!b.lifted&&b.h<=FEEL.liftHeight;}
+export function canTopple(b:Building){return b.kind!=='tiny'&&b.h>=FEEL.toppleMinHeight;}
+// Ground span [from,to] a fallen building covers: its pivot edge out to its full height in the fall direction.
+// Damage to the index-th building (0 = nearest the pivot) under a faller of this height and chain generation.
+export function crushDamage(height:number,index:number,generation:number,multiplier=1){return height*FEEL.toppleDamage*FEEL.toppleFalloff**index*FEEL.toppleChain**generation*multiplier;}
+export function toppleSpan(b:Building):[number,number]{const pivot=b.tiltDir>0?b.x+b.w:b.x,end=pivot+b.tiltDir*b.h;return [Math.min(pivot,end),Math.max(pivot,end)];}
 export function damageBuilding(b:Building,amount:number,source='player'):{damage:number,points:number,destroyed:boolean}{
  if((source!=='player'&&source!=='impact')||b.hpNow<=0||amount<=0)return {damage:0,points:0,destroyed:false};
  const damage=Math.min(b.hpNow,amount);b.hpNow-=damage;
