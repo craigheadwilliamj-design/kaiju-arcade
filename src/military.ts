@@ -30,6 +30,12 @@ export function hitUnit(s:MilitaryState,u:Unit,damage:number,source:'player'|'mi
  }
  return actual;
 }
+// The kaiju picks a ground vehicle up: it is out of the fight at once. Pays the kill points (no crystals, no wreck: it becomes a held prop).
+export const GRABBABLE_UNITS=new Set(['patrol','apc','tank','artillery']);
+export function captureUnit(s:MilitaryState,u:Unit){
+ if(u.hp<=0||!GRABBABLE_UNITS.has(u.type))return false;u.hp=0;
+ s.events.push({kind:'reward',x:u.x+u.w/2,damage:0,points:UNITS[u.type].points,shards:0,ultimate:false});return true;
+}
 // Swept collision prevents fast bullets/spines tunneling through tiny targets.
 export function segmentHits(x1:number,y1:number,x2:number,y2:number,r:Rect,pad=0){
  let lo=0,hi=1;for(const [a,b,min,max] of [[x1,x2,r.x-pad,r.x+r.w+pad],[y1,y2,r.y-pad,r.y+r.h+pad]]){const delta=b-a;if(Math.abs(delta)<1e-8){if(a<min||a>max)return false;}else{const p=(min-a)/delta,q=(max-a)/delta;lo=Math.max(lo,Math.min(p,q));hi=Math.min(hi,Math.max(p,q));if(lo>hi)return false;}}return true;

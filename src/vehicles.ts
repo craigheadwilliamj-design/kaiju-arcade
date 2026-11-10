@@ -1,17 +1,25 @@
-import {CONFIG as C,VEHICLES as V} from './config.ts';
+import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP} from './config.ts';
 
 // Civilian vehicles: parked cars, passing traffic, and anything the kaiju punts, carries or throws.
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
-export type VehicleKind='car'|'van'|'bus';
+// Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier';
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>};
+ damage:number,hits:Set<object>,label:string};
 export const VEHICLE_SPECS={
  car:{w:33,h:16,mass:1,points:80},
  van:{w:44,h:21,mass:1.6,points:120},
  bus:{w:66,h:25,mass:2.6,points:200},
+ // Props pay out when lifted (kill points / building value), so points here are 0.
+ patrol:{w:U.patrol.w,h:U.patrol.h,mass:U.patrol.mass,points:0},
+ apc:{w:U.apc.w,h:U.apc.h,mass:U.apc.mass,points:0},
+ tank:{w:U.tank.w,h:U.tank.h,mass:U.tank.mass,points:0},
+ artillery:{w:U.artillery.w,h:U.artillery.h,mass:U.artillery.mass,points:0},
+ stand:{w:BP.t.w,h:BP.t.h,mass:1.4,points:0},
+ barrier:{w:BP.b.w,h:BP.b.h,mass:3,points:0},
 } as const;
 const COLORS=['#b16d5b','#70958e','#a09b65','#7d84a6','#c1a06a'];
 
@@ -23,8 +31,10 @@ export function loose(v:Vehicle){return v.state==='parked'||v.state==='driving'|
 
 function make(id:number,kind:VehicleKind,x:number,lane:0|1,color:string):Vehicle{
  const s=VEHICLE_SPECS[kind];
- return {id,kind,x,y:C.ground-s.h,w:s.w,h:s.h,vx:0,vy:0,angle:0,spin:0,state:'parked',color,lane,dir:1,speed:0,cruise:0,panic:0,rewarded:false,traffic:false,damage:0,hits:new Set()};
+ return {id,kind,x,y:C.ground-s.h,w:s.w,h:s.h,vx:0,vy:0,angle:0,spin:0,state:'parked',color,lane,dir:1,speed:0,cruise:0,panic:0,rewarded:false,traffic:false,damage:0,hits:new Set(),label:''};
 }
+// A lifted prop starts in the kaiju's grip; its reward was already paid when it was lifted.
+export function makeProp(id:number,kind:VehicleKind,x:number,color:string,label=''):Vehicle{const v=make(id,kind,x,1,color);v.state='held';v.rewarded=true;v.label=label;return v;}
 export function createParked(xs:number[]):Vehicle[]{return xs.map((x,i)=>make(i+1,i%4===3?'van':'car',x,0,COLORS[i%COLORS.length]));}
 
 // Eastbound traffic uses lane 0 and enters from the left of the view; westbound uses lane 1 from the right.

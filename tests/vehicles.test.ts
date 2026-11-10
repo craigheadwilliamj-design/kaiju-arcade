@@ -38,3 +38,30 @@ test('real loop: traffic drives by; grab a parked car with H and throw it into a
   h.step(60*8);assert.ok(h.state().vehicles.some((v:any)=>v.traffic),'traffic spawned');
  }finally{h.release();h.cleanup();}
 });
+
+test('capturing an enemy ground vehicle takes it out of the fight, pays its kill points, leaves no wreck or crystals',async()=>{
+ const {createMilitary,spawnUnit,captureUnit,UNITS}=await import('../src/military.ts');const {makeProp,mass}=await import('../src/vehicles.ts');
+ const s=createMilitary(3,0,()=>.5);const tank=spawnUnit(s,'tank',600),heli=spawnUnit(s,'helicopter',700),gun=spawnUnit(s,'emplacement',800);
+ assert.equal(captureUnit(s,heli),false,'aircraft cannot be grabbed');assert.equal(captureUnit(s,gun),false,'fixed guns cannot be grabbed');
+ assert.equal(captureUnit(s,tank),true);assert.equal(tank.hp,0);assert.equal(captureUnit(s,tank),false,'only once');
+ assert.deepEqual(s.events.map((e:any)=>[e.kind,e.points,e.shards]),[['reward',UNITS.tank.points,0]]);assert.equal(s.wrecks.length,0);
+ const prop=makeProp(1,'tank',600,'#000');assert.equal(prop.state,'held');assert.equal(prop.rewarded,true);assert.ok(mass(prop)>3,'tanks are heavy');
+});
+
+test('real loop: lift the newsstand whole (it counts as destroyed, leaves no rubble) and throw it',async()=>{
+ const h=await bootGame(.75);
+ try{
+  h.click('#new');h.click('#skip-intro');h.node('#initials').value='NWS';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  const shopIndex=h.state().buildings.findIndex((b:any)=>b.x===1600),standIndex=h.state().buildings.findIndex((b:any)=>b.x===1470&&b.kind==='tiny');assert.ok(standIndex>=0);
+  // Face west and smash the shop between the start plaza and the newsstand.
+  h.down('KeyA');h.step(30);h.up('KeyA');
+  for(let n=0;n<40&&h.state().buildings[shopIndex].hp>0;n++){h.down('KeyK');h.step(15);h.up('KeyK');h.step(30);h.down('KeyA');h.step(4);h.up('KeyA');}
+  assert.equal(h.state().buildings[shopIndex].hp,0);h.step(60);
+  // Close in until the stand is in reach but not underfoot, then lift it.
+  for(let n=0;n<200&&h.state().x-30>1470+32;n++){h.down('KeyA');h.step(1);h.up('KeyA');}
+  const before=h.state().score;h.tap('KeyH');h.step(1);
+  let s=h.state();assert.equal(s.held,'stand');assert.equal(s.buildings[standIndex].hp,0);assert.equal(s.buildings[standIndex].lifted,true);assert.ok(s.score>before,'lifting pays the building value');
+  h.tap('KeyH');h.step(1);assert.equal(h.state().held,null);
+  s=h.state();assert.ok(s.vehicles.some((v:any)=>v.kind==='stand'&&v.state==='flying'),'stand thrown');
+ }finally{h.release();h.cleanup();}
+});
