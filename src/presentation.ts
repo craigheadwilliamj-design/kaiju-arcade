@@ -29,7 +29,7 @@ const images=new Map<string,HTMLImageElement>();
 // full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
 type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
-// Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (everything except the Ultimate so far) override Stages 1 and 3.
+// Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (every strip) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
 type Form={width:number,anims:Record<string,Strip>};
 const S1_PAD={scale:205/256,anchor:10+128*205/256};
@@ -77,7 +77,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    rangedStand:{src:'assets/mogurodon-s3-ranged-stand.png',frames:8,fps:18,once:true,...S1_PAD},rangedCrouch:{src:'assets/mogurodon-s3-ranged-crouch.png',frames:8,fps:18,once:true},
    crouch:{src:'assets/mogurodon-s3-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-s3-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-s3-crouch-up.png',frames:5,fps:22,once:true},
    climbGrab:{src:'assets/mogurodon-s3-climb-grab.png',frames:5,fps:20,once:true,...S1_PAD},climb:{src:'assets/mogurodon-s3-climb.png',frames:8,fps:12,...S1_PAD},
-   climbMantle:{src:'assets/mogurodon-s3-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD}}}}},
+   climbMantle:{src:'assets/mogurodon-s3-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD},
+   ultRoar:{src:'assets/mogurodon-s3-ult-roar.png',frames:8,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s3-ult-pound.png',frames:8,fps:16,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
