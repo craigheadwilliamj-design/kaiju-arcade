@@ -10,7 +10,7 @@ export type Unit=Rect&{id:number,type:UnitType,hp:number,maxHP:number,face:numbe
 export type Projectile={id:number,weapon:Weapon,x:number,y:number,vx:number,vy:number,life:number,owner:number,damage:number,radius:number,strength:number,dead:boolean,age:number,startX:number,startY:number,targetX:number,flight:number};
 export type Effect={x:number,y:number,radius:number,life:number,harmless:boolean};
 export type MilitaryEvent={kind:'reward',x:number,damage:number,points:number,shards:number,ultimate:boolean}|{kind:'playerHit',damage:number,strength:number,direction:number}|{kind:'cosmetic',x:number,y:number};
-export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Projectile[],wrecks:(Rect&{life:number,air:boolean})[],effects:Effect[],events:MilitaryEvent[],spawnTimer:number,sequence:number,nextID:number,rng:()=>number};
+export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Projectile[],wrecks:(Rect&{life:number,air:boolean,lane:0|1|null})[],effects:Effect[],events:MilitaryEvent[],spawnTimer:number,sequence:number,nextID:number,rng:()=>number};
 export function createMilitary(tier=1,city=0,rng=Math.random):MilitaryState{return {tier:Math.max(1,Math.min(5,tier)),city,units:[],projectiles:[],wrecks:[],effects:[],events:[],spawnTimer:M.firstSpawn,sequence:0,nextID:1,rng};}
 export function onScreen(r:Rect,camera:number){return r.x+r.w>camera&&r.x<camera+C.width;}
 export function spawnUnit(s:MilitaryState,type:UnitType,x:number,side=1):Unit{
@@ -26,10 +26,14 @@ export function hitUnit(s:MilitaryState,u:Unit,damage:number,source:'player'|'mi
  if(u.hp===0){
  s.effects.push({x:u.x+u.w/2,y:u.y+u.h/2,radius:20,life:M.impactSeconds,harmless:true});
  if(s.wrecks.length>=M.wreckCap)s.wrecks.shift();
- if(u.type!=='police'&&u.type!=='soldier')s.wrecks.push({x:u.x,y:u.y,w:u.w,h:u.h,life:M.wreckSeconds,air:UNITS[u.type].air});
+ if(u.type!=='police'&&u.type!=='soldier')s.wrecks.push({x:u.x,y:u.y,w:u.w,h:u.h,life:M.wreckSeconds,air:UNITS[u.type].air,lane:roadLane(u)});
  }
  return actual;
 }
+// Military vehicles drive in the traffic lanes like civilian cars (alternating by id); foot troops, emplacements and aircraft
+// have no lane. Like civilian traffic, the lane only changes where the unit is drawn; gameplay stays x/y.
+export const ROAD_UNITS=new Set<UnitType>(['patrol','apc','tank','artillery']);
+export function roadLane(u:{id:number,type:UnitType}):0|1|null{return ROAD_UNITS.has(u.type)?(u.id%2) as 0|1:null;}
 // The kaiju picks a ground vehicle up: it is out of the fight at once. Pays the kill points (no crystals, no wreck: it becomes a held prop).
 export const GRABBABLE_UNITS=new Set(['patrol','apc','tank','artillery']);
 export function captureUnit(s:MilitaryState,u:Unit){
