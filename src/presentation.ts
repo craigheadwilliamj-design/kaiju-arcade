@@ -78,7 +78,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    crouch:{src:'assets/mogurodon-s3-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-s3-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-s3-crouch-up.png',frames:5,fps:22,once:true},
    climbGrab:{src:'assets/mogurodon-s3-climb-grab.png',frames:5,fps:20,once:true,...S1_PAD},climb:{src:'assets/mogurodon-s3-climb.png',frames:8,fps:12,...S1_PAD},
    climbMantle:{src:'assets/mogurodon-s3-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD},
-   ultRoar:{src:'assets/mogurodon-s3-ult-roar.png',frames:8,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s3-ult-pound.png',frames:8,fps:16,...S1_PAD}}}}},
+   ultRoar:{src:'assets/mogurodon-s3-ult-roar.png',frames:8,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s3-ult-pound.png',frames:16,fps:30,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
