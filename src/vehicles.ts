@@ -4,7 +4,7 @@ import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP} from 
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
 // Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
-export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier';
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp';
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
@@ -20,7 +20,12 @@ export const VEHICLE_SPECS={
  artillery:{w:U.artillery.w,h:U.artillery.h,mass:U.artillery.mass,points:0},
  stand:{w:BP.t.w,h:BP.t.h,mass:1.4,points:0},
  barrier:{w:BP.b.w,h:BP.b.h,mass:3,points:0},
+ // Standing lamppost (8x88); once uprooted it is laid flat (88x8) and flies point-first.
+ lamp:{w:8,h:88,mass:.8,points:15},
 } as const;
+// Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
+const IMPACT:Partial<Record<VehicleKind,number>>={lamp:1.6};
+export function impact(v:Vehicle){return IMPACT[v.kind]??VEHICLE_SPECS[v.kind].mass;}
 const COLORS=['#b16d5b','#70958e','#a09b65','#7d84a6','#c1a06a'];
 
 export function vehicleBox(v:Vehicle){return {x:v.x,y:v.y,w:v.w,h:v.h};}
@@ -36,6 +41,11 @@ function make(id:number,kind:VehicleKind,x:number,lane:0|1,color:string):Vehicle
 // A lifted prop starts in the kaiju's grip; its reward was already paid when it was lifted.
 export function makeProp(id:number,kind:VehicleKind,x:number,color:string,label=''):Vehicle{const v=make(id,kind,x,1,color);v.state='held';v.rewarded=true;v.label=label;return v;}
 export function createParked(xs:number[]):Vehicle[]{return xs.map((x,i)=>make(i+1,i%4===3?'van':'car',x,0,COLORS[i%COLORS.length]));}
+// Street lamps keep the old backdrop spacing (every lampSpacing px from the west edge), now as real props.
+export function createLamps(worldWidth:number,firstId:number):Vehicle[]{const out:Vehicle[]=[];for(let x=V.lampSpacing,i=0;x<worldWidth-40;x+=V.lampSpacing,i++)out.push(make(firstId+i,'lamp',x-2,0,'#44575a'));return out;}
+export function upright(v:Vehicle){return v.kind==='lamp'&&v.w<v.h;}
+// Pull a lamppost out of the sidewalk: lay it flat about its centre so it can be carried and thrown lengthwise.
+export function uproot(v:Vehicle){if(!upright(v))return;const cx=v.x+v.w/2,cy=v.y+v.h/2;[v.w,v.h]=[v.h,v.w];v.x=cx-v.w/2;v.y=Math.min(C.ground-v.h,cy-v.h/2);}
 
 // Eastbound traffic uses lane 0 and enters from the left of the view; westbound uses lane 1 from the right.
 export function spawnTraffic(id:number,camera:number,dir:1|-1,rng:()=>number):Vehicle{
@@ -61,7 +71,7 @@ export function launch(v:Vehicle,vx:number,vy:number,damage:number){
 // Ballistic flight with bounces off the street and the world edges; comes to rest as a wreck. Returns true on settling.
 export function tickFlying(v:Vehicle,dt:number,worldWidth:number){
  if(v.state!=='flying')return false;
- v.vy+=V.gravity*dt;v.x+=v.vx*dt;v.y+=v.vy*dt;v.angle+=v.spin*dt;
+ v.vy+=V.gravity*dt;v.x+=v.vx*dt;v.y+=v.vy*dt;if(v.kind==='lamp'&&v.damage>1)v.angle=Math.atan2(v.vy,v.vx);else v.angle+=v.spin*dt;
  if(v.x<0||v.x+v.w>worldWidth){v.x=Math.max(0,Math.min(worldWidth-v.w,v.x));v.vx=-v.vx*V.restitution;}
  const floor=C.ground-v.h;
  if(v.y>=floor){v.y=floor;

@@ -65,3 +65,24 @@ test('real loop: lift the newsstand whole (it counts as destroyed, leaves no rub
   s=h.state();assert.ok(s.vehicles.some((v:any)=>v.kind==='stand'&&v.state==='flying'),'stand thrown');
  }finally{h.release();h.cleanup();}
 });
+
+test('lampposts stand at the old backdrop spacing and uproot into a flat javelin',async()=>{
+ const {createLamps,uproot,upright}=await import('../src/vehicles.ts');
+ const lamps=createLamps(3840,500);assert.deepEqual(lamps.slice(0,3).map(l=>l.x+2),[V.lampSpacing,V.lampSpacing*2,V.lampSpacing*3]);
+ const l=lamps[0];assert.equal(upright(l),true);assert.equal(l.y+l.h,C.ground);const cx=l.x+l.w/2;
+ uproot(l);assert.equal(upright(l),false);assert.ok(l.w>l.h);assert.equal(l.x+l.w/2,cx,'rotated about its centre');assert.ok(l.y+l.h<=C.ground);
+ uproot(l);assert.ok(l.w>l.h,'uprooting twice is a no-op');
+});
+
+test('real loop: rip a lamppost out with H and throw it point-first',async()=>{
+ const h=await bootGame(.75);
+ try{
+  h.click('#new');h.click('#skip-intro');h.node('#initials').value='LMP';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  const lamp=h.state().vehicles.find((v:any)=>v.kind==='lamp'&&v.x===1798)!;assert.equal(lamp.state,'parked');
+  for(let n=0;n<60&&h.state().x-30>lamp.x+lamp.w;n++){h.down('KeyA');h.step(1);h.up('KeyA');}
+  h.tap('KeyH');h.step(1);assert.equal(h.state().held,'lamp');
+  const carried=h.state().vehicles.find((v:any)=>v.id===lamp.id)!;assert.ok(carried.w>carried.h,'carried lengthwise');
+  h.tap('KeyH');h.step(6);const flying=h.state().vehicles.find((v:any)=>v.id===lamp.id)!;assert.equal(flying.state,'flying');
+  assert.ok(Math.abs(Math.abs(flying.angle)-Math.PI)<.6,`thrown west, pointing along its flight (angle ${flying.angle})`);
+ }finally{h.release();h.cleanup();}
+});

@@ -103,4 +103,6 @@ export const VEHICLES = {
  trafficInterval:2.1,trafficCap:6,trafficPerScreen:5,trafficSpeed:[90,150],trafficPoints:.5,spawnMargin:60,despawn:1500,
  busChance:.12,vanChance:.22,panicRange:270,panicDecel:520,panicSpeed:1.7,
  laneOffset:[5,17],vehicleCap:70,
+ // Lampposts stand every lampSpacing px; uprooted they become a light javelin that pierces troops and vehicles.
+ lampSpacing:450,lampLift:110,lampPierce:.95,
 };
