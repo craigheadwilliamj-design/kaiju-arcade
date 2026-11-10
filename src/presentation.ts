@@ -29,7 +29,7 @@ const images=new Map<string,HTMLImageElement>();
 // full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
 type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
-// Mogurodon: the base art is its Stage 2 form (used for Stages 2 and 3); `stages[1]` is the Stage 1 form, animated incrementally.
+// Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (static base for now) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
 type Form={width:number,anims:Record<string,Strip>};
 const S1_PAD={scale:205/256,anchor:10+128*205/256};
@@ -70,7 +70,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD},
    // Seismic Rupture (any stage): rear up and roar, crash down in a shockwave (impact frame 5 = 0.357s, same first-fissure timing as
    // Stage 2), then a ground-pounding loop with two slams per cycle for the rest of the 2.4s Ultimate.
-   ultRoar:{src:'assets/mogurodon-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s1-ult-pound.png',frames:8,fps:16,...S1_PAD}}}}},
+   ultRoar:{src:'assets/mogurodon-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s1-ult-pound.png',frames:8,fps:16,...S1_PAD}}},
+  // Stage 3 form: 256x192 base still (feet on the bottom row), static until its strips are animated; combat timing falls back to the base form.
+  3:{width:120,anims:{idle:{src:'assets/mogurodon-s3.png',frames:1,fps:1}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
