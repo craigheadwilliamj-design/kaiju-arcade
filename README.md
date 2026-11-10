@@ -87,3 +87,5 @@ M5 combat, original ending text and final assets remain unfinished. Final M7 rel
 ## Phase 7 audit update
 
 The full current shared-combat campaign now has a successful 25-block keyboard simulation through ending/unlocks, rather than only state-transition coverage. Phase 7 reproduced and fixed landing/evolution penetration of short or adjacent solids, and clears transient stagger guard at block transitions. `QA_REPORT.md`, `qa/playthrough.json` and `qa/stress.json` contain the actual scope, measurements and remaining blockers. No final balance claim is made for the missing Phase 5 movesets or boss Ultimates.
+
+**Artifact build:** `node build-artifact.mjs` writes one self-contained `dist-artifact/index.html` for publishing as a claude.ai Artifact (16MB limit, base64 sprites add a third). If the sprites exceed an 11MB budget, `tools/shrink_sprites.py` re-saves the largest as 256-colour PNGs in `dist-artifact/sprites/` (mean error ~1/255, `public/assets` untouched) until they fit; the build fails if the page still goes over 16MB.

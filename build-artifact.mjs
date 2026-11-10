@@ -4,6 +4,7 @@
 // each module runs in its own function scope (no name collisions) and returns the names other modules import.
 // The page body has no <html>/<head>/<body>: the Artifact tool adds that skeleton when it publishes.
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
 import {stripTypeScriptTypes} from 'node:module';
 
 const IMPORT=/import\s*\{([^}]*)\}\s*from\s*['"]\.\/(\w+)\.(?:ts|js)['"]\s*;?/g;
@@ -36,8 +37,15 @@ const scoped=order.map(name=>{
 
 let js=scoped;
 const sprites=[...new Set(js.match(/assets\/[\w.-]+\.png/g)??[])];
+// The Artifact limit is 16MB for the whole page and base64 adds a third, so if the sprites are too big the largest are re-saved as
+// 256-colour PNGs (tools/shrink_sprites.py; public/assets is never modified). If Python/Pillow is missing the originals are embedded.
+const SPRITE_BUDGET=11e6,shrinkDir='dist-artifact/sprites';let shrunk=new Set();
+await mkdir('dist-artifact',{recursive:true});
+try{shrunk=new Set(JSON.parse(execFileSync('python3',['tools/shrink_sprites.py','--out',shrinkDir,'--budget',String(SPRITE_BUDGET),...sprites.map(p=>`public/${p}`)],{encoding:'utf8'})));}
+catch(e){console.warn(`Could not shrink sprites (${e.message.split('\n')[0]}); embedding the originals.`);}
 for(const path of sprites){
- const uri=`data:image/png;base64,${(await readFile(`public/${path}`)).toString('base64')}`;
+ const file=shrunk.has(path.split('/').pop())?`${shrinkDir}/${path.split('/').pop()}`:`public/${path}`;
+ const uri=`data:image/png;base64,${(await readFile(file)).toString('base64')}`;
  js=js.replaceAll(`'${path}'`,`'${uri}'`).replaceAll(`"${path}"`,`"${uri}"`);
 }
 if(/assets\/[\w.-]+\.png/.test(js))throw Error('A sprite path was not embedded');
@@ -54,4 +62,5 @@ const page=`<title>${title}</title>\n<style>\n${css}\n</style>\n${errorBar}\n${b
 
 await mkdir('dist-artifact',{recursive:true});
 await writeFile('dist-artifact/index.html',page);
-console.log(`Built dist-artifact/index.html (${order.length} modules, ${sprites.length} sprites, ${(page.length/1e6).toFixed(2)} MB)`);
+console.log(`Built dist-artifact/index.html (${order.length} modules, ${sprites.length} sprites${shrunk.size?`, ${shrunk.size} shrunk to 256 colours`:''}, ${(page.length/1e6).toFixed(2)} MB)`);
+if(page.length>16e6)throw Error('Page is over the 16MB Artifact limit');
