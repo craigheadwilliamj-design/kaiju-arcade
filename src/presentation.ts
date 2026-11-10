@@ -29,7 +29,8 @@ const images=new Map<string,HTMLImageElement>();
 // `impact` marks the frame where a hit lands, for syncing gameplay effects to the art.
 // `scale`/`anchor` are for padded strips generated from a shrunken base (room for lunges): `scale` is the art's size relative to a
 // full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
-type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number};
+// `hold` (grab/carry strips): frame px where a carried prop's bottom-centre sits, one [x,y] per frame or a single pair for every frame.
+type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][]};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
 // Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (every strip) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
@@ -49,7 +50,12 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // Seismic Rupture (U): roar then ground-pounding loop for the rest of the 2.4s Ultimate. 256x192.
   ultRoar:{src:'assets/mogurodon-ult-roar.png',frames:8,fps:14,once:true,impact:5},ultPound:{src:'assets/mogurodon-ult-pound.png',frames:8,fps:16},
   // Climb (W): 256x256 strips, body vertical with claws at the hitbox edge where the wall is.
-  climbGrab:{src:'assets/mogurodon-climb-grab.png',frames:5,fps:20,once:true},climb:{src:'assets/mogurodon-climb.png',frames:8,fps:12},climbMantle:{src:'assets/mogurodon-climb-mantle.png',frames:9,fps:20,once:true}},
+  climbGrab:{src:'assets/mogurodon-climb-grab.png',frames:5,fps:20,once:true},climb:{src:'assets/mogurodon-climb.png',frames:8,fps:12},climbMantle:{src:'assets/mogurodon-climb-mantle.png',frames:9,fps:20,once:true},
+  // Grab/throw (H): grab dips to scoop the prop off the street and rears up with it overhead; carry/carryWalk hold it there on the
+  // hind legs; throw starts at the release (the prop launches on the key press) and drops back onto all fours. 256x192.
+  grab:{src:'assets/mogurodon-grab.png',frames:9,fps:22,once:true,hold:[[228,191],[244,191],[247,191],[244,191],[223,191],[205,130],[195,55],[161,28],[161,28]]},
+  carry:{src:'assets/mogurodon-carry.png',frames:5,fps:6,hold:[161,28]},carryWalk:{src:'assets/mogurodon-carry-walk.png',frames:8,fps:10,hold:[161,27]},
+  throw:{src:'assets/mogurodon-throw.png',frames:8,fps:18,once:true}},
   stages:{1:{width:120,anims:{
    // Stage 1 form: 256x192 strips, feet on the bottom row, generated from the mogurodon-s1 base still. Add further strips here as they land.
    idle:{src:'assets/mogurodon-s1-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s1-walk.png',frames:8,fps:10},
@@ -72,7 +78,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD},
    // Seismic Rupture (any stage): rear up and roar, crash down in a shockwave (impact frame 5 = 0.357s, same first-fissure timing as
    // Stage 2), then a ground-pounding loop with two slams per cycle for the rest of the 2.4s Ultimate.
-   ultRoar:{src:'assets/mogurodon-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s1-ult-pound.png',frames:8,fps:16,...S1_PAD}}},
+   ultRoar:{src:'assets/mogurodon-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s1-ult-pound.png',frames:8,fps:16,...S1_PAD},
+   // Grab/throw: same moves as Stage 2 from the padded base.
+   grab:{src:'assets/mogurodon-s1-grab.png',frames:9,fps:22,once:true,...S1_PAD,hold:[[173,191],[207,191],[239,191],[241,191],[230,191],[214,191],[167,191],[200,70],[145,27]]},
+   carry:{src:'assets/mogurodon-s1-carry.png',frames:4,fps:6,...S1_PAD,hold:[145,27]},carryWalk:{src:'assets/mogurodon-s1-carry-walk.png',frames:8,fps:10,...S1_PAD,hold:[144,26]},
+   throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_PAD}}},
   // Stage 3 form: 256x192 base still (feet on the bottom row), idle and walk animated, other strips still fall back to idle; combat timing falls back to the base form.
   3:{width:120,anims:{idle:{src:'assets/mogurodon-s3-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s3-walk.png',frames:8,fps:10},
    light1:{src:'assets/mogurodon-s3-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s3-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s3-light3.png',frames:8,fps:20,once:true,...S1_PAD},
@@ -83,7 +93,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    crouch:{src:'assets/mogurodon-s3-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-s3-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-s3-crouch-up.png',frames:5,fps:22,once:true},
    climbGrab:{src:'assets/mogurodon-s3-climb-grab.png',frames:5,fps:20,once:true,...S1_PAD},climb:{src:'assets/mogurodon-s3-climb.png',frames:8,fps:12,...S1_PAD},
    climbMantle:{src:'assets/mogurodon-s3-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD},
-   ultRoar:{src:'assets/mogurodon-s3-ult-roar.png',frames:8,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s3-ult-pound.png',frames:16,fps:30,...S1_PAD}}}}},
+   ultRoar:{src:'assets/mogurodon-s3-ult-roar.png',frames:8,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s3-ult-pound.png',frames:16,fps:30,...S1_PAD},
+   grab:{src:'assets/mogurodon-s3-grab.png',frames:9,fps:22,once:true,...S1_PAD,hold:[[196,191],[236,191],[239,191],[227,191],[214,191],[196,191],[205,85],[153,26],[153,27]]},
+   carry:{src:'assets/mogurodon-s3-carry.png',frames:5,fps:6,...S1_PAD,hold:[153,27]},carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S1_PAD,hold:[153,26]},
+   throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -101,6 +114,13 @@ function timing(name:string,anim:string,stage?:number){return form(name,stage)?.
 export function animImpact(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?.impact?a.impact/a.fps:0;}
 // Seconds a one-shot animation runs; 0 if this kaiju has no such strip (callers then skip it).
 export function animDuration(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?a.frames/a.fps:0;}
+// Where a carried prop's bottom-centre sits in this frame, relative to the feet origin in unflipped, unscaled sprite units (the caller
+// applies facing and Stage scale). Null when the strip has no hold points or its art is not loaded (the caller keeps its fallback).
+export function holdPoint(name:string,anim:string,t:number,stage?:number):[number,number]|null{
+ const s=form(name,stage),a=s?.anims[anim];if(!s||!a?.hold||!ready(a.src))return null;
+ const img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),f=spriteFrame(name,t,anim,stage);
+ const p=(typeof a.hold[0]==='number'?a.hold:(a.hold as number[][])[f]) as number[];
+ return [(p[0]-(a.anchor??fw/2))*k,-(img.naturalHeight-1-p[1])*k];}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
 export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;
  const s=form(name,stage)!,a=strip(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),w=fw*k,h=img.naturalHeight*k;
