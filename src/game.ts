@@ -12,7 +12,7 @@ import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,res
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
 import {createRival,hitRival,tickRival} from './rival.ts';
 import type {Rival} from './rival.ts';
-import {hudScore,ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,hasSprite,hasAnim,animDuration,animImpact,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
+import {hudScore,ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,hasSprite,hasAnim,holdPoint,animDuration,animImpact,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
 import type {FreePlayChoice} from './presentation.ts';
 const canvas=document.querySelector<HTMLCanvasElement>('#game')!;
 const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=false;
@@ -253,12 +253,12 @@ function tryGrab(){if(held||!canAct(combat)||combat.charging||clingTo||combat.ul
  for(const u of military.units)if(u.hp>0&&GRABBABLE_UNITS.has(u.type)&&overlaps(box,u))options.push({d:dist(u),take:()=>{captureUnit(military,u);drainMilitary();const p=makeProp(nextVehicle++,u.type as Vehicle['kind'],u.x,UNIT_COLORS[u.type]);vehicles.push(p);return p;}});
  for(const b of buildings)if(liftable(b)&&overlaps(box,{x:b.x,y:C.ground-b.h,w:b.w,h:b.h}))options.push({d:dist(b),take:()=>{liftBuilding(b);const p=makeProp(nextVehicle++,b.kind==='tiny'?'stand':'barrier',b.x,b.color,b.label);vehicles.push(p);return p;}});
  options.sort((a,b)=>a.d-b.d);if(!options.length)return false;
- const pick=options[0].take();uproot(pick);held=pick;pick.state='held';pick.angle=0;pick.vx=pick.vy=0;pick.panic=0;pick.lane=1;action=`GRAB · ${pick.kind.toUpperCase()}`;actionTime=.9;return true;}
+ const pick=options[0].take();uproot(pick);held=pick;pick.state='held';pick.angle=0;pick.vx=pick.vy=0;pick.panic=0;pick.lane=1;attack=animDuration(activeKaiju,'grab',combat.stage)?{anim:'grab',t:0}:null;action=`GRAB · ${pick.kind.toUpperCase()}`;actionTime=.9;return true;}
 // Throw forward, or with W held lob it high (anti-air). Damage scales with the vehicle's mass and the kaiju's stage.
 function throwHeld(){if(!held||!canAct(combat))return;const v=held,m=mass(v),up=keys.has('KeyW');held=null;
  launch(v,player.face*(up?VC.upSpeed:VC.throwSpeed/Math.sqrt(m)),-(up?VC.upLift:v.kind==='lamp'?VC.lampLift:VC.throwLift)/(up?Math.sqrt(m):1),VC.throwDamage*impact(v)*damageMultiplier(combat));
- v.lane=1;rewardVehicle(v);attack={anim:'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,3);action=up?'THROW · UP':'THROW';actionTime=.7;}
-function dropHeld(){if(!held)return;const v=held;held=null;launch(v,0,0,0);}
+ v.lane=1;rewardVehicle(v);attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,3);action=up?'THROW · UP':'THROW';actionTime=.7;}
+function dropHeld(){if(!held)return;const v=held;held=null;launch(v,0,0,0);if(attack?.anim==='grab')attack=null;}
 // Thrown/punted vehicles crash into buildings, troops, the rival, objectives and other vehicles (which get knocked flying too).
 function vehicleImpacts(v:Vehicle){
  if(v.state!=='flying'||v.damage<=1)return;const box=vehicleBox(v),dir=Math.sign(v.vx)||1,cx=v.x+v.w/2,cy=v.y+v.h/2;
@@ -275,7 +275,8 @@ function tickVehicles(dt:number){
  if(trafficBudget>0){trafficTimer+=dt;if(trafficTimer>=VC.trafficInterval&&vehicles.filter(v=>v.state==='driving').length<VC.trafficCap){trafficTimer=0;trafficBudget--;
   vehicles.push(spawnTraffic(nextVehicle++,camera,Math.random()<.5?1:-1,Math.random));}}
  for(const v of vehicles){
-  if(v===held){v.x=cx-v.w/2;v.y=player.y-v.h+C.spriteDrop*.5;if(v.kind==='lamp')v.angle=player.face>0?0:Math.PI;continue;}
+  if(v===held){const [anim,at]=currentAnim(),hp=holdPoint(activeKaiju,anim,at,combat.stage);
+   if(hp){const k=scale(combat);v.x=cx+player.face*hp[0]*k-v.w/2;v.y=player.y+bodyHeight()+C.spriteDrop+hp[1]*k-v.h;}else{v.x=cx-v.w/2;v.y=player.y-v.h+C.spriteDrop*.5;}if(v.kind==='lamp')v.angle=player.face>0?0:Math.PI;continue;}
   tickDriving(v,dt,cx);
   const wasFlying=v.state==='flying';tickFlying(v,dt,worldWidth);if(wasFlying)vehicleImpacts(v);
  }
@@ -314,7 +315,7 @@ function update(dt:number){
  actionTime=Math.max(0,actionTime-dt);shake=Math.max(0,shake-dt*14);player.pose=Math.max(0,player.pose-dt);
  if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim,combat.stage))attack=null;}
  heavyT=combat.charging?heavyT+dt:0;
- {const next=isClimbing?'climb':!player.grounded?'jumpAir':player.crouched?'crouch':walking?'walk':'idle';
+ {const next=isClimbing?'climb':!player.grounded?'jumpAir':player.crouched?'crouch':walking?(held&&hasAnim(activeKaiju,'carryWalk',combat.stage)?'carryWalk':'walk'):held&&hasAnim(activeKaiju,'carry',combat.stage)?'carry':'idle';
   if(attack||combat.charging||combat.ultimateTime>0){loopAnim=next;loopT=0;loopIntro=null;}
   else if(next!==loopAnim){loopIntro=next==='climb'?'climbGrab':loopAnim==='climb'?(mantled?'climbMantle':null):next==='jumpAir'?(player.vy<0?'jumpRise':null):loopAnim==='jumpAir'?'jumpLand':next==='crouch'?'crouchDown':loopAnim==='crouch'?'crouchUp':null;loopAnim=next;loopT=0;}
   else loopT+=next==='climb'&&climbDir===0?0:dt;}
