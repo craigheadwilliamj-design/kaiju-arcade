@@ -1,14 +1,14 @@
-import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP} from './config.ts';
+import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F} from './config.ts';
 
 // Civilian vehicles: parked cars, passing traffic, and anything the kaiju punts, carries or throws.
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
 // Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
-export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp';
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building';
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string};
+ damage:number,hits:Set<object>,label:string,mass?:number};
 export const VEHICLE_SPECS={
  car:{w:33,h:16,mass:1,points:80},
  van:{w:44,h:21,mass:1.6,points:120},
@@ -22,14 +22,16 @@ export const VEHICLE_SPECS={
  barrier:{w:BP.b.w,h:BP.b.h,mass:3,points:0},
  // Standing lamppost (8x88); once uprooted it is laid flat (88x8) and flies point-first.
  lamp:{w:8,h:88,mass:.8,points:15},
+ // A whole small building lifted by Stage 3: size and mass are set per prop (liftedBuilding), these are placeholders.
+ building:{w:80,h:100,mass:4,points:0},
 } as const;
 // Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
 const IMPACT:Partial<Record<VehicleKind,number>>={lamp:1.6};
-export function impact(v:Vehicle){return IMPACT[v.kind]??VEHICLE_SPECS[v.kind].mass;}
+export function impact(v:Vehicle){return IMPACT[v.kind]??mass(v);}
 const COLORS=['#b16d5b','#70958e','#a09b65','#7d84a6','#c1a06a'];
 
 export function vehicleBox(v:Vehicle){return {x:v.x,y:v.y,w:v.w,h:v.h};}
-export function mass(v:Vehicle){return VEHICLE_SPECS[v.kind].mass;}
+export function mass(v:Vehicle){return v.mass??VEHICLE_SPECS[v.kind].mass;}
 export function grounded(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='flat';}
 // Can be stomped, punted or picked up.
 export function loose(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck';}
@@ -40,6 +42,10 @@ function make(id:number,kind:VehicleKind,x:number,lane:0|1,color:string):Vehicle
 }
 // A lifted prop starts in the kaiju's grip; its reward was already paid when it was lifted.
 export function makeProp(id:number,kind:VehicleKind,x:number,color:string,label=''):Vehicle{const v=make(id,kind,x,1,color);v.state='held';v.rewarded=true;v.label=label;return v;}
+// A lifted building keeps its footprint; heavier the bigger it is.
+export function liftedBuilding(id:number,b:{x:number,w:number,h:number,color:string,label:string}):Vehicle{
+ const v=makeProp(id,'building',b.x,b.color,b.label);v.w=b.w;v.h=b.h;v.y=C.ground-b.h;
+ const [lo,hi]=F.liftMassRange;v.mass=Math.max(lo,Math.min(hi,b.w*b.h/F.liftMassArea));return v;}
 export function createParked(xs:number[]):Vehicle[]{return xs.map((x,i)=>make(i+1,i%4===3?'van':'car',x,0,COLORS[i%COLORS.length]));}
 // Street lamps keep the old backdrop spacing (every lampSpacing px from the west edge), now as real props.
 export function createLamps(worldWidth:number,firstId:number):Vehicle[]{const out:Vehicle[]=[];for(let x=V.lampSpacing,i=0;x<worldWidth-40;x+=V.lampSpacing,i++)out.push(make(firstId+i,'lamp',x-2,0,'#44575a'));return out;}
