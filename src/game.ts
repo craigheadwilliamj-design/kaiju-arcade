@@ -16,6 +16,13 @@ import {hudScore,ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectabl
 import type {FreePlayChoice} from './presentation.ts';
 const canvas=document.querySelector<HTMLCanvasElement>('#game')!;
 const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=false;
+// The game draws in 960x540 units, but the canvas holds a whole number of device pixels per unit (enough to cover its on-screen
+// size) and the browser smooths that down to fit. At 960x540 stretched by CSS, sprites were resampled twice by uneven amounts,
+// which left ragged edges and stray pixels on enlarged art (Stage 3).
+let res=0;
+function fitCanvas(){if(!canvas.getBoundingClientRect||!ctx.setTransform)return; // headless test canvas
+ const n=Math.max(1,Math.min(4,Math.ceil(canvas.getBoundingClientRect().width*(window.devicePixelRatio||1)/960-.02)));
+ if(n!==res){res=n;canvas.width=960*n;canvas.height=540*n;}ctx.setTransform(n,0,0,n,0,0);ctx.imageSmoothingEnabled=false;}
 const overlay=document.querySelector<HTMLDivElement>('#overlay')!;
 type Mode='title'|'playing'|'paused'|'confirm'|'results'|'gameover'|'setup'|'progress'|'scores'|'conquered'|'intro'|'selection'|'freeplay-select'|'gallery'|'ending'|'settings';
 let mode:Mode='title',buildings=createBuildings(NEW_YORK_BLOCK_ONE),score=0,camera=0,cameraY=0,time=0,shake=0,cleared=false,action='',actionTime=0;
@@ -559,6 +566,7 @@ function drawCampaignObjective(){
  }
 }
 function render(){
+ fitCanvas();
  if(mode==='intro'){drawIntro(ctx,introElapsed);return;}
  if(mode==='ending'){drawEnding(ctx,endingName);return;}
  if(['title','setup','selection','freeplay-select','gallery','settings','scores','confirm','progress','conquered'].includes(mode)){drawMenuBackdrop(ctx,time);if(mode==='selection')paintPreviews();return;}
