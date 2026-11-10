@@ -45,11 +45,15 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  nodes.get('#initials').value='a1bcd';callbacks.get('#initials:input')!();assert.equal(nodes.get('#initials').value,'ABC');callbacks.get('#launch:click')!();assert.equal(state().mode,'selection');callbacks.get('#confirm-kaiju:click')!();
  assert.equal(state().mode,'progress');assert.equal(state().checkpoint.city,0);assert.equal(state().checkpoint.banked,0);
  callbacks.get('#begin-city:click')!();assert.equal(state().session,'campaign');assert.equal(state().hp,24);
- // Play the first campaign district through the real input path.
- for(let n=0;n<170&&state().mode==='playing';n++){
+ // Play the first campaign district through the real input path. It is an open layout: start mid-map,
+ // sweep west to the edge, then turn around and smash east until the quota opens and the east exit triggers.
+ const cityStart=state().x;assert.ok(cityStart>1700&&cityStart<2000,'open district starts mid-map');
+ const sweep=(fwd:string,back:string,done:()=>boolean,limit:number)=>{for(let n=0;n<limit&&state().mode==='playing'&&!done();n++){
   if(state().ultimate>=100&&state().transform===0){key('KeyU');key('KeyU','keyup');}
-  hold('KeyD',8);key('KeyK');key('KeyK','keyup');step(40);hold('KeyA',1);key('KeyK');key('KeyK','keyup');step(40);hold('KeyD',3);
- }
+  hold(fwd,8);key('KeyK');key('KeyK','keyup');step(40);hold(back,1);key('KeyK');key('KeyK','keyup');step(40);hold(fwd,3);
+ }};
+ sweep('KeyA','KeyD',()=>state().x<120,110);assert.equal(state().mode,'playing','west sweep alone does not finish the block');
+ sweep('KeyD','KeyA',()=>false,170);
  assert.equal(state().mode,'results');const hp=state().hp,energy=state().ultimate,superCharge=state().superCharge;
  callbacks.get('#advance:click')!();assert.equal(state().blockIndex,1);assert.equal(state().worldWidth,5760);assert.equal(state().hp,hp);assert.equal(state().ultimate,energy);assert.equal(state().superCharge,superCharge);assert.equal(state().checkpoint.city,0);assert.equal(state().checkpoint.banked,0);
  key('Escape');callbacks.get('#restart:click')!();assert.equal(state().mode,'confirm');callbacks.get('#no:click')!();assert.equal(state().mode,'paused');assert.equal(state().blockIndex,1);
