@@ -29,7 +29,7 @@ const images=new Map<string,HTMLImageElement>();
 // full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
 type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
-// Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (idle, walk and light combo so far) override Stages 1 and 3.
+// Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (idle, walk, light combo and heavy so far) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
 type Form={width:number,anims:Record<string,Strip>};
 const S1_PAD={scale:205/256,anchor:10+128*205/256};
@@ -70,7 +70,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD}}},
   // Stage 3 form: 256x192 base still (feet on the bottom row), idle and walk animated, other strips still fall back to idle; combat timing falls back to the base form.
   3:{width:120,anims:{idle:{src:'assets/mogurodon-s3-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s3-walk.png',frames:8,fps:10},
-   light1:{src:'assets/mogurodon-s3-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s3-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s3-light3.png',frames:8,fps:20,once:true,...S1_PAD}}}}},
+   light1:{src:'assets/mogurodon-s3-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s3-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s3-light3.png',frames:8,fps:20,once:true,...S1_PAD},
+   heavyRear:{src:'assets/mogurodon-s3-heavy-rear.png',frames:5,fps:20,once:true,...S1_PAD},heavyHold:{src:'assets/mogurodon-s3-heavy-hold.png',frames:4,fps:10,...S1_PAD},
+   heavySlam:{src:'assets/mogurodon-s3-heavy-slam.png',frames:8,fps:16,once:true,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
