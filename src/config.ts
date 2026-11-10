@@ -71,4 +71,11 @@ export const BUILDING_PRESETS={
  b:{w:42,h:48,hp:230,value:80,kind:'large'},
  x:{w:108,h:520,hp:780,value:520,kind:'medium'},
  n:{w:64,h:460,hp:540,value:340,kind:'medium'},
+ L:{w:190,h:500,hp:1200,value:1000,kind:'large'},
 } as const;
+
+// Open-district exploration rewards. Neither drops crystals, so they never speed up evolution.
+export const EXPLORE = {
+ landmarkUltimate:25,cacheUltimate:30,cachePoints:2500,
+ minimapX:300,minimapY:502,minimapW:360,minimapH:22,
+};

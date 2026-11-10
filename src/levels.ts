@@ -1,4 +1,6 @@
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string};
+// `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
+// `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean};
 // Fixed New York Block 1: four screen widths, authored positions, never generated.
 export const NEW_YORK_BLOCK_ONE:BuildingSpec[]=[
  {x:295,w:64,h:82,hp:60,value:70,kind:'medium',label:'DELI',color:'#577b84'},
@@ -29,18 +31,27 @@ export const CITIES=[
  {name:'Hong Kong',code:'HKG',boss:'Myrmex',sky:'#99bfc6',haze:'#c1d0be',colors:['#789b9a','#927e8c','#8d9b76'],signs:['MARKET','HOTEL','ARCADE','CAFE']},
  {name:'Tokyo',code:'TYO',boss:'Sargathoth',sky:'#b2c8cc',haze:'#d7d2b8',colors:['#82969e','#9a8686','#788b91'],signs:['ARCADE','CAFE','HOTEL','MARKET']},
 ];
-export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',buildings:BuildingSpec[],street:number[],cars:number[]};
-type Entry=[number,keyof typeof BUILDING_PRESETS];
+// `start`: open layouts set a mid-map spawn x; the player can roam both ways and leave by either end once the quota is met.
+// Blocks without it keep the classic west spawn and single eastern exit.
+export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',buildings:BuildingSpec[],street:number[],cars:number[],start?:number};
+// Third entry element: a landmark's name (key 'L') or 'cache'.
+type Entry=[number,keyof typeof BUILDING_PRESETS]|[number,keyof typeof BUILDING_PRESETS,string];
+const LANDMARK_COLORS=['#c3b48d','#b7a37c','#a9a9a0'];
 // Every coordinate below is authored data. Runtime only expands reusable building presets.
-function district(city:number,name:string,screens:number,entries:Entry[],street:number[],cars:number[],kind:BlockDef['kind']='district'):BlockDef{
- const theme=CITIES[city];return {name,screens,kind,street,cars,buildings:entries.map(([x,key],i)=>({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length]}))};
+function district(city:number,name:string,screens:number,entries:Entry[],street:number[],cars:number[],kind:BlockDef['kind']='district',start?:number):BlockDef{
+ const theme=CITIES[city];let landmarks=0;return {name,screens,kind,street,cars,...(start===undefined?{}:{start}),buildings:entries.map(([x,key,tag],i)=>{
+  if(key==='L')return {...BUILDING_PRESETS[key],x,label:tag??'',color:LANDMARK_COLORS[landmarks++%LANDMARK_COLORS.length],landmark:true};
+  return {...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:{})};
+ })};
 }
+// The original packed wall-to-wall Lower Manhattan stays as the Combat Drills map.
+export const DRILL_BLOCK:BlockDef=district(0,'Combat Drills',4,[[400,'s'],[483,'l'],[637,'s'],[724,'s'],[807,'h'],[944,'x'],[1059,'n'],[1128,'m'],[1248,'n'],[1316,'h'],[1454,'l'],[1608,'m'],[1727,'s'],[1810,'m'],[1926,'h'],[2061,'l'],[2219,'m'],[2335,'x'],[2446,'m'],[2562,'h'],[2699,'h'],[2835,'n'],[2907,'l'],[3061,'s'],[3149,'m'],[3268,'h'],[3405,'l'],[3560,'m'],[3675,'s']],[175,375,520,805,1005,1185,1425,1605,1715,1920,2160,2330,2570,2815,3130,3390,3630],[230,710,1005,1195,1580,1910,2160,2370,2550,2830,3120,3380,3650]);
 export const LEVELS:BlockDef[][]=[
  [
- district(0,'Lower Manhattan',4,[[400,'s'],[483,'l'],[637,'s'],[724,'s'],[807,'h'],[944,'x'],[1059,'n'],[1128,'m'],[1248,'n'],[1316,'h'],[1454,'l'],[1608,'m'],[1727,'s'],[1810,'m'],[1926,'h'],[2061,'l'],[2219,'m'],[2335,'x'],[2446,'m'],[2562,'h'],[2699,'h'],[2835,'n'],[2907,'l'],[3061,'s'],[3149,'m'],[3268,'h'],[3405,'l'],[3560,'m'],[3675,'s']],[175,375,520,805,1005,1185,1425,1605,1715,1920,2160,2330,2570,2815,3130,3390,3630],[230,710,1005,1195,1580,1910,2160,2370,2550,2830,3120,3380,3650]),
- district(0,'Midtown Corridor',6,[[400,'l'],[558,'s'],[641,'h'],[776,'l'],[930,'m'],[1047,'l'],[1200,'h'],[1334,'h'],[1469,'m'],[1589,'l'],[1747,'h'],[1885,'x'],[1999,'m'],[2118,'l'],[2274,'s'],[2358,'m'],[2474,'x'],[2585,'h'],[2718,'m'],[2836,'l'],[2992,'m'],[3111,'l'],[3267,'m'],[3385,'n'],[3455,'h'],[3591,'l'],[3748,'h'],[3886,'s'],[3974,'x'],[4085,'m'],[4200,'m'],[4316,'s'],[4399,'h'],[4536,'n'],[4608,'n'],[4675,'x'],[4788,'l'],[4941,'m'],[5061,'m'],[5180,'m'],[5298,'l'],[5452,'m'],[5567,'n']],[190,650,1130,1830,2390,3100,3900,4700,5390],[390,1130,1560,2350,2920,3650,4420,5010,5590]),
+ district(0,'Lower Manhattan',4,[[240,'s'],[320,'m'],[432,'h','cache'],[562,'l'],[880,'m'],[992,'L','WOOLWORTH'],[1182,'n'],[1246,'h'],[1470,'t'],[1600,'s'],[2120,'h'],[2250,'x'],[2358,'m','cache'],[2470,'s'],[2720,'n'],[2784,'L','STOCK EXCHANGE'],[2974,'m'],[3086,'l'],[3420,'t'],[3500,'s'],[3580,'m']],[150,760,1380,1520,1760,2060,2600,3360,3740],[200,770,1400,1850,2000,2640,3380,3760],'district',1920),
+ district(0,'Midtown Corridor',6,[[220,'m'],[332,'h'],[462,'s'],[700,'l'],[850,'L','RADIO CITY'],[1040,'x'],[1148,'m'],[1450,'t'],[1560,'s'],[1640,'h'],[1770,'n','cache'],[1834,'m'],[1946,'s'],[2270,'m'],[2382,'l'],[2630,'t'],[3150,'h'],[3280,'x'],[3388,'n'],[3452,'L','EMPIRE STATE'],[3642,'m'],[3940,'s'],[4020,'l'],[4170,'h','cache'],[4500,'t'],[4620,'m'],[4732,'x'],[4840,'L','CHRYSLER'],[5030,'h'],[5160,'s'],[5340,'m']],[160,640,1300,1500,2180,2700,2900,3080,3880,4440,4570,5250,5650],[180,660,1320,1480,2200,2760,2980,3090,4460,4560,5260,5640],'district',2880),
  district(0,'Central Stronghold',8,[[400,'l'],[555,'m'],[675,'h'],[810,'m'],[929,'s'],[1012,'x'],[1125,'l'],[1280,'x'],[1393,'l'],[1551,'s'],[1637,'h'],[1775,'h'],[1913,'h'],[2046,'l'],[2199,'h'],[2333,'x'],[2445,'s'],[2530,'l'],[2685,'h'],[3070,'b'],[3400,'b'],[3650,'b'],[4020,'b'],[4300,'b'],[4430,'m'],[4548,'h'],[4685,'l'],[4842,'h'],[4979,'m'],[5099,'s'],[5183,'h'],[5317,'m'],[5433,'x'],[5546,'m'],[5665,'n'],[5734,'l'],[5891,'h'],[6024,'l'],[6177,'x'],[6293,'l'],[6447,'m'],[6562,'l'],[6715,'s'],[6800,'n'],[6869,'m'],[6984,'x'],[7096,'m'],[7212,'m'],[7328,'n'],[7399,'s'],[7483,'n']],[550,1300,2140,2930,4600,5350,6190,7060],[500,1250,2150,2870,4510,5300,6120,7030],'stronghold'),
- district(0,'East River Offensive',8,[[400,'l'],[553,'s'],[637,'h'],[775,'x'],[889,'l'],[1042,'h'],[1175,'l'],[1330,'x'],[1445,'l'],[1598,'m'],[1713,'m'],[1828,'s'],[1915,'h'],[2050,'l'],[2206,'m'],[2326,'x'],[2442,'h'],[2575,'s'],[2658,'l'],[2816,'s'],[2900,'m'],[3016,'n'],[3088,'l'],[3242,'m'],[3359,'l'],[3514,'m'],[3629,'l'],[3786,'s'],[3869,'l'],[4026,'l'],[4181,'l'],[4334,'s'],[4422,'n'],[4489,'x'],[4604,'l'],[4761,'h'],[4895,'l'],[5050,'n'],[5120,'x'],[5234,'m'],[5351,'x'],[5465,'h'],[5600,'m'],[5716,'n'],[5785,'s'],[5869,'m'],[5985,'l'],[6143,'l'],[6299,'m'],[6416,'x'],[6531,'l'],[6686,'h'],[6820,'x'],[6936,'m'],[7052,'m'],[7172,'m'],[7291,'h'],[7429,'l']],[510,1170,1870,2780,3460,4190,4800,5510,6260,6980],[500,1200,2200,3130,4140,4800,5500,6220,6980]),
+ district(0,'East River Offensive',8,[[220,'h'],[350,'m'],[462,'s'],[700,'x'],[808,'L','UN HQ'],[998,'l'],[1260,'t'],[1380,'m'],[1492,'s'],[1572,'h'],[1702,'m','cache'],[2000,'n'],[2064,'l'],[2214,'m'],[2440,'t'],[2560,'h'],[2690,'L','CITICORP'],[2880,'x'],[2988,'s'],[3260,'m'],[3372,'h'],[4140,'s'],[4220,'m'],[4332,'n'],[4396,'h','cache'],[4720,'t'],[4840,'l'],[4990,'x'],[5098,'L','MET LIFE'],[5288,'m'],[5560,'s'],[5780,'h'],[5910,'l','cache'],[6060,'n'],[6290,'t'],[6400,'m'],[6512,'h'],[6642,'L','SEAPORT'],[6832,'s'],[7110,'m'],[7222,'h']],[150,640,1230,1330,1940,2380,2500,3200,3560,3720,4000,4080,4700,4780,5500,5700,6250,6360,7040,7520],[170,650,1240,1340,1960,2400,2510,3540,3700,4010,4740,4790,5520,5720,6270,6370,7060,7540],'district',3840),
  district(0,'Kaiban Arena',4,[[500,'m'],[890,'l'],[1300,'s'],[1720,'t'],[2130,'h'],[2550,'l'],[2980,'m'],[3370,'s']],[340,780,1210,1650,2400,3190],[350,1150,1580,2350,3200],'boss'),
  ],
  [
