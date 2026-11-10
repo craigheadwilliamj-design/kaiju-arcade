@@ -51,8 +51,9 @@ const LIGHT_ANIMS=['light1','light2','light3'];let attack:{anim:string,t:number}
 let loopAnim='idle',loopT=0;
 // Holding heavy: rear back once, then loop the hold pose until release triggers heavySlam.
 let heavyT=0;
-// Crouch: entering plays crouchDown, leaving plays crouchUp, before the next loop starts. Crouch-native art is not squashed.
-const CROUCH_ANIMS=['crouch','crouchDown','rangedCrouch'];let loopIntro:string|null=null;
+// Crouch: entering plays crouchDown, leaving plays crouchUp, before the next loop starts. The old 0.6 vertical squash is only a
+// fallback for forms with no crouch art; a form that has it draws every strip (heavy hold, attacks) at full size while crouched.
+let loopIntro:string|null=null;
 // Airborne: jumpRise (only when launched upward) into the jumpAir loop; touching down plays jumpLand.
 // Climbing: W grabs a wall, then W/S move up/down and the player hangs in place when neither is held. Space jumps off.
 // climbGrab into the climb loop, climbMantle on reaching the roof; reaching the street on S just returns to idle.
@@ -312,7 +313,7 @@ function drawBuilding(b:typeof buildings[number]){
  if(b.collapse>0){rect(x-5,C.ground-14,b.w+10,14,'#b1ac91');}
 }
 function monster(x:number,y:number,face:number,crouched:boolean,pose:number){
- if(activeKaiju!=='Mogurodon'||hasSprite('Mogurodon',combat.stage)){const [anim,t]=currentAnim();ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched&&!(CROUCH_ANIMS.includes(anim)&&hasAnim(activeKaiju,anim,combat.stage))?.6:1);drawSilhouette(ctx,activeKaiju,0,0,scale(combat),t,false,anim,combat.stage);ctx.restore();return;}
+ if(activeKaiju!=='Mogurodon'||hasSprite('Mogurodon',combat.stage)){const [anim,t]=currentAnim();ctx.save();ctx.translate(x+bodyWidth()/2,y+bodyHeight());ctx.scale(face,player.crouched&&!hasAnim(activeKaiju,'crouch',combat.stage)?.6:1);drawSilhouette(ctx,activeKaiju,0,0,scale(combat),t,false,anim,combat.stage);ctx.restore();return;}
 
  const h=crouched?C.crouchHeight:C.playerHeight,step=(keys.has('KeyA')||keys.has('KeyD'))&&mode==='playing'?Math.sin(time*13)*4:0;
  ctx.save();ctx.translate(Math.round(x+bodyWidth()/2),Math.round(y+bodyHeight()));ctx.scale(face*scale(combat),scale(combat));
