@@ -25,14 +25,18 @@ const images=new Map<string,HTMLImageElement>();
 // `idle` is required; any other animation falls back to idle until it exists and has loaded.
 // `once` strips (attacks) play a single time from t=0 and hold their last frame; the caller ends them via animDuration.
 // `impact` marks the frame where a hit lands, for syncing gameplay effects to the art.
-type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number};
+// `scale`/`anchor` are for padded strips generated from a shrunken base (room for lunges): `scale` is the art's size relative to a
+// full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
+type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
 // Mogurodon: the base art is its Stage 2 form (used for Stages 2 and 3); `stages[1]` is the Stage 1 form, animated incrementally.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
 type Form={width:number,anims:Record<string,Strip>};
+const S1_PAD={scale:205/256,anchor:10+128*205/256};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10},
-  swipeLeft:{src:'assets/mogurodon-swipe-left.png',frames:10,fps:26,once:true},swipeRight:{src:'assets/mogurodon-swipe-right.png',frames:8,fps:24,once:true},bite:{src:'assets/mogurodon-bite.png',frames:8,fps:20,once:true},
+  // Light combo by hit order (each form picks its own moves): Stage 2 = right-arm swipe, left-arm swipe, bite.
+  light1:{src:'assets/mogurodon-swipe-right.png',frames:8,fps:24,once:true},light2:{src:'assets/mogurodon-swipe-left.png',frames:10,fps:26,once:true},light3:{src:'assets/mogurodon-bite.png',frames:8,fps:20,once:true},
   // Heavy strips are 256x192 (extra headroom for rearing); feet share the same baseline as the 256x144 strips.
   heavyRear:{src:'assets/mogurodon-heavy-rear.png',frames:5,fps:20,once:true},heavyHold:{src:'assets/mogurodon-heavy-hold.png',frames:4,fps:10},heavySlam:{src:'assets/mogurodon-heavy-slam.png',frames:9,fps:18,once:true},
   rangedStand:{src:'assets/mogurodon-ranged-stand.png',frames:9,fps:20,once:true},rangedCrouch:{src:'assets/mogurodon-ranged-crouch.png',frames:8,fps:20,once:true},
@@ -45,8 +49,25 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // Climb (W): 256x256 strips, body vertical with claws at the hitbox edge where the wall is.
   climbGrab:{src:'assets/mogurodon-climb-grab.png',frames:5,fps:20,once:true},climb:{src:'assets/mogurodon-climb.png',frames:8,fps:12},climbMantle:{src:'assets/mogurodon-climb-mantle.png',frames:9,fps:20,once:true}},
   stages:{1:{width:120,anims:{
-   // Stage 1 form: static 256x192 base until its strips are animated (see tools/pixellab_animate.py); add idle/walk/... here as they land.
-   idle:{src:'assets/mogurodon-s1.png',frames:1,fps:1}}}}},
+   // Stage 1 form: 256x192 strips, feet on the bottom row, generated from the mogurodon-s1 base still. Add further strips here as they land.
+   idle:{src:'assets/mogurodon-s1-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s1-walk.png',frames:8,fps:10},
+   jumpRise:{src:'assets/mogurodon-s1-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-s1-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-s1-jump-land.png',frames:5,fps:20,once:true},
+   // Light combo: near (left) paw swipe, far (right) paw swipe, lunging bite. fps chosen so each hit lasts as long as Stage 2's.
+   // Strips that reach forward are generated from the padded base (mogurodon-s1-pad: 205px wide at x=10), so they carry
+   // scale 205/256 and anchor 10+128*scale to draw at the same size and position as the full-frame strips.
+   light1:{src:'assets/mogurodon-s1-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s1-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s1-light3.png',frames:8,fps:20,once:true,...S1_PAD},
+   // Heavy: rear onto the hind legs, hold (straining loop) while charging, slam both paws down on release. Rear and slam are cut
+   // from one generated strip, so the slam starts at the crash; its frames are held to keep Stage 2's 0.5s recovery.
+   heavyRear:{src:'assets/mogurodon-s1-heavy-rear.png',frames:5,fps:20,once:true,...S1_PAD},heavyHold:{src:'assets/mogurodon-s1-heavy-hold.png',frames:4,fps:10,...S1_PAD},
+   heavySlam:{src:'assets/mogurodon-s1-heavy-slam.png',frames:8,fps:16,once:true,...S1_PAD},
+   // Ranged: no tail at Stage 1. Head down, back arched like a hissing cat, quills fire off the back. The projectile spawn is unchanged.
+   rangedStand:{src:'assets/mogurodon-s1-ranged-stand.png',frames:8,fps:18,once:true,...S1_PAD},rangedCrouch:{src:'assets/mogurodon-s1-ranged-crouch.png',frames:8,fps:20,once:true},
+   // Crouch: flat stalking crouch at ~61% of standing height (Stage 2 matches); crouchUp is crouchDown reversed.
+   crouch:{src:'assets/mogurodon-s1-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-s1-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-s1-crouch-up.png',frames:5,fps:22,once:true},
+   // Climb: 256x256 padded strips, body upright with the front claws on the hitbox edge (x=154). The mantle is pre-shifted 25px back,
+   // easing to 0, to cancel the game sliding the hitbox onto the roof when it starts.
+   climbGrab:{src:'assets/mogurodon-s1-climb-grab.png',frames:5,fps:20,once:true,...S1_PAD},climb:{src:'assets/mogurodon-s1-climb.png',frames:8,fps:12,...S1_PAD},
+   climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -65,7 +86,9 @@ export function animImpact(name:string,anim:string,stage?:number){const a=timing
 // Seconds a one-shot animation runs; 0 if this kaiju has no such strip (callers then skip it).
 export function animDuration(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?a.frames/a.fps:0;}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
-export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;const s=form(name,stage)!,a=strip(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,h=s.width*img.naturalHeight/fw;const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim,stage)*fw,0,fw,img.naturalHeight,-s.width/2,-h,s.width,h);ctx.imageSmoothingEnabled=smooth;return true;}
+export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;
+ const s=form(name,stage)!,a=strip(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),w=fw*k,h=img.naturalHeight*k;
+ const smooth=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;ctx.drawImage(img,spriteFrame(name,t,anim,stage)*fw,0,fw,img.naturalHeight,-(a.anchor??fw/2)*k,-h,w,h);ctx.imageSmoothingEnabled=smooth;return true;}
 function art(ctx:CanvasRenderingContext2D,src:string|null){const img=src?images.get(src):null;if(!img?.complete||!img.naturalWidth)return false;ctx.drawImage(img,0,0,960,540);return true;}
 function box(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function polygon(ctx:CanvasRenderingContext2D,points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();}

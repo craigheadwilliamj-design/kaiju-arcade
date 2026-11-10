@@ -46,7 +46,7 @@ let oldWidth=C.playerWidth,oldHeight=C.playerHeight;
 function netScore(){return Math.round((run?.banked||0)+(citySettled?0:cityScore()));}
 let walking=false;
 // Light combo hits 1/2/3 each play a one-shot strip; heavy/ranged cancel it.
-const LIGHT_ANIMS=['swipeRight','swipeLeft','bite'];let attack:{anim:string,t:number}|null=null;
+const LIGHT_ANIMS=['light1','light2','light3'];let attack:{anim:string,t:number}|null=null;
 // Idle/walk loops restart at frame 0 whenever they begin (attacks start and end on idle frame 0).
 let loopAnim='idle',loopT=0;
 // Holding heavy: rear back once, then loop the hold pose until release triggers heavySlam.
