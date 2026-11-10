@@ -79,3 +79,12 @@ export const EXPLORE = {
  landmarkUltimate:25,cacheUltimate:30,cachePoints:2500,
  minimapX:300,minimapY:502,minimapW:360,minimapH:22,
 };
+
+// Hit feel: hitstop freezes the simulation briefly; buildings jolt/flash, keep holes where struck and shed chunks.
+// Tall buildings topple away from the blow as a rigid rotation and crush whatever they land on (chain reactions).
+export const FEEL = {
+ hitstopBase:.02,hitstopPerDamage:.0004,hitstopMax:.1,hitstopCollapse:.07,hitstopTopple:.11,
+ joltSeconds:.14,joltPixels:5,holeCap:14,holeMin:9,holeMax:24,holeDamage:7,holeInset:14,
+ chunkCap:160,chunkLife:2.6,chunkGravity:900,
+ toppleMinHeight:200,toppleKick:.35,toppleAccel:5.5,toppleDamage:1.1,toppleUnitFactor:.6,
+};
