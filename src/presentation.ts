@@ -67,7 +67,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    // Climb: 256x256 padded strips, body upright with the front claws on the hitbox edge (x=154). The mantle is pre-shifted 25px back,
    // easing to 0, to cancel the game sliding the hitbox onto the roof when it starts.
    climbGrab:{src:'assets/mogurodon-s1-climb-grab.png',frames:5,fps:20,once:true,...S1_PAD},climb:{src:'assets/mogurodon-s1-climb.png',frames:8,fps:12,...S1_PAD},
-   climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD}}},
+   climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD},
+   // Seismic Rupture (any stage): rear up and roar, crash down in a shockwave (impact frame 5 = 0.357s, same first-fissure timing as
+   // Stage 2), then a ground-pounding loop with two slams per cycle for the rest of the 2.4s Ultimate.
+   ultRoar:{src:'assets/mogurodon-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s1-ult-pound.png',frames:8,fps:16,...S1_PAD}}},
   // Stage 3 form: 256x192 base still (feet on the bottom row), idle and walk animated, other strips still fall back to idle; combat timing falls back to the base form.
   3:{width:120,anims:{idle:{src:'assets/mogurodon-s3-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s3-walk.png',frames:8,fps:10},
    light1:{src:'assets/mogurodon-s3-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s3-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s3-light3.png',frames:8,fps:20,once:true,...S1_PAD},
