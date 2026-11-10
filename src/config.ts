@@ -88,6 +88,6 @@ export const FEEL = {
  chunkCap:160,chunkLife:2.6,chunkGravity:900,
  toppleMinHeight:200,toppleKick:.35,toppleAccel:5.5,toppleUnitFactor:.6,
  // Crush damage: height × toppleDamage for the first building hit; each further building in the path takes toppleFalloff of the last,
- // and a building toppled by another falls at toppleChain^generation strength, so chains die out.
- toppleDamage:.8,toppleFalloff:.45,toppleChain:.5,
+ // and a building toppled by another falls at toppleChain^generation strength, so chains die out. Kaiju stage does not scale it.
+ toppleDamage:.5,toppleFalloff:.35,toppleChain:.35,
 };

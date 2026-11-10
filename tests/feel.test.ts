@@ -10,8 +10,9 @@ test('topple span runs from the pivot edge out to full height in the fall direct
 });
 
 test('crush damage falls off along the path and across chain generations',()=>{
- assert.equal(Math.round(crushDamage(330,0,0)),264);assert.ok(crushDamage(330,1,0)<crushDamage(330,0,0)*.5);
- assert.equal(crushDamage(330,0,1),crushDamage(330,0,0)/2);assert.ok(crushDamage(500,0,2)<190,'third-generation landmark cannot flatten a medium tower');
+ assert.equal(Math.round(crushDamage(330,0,0)),165);assert.ok(crushDamage(330,0,0)<190,'an ordinary tower cannot one-shot even a small building');
+ assert.ok(crushDamage(330,1,0)<crushDamage(330,0,0)*.4);assert.ok(crushDamage(330,0,1)<crushDamage(330,0,0)*.4);
+ assert.ok(crushDamage(500,0,0)>190&&crushDamage(500,1,0)<190,'a landmark flattens only a small building it lands on');
 });
 
 test('real loop: hits leave holes/chunks/hitstop; short buildings squash; tall ones topple away and crush neighbours',async()=>{

@@ -182,10 +182,10 @@ function impactFeel(b:typeof buildings[number],damage:number,destroyed:boolean,f
 }
 // A falling building lands: crush every structure, ground unit and car under its span; chains if that topples them too.
 function landTopple(b:typeof buildings[number]){
- const [from,to]=toppleSpan(b),mult=damageMultiplier(combat),damage=crushDamage(b.h,0,b.toppleGen,mult),ult=b.toppleUlt,pivot=b.tiltDir>0?b.x+b.w:b.x;let crushed=0;
+ const [from,to]=toppleSpan(b),damage=crushDamage(b.h,0,b.toppleGen),ult=b.toppleUlt,pivot=b.tiltDir>0?b.x+b.w:b.x;let crushed=0;
  // Nearest building takes the brunt; energy falls off along the path. crushGen tags anything this knocks over as the next generation.
  const victims=buildings.filter(t=>t!==b&&t.hpNow>0&&t.x<to&&t.x+t.w>from).sort((p,q)=>Math.abs(p.x+p.w/2-pivot)-Math.abs(q.x+q.w/2-pivot));
- crushGen=b.toppleGen;victims.forEach((t,i)=>{hit(t,crushDamage(b.h,i,b.toppleGen,mult),ult,b.tiltDir,{x:b.tiltDir>0?t.x+8:t.x+t.w-8,y:C.ground-Math.min(t.h-10,b.w*.7)});crushed++;});crushGen=-1;
+ crushGen=b.toppleGen;victims.forEach((t,i)=>{hit(t,crushDamage(b.h,i,b.toppleGen),ult,b.tiltDir,{x:b.tiltDir>0?t.x+8:t.x+t.w-8,y:C.ground-Math.min(t.h-10,b.w*.7)});crushed++;});crushGen=-1;
  for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&u.x<to&&u.x+u.w>from)hitUnit(military,u,damage*F.toppleUnitFactor,'player',260,b.tiltDir,ult);
  for(const car of population.cars)if(!car.crushed&&car.x<to&&car.x+33>from)destroyCar(car,ult);
  for(let x=from;x<to;x+=26)spawnChunks(x,C.ground-12,b.tiltDir,b.color,2,.6);
