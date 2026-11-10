@@ -6,6 +6,8 @@ export const CONFIG = {
  heavyCooldown:.62,rangedCooldown:.48,projectileSpeed:540,
  meleeReach:76,exitThreshold:.75,perfectBonus:1500,
  cameraSpeed:5,maxDelta:.04,collapseDuration:.7,particleCap:180,
+ // Kaiju sprites are drawn this far below the physics floor so their feet sit on the road, not the curb line.
+ spriteDrop:8,
 };
 
 // Provisional M2 combat/evolution tuning; these are implementation defaults.
@@ -30,7 +32,7 @@ export const MILITARY = {
  projectileCap:100,wreckCap:24,wreckSeconds:4,bulletLife:4,impactSeconds:.35,
  cityHP:.1,cityDamage:.1,cityPressure:.08,burstGap:.14,rocketGap:.28,
  knockbackFriction:7,collisionImpactMin:100,collisionBuildingDamage:.3,collisionPlayerDamage:.025,
- unitShards:2,civilianPoints:5,carPoints:80,carShards:1,civilianSpeed:62,
+ unitShards:2,civilianPoints:5,carPoints:80,carShards:0,civilianSpeed:62,
  civilianMax:180,carHP:1,
 };
 
@@ -90,4 +92,15 @@ export const FEEL = {
  // Crush damage: height × toppleDamage for the first building hit; each further building in the path takes toppleFalloff of the last,
  // and a building toppled by another falls at toppleChain^generation strength, so chains die out. Kaiju stage does not scale it.
  toppleDamage:.5,toppleFalloff:.35,toppleChain:.35,
+};
+
+// Traffic, vehicle physics and grab/throw. Mass (VEHICLE_SPECS) slows throws/punts and scales impact damage.
+export const VEHICLES = {
+ gravity:900,restitution:.35,friction:.6,bounceMin:220,
+ kickSpeed:230,kickLift:210,kickDamage:.6,shotPush:.4,
+ throwSpeed:580,throwLift:190,upSpeed:150,upLift:660,throwDamage:42,holdSlow:.85,grabReach:46,
+ impactKeep:.45,unitKeep:.7,chainPush:.6,
+ trafficInterval:2.1,trafficCap:6,trafficPerScreen:5,trafficSpeed:[90,150],trafficPoints:.5,spawnMargin:60,despawn:1500,
+ busChance:.12,vanChance:.22,panicRange:270,panicDecel:520,panicSpeed:1.7,
+ laneOffset:[5,17],vehicleCap:70,
 };

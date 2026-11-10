@@ -44,7 +44,8 @@ test('climbing is a clinging state: hang when idle, S climbs down, Space jumps o
   h.tap('Space');h.step(1);
   assert.equal(h.state().clinging,false);assert.ok(h.state().vy<0,'jumped off upward');
   h.step(60);assert.equal(h.state().clinging,false,'W held after jump-off does not re-grab');
-  h.up('KeyW');
+  // A real key release lasts at least one frame; that frame is what re-arms the grab.
+  h.up('KeyW');h.step(1);
   // Releasing W re-arms the grab, and W again re-attaches while still beside the wall.
   for(let i=0;i<400&&!h.state().grounded;i++)h.step();
   h.down('KeyW');h.step(5);assert.equal(h.state().clinging,true);h.up('KeyW');
