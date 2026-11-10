@@ -1,6 +1,6 @@
 import {CONFIG as C,COMBAT as B,MILITARY as M,CAMPAIGN as P,EXPLORE as X,FEEL as F} from './config.ts';
 import {NEW_YORK_BLOCK_ONE,DRILL_BLOCK,CITIES,LEVELS,levelWidth} from './levels.ts';
-import {createBuildings,damageBuilding,destruction,exitUnlocked,perfectBonus,solid,overlaps,canExitBlock,damageObjective,separateHorizontal,canTopple,toppleSpan} from './rules.ts';
+import {createBuildings,damageBuilding,destruction,exitUnlocked,perfectBonus,solid,overlaps,canExitBlock,damageObjective,separateHorizontal,canTopple,toppleSpan,crushDamage} from './rules.ts';
 import {createCombat,canAct,scale,damageMultiplier,collectCrystal,creditDamage,tickCombat,light,beginHeavy,releaseHeavy,ranged,activateUltimate,activateSuper,cancelCharge,receiveHit} from './combat.ts';
 import type {Strike} from './combat.ts';
 import {createMilitary,tickMilitary,spawnUnit,hitUnit,intercept,segmentHits,UNITS,WEAPONS} from './military.ts';
@@ -72,7 +72,7 @@ let player={x:110,y:C.ground-C.playerHeight,vy:0,face:1,grounded:true,crouched:f
 type Particle={x:number,y:number,vx:number,vy:number,life:number,color:string,size:number};
 // Chunks are separate from particles (own cap): building debris that flies, bounces once and settles.
 type Chunk={x:number,y:number,vx:number,vy:number,s:number,color:string,life:number,bounces:number};
-let chunks:Chunk[]=[],hitstop=0;
+let chunks:Chunk[]=[],hitstop=0,crushGen=-1;
 let particles:Particle[]=[],shots:{x:number,y:number,vx:number,life:number,damage:number,knockback:number}[]=[];
 
 function panel(content:string,wide=false){overlay.innerHTML=`<div class="panel ${wide?'panel-wide':''}">${content}</div>`;}
@@ -177,13 +177,15 @@ function impactFeel(b:typeof buildings[number],damage:number,destroyed:boolean,f
  if(!fromUltimate)hitstop=Math.max(hitstop,Math.min(F.hitstopMax,F.hitstopBase+damage*F.hitstopPerDamage));
  if(!destroyed)return;
  if(!fromUltimate)hitstop=Math.max(hitstop,F.hitstopCollapse);
- if(canTopple(b)){b.topple=1;b.tilt=0;b.tiltV=F.toppleKick;b.tiltDir=dir;b.collapse=0;b.toppleUlt=fromUltimate;}
+ if(canTopple(b)){b.topple=1;b.tilt=0;b.tiltV=F.toppleKick;b.tiltDir=dir;b.collapse=0;b.toppleUlt=fromUltimate;b.toppleGen=crushGen+1;}
  else spawnChunks(b.x+b.w/2,C.ground-b.h*.6,dir,b.color,10,1.4);
 }
 // A falling building lands: crush every structure, ground unit and car under its span; chains if that topples them too.
 function landTopple(b:typeof buildings[number]){
- const [from,to]=toppleSpan(b),damage=b.h*F.toppleDamage*damageMultiplier(combat),ult=b.toppleUlt;let crushed=0;
- for(const t of buildings)if(t!==b&&t.hpNow>0&&t.x<to&&t.x+t.w>from){hit(t,damage,ult,b.tiltDir,{x:b.tiltDir>0?t.x+8:t.x+t.w-8,y:C.ground-Math.min(t.h-10,b.w*.7)});crushed++;}
+ const [from,to]=toppleSpan(b),mult=damageMultiplier(combat),damage=crushDamage(b.h,0,b.toppleGen,mult),ult=b.toppleUlt,pivot=b.tiltDir>0?b.x+b.w:b.x;let crushed=0;
+ // Nearest building takes the brunt; energy falls off along the path. crushGen tags anything this knocks over as the next generation.
+ const victims=buildings.filter(t=>t!==b&&t.hpNow>0&&t.x<to&&t.x+t.w>from).sort((p,q)=>Math.abs(p.x+p.w/2-pivot)-Math.abs(q.x+q.w/2-pivot));
+ crushGen=b.toppleGen;victims.forEach((t,i)=>{hit(t,crushDamage(b.h,i,b.toppleGen,mult),ult,b.tiltDir,{x:b.tiltDir>0?t.x+8:t.x+t.w-8,y:C.ground-Math.min(t.h-10,b.w*.7)});crushed++;});crushGen=-1;
  for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&u.x<to&&u.x+u.w>from)hitUnit(military,u,damage*F.toppleUnitFactor,'player',260,b.tiltDir,ult);
  for(const car of population.cars)if(!car.crushed&&car.x<to&&car.x+33>from)destroyCar(car,ult);
  for(let x=from;x<to;x+=26)spawnChunks(x,C.ground-12,b.tiltDir,b.color,2,.6);

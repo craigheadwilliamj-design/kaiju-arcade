@@ -1,12 +1,17 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {bootGame} from './helpers/game-harness.ts';
-import {createBuildings,canTopple,toppleSpan} from '../src/rules.ts';
+import {createBuildings,canTopple,toppleSpan,crushDamage} from '../src/rules.ts';
 import {DRILL_BLOCK} from '../src/levels.ts';
 
 test('topple span runs from the pivot edge out to full height in the fall direction',()=>{
  const [b]=createBuildings([{x:500,w:100,h:300,hp:10,value:10,kind:'medium',label:'',color:'#000'}]);
  assert.equal(canTopple(b),true);b.tiltDir=1;assert.deepEqual(toppleSpan(b),[600,900]);b.tiltDir=-1;assert.deepEqual(toppleSpan(b),[200,500]);
  const [short]=createBuildings([{x:0,w:80,h:150,hp:10,value:10,kind:'medium',label:'',color:'#000'}]);assert.equal(canTopple(short),false);
+});
+
+test('crush damage falls off along the path and across chain generations',()=>{
+ assert.equal(Math.round(crushDamage(330,0,0)),264);assert.ok(crushDamage(330,1,0)<crushDamage(330,0,0)*.5);
+ assert.equal(crushDamage(330,0,1),crushDamage(330,0,0)/2);assert.ok(crushDamage(500,0,2)<190,'third-generation landmark cannot flatten a medium tower');
 });
 
 test('real loop: hits leave holes/chunks/hitstop; short buildings squash; tall ones topple away and crush neighbours',async()=>{
