@@ -12,6 +12,8 @@ export const ROSTER=[
 // Original epilogues/illustrations have not been supplied. Do not invent final lore.
 export const ENDINGS=ROSTER.map(r=>({name:r.name,title:r.ending,epilogue:null as string|null}));
 export const ART_SLOTS:{menu:string|null,intro:(string|null)[],endings:Record<string,string|null>}={menu:null,intro:[null,null,null,null],endings:Object.fromEntries(KAIJU.map(k=>[k,null]))};
+// HUD score: sign first, then zero-padded magnitude (-12 -> '-00012'). Scores may go negative.
+export function hudScore(n:number,width=6){const v=Math.round(n);const d=String(Math.abs(v));return v<0?'-'+d.padStart(width-1,'0'):d.padStart(width,'0');}
 export function introScene(elapsed:number){return Math.max(0,Math.min(3,Math.floor(elapsed/3)));}
 export function selectable(p:Permanent,name:string){return KAIJU.includes(name)&&p.unlocked.includes(name);}
 export type FreePlayChoice={kaiju:string,city:number,boss:string};
