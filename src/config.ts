@@ -12,7 +12,7 @@ export const CONFIG = {
 
 // Provisional M2 combat/evolution tuning; these are implementation defaults.
 export const COMBAT = {
- maxHP:100,startHP:24,up:[35,75],down:[25,65],stageScale:[1,1.4,2.8],
+ maxHP:100,startHP:34,up:[50,92],down:[36,74],stageScale:[1,1.4,2.8],
  stageDamage:[1,1.25,1.55],stageResistance:[1,.9,.8],transformSeconds:1,
  comboTimeout:.8,inputBuffer:.15,comboDamage:[1,1.1,1.7],comboKnockback:[70,95,200],
  maxCharge:1.5,chargeSlow:.3,chargeDamageBonus:1.6,heavyKnockback:220,
@@ -20,9 +20,9 @@ export const COMBAT = {
  ultimateDamage:58,ultimateSpeed:540,ultimateRange:1100,
  superMax:40,superDuration:20,superDamage:1.5,superSpeed:1.18,superResistance:.55,superKnockback:1.5,
  rangedMax:12,staggerSeconds:.32,staggerProtection:.9,knockbackFriction:9,
- scorePenaltyPerHP:10,ambientInterval:6,ambientCount:3,growthInterval:14,growthHP:120,
- shardValue:3,shardCap:120,shardLifetime:90,shardMagnet:90,shardPickup:28,
- buildingShards:3,growthShards:15,growthCap:3,burstRadius:50,
+ scorePenaltyPerHP:10,ambientInterval:5,ambientCount:3,growthInterval:30,growthHP:240,
+ shardValue:1,shardCap:120,shardLifetime:90,shardMagnet:90,shardPickup:28,
+ buildingShards:1,growthShards:12,growthCap:3,burstRadius:50,
 };
 
 // M3 provisional military/civilian tuning. No military collision damage.
@@ -32,7 +32,7 @@ export const MILITARY = {
  projectileCap:100,wreckCap:24,wreckSeconds:4,bulletLife:4,impactSeconds:.35,
  cityHP:.1,cityDamage:.1,cityPressure:.08,burstGap:.14,rocketGap:.28,
  knockbackFriction:7,collisionImpactMin:100,collisionBuildingDamage:.3,collisionPlayerDamage:.025,
- unitShards:2,civilianPoints:5,carPoints:80,carShards:0,civilianSpeed:62,
+ unitShards:1,civilianPoints:5,carPoints:80,carShards:0,civilianSpeed:62,
  civilianMax:180,carHP:1,
 };
 
@@ -59,7 +59,7 @@ export const WEAPON_CONFIG = {
 };
 
 export const CAMPAIGN = {
- strongholdHP:700,strongholdShards:35,bossHP:750,bossSpeed:110,bossMeleeDamage:7,
+ strongholdHP:700,strongholdShards:24,bossHP:750,bossSpeed:110,bossMeleeDamage:7,
  bossShotDamage:5,bossTelegraph:.8,bossMeleeCooldown:2.4,bossRangedCooldown:3.8,
  bossShotSpeed:220,bossDamagePoints:2,bossKnockback:190,bossTurnDelay:.25,
  bossWidth:78,bossHeight:106,bossRange:90,bossShotLife:5,bossShotCap:12,
