@@ -140,6 +140,13 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // standing last frame. The punch's hoof drives into the wall on impact frame 5. Upright frames tip the snout up, so they have no eye.
   climbGrab:{src:'assets/kaiban-s1-climb-grab.png',frames:5,fps:20,once:true,...KB1_NATIVE},climb:{src:'assets/kaiban-s1-climb.png',frames:8,fps:12,...KB1_NATIVE},
   climbMantle:{src:'assets/kaiban-s1-climb-mantle.png',frames:9,fps:20,once:true,...KB1_NATIVE},climbPunch:{src:'assets/kaiban-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...KB1_NATIVE},
+  // Grab/carry/throw: scoops with the tusks and heaves the prop up onto them, carries it there on all fours with the head held high,
+  // and throws with a forward head-fling (slash arc on frame 1: the prop launches on the key press). `hold` points sit on the tusk tops;
+  // during the scoop (grab 0-4) the prop stays on the street under the tusk tips. Head-high frames have no eye.
+  grab:{src:'assets/kaiban-s1-grab.png',frames:9,fps:22,once:true,...KB1_NATIVE,hold:[[186,191],[188,191],[184,191],[180,191],[176,191],[174,178],[192,121],[180,78],[177,75]]},
+  carry:{src:'assets/kaiban-s1-carry.png',frames:4,fps:6,...KB1_NATIVE,hold:[[177,75],[177,75],[177,75],[177,75]]},
+  carryWalk:{src:'assets/kaiban-s1-carry-walk.png',frames:8,fps:10,...KB1_NATIVE,hold:[[177,75],[177,74],[177,73],[177,74],[177,74],[177,75],[177,74],[177,74]]},
+  throw:{src:'assets/kaiban-s1-throw.png',frames:8,fps:18,once:true,...KB1_NATIVE},
   // Ranged (debris shotgun): plows both tusks down and forward into the street (frames 1-4, dirt clod at the tusks), then wrenches the
   // head up so the tusks fling the debris up and forward (impact frame 5, with the dirt crescent), and settles. Loose dirt erased: the
   // game draws the projectiles. The upswing frames tip the head up, so they have no eye.
