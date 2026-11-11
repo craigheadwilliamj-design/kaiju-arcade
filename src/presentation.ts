@@ -51,12 +51,17 @@ const KB1_LEFT={scale:139/256,anchor:18+128*139/256};
 const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Kaiban Stage 2 forward-slam strips: generated from the same base shifted 24px left (sprite at x=4) so the punches stay in the frame.
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
-// Kaiban Stage 2 form, in progress: idle, walk and the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while the near
+// Kaiban Stage 2 form, in progress: idle, walk, the heavy and the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while the near
 // fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo). `borrow`: every move not drawn yet plays the
 // Stage 1 strip. Stage 3 uses this form too until it has its own art.
 const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-idle.png',frames:8,fps:8,...KB2_NATIVE},walk:{src:'assets/kaiban-s2-walk.png',frames:8,fps:10,...KB2_NATIVE},
  light1:{src:'assets/kaiban-s2-light1.png',frames:8,fps:24,once:true,...KB2_LEFT},light2:{src:'assets/kaiban-s2-light2.png',frames:8,fps:21,once:true,...KB2_LEFT},
  light3:{src:'assets/kaiban-s2-light3.png',frames:8,fps:20,once:true,...KB2_LEFT},
+ // Heavy: hunches low with both fists cocked back (rear), shudders with breath puffs while K is held (hold, generated from rear's last
+ // frame), then a lunging tusk uppercut with a slash arc that settles back to the base pose (slam). Rear and slam are cut from one 16-frame
+ // generation off the left-shifted base (rear 0-4, slam 9-15 plus the base); frame counts and fps match the Stage 1 heavy.
+ heavyRear:{src:'assets/kaiban-s2-heavy-rear.png',frames:5,fps:20,once:true,...KB2_LEFT},heavyHold:{src:'assets/kaiban-s2-heavy-hold.png',frames:4,fps:10,...KB2_LEFT},
+ heavySlam:{src:'assets/kaiban-s2-heavy-slam.png',frames:8,fps:16,once:true,...KB2_LEFT},
  // Ranged (debris shotgun), gorilla-style: leans in, rises and digs both fists into the street (frame 4, rubble in the fists), heaves them
  // up and forward underhand to fling it (impact frame 5, Stage 1's timing), follows through and drops back to all fours. Loose rocks erased:
  // the game draws the projectiles. The crouched shot still borrows Stage 1's.
