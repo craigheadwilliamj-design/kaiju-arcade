@@ -51,7 +51,7 @@ const KB1_LEFT={scale:139/256,anchor:18+128*139/256};
 const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Kaiban Stage 2 forward-slam strips: generated from the same base shifted 24px left (sprite at x=4) so the punches stay in the frame.
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
-// Kaiban Stage 2 form, in progress: idle, walk and the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while the near
+// Kaiban Stage 2 form, in progress: idle, walk, the climb set and the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while the near
 // fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo). `borrow`: every move not drawn yet plays the
 // Stage 1 strip. Stage 3 uses this form too until it has its own art.
 const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-idle.png',frames:8,fps:8,...KB2_NATIVE},walk:{src:'assets/kaiban-s2-walk.png',frames:8,fps:10,...KB2_NATIVE},
@@ -60,7 +60,14 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // Ranged (debris shotgun), gorilla-style: leans in, rises and digs both fists into the street (frame 4, rubble in the fists), heaves them
  // up and forward underhand to fling it (impact frame 5, Stage 1's timing), follows through and drops back to all fours. Loose rocks erased:
  // the game draws the projectiles. The crouched shot still borrows Stage 1's.
- rangedStand:{src:'assets/kaiban-s2-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB2_LEFT}}};
+ rangedStand:{src:'assets/kaiban-s2-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB2_LEFT},
+ // Climb: 256x256 strips, clinging upright with the fists gripping the wall line (frame x=168, the hitbox edge 24 world units out at this
+ // scale), feet braced on the wall, snout and tusks up. PixelLab braced him 37px up the wall, so the climb frames sit 21px lower (as far as
+ // the lowest step allows); the grab eases into that and the 53px shift onto the wall line from the base pose. The mantle starts a further
+ // 24px back (the game slides him 0.3 body widths onto the roof) and eases to 0 by its standing last frame. The punch draws the near fist
+ // back off the wall and drives it in with a smear on impact frame 5. Frame counts and fps match Stage 1.
+ climbGrab:{src:'assets/kaiban-s2-climb-grab.png',frames:5,fps:20,once:true,...KB2_NATIVE},climb:{src:'assets/kaiban-s2-climb.png',frames:8,fps:12,...KB2_NATIVE},
+ climbMantle:{src:'assets/kaiban-s2-climb-mantle.png',frames:9,fps:20,once:true,...KB2_NATIVE},climbPunch:{src:'assets/kaiban-s2-climb-punch.png',frames:8,fps:24,once:true,impact:5,...KB2_NATIVE}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
