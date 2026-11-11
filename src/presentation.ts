@@ -51,8 +51,8 @@ const KB1_LEFT={scale:139/256,anchor:18+128*139/256};
 const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Kaiban Stage 2 forward-slam strips: generated from the same base shifted 24px left (sprite at x=4) so the punches stay in the frame.
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
-// Kaiban Stage 2 form, in progress: idle, walk and the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while the near
-// fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo). `borrow`: every move not drawn yet plays the
+// Kaiban Stage 2 form, in progress: idle, walk, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while the near
+// fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop and grab/carry/throw. `borrow`: every move not drawn yet plays the
 // Stage 1 strip. Stage 3 uses this form too until it has its own art.
 const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-idle.png',frames:8,fps:8,...KB2_NATIVE},walk:{src:'assets/kaiban-s2-walk.png',frames:8,fps:10,...KB2_NATIVE},
  light1:{src:'assets/kaiban-s2-light1.png',frames:8,fps:24,once:true,...KB2_LEFT},light2:{src:'assets/kaiban-s2-light2.png',frames:8,fps:21,once:true,...KB2_LEFT},
@@ -60,7 +60,16 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // Ranged (debris shotgun), gorilla-style: leans in, rises and digs both fists into the street (frame 4, rubble in the fists), heaves them
  // up and forward underhand to fling it (impact frame 5, Stage 1's timing), follows through and drops back to all fours. Loose rocks erased:
  // the game draws the projectiles. The crouched shot still borrows Stage 1's.
- rangedStand:{src:'assets/kaiban-s2-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB2_LEFT}}};
+ rangedStand:{src:'assets/kaiban-s2-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB2_LEFT},
+ // Grab/carry/throw, gorilla-style, 256x256 strips (the base padded to 256 tall, feet on the bottom row, so KB2_NATIVE still lines up)
+ // because the overhead lift reaches the top of the frame. Grab: dips with the fists at the street (prop stays on the street in front
+ // of the near fist, frames 0-3), rises onto the hind legs and presses both fists straight up overhead. Carry stands upright with the
+ // fists up; carry-walk lumbers upright on the hind legs. Throw whips both arms forward and down from overhead (swing arcs on frame 1:
+ // the prop launches on the key press) and drops back onto all fours, ending on the base pose. `hold` points sit on top of the fists.
+ grab:{src:'assets/kaiban-s2-grab.png',frames:9,fps:22,once:true,...KB2_NATIVE,hold:[[222,255],[222,255],[222,255],[219,255],[197,151],[192,91],[120,30],[107,3],[107,3]]},
+ carry:{src:'assets/kaiban-s2-carry.png',frames:4,fps:6,...KB2_NATIVE,hold:[[107,3],[107,3],[107,3],[107,3]]},
+ carryWalk:{src:'assets/kaiban-s2-carry-walk.png',frames:8,fps:10,...KB2_NATIVE,hold:[[107,3],[109,3],[111,3],[112,3],[111,3],[111,3],[109,3],[108,3]]},
+ throw:{src:'assets/kaiban-s2-throw.png',frames:8,fps:18,once:true,...KB2_NATIVE}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
