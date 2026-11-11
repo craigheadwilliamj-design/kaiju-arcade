@@ -21,6 +21,7 @@ ap.add_argument('--pad', type=int, default=6, help='head-patch margin around the
 ap.add_argument('--region', default='70,110,200,240', help='y0,y1,x0,x1 box in the ref that contains the eye')
 ap.add_argument('--offset', action='append', default=[], help='manual override for a mis-tracked frame: FRAME:DY,DX')
 ap.add_argument('--only', help='comma list of frames to touch (others are left as they are); lets one strip use several refs')
+ap.add_argument('--max-err', type=float, help='skip frames whose best head match is worse than this (mean squared RGB error); keeps the eye off turned or reared heads')
 a = ap.parse_args()
 
 im = np.asarray(Image.open(a.src).convert('RGBA')).copy(); H = im.shape[0]; n = im.shape[1] // FW
@@ -54,7 +55,8 @@ for i in range(n):
             d = ((p[..., :3] - tpl) ** 2).sum(-1)[m].mean()
             if best is None or d < best[0]: best = (d, dy, dx)
     if best is None: print(i, 'no match, skipped'); continue
-    _, dy, dx = best
+    err, dy, dx = best
+    if a.max_err is not None and err > a.max_err: print(i, f'err {err:.0f} > max, skipped'); continue
     F[i][ys + dy, xs + dx] = ref[ys, xs].astype(np.uint8)
-    print(i, 'offset', dy, dx)
+    print(i, 'offset', dy, dx, f'err {err:.0f}')
 Image.fromarray(np.concatenate(F, 1)).save(a.out, optimize=True)

@@ -16,17 +16,23 @@ from PIL import Image
 API = 'https://api.pixellab.ai/v2'
 
 def call(method, path, body=None):
-    req = urllib.request.Request(API + path, method=method,
-        data=json.dumps(body).encode() if body else None,
-        headers={'Content-Type': 'application/json',
-                 'Authorization': 'Bearer ' + os.environ.get('PIXELLAB_TOKEN', 'proxy-injected')})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return json.load(r)
+    # 429 means too many jobs in flight at once (several strips generated in parallel): back off and retry.
+    for wait in (15, 30, 60, 120, 240, 0):
+        req = urllib.request.Request(API + path, method=method,
+            data=json.dumps(body).encode() if body else None,
+            headers={'Content-Type': 'application/json',
+                     'Authorization': 'Bearer ' + os.environ.get('PIXELLAB_TOKEN', 'proxy-injected')})
+        try:
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code != 429 or not wait: raise SystemExit(f'{method} {path}: HTTP {e.code} {e.read().decode()[:300]}')
+            time.sleep(wait)
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('first'); ap.add_argument('out'); ap.add_argument('motion')
-    ap.add_argument('--frames', type=int, default=8)
+    ap.add_argument('--frames', type=int, default=8, help='multiple of 4; the strip gets this many new frames after the input frame')
     ap.add_argument('--subject'); ap.add_argument('--pose')
     ap.add_argument('--direction', default='east'); ap.add_argument('--view', default='side')
     ap.add_argument('--seed', type=int, default=0)

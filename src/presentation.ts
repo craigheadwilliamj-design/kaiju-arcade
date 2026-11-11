@@ -36,7 +36,7 @@ type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,sca
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
 type Form={width:number,anims:Record<string,Strip>};
 const S1_PAD={scale:205/256,anchor:10+128*205/256};
-// Stage 3 strips generated from the native-resolution base (assets/mogurodon-s3.png: the 173px-wide sprite at x=41, one art pixel per
+// Stage 3 strips generated from the native-resolution base (the mogurodon-s3 base still: the 173px-wide sprite at x=41, one art pixel per
 // pixel, keyed from the transparent render with tools/key_render.py) instead of a stretched full-frame one.
 const S3_NATIVE={scale:173/256,anchor:41+128*173/256};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
@@ -86,20 +86,22 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    grab:{src:'assets/mogurodon-s1-grab.png',frames:9,fps:22,once:true,...S1_PAD,hold:[[173,191],[207,191],[239,191],[241,191],[230,191],[214,191],[167,191],[200,70],[145,27]]},
    carry:{src:'assets/mogurodon-s1-carry.png',frames:4,fps:6,...S1_PAD,hold:[145,27]},carryWalk:{src:'assets/mogurodon-s1-carry-walk.png',frames:8,fps:10,...S1_PAD,hold:[144,26]},
    throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_PAD}}},
-  // Stage 3 form: 256x192 base still (feet on the bottom row), idle and walk animated, other strips still fall back to idle; combat timing falls back to the base form.
+  // Stage 3 form: every strip generated from the native-resolution base (S3_NATIVE); frame counts, fps and impact frames match the
+  // previous art so combat timing is unchanged. Climb strips are 256x256 with the gripping claws on the wall line (frame x=162).
   3:{width:120,anims:{idle:{src:'assets/mogurodon-s3-idle.png',frames:8,fps:8,...S3_NATIVE},walk:{src:'assets/mogurodon-s3-walk.png',frames:8,fps:10,...S3_NATIVE},
-   light1:{src:'assets/mogurodon-s3-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s3-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s3-light3.png',frames:8,fps:20,once:true,...S1_PAD},
-   heavyRear:{src:'assets/mogurodon-s3-heavy-rear.png',frames:5,fps:20,once:true,...S1_PAD},heavyHold:{src:'assets/mogurodon-s3-heavy-hold.png',frames:4,fps:10,...S1_PAD},
-   heavySlam:{src:'assets/mogurodon-s3-heavy-slam.png',frames:8,fps:16,once:true,...S1_PAD},
-   jumpRise:{src:'assets/mogurodon-s3-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-s3-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-s3-jump-land.png',frames:5,fps:20,once:true},
-   rangedStand:{src:'assets/mogurodon-s3-ranged-stand.png',frames:8,fps:18,once:true,...S1_PAD},rangedCrouch:{src:'assets/mogurodon-s3-ranged-crouch.png',frames:8,fps:18,once:true},
-   crouch:{src:'assets/mogurodon-s3-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-s3-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-s3-crouch-up.png',frames:5,fps:22,once:true},
-   climbGrab:{src:'assets/mogurodon-s3-climb-grab.png',frames:5,fps:20,once:true,...S1_PAD},climb:{src:'assets/mogurodon-s3-climb.png',frames:8,fps:12,...S1_PAD},
-   climbMantle:{src:'assets/mogurodon-s3-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD},
-   ultRoar:{src:'assets/mogurodon-s3-ult-roar.png',frames:8,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s3-ult-pound.png',frames:16,fps:30,...S1_PAD},
-   grab:{src:'assets/mogurodon-s3-grab.png',frames:9,fps:22,once:true,...S1_PAD,hold:[[196,191],[236,191],[239,191],[227,191],[214,191],[196,191],[205,85],[153,26],[153,27]]},
-   carry:{src:'assets/mogurodon-s3-carry.png',frames:5,fps:6,...S1_PAD,hold:[153,27]},carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S1_PAD,hold:[153,26]},
-   throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S1_PAD}}}}},
+   light1:{src:'assets/mogurodon-s3-light1.png',frames:8,fps:24,once:true,...S3_NATIVE},light2:{src:'assets/mogurodon-s3-light2.png',frames:8,fps:21,once:true,...S3_NATIVE},light3:{src:'assets/mogurodon-s3-light3.png',frames:8,fps:20,once:true,...S3_NATIVE},
+   heavyRear:{src:'assets/mogurodon-s3-heavy-rear.png',frames:5,fps:20,once:true,...S3_NATIVE},heavyHold:{src:'assets/mogurodon-s3-heavy-hold.png',frames:4,fps:10,...S3_NATIVE},
+   heavySlam:{src:'assets/mogurodon-s3-heavy-slam.png',frames:8,fps:16,once:true,...S3_NATIVE},
+   jumpRise:{src:'assets/mogurodon-s3-jump-rise.png',frames:9,fps:24,once:true,...S3_NATIVE},jumpAir:{src:'assets/mogurodon-s3-jump-air.png',frames:4,fps:8,...S3_NATIVE},jumpLand:{src:'assets/mogurodon-s3-jump-land.png',frames:5,fps:20,once:true,...S3_NATIVE},
+   rangedStand:{src:'assets/mogurodon-s3-ranged-stand.png',frames:8,fps:18,once:true,...S3_NATIVE},rangedCrouch:{src:'assets/mogurodon-s3-ranged-crouch.png',frames:8,fps:18,once:true,...S3_NATIVE},
+   crouch:{src:'assets/mogurodon-s3-crouch.png',frames:4,fps:6,...S3_NATIVE},crouchDown:{src:'assets/mogurodon-s3-crouch-down.png',frames:5,fps:22,once:true,...S3_NATIVE},crouchUp:{src:'assets/mogurodon-s3-crouch-up.png',frames:5,fps:22,once:true,...S3_NATIVE},
+   climbGrab:{src:'assets/mogurodon-s3-climb-grab.png',frames:5,fps:20,once:true,...S3_NATIVE},climb:{src:'assets/mogurodon-s3-climb.png',frames:8,fps:12,...S3_NATIVE},
+   climbMantle:{src:'assets/mogurodon-s3-climb-mantle.png',frames:9,fps:20,once:true,...S3_NATIVE},
+   ultRoar:{src:'assets/mogurodon-s3-ult-roar.png',frames:8,fps:14,once:true,impact:5,...S3_NATIVE},ultPound:{src:'assets/mogurodon-s3-ult-pound.png',frames:16,fps:30,...S3_NATIVE},
+   grab:{src:'assets/mogurodon-s3-grab.png',frames:9,fps:22,once:true,...S3_NATIVE,hold:[[195,191],[206,191],[219,191],[217,191],[215,191],[211,191],[202,150],[196,100],[134,25]]},
+   carry:{src:'assets/mogurodon-s3-carry.png',frames:4,fps:6,...S3_NATIVE,hold:[[134,25],[134,24],[134,23],[134,24]]},
+   carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S3_NATIVE,hold:[[134,25],[140,24],[149,24],[158,24],[162,24],[157,24],[150,24],[140,24]]},
+   throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE}}}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
