@@ -42,6 +42,8 @@ const S1_NATIVE={scale:151/256,anchor:52+128*151/256};
 const S3_NATIVE={scale:173/256,anchor:41+128*173/256};
 // Stage 2 (base form) strips: the mogurodon-s2 base still, a 194px-wide sprite at x=31 keyed the same way.
 const S2_NATIVE={scale:194/256,anchor:31+128*194/256};
+// Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
+const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
@@ -113,6 +115,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    carry:{src:'assets/mogurodon-s3-carry.png',frames:4,fps:6,...S3_NATIVE,hold:[[134,25],[134,24],[134,23],[134,24]]},
    carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S3_NATIVE,hold:[[134,25],[140,24],[149,24],[158,24],[162,24],[157,24],[150,24],[140,24]]},
    throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE}}}}},
+ // Kaiban (woolly boar juggernaut): only the Stage 1 form exists, so it is the base form and every stage draws it until Stage 2/3 are
+ // generated. Same 120-unit width as Mogurodon Stage 1, so the hitbox is unchanged.
+ Kaiban:{width:120,anims:{idle:{src:'assets/kaiban-s1-idle.png',frames:8,fps:8,...KB1_NATIVE},walk:{src:'assets/kaiban-s1-walk.png',frames:8,fps:10,...KB1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
