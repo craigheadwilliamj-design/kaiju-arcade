@@ -56,7 +56,11 @@ const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
 // Stage 1 strip. Stage 3 uses this form too until it has its own art.
 const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-idle.png',frames:8,fps:8,...KB2_NATIVE},walk:{src:'assets/kaiban-s2-walk.png',frames:8,fps:10,...KB2_NATIVE},
  light1:{src:'assets/kaiban-s2-light1.png',frames:8,fps:24,once:true,...KB2_LEFT},light2:{src:'assets/kaiban-s2-light2.png',frames:8,fps:21,once:true,...KB2_LEFT},
- light3:{src:'assets/kaiban-s2-light3.png',frames:8,fps:20,once:true,...KB2_LEFT}}};
+ light3:{src:'assets/kaiban-s2-light3.png',frames:8,fps:20,once:true,...KB2_LEFT},
+ // Ranged (debris shotgun), gorilla-style: leans in, rises and digs both fists into the street (frame 4, rubble in the fists), heaves them
+ // up and forward underhand to fling it (impact frame 5, Stage 1's timing), follows through and drops back to all fours. Loose rocks erased:
+ // the game draws the projectiles. The crouched shot still borrows Stage 1's.
+ rangedStand:{src:'assets/kaiban-s2-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB2_LEFT}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
