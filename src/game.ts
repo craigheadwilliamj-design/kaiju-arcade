@@ -389,9 +389,10 @@ function update(dt:number){
  if(rival){for(const hit of tickRival(rival,dt,{x:player.x,y:player.y,w,h},worldWidth,buildings))receiveHit(combat,hit.damage,'boss',hit.strength,hit.direction);for(const b of buildings)if(b.hpNow<b.hp)releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);if(endIfDead())return;}
  tickMilitary(military,dt,camera,worldWidth,{x:player.x,y:player.y,w,h},destruction(buildings),rival||undefined,Math.abs(kb)<.01?'player':'military');drainMilitary();syncBody();if(endIfDead())return;
  waves=waves.filter(w=>w.life>0&&w.x>0&&w.x<worldWidth);
+ // Ambient crystals and growths appear ahead of the kaiju (the way it faces), so heading west still finds them.
  ambientTimer+=dt;growthTimer+=dt;
- if(ambientTimer>=B.ambientInterval){ambientTimer=0;dropShards(Math.min(worldWidth-80,player.x+w/2+55),B.ambientCount);}
- if(growthTimer>=B.growthInterval){growthTimer=0;if(growths.filter(g=>g.hp>0).length<B.growthCap)growths.push({x:Math.max(60,Math.min(worldWidth-100,player.x+w/2+140)),hp:B.growthHP});}
+ if(ambientTimer>=B.ambientInterval){ambientTimer=0;dropShards(Math.max(80,Math.min(worldWidth-80,player.x+w/2+55*player.face)),B.ambientCount);}
+ if(growthTimer>=B.growthInterval){growthTimer=0;if(growths.filter(g=>g.hp>0).length<B.growthCap)growths.push({x:Math.max(60,Math.min(worldWidth-100,player.x+w/2+140*player.face)),hp:B.growthHP});}
  growths=growths.filter(g=>g.hp>0);
  for(const shard of shards){shard.life-=dt;shard.vy+=380*dt;shard.x+=shard.vx*dt;shard.y+=shard.vy*dt;shard.vx*=Math.exp(-dt*4);
  shard.x=Math.max(8,Math.min(worldWidth-8,shard.x));

@@ -1,4 +1,4 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {COMBAT as B} from '../src/config.ts';
 test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart',async()=>{
  const callbacks=new Map<string,Function>(),events=new Map<string,Function>();let nextFrame:Function=()=>{},now=performance.now();
  const savedRandom=Math.random;Math.random=()=>.75;
@@ -44,7 +44,7 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  callbacks.get('#back:click')!();callbacks.get('#new:click')!();assert.equal(state().mode,'intro');callbacks.get('#skip-intro:click')!();
  nodes.get('#initials').value='a1bcd';callbacks.get('#initials:input')!();assert.equal(nodes.get('#initials').value,'ABC');callbacks.get('#launch:click')!();assert.equal(state().mode,'selection');callbacks.get('#confirm-kaiju:click')!();
  assert.equal(state().mode,'progress');assert.equal(state().checkpoint.city,0);assert.equal(state().checkpoint.banked,0);
- callbacks.get('#begin-city:click')!();assert.equal(state().session,'campaign');assert.equal(state().hp,24);
+ callbacks.get('#begin-city:click')!();assert.equal(state().session,'campaign');assert.equal(state().hp,B.startHP);
  // Play the first campaign district through the real input path. It is an open layout: start mid-map,
  // sweep west to the edge, then turn around and smash east until the quota opens and the east exit triggers.
  const cityStart=state().x;assert.ok(cityStart>1700&&cityStart<2000,'open district starts mid-map');
@@ -57,7 +57,7 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  assert.equal(state().mode,'results');const hp=state().hp,energy=state().ultimate,superCharge=state().superCharge;
  callbacks.get('#advance:click')!();assert.equal(state().blockIndex,1);assert.equal(state().worldWidth,5760);assert.equal(state().hp,hp);assert.equal(state().ultimate,energy);assert.equal(state().superCharge,superCharge);assert.equal(state().checkpoint.city,0);assert.equal(state().checkpoint.banked,0);
  key('Escape');callbacks.get('#restart:click')!();assert.equal(state().mode,'confirm');callbacks.get('#no:click')!();assert.equal(state().mode,'paused');assert.equal(state().blockIndex,1);
- callbacks.get('#restart:click')!();callbacks.get('#yes:click')!();assert.equal(state().blockIndex,0);assert.equal(state().hp,24);assert.equal(state().score,0);assert.equal(state().ultimate,0);assert.equal(state().superCharge,0);
+ callbacks.get('#restart:click')!();callbacks.get('#yes:click')!();assert.equal(state().blockIndex,0);assert.equal(state().hp,B.startHP);assert.equal(state().score,0);assert.equal(state().ultimate,0);assert.equal(state().superCharge,0);
  key('Escape');callbacks.get('#menu:click')!();assert.equal(state().mode,'confirm');callbacks.get('#yes:click')!();assert.equal(state().mode,'title');assert.equal(JSON.parse(savedData.get('kaiju-arcade:campaign:v1')!).city,0);
  callbacks.get('#continue:click')!();assert.equal(state().mode,'progress');callbacks.get('#begin-city:click')!();assert.equal(state().blockIndex,0);step(60*150);assert.equal(state().mode,'gameover');assert.equal(state().checkpoint,null);assert.equal(savedData.has('kaiju-arcade:campaign:v1'),false);assert.equal(state().highScores.length,1);assert.equal(state().highScores[0].initials,'ABC');
  Math.random=savedRandom;
