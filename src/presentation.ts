@@ -61,7 +61,11 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // frame), then a lunging tusk uppercut with a slash arc that settles back to the base pose (slam). Rear and slam are cut from one 16-frame
  // generation off the left-shifted base (rear 0-4, slam 9-15 plus the base); frame counts and fps match the Stage 1 heavy.
  heavyRear:{src:'assets/kaiban-s2-heavy-rear.png',frames:5,fps:20,once:true,...KB2_LEFT},heavyHold:{src:'assets/kaiban-s2-heavy-hold.png',frames:4,fps:10,...KB2_LEFT},
- heavySlam:{src:'assets/kaiban-s2-heavy-slam.png',frames:8,fps:16,once:true,...KB2_LEFT}}};
+ heavySlam:{src:'assets/kaiban-s2-heavy-slam.png',frames:8,fps:16,once:true,...KB2_LEFT},
+ // Ranged (debris shotgun), gorilla-style: leans in, rises and digs both fists into the street (frame 4, rubble in the fists), heaves them
+ // up and forward underhand to fling it (impact frame 5, Stage 1's timing), follows through and drops back to all fours. Loose rocks erased:
+ // the game draws the projectiles. The crouched shot still borrows Stage 1's.
+ rangedStand:{src:'assets/kaiban-s2-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB2_LEFT}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
