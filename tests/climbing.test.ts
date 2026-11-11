@@ -55,3 +55,21 @@ test('climbing is a clinging state: hang when idle, S climbs down, Space jumps o
   assert.ok(Math.abs(h.state().y+h.state().height-roof)<1,'stands on roof');
  }finally{h.cleanup();}
 });
+
+test('J while clinging punches the wall one-handed without letting go',async()=>{
+ const h=await bootGame(.75);
+ try{
+  h.click('#drills');h.click('#start');
+  h.down('KeyD');h.step(120);h.up('KeyD');
+  const i=h.state().buildings.findIndex((b:any)=>b.x>h.state().x);
+  h.down('KeyW');h.step(30);h.up('KeyW');h.step(2);assert.equal(h.state().clinging,true);
+  const hp=h.state().buildings[i].hp,y=h.state().y;
+  h.tap('KeyJ');h.step(1);
+  assert.equal(h.state().anim,'climbPunch');assert.equal(h.state().clinging,true,'still on the wall');
+  assert.ok(h.state().buildings[i].hp<hp,'the punch damages the wall');
+  h.step(40);assert.equal(h.state().anim,'climb','back to the climb loop');assert.equal(h.state().y,y,'no slide');
+  // Back on the street, J is the normal swipe again.
+  h.down('KeyS');for(let n=0;n<400&&!h.state().grounded;n++)h.step();h.up('KeyS');h.step(30);
+  h.tap('KeyJ');h.step(1);assert.equal(h.state().anim,'light1');
+ }finally{h.cleanup();}
+});
