@@ -123,7 +123,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // and forward with the tusks (slam, starting on the jab with its slash arc). Rear and slam are cut from one 16-frame generation
   // (rear 0-4, slam 6-9,11,13-15); timing matches Mogurodon's heavy. The reared-back strike frames tip the head up, so they have no eye.
   heavyRear:{src:'assets/kaiban-s1-heavy-rear.png',frames:5,fps:20,once:true,...KB1_NATIVE},heavyHold:{src:'assets/kaiban-s1-heavy-hold.png',frames:4,fps:10,...KB1_NATIVE},
-  heavySlam:{src:'assets/kaiban-s1-heavy-slam.png',frames:8,fps:16,once:true,...KB1_NATIVE}}},
+  heavySlam:{src:'assets/kaiban-s1-heavy-slam.png',frames:8,fps:16,once:true,...KB1_NATIVE},
+  // Ranged (debris shotgun): snaps the tusks into the street (slash arc on frame 1, as the shot fires on the key press), heaves up with
+  // the recoil and settles. PixelLab's debris is erased (the game draws the projectiles); frame 4's ground burst was cut off the near
+  // leg and its outline redrawn. No crouched version until Kaiban has crouch art, so a crouched shot falls back to idle.
+  rangedStand:{src:'assets/kaiban-s1-ranged-stand.png',frames:8,fps:18,once:true,...KB1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
