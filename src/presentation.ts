@@ -149,9 +149,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   throw:{src:'assets/kaiban-s1-throw.png',frames:8,fps:18,once:true,...KB1_NATIVE},
   // Ultimate (Stampede art; the gameplay is still the shared Seismic Rupture until M5): a bellow with the head thrown back (9 of a
   // 16-frame generation, frames 0-5,11,13,15, so the bellow peaks on impact frame 5 = 0.357s, Mogurodon's timing) ending head-down in a
-  // charge stance, then a 6-frame bounding stampede gallop with dust for the rest of the 2.4s Ultimate (the generation's near-still
-  // frames 0-1 were dropped so the loop doesn't stutter).
-  ultRoar:{src:'assets/kaiban-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB1_NATIVE},ultPound:{src:'assets/kaiban-s1-ult-pound.png',frames:6,fps:14,...KB1_NATIVE},
+  // charge stance, then a head-down battering-ram gallop for the rest of the 2.4s Ultimate: one long flat bounding stride (frames 2-9 of
+  // a 12-frame generation; the near-still ends were dropped so the loop doesn't stutter) with the head held low the whole way.
+  ultRoar:{src:'assets/kaiban-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB1_NATIVE},ultPound:{src:'assets/kaiban-s1-ult-pound.png',frames:8,fps:16,...KB1_NATIVE},
   // Ranged (debris shotgun): plows both tusks down and forward into the street (frames 1-4, dirt clod at the tusks), then wrenches the
   // head up so the tusks fling the debris up and forward (impact frame 5, with the dirt crescent), and settles. Loose dirt erased: the
   // game draws the projectiles. The upswing frames tip the head up, so they have no eye.
