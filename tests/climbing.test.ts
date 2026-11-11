@@ -21,3 +21,37 @@ test('buildings are solid, can be climbed with W, stood on, and dropped from whe
   const before=h.state().y;h.down('KeyD');h.step(5);h.up('KeyD');assert.ok(h.state().y>=before-1);
  }finally{h.cleanup();}
 });
+
+test('climbing is a clinging state: hang when idle, S climbs down, Space jumps off',async()=>{
+ const h=await bootGame(.75);
+ try{
+  h.click('#drills');h.click('#start');assert.equal(h.state().mode,'playing');
+  h.down('KeyD');h.step(120);h.up('KeyD');
+  const wall=h.state().buildings.find((b:any)=>b.x>h.state().x)!,roof=wall.y;
+  // Climb partway, then release W: the player hangs in place instead of sliding down.
+  h.down('KeyW');h.step(30);h.up('KeyW');
+  assert.equal(h.state().clinging,true);
+  const hangY=h.state().y;assert.ok(hangY+h.state().height<C.ground-20,'off the street');
+  h.step(120);
+  assert.equal(h.state().y,hangY,'no slide while hanging');assert.equal(h.state().clinging,true);
+  // S moves down the wall and lets go on reaching the street.
+  h.down('KeyS');h.step(10);assert.ok(h.state().y>hangY,'S descends');
+  for(let i=0;i<400&&!h.state().grounded;i++)h.step();h.up('KeyS');
+  assert.equal(h.state().grounded,true);assert.equal(h.state().clinging,false);
+  assert.ok(Math.abs(h.state().y+h.state().height-C.ground)<1);
+  // Climb again, then Space jumps off; holding W does not instantly re-grab the wall.
+  h.down('KeyW');h.step(30);assert.equal(h.state().clinging,true);
+  h.tap('Space');h.step(1);
+  assert.equal(h.state().clinging,false);assert.ok(h.state().vy<0,'jumped off upward');
+  h.step(60);assert.equal(h.state().clinging,false,'W held after jump-off does not re-grab');
+  // A real key release lasts at least one frame; that frame is what re-arms the grab.
+  h.up('KeyW');h.step(1);
+  // Releasing W re-arms the grab, and W again re-attaches while still beside the wall.
+  for(let i=0;i<400&&!h.state().grounded;i++)h.step();
+  h.down('KeyW');h.step(5);assert.equal(h.state().clinging,true);h.up('KeyW');
+  // Climbing all the way up still mantles onto the roof.
+  h.down('KeyW');for(let i=0;i<400&&h.state().y+h.state().height>roof+1;i++)h.step();h.up('KeyW');h.step(30);
+  assert.equal(h.state().clinging,false);assert.equal(h.state().grounded,true);
+  assert.ok(Math.abs(h.state().y+h.state().height-roof)<1,'stands on roof');
+ }finally{h.cleanup();}
+});
