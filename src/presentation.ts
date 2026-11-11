@@ -117,7 +117,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    carry:{src:'assets/mogurodon-s3-carry.png',frames:4,fps:6,...S3_NATIVE,hold:[[134,25],[134,24],[134,23],[134,24]]},
    carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S3_NATIVE,hold:[[134,25],[140,24],[149,24],[158,24],[162,24],[157,24],[150,24],[140,24]]},
    throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE}}}}},
- // Kaiban (woolly boar juggernaut): only the Stage 1 form exists, so it is the base form and every stage draws it until Stage 2/3 are
+ // Kaiban (woolly boar juggernaut): every Stage 1 strip is done; only the Stage 1 form exists, so it is the base form and every stage draws it until Stage 2/3 are
  // generated. Same 120-unit width as Mogurodon Stage 1, so the hitbox is unchanged. The walk is a 12-frame boar gallop at 15 fps
  // (same 0.8s cycle as the other walks); the eye on its pitched stretch frames 6-9 was placed by hand from the tusk root.
  Kaiban:{width:120,anims:{idle:{src:'assets/kaiban-s1-idle.png',frames:8,fps:8,...KB1_NATIVE},walk:{src:'assets/kaiban-s1-walk.png',frames:12,fps:15,...KB1_NATIVE},
@@ -147,6 +147,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carry:{src:'assets/kaiban-s1-carry.png',frames:4,fps:6,...KB1_NATIVE,hold:[[177,75],[177,75],[177,75],[177,75]]},
   carryWalk:{src:'assets/kaiban-s1-carry-walk.png',frames:8,fps:10,...KB1_NATIVE,hold:[[177,75],[177,74],[177,73],[177,74],[177,74],[177,75],[177,74],[177,74]]},
   throw:{src:'assets/kaiban-s1-throw.png',frames:8,fps:18,once:true,...KB1_NATIVE},
+  // Ultimate (Stampede art; the gameplay is still the shared Seismic Rupture until M5): a bellow with the head thrown back (9 of a
+  // 16-frame generation, frames 0-5,11,13,15, so the bellow peaks on impact frame 5 = 0.357s, Mogurodon's timing) ending head-down in a
+  // charge stance, then a 6-frame bounding stampede gallop with dust for the rest of the 2.4s Ultimate (the generation's near-still
+  // frames 0-1 were dropped so the loop doesn't stutter).
+  ultRoar:{src:'assets/kaiban-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB1_NATIVE},ultPound:{src:'assets/kaiban-s1-ult-pound.png',frames:6,fps:14,...KB1_NATIVE},
   // Ranged (debris shotgun): plows both tusks down and forward into the street (frames 1-4, dirt clod at the tusks), then wrenches the
   // head up so the tusks fling the debris up and forward (impact frame 5, with the dirt crescent), and settles. Loose dirt erased: the
   // game draws the projectiles. The upswing frames tip the head up, so they have no eye.
