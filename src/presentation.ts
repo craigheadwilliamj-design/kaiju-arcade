@@ -35,7 +35,8 @@ type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,sca
 // Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (every strip) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
 type Form={width:number,anims:Record<string,Strip>};
-const S1_PAD={scale:205/256,anchor:10+128*205/256};
+// Stage 1 strips: the mogurodon-s1 base still, a 151px-wide sprite at x=52 keyed from the transparent render.
+const S1_NATIVE={scale:151/256,anchor:52+128*151/256};
 // Stage 3 strips generated from the native-resolution base (the mogurodon-s3 base still: the 173px-wide sprite at x=41, one art pixel per
 // pixel, keyed from the transparent render with tools/key_render.py) instead of a stretched full-frame one.
 const S3_NATIVE={scale:173/256,anchor:41+128*173/256};
@@ -64,32 +65,31 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carryWalk:{src:'assets/mogurodon-carry-walk.png',frames:8,fps:10,...S2_NATIVE,hold:[[144,21],[146,20],[150,20],[151,21],[152,23],[150,23],[148,22],[146,22]]},
   throw:{src:'assets/mogurodon-throw.png',frames:8,fps:18,once:true,...S2_NATIVE}},
   stages:{1:{width:120,anims:{
-   // Stage 1 form: 256x192 strips, feet on the bottom row, generated from the mogurodon-s1 base still. Add further strips here as they land.
-   idle:{src:'assets/mogurodon-s1-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s1-walk.png',frames:8,fps:10},
-   jumpRise:{src:'assets/mogurodon-s1-jump-rise.png',frames:9,fps:24,once:true},jumpAir:{src:'assets/mogurodon-s1-jump-air.png',frames:4,fps:8},jumpLand:{src:'assets/mogurodon-s1-jump-land.png',frames:5,fps:20,once:true},
+   // Stage 1 form: every strip generated from the native-resolution base (S1_NATIVE), 256x192 except the 256x256 climb. Frame counts,
+   // fps and impact frames match the previous art, so combat timing is unchanged.
+   idle:{src:'assets/mogurodon-s1-idle.png',frames:8,fps:8,...S1_NATIVE},walk:{src:'assets/mogurodon-s1-walk.png',frames:8,fps:10,...S1_NATIVE},
+   jumpRise:{src:'assets/mogurodon-s1-jump-rise.png',frames:9,fps:24,once:true,...S1_NATIVE},jumpAir:{src:'assets/mogurodon-s1-jump-air.png',frames:4,fps:8,...S1_NATIVE},jumpLand:{src:'assets/mogurodon-s1-jump-land.png',frames:5,fps:20,once:true,...S1_NATIVE},
    // Light combo: near (left) paw swipe, far (right) paw swipe, lunging bite. fps chosen so each hit lasts as long as Stage 2's.
-   // Strips that reach forward are generated from the padded base (mogurodon-s1-pad: 205px wide at x=10), so they carry
-   // scale 205/256 and anchor 10+128*scale to draw at the same size and position as the full-frame strips.
-   light1:{src:'assets/mogurodon-s1-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s1-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s1-light3.png',frames:8,fps:20,once:true,...S1_PAD},
+   light1:{src:'assets/mogurodon-s1-light1.png',frames:8,fps:24,once:true,...S1_NATIVE},light2:{src:'assets/mogurodon-s1-light2.png',frames:8,fps:21,once:true,...S1_NATIVE},light3:{src:'assets/mogurodon-s1-light3.png',frames:8,fps:20,once:true,...S1_NATIVE},
    // Heavy: rear onto the hind legs, hold (straining loop) while charging, slam both paws down on release. Rear and slam are cut
-   // from one generated strip, so the slam starts at the crash; its frames are held to keep Stage 2's 0.5s recovery.
-   heavyRear:{src:'assets/mogurodon-s1-heavy-rear.png',frames:5,fps:20,once:true,...S1_PAD},heavyHold:{src:'assets/mogurodon-s1-heavy-hold.png',frames:4,fps:10,...S1_PAD},
-   heavySlam:{src:'assets/mogurodon-s1-heavy-slam.png',frames:8,fps:16,once:true,...S1_PAD},
-   // Ranged: no tail at Stage 1. Head down, back arched like a hissing cat, quills fire off the back. The projectile spawn is unchanged.
-   rangedStand:{src:'assets/mogurodon-s1-ranged-stand.png',frames:8,fps:18,once:true,...S1_PAD},rangedCrouch:{src:'assets/mogurodon-s1-ranged-crouch.png',frames:8,fps:20,once:true},
-   // Crouch: flat stalking crouch at ~61% of standing height (Stage 2 matches); crouchUp is crouchDown reversed.
-   crouch:{src:'assets/mogurodon-s1-crouch.png',frames:4,fps:6},crouchDown:{src:'assets/mogurodon-s1-crouch-down.png',frames:5,fps:22,once:true},crouchUp:{src:'assets/mogurodon-s1-crouch-up.png',frames:5,fps:22,once:true},
-   // Climb: 256x256 padded strips, body upright with the front claws on the hitbox edge (x=154). The mantle is pre-shifted 25px back,
-   // easing to 0, to cancel the game sliding the hitbox onto the roof when it starts.
-   climbGrab:{src:'assets/mogurodon-s1-climb-grab.png',frames:5,fps:20,once:true,...S1_PAD},climb:{src:'assets/mogurodon-s1-climb.png',frames:8,fps:12,...S1_PAD},
-   climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_PAD},
-   // Seismic Rupture (any stage): rear up and roar, crash down in a shockwave (impact frame 5 = 0.357s, same first-fissure timing as
-   // Stage 2), then a ground-pounding loop with two slams per cycle for the rest of the 2.4s Ultimate.
-   ultRoar:{src:'assets/mogurodon-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...S1_PAD},ultPound:{src:'assets/mogurodon-s1-ult-pound.png',frames:8,fps:16,...S1_PAD},
-   // Grab/throw: same moves as Stage 2 from the padded base.
-   grab:{src:'assets/mogurodon-s1-grab.png',frames:9,fps:22,once:true,...S1_PAD,hold:[[173,191],[207,191],[239,191],[241,191],[230,191],[214,191],[167,191],[200,70],[145,27]]},
-   carry:{src:'assets/mogurodon-s1-carry.png',frames:4,fps:6,...S1_PAD,hold:[145,27]},carryWalk:{src:'assets/mogurodon-s1-carry-walk.png',frames:8,fps:10,...S1_PAD,hold:[144,26]},
-   throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_PAD}}},
+   // from one generated strip, so the slam starts at the crash.
+   heavyRear:{src:'assets/mogurodon-s1-heavy-rear.png',frames:5,fps:20,once:true,...S1_NATIVE},heavyHold:{src:'assets/mogurodon-s1-heavy-hold.png',frames:4,fps:10,...S1_NATIVE},
+   heavySlam:{src:'assets/mogurodon-s1-heavy-slam.png',frames:8,fps:16,once:true,...S1_NATIVE},
+   // Ranged: no tail at Stage 1. Head down, back arched like a hissing cat, quills bristling; the projectile spawn is unchanged.
+   rangedStand:{src:'assets/mogurodon-s1-ranged-stand.png',frames:8,fps:18,once:true,...S1_NATIVE},rangedCrouch:{src:'assets/mogurodon-s1-ranged-crouch.png',frames:8,fps:20,once:true,...S1_NATIVE},
+   // Crouch: flat stalking crouch; crouchUp is crouchDown reversed.
+   crouch:{src:'assets/mogurodon-s1-crouch.png',frames:4,fps:6,...S1_NATIVE},crouchDown:{src:'assets/mogurodon-s1-crouch-down.png',frames:5,fps:22,once:true,...S1_NATIVE},crouchUp:{src:'assets/mogurodon-s1-crouch-up.png',frames:5,fps:22,once:true,...S1_NATIVE},
+   // Climb: 256x256 strips, body upright with the gripping paws on the wall line (frame x=158, the hitbox edge). The mantle starts
+   // 18px further back, easing to 0, to cancel the game sliding the hitbox onto the roof.
+   climbGrab:{src:'assets/mogurodon-s1-climb-grab.png',frames:5,fps:20,once:true,...S1_NATIVE},climb:{src:'assets/mogurodon-s1-climb.png',frames:8,fps:12,...S1_NATIVE},
+   climbMantle:{src:'assets/mogurodon-s1-climb-mantle.png',frames:9,fps:20,once:true,...S1_NATIVE},
+   // Seismic Rupture: rear up and howl, crash down in a shockwave (impact frame 5 = 0.357s, same first-fissure timing as Stage 2),
+   // then a two-paw ground-pounding loop for the rest of the 2.4s Ultimate.
+   ultRoar:{src:'assets/mogurodon-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...S1_NATIVE},ultPound:{src:'assets/mogurodon-s1-ult-pound.png',frames:8,fps:16,...S1_NATIVE},
+   grab:{src:'assets/mogurodon-s1-grab.png',frames:9,fps:22,once:true,...S1_NATIVE,hold:[[171,191],[177,191],[205,191],[205,191],[205,191],[201,184],[180,128],[183,92],[128,39]]},
+   carry:{src:'assets/mogurodon-s1-carry.png',frames:4,fps:6,...S1_NATIVE,hold:[[128,39],[128,41],[129,43],[128,41]]},
+   carryWalk:{src:'assets/mogurodon-s1-carry-walk.png',frames:8,fps:10,...S1_NATIVE,hold:[[128,39],[131,35],[134,35],[137,38],[134,39],[133,35],[129,35],[127,37]]},
+   throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_NATIVE}}},
   // Stage 3 form: every strip generated from the native-resolution base (S3_NATIVE); frame counts, fps and impact frames match the
   // previous art so combat timing is unchanged. Climb strips are 256x256 with the gripping claws on the wall line (frame x=162).
   3:{width:120,anims:{idle:{src:'assets/mogurodon-s3-idle.png',frames:8,fps:8,...S3_NATIVE},walk:{src:'assets/mogurodon-s3-walk.png',frames:8,fps:10,...S3_NATIVE},
