@@ -35,7 +35,9 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  callbacks.get('#advance:click')!();assert.equal(state().mode,'playing');assert.equal(state().score,0);assert.equal(state().destruction,0);assert.equal(state().x,110);
  // Keyboard integration: hold/release, pause-cancel, actual stance origins.
  key('KeyK');step(100);assert.equal(state().charging,true);assert.equal(state().charge,1.5);key('Escape');assert.equal(state().charging,false);key('KeyK','keyup');callbacks.get('#resume:click')!();
- key('KeyL');key('KeyL','keyup');const standingShot=state().shotY[0];step(40);key('KeyS');step();key('KeyL');key('KeyL','keyup');assert.ok(state().shotY.at(-1)>standingShot,'crouched ranged origin is lower');key('KeyS','keyup');step(40);
+ // Mogurodon's grounded L is the Tremor Slam: a forward shockwave, no quill. Airborne he still flicks a quill.
+ key('KeyL');key('KeyL','keyup');step(8);assert.equal(state().entityCounts.tremorWaves,1,'grounded ranged launches one tremor wave');assert.equal(state().shotCount,0);step(60);
+ key('Space');step(10);key('Space','keyup');key('KeyL');key('KeyL','keyup');assert.equal(state().shotCount,1,'airborne ranged still fires a quill');step(80);
  // With M3 weapons active, standing idle now causes real damage and eventual defeat.
  step(60*150);assert.ok(state().damageTaken>0);assert.equal(state().mode,'gameover');
  assert.ok(state().enemyShots<=100);assert.ok(state().military.length<=5);

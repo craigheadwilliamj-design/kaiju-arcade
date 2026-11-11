@@ -18,6 +18,8 @@ export const COMBAT = {
  maxCharge:1.5,chargeSlow:.3,chargeDamageBonus:1.6,heavyKnockback:220,
  ultimateMax:100,ultimateGain:.14,ultimateDuration:2.4,ultimatePulse:.24,
  ultimateDamage:58,ultimateSpeed:540,ultimateRange:1100,
+ // Mogurodon's grounded ranged (Tremor Slam): one forward mini-rupture that pierces along the street. Size/range grow with sqrt(stage scale).
+ tremorDamage:32,tremorSpeed:600,tremorRange:400,tremorCooldown:.7,tremorKnockback:150,tremorSize:.8,
  superMax:40,superDuration:20,superDamage:1.5,superSpeed:1.18,superResistance:.55,superKnockback:1.5,
  rangedMax:12,staggerSeconds:.32,staggerProtection:.9,knockbackFriction:9,
  scorePenaltyPerHP:10,ambientInterval:5,ambientCount:3,growthInterval:30,growthHP:240,
