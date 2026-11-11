@@ -32,11 +32,17 @@ ap = argparse.ArgumentParser()
 ap.add_argument('src'); ap.add_argument('out')
 ap.add_argument('--frame', default='256x192'); ap.add_argument('--x', default='center')
 ap.add_argument('--native', help='also write the cropped native sprite here')
+ap.add_argument('--width', type=int, help='resample to this sprite width when the native sprite is too big for the frame: the measured grid is '
+                'coarsened by native/target and cells are still median-sampled from the render, so colours stay crisp (no blending)')
 a = ap.parse_args()
 
 im = Image.open(a.src); has_alpha = 'A' in im.getbands()
 p = np.asarray(im.convert('RGBA')).astype(float)
 px, ox = grid(p, 1); py, oy = grid(p, 0)
+if a.width:
+    # Native sprite width from the measured grid, then scale both periods so the opaque span is a.width cells.
+    cols = np.nonzero((p[..., 3] >= 128).any(0))[0]; k = (cols[-1] - cols[0] + 1) / px / a.width
+    ox, oy = cols[0] % (px * k), oy; px, py = px * k, py * k
 nx, ny = int((p.shape[1] - ox) // px), int((p.shape[0] - oy) // py)
 cells = np.zeros((ny, nx, 4), np.uint8)
 for j in range(ny):
