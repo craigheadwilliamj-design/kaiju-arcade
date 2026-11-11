@@ -92,6 +92,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_NATIVE}}},
   // Stage 3 form: every strip generated from the native-resolution base (S3_NATIVE); frame counts, fps and impact frames match the
   // previous art so combat timing is unchanged. Climb strips are 256x256 with the gripping claws on the wall line (frame x=162).
+  // Light combo: leading-arm strike, chest-arm swipe (the other arm), lunge-bite.
   3:{width:120,anims:{idle:{src:'assets/mogurodon-s3-idle.png',frames:8,fps:8,...S3_NATIVE},walk:{src:'assets/mogurodon-s3-walk.png',frames:8,fps:10,...S3_NATIVE},
    light1:{src:'assets/mogurodon-s3-light1.png',frames:8,fps:24,once:true,...S3_NATIVE},light2:{src:'assets/mogurodon-s3-light2.png',frames:8,fps:21,once:true,...S3_NATIVE},light3:{src:'assets/mogurodon-s3-light3.png',frames:8,fps:20,once:true,...S3_NATIVE},
    heavyRear:{src:'assets/mogurodon-s3-heavy-rear.png',frames:5,fps:20,once:true,...S3_NATIVE},heavyHold:{src:'assets/mogurodon-s3-heavy-hold.png',frames:4,fps:10,...S3_NATIVE},
