@@ -36,6 +36,9 @@ type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,sca
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
 type Form={width:number,anims:Record<string,Strip>};
 const S1_PAD={scale:205/256,anchor:10+128*205/256};
+// Stage 3 strips generated from the native-resolution base (assets/mogurodon-s3.png: the 173px-wide sprite at x=41, one art pixel per
+// pixel, keyed from the transparent render with tools/key_render.py) instead of a stretched full-frame one.
+const S3_NATIVE={scale:173/256,anchor:41+128*173/256};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10},
   // Light combo by hit order (each form picks its own moves): Stage 2 = right-arm swipe, left-arm swipe, bite.
@@ -84,7 +87,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    carry:{src:'assets/mogurodon-s1-carry.png',frames:4,fps:6,...S1_PAD,hold:[145,27]},carryWalk:{src:'assets/mogurodon-s1-carry-walk.png',frames:8,fps:10,...S1_PAD,hold:[144,26]},
    throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_PAD}}},
   // Stage 3 form: 256x192 base still (feet on the bottom row), idle and walk animated, other strips still fall back to idle; combat timing falls back to the base form.
-  3:{width:120,anims:{idle:{src:'assets/mogurodon-s3-idle.png',frames:8,fps:8},walk:{src:'assets/mogurodon-s3-walk.png',frames:8,fps:10},
+  3:{width:120,anims:{idle:{src:'assets/mogurodon-s3-idle.png',frames:8,fps:8,...S3_NATIVE},walk:{src:'assets/mogurodon-s3-walk.png',frames:8,fps:10,...S3_NATIVE},
    light1:{src:'assets/mogurodon-s3-light1.png',frames:8,fps:24,once:true,...S1_PAD},light2:{src:'assets/mogurodon-s3-light2.png',frames:8,fps:21,once:true},light3:{src:'assets/mogurodon-s3-light3.png',frames:8,fps:20,once:true,...S1_PAD},
    heavyRear:{src:'assets/mogurodon-s3-heavy-rear.png',frames:5,fps:20,once:true,...S1_PAD},heavyHold:{src:'assets/mogurodon-s3-heavy-hold.png',frames:4,fps:10,...S1_PAD},
    heavySlam:{src:'assets/mogurodon-s3-heavy-slam.png',frames:8,fps:16,once:true,...S1_PAD},
