@@ -130,6 +130,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // (rear 0-4, slam 6-9,11,13-15); timing matches Mogurodon's heavy. The reared-back strike frames tip the head up, so they have no eye.
   heavyRear:{src:'assets/kaiban-s1-heavy-rear.png',frames:5,fps:20,once:true,...KB1_NATIVE},heavyHold:{src:'assets/kaiban-s1-heavy-hold.png',frames:4,fps:10,...KB1_NATIVE},
   heavySlam:{src:'assets/kaiban-s1-heavy-slam.png',frames:8,fps:16,once:true,...KB1_NATIVE},
+  // Jump: crouch-and-spring rise (pushes off the hind legs), a paddling airborne loop from its last frame, and a heavy squash landing
+  // into the base pose. Bottom-aligned: physics moves him, the art only changes pose. Frame counts and fps match Mogurodon's jump.
+  jumpRise:{src:'assets/kaiban-s1-jump-rise.png',frames:9,fps:24,once:true,...KB1_NATIVE},jumpAir:{src:'assets/kaiban-s1-jump-air.png',frames:4,fps:8,...KB1_NATIVE},
+  jumpLand:{src:'assets/kaiban-s1-jump-land.png',frames:5,fps:20,once:true,...KB1_NATIVE},
   // Ranged (debris shotgun): plows both tusks down and forward into the street (frames 1-4, dirt clod at the tusks), then wrenches the
   // head up so the tusks fling the debris up and forward (impact frame 5, with the dirt crescent), and settles. Loose dirt erased: the
   // game draws the projectiles. The upswing frames tip the head up, so they have no eye. No crouched version until Kaiban has crouch
