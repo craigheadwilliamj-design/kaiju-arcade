@@ -136,9 +136,14 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   jumpLand:{src:'assets/kaiban-s1-jump-land.png',frames:5,fps:20,once:true,...KB1_NATIVE},
   // Ranged (debris shotgun): plows both tusks down and forward into the street (frames 1-4, dirt clod at the tusks), then wrenches the
   // head up so the tusks fling the debris up and forward (impact frame 5, with the dirt crescent), and settles. Loose dirt erased: the
-  // game draws the projectiles. The upswing frames tip the head up, so they have no eye. No crouched version until Kaiban has crouch
-  // art, so a crouched shot falls back to idle.
-  rangedStand:{src:'assets/kaiban-s1-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB1_NATIVE}}},
+  // game draws the projectiles. The upswing frames tip the head up, so they have no eye.
+  rangedStand:{src:'assets/kaiban-s1-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB1_NATIVE},
+  // Crouched scoop from the crouch pose: tusks into the ground, head wrenches up and forward (impact frame 4), back half stays still.
+  rangedCrouch:{src:'assets/kaiban-s1-ranged-crouch.png',frames:8,fps:20,once:true,impact:4,...KB1_NATIVE},
+  // Crouch: flattens low with the belly near the ground (95px tall to 75px), breathing loop from the last frame; crouchUp is crouchDown
+  // reversed.
+  crouch:{src:'assets/kaiban-s1-crouch.png',frames:4,fps:6,...KB1_NATIVE},crouchDown:{src:'assets/kaiban-s1-crouch-down.png',frames:5,fps:22,once:true,...KB1_NATIVE},
+  crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
