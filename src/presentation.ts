@@ -134,6 +134,12 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // into the base pose. Bottom-aligned: physics moves him, the art only changes pose. Frame counts and fps match Mogurodon's jump.
   jumpRise:{src:'assets/kaiban-s1-jump-rise.png',frames:9,fps:24,once:true,...KB1_NATIVE},jumpAir:{src:'assets/kaiban-s1-jump-air.png',frames:4,fps:8,...KB1_NATIVE},
   jumpLand:{src:'assets/kaiban-s1-jump-land.png',frames:5,fps:20,once:true,...KB1_NATIVE},
+  // Climb: 256x256 strips, reared upright with the front hooves on the wall line (frame x=155, the hitbox edge 24 world units out).
+  // PixelLab's wall post on the grab was erased by matching its per-column colour; the grab eases 41px back onto the wall line over
+  // its first frames. The mantle starts 17px further back (the game slides him 0.3 body widths onto the roof) and eases to 0 by its
+  // standing last frame. The punch's hoof drives into the wall on impact frame 5. Upright frames tip the snout up, so they have no eye.
+  climbGrab:{src:'assets/kaiban-s1-climb-grab.png',frames:5,fps:20,once:true,...KB1_NATIVE},climb:{src:'assets/kaiban-s1-climb.png',frames:8,fps:12,...KB1_NATIVE},
+  climbMantle:{src:'assets/kaiban-s1-climb-mantle.png',frames:9,fps:20,once:true,...KB1_NATIVE},climbPunch:{src:'assets/kaiban-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...KB1_NATIVE},
   // Ranged (debris shotgun): plows both tusks down and forward into the street (frames 1-4, dirt clod at the tusks), then wrenches the
   // head up so the tusks fling the debris up and forward (impact frame 5, with the dirt crescent), and settles. Loose dirt erased: the
   // game draws the projectiles. The upswing frames tip the head up, so they have no eye.
