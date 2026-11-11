@@ -1,13 +1,16 @@
 // Provisional M1 values. Future balance changes belong here.
 export const CONFIG = {
  width:960,height:540,ground:435,screenCount:4,moveSpeed:205,crouchHeight:38,
- playerWidth:48,playerHeight:69,gravity:1250,jumpVelocity:530,climbSpeed:230,maxCameraY:560,cameraFollowY:340,
+ playerWidth:48,playerHeight:69,gravity:1250,jumpVelocity:530,climbSpeed:230,maxCameraY:560,
  lightDamage:30,heavyDamage:68,rangedDamage:23,attackCooldown:.28,
  heavyCooldown:.62,rangedCooldown:.48,projectileSpeed:540,
  meleeReach:76,exitThreshold:.75,perfectBonus:1500,
  cameraSpeed:5,maxDelta:.04,collapseDuration:.7,particleCap:180,
  // Kaiju sprites are drawn this far below the physics floor so their feet sit on the road, not the curb line.
  spriteDrop:8,
+ // Fixed world zoom (1 = native 960px view), anchored on the street line. Held constant at every stage so growth reads
+ // as the kaiju getting bigger against the city, and wide enough that a Stage 3 climb up the tallest tower stays in frame.
+ zoom:.5,
 };
 
 // Provisional M2 combat/evolution tuning; these are implementation defaults.
@@ -20,6 +23,14 @@ export const COMBAT = {
  ultimateDamage:58,ultimateSpeed:540,ultimateRange:1100,
  // Mogurodon's grounded ranged (Tremor Slam): one forward mini-rupture that pierces along the street. Size/range grow with sqrt(stage scale).
  tremorDamage:32,tremorSpeed:600,tremorRange:400,tremorCooldown:.7,tremorKnockback:150,tremorSize:.8,
+ // Kaiban's grounded ranged (Debris Shotgun): on the scoop's impact frame his tusks fling a fan of rock chunks up and forward, the flat
+ // ones fast and the high ones lobbed. Each chunk stops on the first thing it hits, so point-blank most land on one target and at range
+ // they spread out or sail over it (short range, big damage up close). Speeds and lifetime grow with sqrt(stage scale).
+ debrisCount:6,debrisDamage:10,debrisSpeed:[420,560],debrisAngle:[8,55],debrisGravity:1100,debrisLife:.75,debrisCooldown:.75,debrisKnockback:70,
+ // Kaiban's Ultimate (Stampede): a bellow blast on the roar's impact frame, then a head-down charge out stampedeReach and back (speed is
+ // set so the run fills the rest of the Ultimate; shorter than Seismic Rupture's ultimateRange, but every building it touches is destroyed
+ // outright like a train ran through it). Units, vehicles and the rival take stampedeDamage once per pass.
+ stampedeReach:560,stampedeDamage:300,stampedeKnockback:320,stampedeCrunch:.05,bellowRange:260,bellowDamage:20,
  superMax:40,superDuration:20,superDamage:1.5,superSpeed:1.18,superResistance:.55,superKnockback:1.5,
  rangedMax:12,staggerSeconds:.32,staggerProtection:.9,knockbackFriction:9,
  scorePenaltyPerHP:10,ambientInterval:5,ambientCount:3,growthInterval:30,growthHP:240,

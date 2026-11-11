@@ -12,7 +12,7 @@ test('buildings are solid, can be climbed with W, stood on, and dropped from whe
   const s=h.state();
   assert.ok(Math.abs(s.y+s.height-roof)<1,`stands on roof (${s.y+s.height} vs ${roof})`);
   assert.equal(s.grounded,true);
-  assert.ok(h.state().cameraY>0,'vertical camera follows the climb');
+  assert.equal(h.state().zoom,C.zoom,'zoom holds through the climb');
   // Walking off the roof edge drops the player back down.
   h.down('KeyA');h.step(90);h.up('KeyA');h.step(120);
   assert.ok(h.state().y+h.state().height<=C.ground+.01);

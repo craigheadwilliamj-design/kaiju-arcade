@@ -42,6 +42,10 @@ const S1_NATIVE={scale:151/256,anchor:52+128*151/256};
 const S3_NATIVE={scale:173/256,anchor:41+128*173/256};
 // Stage 2 (base form) strips: the mogurodon-s2 base still, a 194px-wide sprite at x=31 keyed the same way.
 const S2_NATIVE={scale:194/256,anchor:31+128*194/256};
+// Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
+const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
+// Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
+const KB1_LEFT={scale:139/256,anchor:18+128*139/256};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
@@ -113,6 +117,51 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    carry:{src:'assets/mogurodon-s3-carry.png',frames:4,fps:6,...S3_NATIVE,hold:[[134,25],[134,24],[134,23],[134,24]]},
    carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S3_NATIVE,hold:[[134,25],[140,24],[149,24],[158,24],[162,24],[157,24],[150,24],[140,24]]},
    throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE}}}}},
+ // Kaiban (woolly boar juggernaut): every Stage 1 strip is done; only the Stage 1 form exists, so it is the base form and every stage draws it until Stage 2/3 are
+ // generated. Same 120-unit width as Mogurodon Stage 1, so the hitbox is unchanged. The walk is a 12-frame boar gallop at 15 fps
+ // (same 0.8s cycle as the other walks); the eye on its pitched stretch frames 6-9 was placed by hand from the tusk root.
+ Kaiban:{width:120,anims:{idle:{src:'assets/kaiban-s1-idle.png',frames:8,fps:8,...KB1_NATIVE},walk:{src:'assets/kaiban-s1-walk.png',frames:12,fps:15,...KB1_NATIVE},
+  // Light combo: tusk hook (dip, then whip the tusks up), headbutt (lurching forward), low lunging gore with a head toss at the end
+  // (stays on all fours so it reads apart from the heavy). Generated from the left-shifted base; eye placed from the snout position.
+  light1:{src:'assets/kaiban-s1-light1.png',frames:8,fps:24,once:true,...KB1_LEFT},light2:{src:'assets/kaiban-s1-light2.png',frames:8,fps:21,once:true,...KB1_LEFT},
+  light3:{src:'assets/kaiban-s1-light3.png',frames:8,fps:20,once:true,...KB1_LEFT},
+  // Heavy: head lowers and braces (rear), shudders with power while K is held (hold, generated from rear's last frame), then gores up
+  // and forward with the tusks (slam, starting on the jab with its slash arc). Rear and slam are cut from one 16-frame generation
+  // (rear 0-4, slam 6-9,11,13-15); timing matches Mogurodon's heavy. The reared-back strike frames tip the head up, so they have no eye.
+  heavyRear:{src:'assets/kaiban-s1-heavy-rear.png',frames:5,fps:20,once:true,...KB1_NATIVE},heavyHold:{src:'assets/kaiban-s1-heavy-hold.png',frames:4,fps:10,...KB1_NATIVE},
+  heavySlam:{src:'assets/kaiban-s1-heavy-slam.png',frames:8,fps:16,once:true,...KB1_NATIVE},
+  // Jump: crouch-and-spring rise (pushes off the hind legs), a paddling airborne loop from its last frame, and a heavy squash landing
+  // into the base pose. Bottom-aligned: physics moves him, the art only changes pose. Frame counts and fps match Mogurodon's jump.
+  jumpRise:{src:'assets/kaiban-s1-jump-rise.png',frames:9,fps:24,once:true,...KB1_NATIVE},jumpAir:{src:'assets/kaiban-s1-jump-air.png',frames:4,fps:8,...KB1_NATIVE},
+  jumpLand:{src:'assets/kaiban-s1-jump-land.png',frames:5,fps:20,once:true,...KB1_NATIVE},
+  // Climb: 256x256 strips, reared upright with the front hooves on the wall line (frame x=155, the hitbox edge 24 world units out).
+  // PixelLab's wall post on the grab was erased by matching its per-column colour; the grab eases 41px back onto the wall line over
+  // its first frames. The mantle starts 17px further back (the game slides him 0.3 body widths onto the roof) and eases to 0 by its
+  // standing last frame. The punch's hoof drives into the wall on impact frame 5. Upright frames tip the snout up, so they have no eye.
+  climbGrab:{src:'assets/kaiban-s1-climb-grab.png',frames:5,fps:20,once:true,...KB1_NATIVE},climb:{src:'assets/kaiban-s1-climb.png',frames:8,fps:12,...KB1_NATIVE},
+  climbMantle:{src:'assets/kaiban-s1-climb-mantle.png',frames:9,fps:20,once:true,...KB1_NATIVE},climbPunch:{src:'assets/kaiban-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...KB1_NATIVE},
+  // Grab/carry/throw: scoops with the tusks and heaves the prop up onto them, carries it there on all fours with the head held high,
+  // and throws with a forward head-fling (slash arc on frame 1: the prop launches on the key press). `hold` points sit on the tusk tops;
+  // during the scoop (grab 0-4) the prop stays on the street under the tusk tips. Head-high frames have no eye.
+  grab:{src:'assets/kaiban-s1-grab.png',frames:9,fps:22,once:true,...KB1_NATIVE,hold:[[186,191],[188,191],[184,191],[180,191],[176,191],[174,178],[192,121],[180,78],[177,75]]},
+  carry:{src:'assets/kaiban-s1-carry.png',frames:4,fps:6,...KB1_NATIVE,hold:[[177,75],[177,75],[177,75],[177,75]]},
+  carryWalk:{src:'assets/kaiban-s1-carry-walk.png',frames:8,fps:10,...KB1_NATIVE,hold:[[177,75],[177,74],[177,73],[177,74],[177,74],[177,75],[177,74],[177,74]]},
+  throw:{src:'assets/kaiban-s1-throw.png',frames:8,fps:18,once:true,...KB1_NATIVE},
+  // Ultimate (Stampede art; the gameplay is still the shared Seismic Rupture until M5): a bellow with the head thrown back (9 of a
+  // 16-frame generation, frames 0-5,11,13,15, so the bellow peaks on impact frame 5 = 0.357s, Mogurodon's timing) ending head-down in a
+  // charge stance, then a head-down battering-ram gallop for the rest of the 2.4s Ultimate: one long flat bounding stride (frames 2-9 of
+  // a 12-frame generation; the near-still ends were dropped so the loop doesn't stutter) with the head held low the whole way.
+  ultRoar:{src:'assets/kaiban-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB1_NATIVE},ultPound:{src:'assets/kaiban-s1-ult-pound.png',frames:8,fps:16,...KB1_NATIVE},
+  // Ranged (debris shotgun): plows both tusks down and forward into the street (frames 1-4, dirt clod at the tusks), then wrenches the
+  // head up so the tusks fling the debris up and forward (impact frame 5, with the dirt crescent), and settles. Loose dirt erased: the
+  // game draws the projectiles. The upswing frames tip the head up, so they have no eye.
+  rangedStand:{src:'assets/kaiban-s1-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB1_NATIVE},
+  // Crouched scoop from the crouch pose: tusks into the ground, head wrenches up and forward (impact frame 4), back half stays still.
+  rangedCrouch:{src:'assets/kaiban-s1-ranged-crouch.png',frames:8,fps:20,once:true,impact:4,...KB1_NATIVE},
+  // Crouch: flattens low with the belly near the ground (95px tall to 75px), breathing loop from the last frame; crouchUp is crouchDown
+  // reversed.
+  crouch:{src:'assets/kaiban-s1-crouch.png',frames:4,fps:6,...KB1_NATIVE},crouchDown:{src:'assets/kaiban-s1-crouch-down.png',frames:5,fps:22,once:true,...KB1_NATIVE},
+  crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
