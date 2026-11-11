@@ -60,7 +60,7 @@ let debris:{t:number,dir:number}|null=null;
 type Rock={x:number,y:number,vx:number,vy:number,life:number,damage:number,knockback:number,spin:number,size:number};
 let rocks:Rock[]=[];
 // Kaiban's Stampede: bellow (blast on the roar's impact frame), then the charge. `hits` resets when he turns, so each pass hits once.
-let stampede:{dir:number,hits:Set<object>,turned:boolean,bellowed:boolean,charging:boolean}|null=null;
+let stampede:{dir:number,hits:Set<object>,turned:boolean,bellowed:boolean,charging:boolean,start:number}|null=null;
 function viewW(){return C.width/zoom;}
 function screenX(wx:number){return (wx-camera)*zoom;}
 function screenY(wy:number){return C.ground+(wy+cameraY-C.ground)*zoom;}
@@ -330,9 +330,17 @@ function drainMilitary(){for(const e of military.events){if(e.kind==='reward'){s
 // First fissure waits for the roar's crash-down so the waves come out of the slam.
 // Kaiban's Stampede bellows on the same impact frame, then charges (tickStampede) instead of sending fissures.
 function useUltimate(){if(!activateUltimate(combat))return;attack=null;tremor=null;debris=null;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;
- stampede=activeKaiju==='Kaiban'?{dir:player.face,hits:new Set(),turned:false,bellowed:false,charging:false}:null;}
-// Stampede: the bellow knocks back whatever is close, then once the roar strip ends he charges, plowing through buildings (no collision
-// while charging), turning back halfway through the charge or at the world edge. Everything he touches takes Ultimate damage once per pass.
+ stampede=activeKaiju==='Kaiban'?{dir:player.face,hits:new Set(),turned:false,bellowed:false,charging:false,start:player.x}:null;}
+// Stampede: the bellow knocks back whatever is close, then once the roar strip ends he charges stampedeReach out and back (no building
+// collision while charging), turning early at the world edge. Every building he touches is destroyed outright (trainWreck); everything
+// else takes Ultimate damage once per pass.
+// A building in the Stampede's path: destroyed whatever its HP (tall ones topple the way he is charging, via impactFeel), its facade
+// blown out ahead of him at three heights, with a short crunch of hitstop and heavy shake.
+function trainWreck(b:typeof buildings[number],dir:number,y:number){
+ hit(b,b.hpNow,true,dir,{x:dir>0?b.x+4:b.x+b.w-4,y});
+ const face=dir>0?b.x+4:b.x+b.w-4;
+ for(let k=0;k<3;k++){const hy=C.ground-Math.min(b.h-4,18+k*b.h/3);spawnChunks(face,hy,dir,b.color,6,1.8);burst(face,hy,'#e8d8ab',8);}
+ hitstop=Math.max(hitstop,B.stampedeCrunch);shake=Math.max(shake,12);}
 function tickStampede(dt:number,w:number,h:number){
  const s=stampede!,el=B.ultimateDuration-combat.ultimateTime,roar=animDuration(activeKaiju,'ultRoar',combat.stage)||.6,dmg=B.stampedeDamage*damageMultiplier(combat);
  ultimateTimer-=dt;
@@ -340,11 +348,13 @@ function tickStampede(dt:number,w:number,h:number){
   const life=B.bellowRange/B.ultimateSpeed;for(const direction of [-1,1])waves.push({x:player.x+w/2,vx:direction*B.ultimateSpeed,life,max:life,damage:B.bellowDamage*damageMultiplier(combat),hits:new Set(),ult:true,size:1.1,knockback:B.stampedeKnockback});}
  if(el<roar)return;
  s.charging=true;
- const atEdge=s.dir<0?player.x<=0:player.x>=worldWidth-w;
- if(!s.turned&&(el>=roar+(B.ultimateDuration-roar)/2||atEdge)){s.turned=true;s.dir=-s.dir;s.hits=new Set();}
- player.face=s.dir;player.x=Math.max(0,Math.min(worldWidth-w,player.x+s.dir*B.stampedeSpeed*dt));
+ const atEdge=s.dir<0?player.x<=0:player.x>=worldWidth-w,speed=2*B.stampedeReach/Math.max(.2,B.ultimateDuration-roar);
+ if(!s.turned&&(Math.abs(player.x-s.start)>=B.stampedeReach||atEdge)){s.turned=true;s.dir=-s.dir;s.hits=new Set();}
+ // Home again: stop at the start line (he finishes where he began) and let the gallop play out the last instants.
+ const home=s.turned&&(s.dir>0?player.x>=s.start:player.x<=s.start);
+ player.face=s.dir;if(!home)player.x=Math.max(0,Math.min(worldWidth-w,player.x+s.dir*speed*dt));
  const box={x:player.x-(s.dir<0?w*.35:0),y:player.y-4,w:w*1.35,h:h+8},first=(o:object)=>!s.hits.has(o)&&!!s.hits.add(o);
- for(const b of buildings)if(b.hpNow>0&&overlaps(box,{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})&&first(b))hit(b,dmg,true,s.dir,{x:s.dir>0?b.x+4:b.x+b.w-4,y:player.y+h*.5});
+ for(const b of buildings)if(b.hpNow>0&&overlaps(box,{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})&&first(b))trainWreck(b,s.dir,player.y+h*.5);
  for(const g of growths)if(g.hp>0&&overlaps(box,{x:g.x-20,y:C.ground-55,w:40,h:55})&&first(g))hitGrowth(g,dmg);
  if(objective&&!objective.shattered&&overlaps(box,{x:objective.x-30,y:C.ground-100,w:60,h:100})&&first(objective))hitObjective(dmg);
  if(rival&&!rival.dead&&overlaps(box,rival)&&first(rival))strikeRival(dmg,B.stampedeKnockback,s.dir,true);

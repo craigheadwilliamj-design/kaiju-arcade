@@ -31,13 +31,19 @@ test('Kaiban Stampede: bellow in place, then charges through the block, turns ba
   const hpBefore=h.state().buildingHP.reduce((a:number,b:number)=>a+b,0),x0=h.state().x;
   h.tap('KeyU');h.step(30);
   assert.equal(h.state().stampeding,false,'still bellowing');assert.ok(Math.abs(h.state().x-x0)<5,'the bellow is in place');
-  let far=0,face0=0;for(let n=0;n<45;n++){h.step();if(h.state().stampeding&&!face0)face0=h.state().face;far=Math.max(far,Math.abs(h.state().x-x0));}
+  let far=0,face0=0,lo=x0,hi=x0;const track=()=>{const x=h.state().x;lo=Math.min(lo,x);hi=Math.max(hi,x);far=Math.max(far,Math.abs(x-x0));};
+  for(let n=0;n<45;n++){h.step();if(h.state().stampeding&&!face0)face0=h.state().face;track();}
   assert.ok(face0!==0,'charge started');assert.ok(far>300,`charges a long way (${Math.round(far)})`);
-  const mid=h.state().x;let turned=false;
-  for(let n=0;n<90&&h.state().stampeding;n++){h.step();if(h.state().face!==face0)turned=true;}
-  assert.ok(turned,'turns back for a second pass');assert.notEqual(h.state().x,mid);
-  for(let n=0;n<60&&h.state().stampeding;n++)h.step();
+  let turned=false;
+  for(let n=0;n<150&&h.state().stampeding;n++){h.step();track();if(h.state().face!==face0)turned=true;}
+  assert.ok(turned,'turns back for a second pass');
   assert.equal(h.state().stampeding,false,'charge ends with the Ultimate');
-  assert.ok(h.state().buildingHP.reduce((a:number,b:number)=>a+b,0)<hpBefore,'buildings in the path took damage');
+  assert.ok(far<=B.stampedeReach+20&&far<B.ultimateRange,`reach is shorter than Seismic Rupture (${Math.round(far)})`);
+  assert.ok(Math.abs(h.state().x-x0)<60,'finishes back near where it started');
+  // Like a train ran through it: every building in the charge path is down, whatever its HP.
+  const w=h.state().w??48,inPath=h.state().buildings.filter((b:any)=>b.x<hi+w&&b.x+b.w>lo);
+  assert.ok(inPath.length>0,'the charge crossed buildings');
+  assert.deepEqual(inPath.filter((b:any)=>b.hp>0).map((b:any)=>b.x),[],'nothing in the path survives');
+  assert.ok(h.state().buildingHP.reduce((a:number,b:number)=>a+b,0)<hpBefore);
  }finally{h.release();h.cleanup();}
 });
