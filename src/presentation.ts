@@ -116,8 +116,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S3_NATIVE,hold:[[134,25],[140,24],[149,24],[158,24],[162,24],[157,24],[150,24],[140,24]]},
    throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE}}}}},
  // Kaiban (woolly boar juggernaut): only the Stage 1 form exists, so it is the base form and every stage draws it until Stage 2/3 are
- // generated. Same 120-unit width as Mogurodon Stage 1, so the hitbox is unchanged.
- Kaiban:{width:120,anims:{idle:{src:'assets/kaiban-s1-idle.png',frames:8,fps:8,...KB1_NATIVE},walk:{src:'assets/kaiban-s1-walk.png',frames:8,fps:10,...KB1_NATIVE}}},
+ // generated. Same 120-unit width as Mogurodon Stage 1, so the hitbox is unchanged. The walk is a 12-frame boar gallop at 15 fps
+ // (same 0.8s cycle as the other walks); the eye on its pitched stretch frames 6-9 was placed by hand from the tusk root.
+ Kaiban:{width:120,anims:{idle:{src:'assets/kaiban-s1-idle.png',frames:8,fps:8,...KB1_NATIVE},walk:{src:'assets/kaiban-s1-walk.png',frames:12,fps:15,...KB1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
