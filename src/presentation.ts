@@ -52,7 +52,7 @@ const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Kaiban Stage 2 forward-slam strips: generated from the same base shifted 24px left (sprite at x=4) so the punches stay in the frame.
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
 // Kaiban Stage 2 form, in progress: idle, walk, the heavy, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while
-// the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop and grab/carry/throw. `borrow`: every move not drawn yet plays the
+// the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw and the climb set. `borrow`: every move not drawn yet plays the
 // Stage 1 strip. Stage 3 uses this form too until it has its own art.
 const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-idle.png',frames:8,fps:8,...KB2_NATIVE},walk:{src:'assets/kaiban-s2-walk.png',frames:8,fps:10,...KB2_NATIVE},
  light1:{src:'assets/kaiban-s2-light1.png',frames:8,fps:24,once:true,...KB2_LEFT},light2:{src:'assets/kaiban-s2-light2.png',frames:8,fps:21,once:true,...KB2_LEFT},
@@ -66,6 +66,13 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // up and forward underhand to fling it (impact frame 5, Stage 1's timing), follows through and drops back to all fours. Loose rocks erased:
  // the game draws the projectiles. The crouched shot still borrows Stage 1's.
  rangedStand:{src:'assets/kaiban-s2-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB2_LEFT},
+ // Climb: 256x256 strips, clinging upright with the fists gripping the wall line (frame x=168, the hitbox edge 24 world units out at this
+ // scale), feet braced on the wall, snout and tusks up. PixelLab braced him 37px up the wall, so the climb frames sit 21px lower (as far as
+ // the lowest step allows); the grab eases into that and the 53px shift onto the wall line from the base pose. The mantle starts a further
+ // 24px back (the game slides him 0.3 body widths onto the roof) and eases to 0 by its standing last frame. The punch draws the near fist
+ // back off the wall and drives it in with a smear on impact frame 5. Frame counts and fps match Stage 1.
+ climbGrab:{src:'assets/kaiban-s2-climb-grab.png',frames:5,fps:20,once:true,...KB2_NATIVE},climb:{src:'assets/kaiban-s2-climb.png',frames:8,fps:12,...KB2_NATIVE},
+ climbMantle:{src:'assets/kaiban-s2-climb-mantle.png',frames:9,fps:20,once:true,...KB2_NATIVE},climbPunch:{src:'assets/kaiban-s2-climb-punch.png',frames:8,fps:24,once:true,impact:5,...KB2_NATIVE},
  // Grab/carry/throw, gorilla-style, 256x256 strips (the base padded to 256 tall, feet on the bottom row, so KB2_NATIVE still lines up)
  // because the overhead lift reaches the top of the frame. Grab: dips with the fists at the street (prop stays on the street in front
  // of the near fist, frames 0-3), rises onto the hind legs and presses both fists straight up overhead. Carry stands upright with the
