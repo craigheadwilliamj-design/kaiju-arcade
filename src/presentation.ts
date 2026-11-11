@@ -118,7 +118,12 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  // Kaiban (woolly boar juggernaut): only the Stage 1 form exists, so it is the base form and every stage draws it until Stage 2/3 are
  // generated. Same 120-unit width as Mogurodon Stage 1, so the hitbox is unchanged. The walk is a 12-frame boar gallop at 15 fps
  // (same 0.8s cycle as the other walks); the eye on its pitched stretch frames 6-9 was placed by hand from the tusk root.
- Kaiban:{width:120,anims:{idle:{src:'assets/kaiban-s1-idle.png',frames:8,fps:8,...KB1_NATIVE},walk:{src:'assets/kaiban-s1-walk.png',frames:12,fps:15,...KB1_NATIVE}}},
+ Kaiban:{width:120,anims:{idle:{src:'assets/kaiban-s1-idle.png',frames:8,fps:8,...KB1_NATIVE},walk:{src:'assets/kaiban-s1-walk.png',frames:12,fps:15,...KB1_NATIVE},
+  // Heavy: head lowers and braces (rear), shudders with power while K is held (hold, generated from rear's last frame), then gores up
+  // and forward with the tusks (slam, starting on the jab with its slash arc). Rear and slam are cut from one 16-frame generation
+  // (rear 0-4, slam 6-9,11,13-15); timing matches Mogurodon's heavy. The reared-back strike frames tip the head up, so they have no eye.
+  heavyRear:{src:'assets/kaiban-s1-heavy-rear.png',frames:5,fps:20,once:true,...KB1_NATIVE},heavyHold:{src:'assets/kaiban-s1-heavy-hold.png',frames:4,fps:10,...KB1_NATIVE},
+  heavySlam:{src:'assets/kaiban-s1-heavy-slam.png',frames:8,fps:16,once:true,...KB1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
