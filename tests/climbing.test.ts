@@ -12,11 +12,11 @@ test('buildings are solid, can be climbed with W, stood on, and dropped from whe
   const s=h.state();
   assert.ok(Math.abs(s.y+s.height-roof)<1,`stands on roof (${s.y+s.height} vs ${roof})`);
   assert.equal(s.grounded,true);
-  assert.ok(h.state().cameraY>0,'vertical camera follows the climb');
+  assert.ok(h.state().zoom<C.zoomByStage[0]-.1,'camera pulls out for the climb');
   // Walking off the roof edge drops the player back down.
   h.down('KeyA');h.step(90);h.up('KeyA');h.step(120);
   assert.ok(h.state().y+h.state().height<=C.ground+.01);
-  h.step(240);assert.ok(h.state().cameraY<1,'camera returns to street level');
+  h.step(240);assert.ok(h.state().cameraY<1,'camera returns to street level');assert.ok(h.state().zoom>C.zoomByStage[0]-.01,'and zooms back in');
   // Without W there is no climbing.
   const before=h.state().y;h.down('KeyD');h.step(5);h.up('KeyD');assert.ok(h.state().y>=before-1);
  }finally{h.cleanup();}

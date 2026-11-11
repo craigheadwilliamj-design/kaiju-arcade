@@ -12,7 +12,7 @@ export type Effect={x:number,y:number,radius:number,life:number,harmless:boolean
 export type MilitaryEvent={kind:'reward',x:number,damage:number,points:number,shards:number,ultimate:boolean}|{kind:'playerHit',damage:number,strength:number,direction:number}|{kind:'cosmetic',x:number,y:number};
 export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Projectile[],wrecks:(Rect&{life:number,air:boolean,lane:0|1|null})[],effects:Effect[],events:MilitaryEvent[],spawnTimer:number,sequence:number,nextID:number,rng:()=>number};
 export function createMilitary(tier=1,city=0,rng=Math.random):MilitaryState{return {tier:Math.max(1,Math.min(5,tier)),city,units:[],projectiles:[],wrecks:[],effects:[],events:[],spawnTimer:M.firstSpawn,sequence:0,nextID:1,rng};}
-export function onScreen(r:Rect,camera:number){return r.x+r.w>camera&&r.x<camera+C.width;}
+export function onScreen(r:Rect,camera:number,viewW=C.width){return r.x+r.w>camera&&r.x<camera+viewW;}
 export function spawnUnit(s:MilitaryState,type:UnitType,x:number,side=1):Unit{
  const d=UNITS[type],y=d.air?(type==='helicopter'?285:type==='jet'?267:246):C.ground-d.h;
  const hp=d.hp*(1+s.city*M.cityHP);
@@ -66,13 +66,13 @@ function startBurst(s:MilitaryState,u:Unit,target:Rect){
  if(type==='artillery'){launch(s,u,'artillery',target);return;}
  u.burst=type==='police'||type==='patrol'?1:type==='soldier'?3:type==='bomber'?3:type==='helicopter'?6:6;u.gap=0;
 }
-export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:number,player:Rect,threat:number,boss?:Rect,contactSource:'player'|'military'='player'){
+export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:number,player:Rect,threat:number,boss?:Rect,contactSource:'player'|'military'='player',viewW=C.width){
  s.spawnTimer-=dt;
  const cap=M.caps[s.tier-1];
  if(s.spawnTimer<=0&&s.units.filter(u=>u.hp>0).length<cap){
  const roster=ROSTERS[s.tier-1],type=roster[s.sequence++%roster.length],side=s.rng()<.5?1:-1;
  const def=UNITS[type];
- spawnUnit(s,type,side===1?camera-M.spawnMargin-def.w:camera+C.width+M.spawnMargin,side);
+ spawnUnit(s,type,side===1?camera-M.spawnMargin-def.w:camera+viewW+M.spawnMargin,side);
  // Stationary guns arrive just outside the leading viewport and remain fixed.
  s.spawnTimer=M.spawnSeconds[s.tier-1]*(1+(s.rng()-.5)*2*M.spawnVariance)/(1+Math.max(0,Math.min(1,threat))*M.threatPressure+s.city*M.cityPressure);
  }
@@ -84,7 +84,7 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
  else if(d.speed>0&&Math.abs(target.x+target.w/2-u.x-u.w/2)>d.range*.7)u.x+=u.face*d.speed*dt;
  u.cooldown=Math.max(0,u.cooldown-dt);
  // Even scheduled burst rounds may only be launched while the shooter is visible.
- if(!onScreen(u,camera)){u.burst=0;continue;}
+ if(!onScreen(u,camera,viewW)){u.burst=0;continue;}
  if(u.cooldown===0&&u.burst===0){startBurst(s,u,target);u.cooldown=d.cooldown;}
  if(u.burst>0){u.gap-=dt;if(u.gap<=0){
  const weapon:Weapon=u.type==='bomber'?'bomb':u.type==='helicopter'&&u.burst<=2?'rocket':'bullet';
@@ -103,8 +103,8 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
  else {p.dead=true;if(hitsPlayer)s.events.push({kind:'playerHit',damage:p.damage,strength:0,direction:Math.sign(p.vx)||1});else if(hitsBoss)s.events.push({kind:'cosmetic',x:p.x,y:p.y});}
  }
  }
- s.projectiles=s.projectiles.filter(p=>!p.dead&&p.life>0&&p.x>camera-M.despawnDistance&&p.x<camera+C.width+M.despawnDistance);
- s.units=s.units.filter(u=>u.hp>0&&u.x>camera-M.despawnDistance&&u.x<camera+C.width+M.despawnDistance&&(!(u.type==='jet'||u.type==='bomber')||u.x>camera-250&&u.x<camera+C.width+250));
+ s.projectiles=s.projectiles.filter(p=>!p.dead&&p.life>0&&p.x>camera-M.despawnDistance&&p.x<camera+viewW+M.despawnDistance);
+ s.units=s.units.filter(u=>u.hp>0&&u.x>camera-M.despawnDistance&&u.x<camera+viewW+M.despawnDistance&&(!(u.type==='jet'||u.type==='bomber')||u.x>camera-250&&u.x<camera+viewW+250));
  for(const w of s.wrecks){w.life-=dt;if(w.air)w.y=Math.min(C.ground-w.h,w.y+150*dt);}
  s.wrecks=s.wrecks.filter(w=>w.life>0);
  for(const e of s.effects)e.life-=dt;s.effects=s.effects.filter(e=>e.life>0);

@@ -54,9 +54,9 @@ export function upright(v:Vehicle){return v.kind==='lamp'&&v.w<v.h;}
 export function uproot(v:Vehicle){if(!upright(v))return;const cx=v.x+v.w/2,cy=v.y+v.h/2;[v.w,v.h]=[v.h,v.w];v.x=cx-v.w/2;v.y=Math.min(C.ground-v.h,cy-v.h/2);}
 
 // Eastbound traffic uses lane 0 and enters from the left of the view; westbound uses lane 1 from the right.
-export function spawnTraffic(id:number,camera:number,dir:1|-1,rng:()=>number):Vehicle{
+export function spawnTraffic(id:number,camera:number,dir:1|-1,rng:()=>number,viewW=C.width):Vehicle{
  const roll=rng(),kind:VehicleKind=roll<V.busChance?'bus':roll<V.busChance+V.vanChance?'van':'car',s=VEHICLE_SPECS[kind];
- const v=make(id,kind,dir>0?camera-s.w-V.spawnMargin:camera+C.width+V.spawnMargin,dir>0?0:1,COLORS[Math.floor(rng()*COLORS.length)%COLORS.length]);
+ const v=make(id,kind,dir>0?camera-s.w-V.spawnMargin:camera+viewW+V.spawnMargin,dir>0?0:1,COLORS[Math.floor(rng()*COLORS.length)%COLORS.length]);
  v.state='driving';v.traffic=true;v.dir=dir;v.cruise=V.trafficSpeed[0]+rng()*(V.trafficSpeed[1]-V.trafficSpeed[0]);v.speed=v.cruise;return v;
 }
 
