@@ -76,6 +76,7 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
  // Stationary guns arrive just outside the leading viewport and remain fixed.
  s.spawnTimer=M.spawnSeconds[s.tier-1]*(1+(s.rng()-.5)*2*M.spawnVariance)/(1+Math.max(0,Math.min(1,threat))*M.threatPressure+s.city*M.cityPressure);
  }
+ const engage=Math.max(camera,Math.min(camera+viewW-C.width,player.x+player.w/2-C.width/2));
  for(const u of s.units){if(u.hp<=0)continue;const d=UNITS[u.type];
  const target=boss&&Math.abs(boss.x-u.x)<Math.abs(player.x-u.x)?boss:player;
  u.face=target.x+target.w/2>=u.x+u.w/2?1:-1;
@@ -83,8 +84,9 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
  if(u.type==='jet'||u.type==='bomber')u.x+=u.pass*d.speed*dt;
  else if(d.speed>0&&Math.abs(target.x+target.w/2-u.x-u.w/2)>d.range*.7)u.x+=u.face*d.speed*dt;
  u.cooldown=Math.max(0,u.cooldown-dt);
- // Even scheduled burst rounds may only be launched while the shooter is visible.
- if(!onScreen(u,camera,viewW)){u.burst=0;continue;}
+ // Rounds may only be launched inside the engagement window: the native 960 width around the player, kept inside the
+ // (possibly zoomed-out) view. Units still spawn beyond the visible edge, but a wider camera does not put more guns in range.
+ if(!onScreen(u,engage)){u.burst=0;continue;}
  if(u.cooldown===0&&u.burst===0){startBurst(s,u,target);u.cooldown=d.cooldown;}
  if(u.burst>0){u.gap-=dt;if(u.gap<=0){
  const weapon:Weapon=u.type==='bomber'?'bomb':u.type==='helicopter'&&u.burst<=2?'rocket':'bullet';

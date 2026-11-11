@@ -25,7 +25,7 @@ function fitCanvas(){if(!canvas.getBoundingClientRect||!ctx.setTransform)return;
  if(n!==res){res=n;canvas.width=960*n;canvas.height=540*n;}ctx.setTransform(n,0,0,n,0,0);ctx.imageSmoothingEnabled=false;}
 const overlay=document.querySelector<HTMLDivElement>('#overlay')!;
 type Mode='title'|'playing'|'paused'|'confirm'|'results'|'gameover'|'setup'|'progress'|'scores'|'conquered'|'intro'|'selection'|'freeplay-select'|'gallery'|'ending'|'settings';
-let mode:Mode='title',buildings=createBuildings(NEW_YORK_BLOCK_ONE),score=0,camera=0,cameraY=0,zoom=1,time=0,shake=0,cleared=false,action='',actionTime=0;
+let mode:Mode='title',buildings=createBuildings(NEW_YORK_BLOCK_ONE),score=0,camera=0,cameraY=0,zoom=C.zoom,time=0,shake=0,cleared=false,action='',actionTime=0;
 const keys=new Set<string>();
 let storage:StorageLike|undefined;try{storage=window.localStorage;}catch{}
 let {permanent,checkpoint,available:storageOK}=readSaves(storage);
@@ -52,7 +52,6 @@ let selectedTier=1,military=createMilitary(),population=createPopulation();
 let combat=createCombat(),ambientTimer=0,growthTimer=0,ultimateTimer=0;
 let shards:{x:number,y:number,vx:number,vy:number,life:number}[]=[],growths:{x:number,hp:number}[]=[],waves:{x:number,vx:number,life:number,damage:number,hits:Set<object>}[]=[];
 function viewW(){return C.width/zoom;}
-function zoomTarget(){const high=!!clingTo||player.grounded&&player.y+bodyHeight()<C.ground-5;return C.zoomByStage[combat.stage-1]*(high?C.zoomHigh:1);}
 function screenX(wx:number){return (wx-camera)*zoom;}
 function screenY(wy:number){return C.ground+(wy+cameraY-C.ground)*zoom;}
 function bodyWidth(){return C.playerWidth*scale(combat);}
@@ -141,7 +140,7 @@ function loadBlock(drill=false){
  block=drill?DRILL_BLOCK:LEVELS[cityIndex][blockIndex];worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:blockIndex+1,cityIndex);population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];chunks=[];hitstop=0;vehicles=[...createParked(block.cars),...createLamps(worldWidth,500)];held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?block.screens*VC.trafficPerScreen:0;shots=[];keys.clear();shards=[];growths=[];waves=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
  cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
  clingTo=null;grabLock=false;isClimbing=false;climbDir=0;oldWidth=bodyWidth();oldHeight=C.playerHeight*scale(combat);player={x:block.start===undefined?110:block.start-oldWidth/2,y:C.ground-oldHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
- zoom=zoomTarget();camera=Math.max(0,Math.min(worldWidth-viewW(),player.x+oldWidth/2-viewW()*.34));
+ camera=Math.max(0,Math.min(worldWidth-viewW(),player.x+oldWidth/2-viewW()*.34));
  objective=!drill&&block.kind==='stronghold'?{x:worldWidth/2,hp:P.strongholdHP,maxHP:P.strongholdHP,shattered:false}:null;
  rival=!drill&&block.kind==='boss'?createRival(worldWidth,cityIndex):null;
  if(objective){for(const [type,offset] of [['tank',-390],['emplacement',-180],['emplacement',210],['artillery',510],['helicopter',-650]] as const)spawnUnit(military,type,objective.x+offset);}
@@ -288,7 +287,7 @@ function tickVehicles(dt:number){
   if(settled&&v.kind==='building'){v.state='flat';spawnChunks(v.x+v.w/2,C.ground-v.h*.4,Math.sign(v.vx)||player.face,v.color,8,1.6);burst(v.x+v.w/2,C.ground-8,'#b1ac91',14);shake=Math.max(shake,4);}
  }
  // Traffic that drives away is gone; old flattened wrecks are culled first once the cap is reached.
- vehicles=vehicles.filter(v=>!(v.state==='driving'&&(v.x<-VC.despawn*.2||v.x>worldWidth+VC.despawn*.2||Math.abs(v.x-camera)>VC.despawn)));
+ vehicles=vehicles.filter(v=>!(v.state==='driving'&&(v.x<-VC.despawn*.2||v.x>worldWidth+VC.despawn*.2||(v.x<camera-VC.despawn||v.x>camera+viewW()+VC.despawn-C.width))));
  while(vehicles.length>VC.vehicleCap){const k=vehicles.findIndex(v=>v.state==='flat');if(k<0)break;vehicles.splice(k,1);}
 }
 function drainMilitary(){for(const e of military.events){if(e.kind==='reward'){score+=e.points;creditDamage(combat,e.damage,'player',e.ultimate);if(e.shards)dropShards(e.x,e.shards);}else if(e.kind==='playerHit'){const actual=receiveHit(combat,e.damage,'military',e.strength,e.direction);if(actual>0){shake=Math.max(shake,e.strength>0?6:1);burst(player.x+bodyWidth()/2,player.y+bodyHeight()/2,'#f197b8',4);}}else burst(e.x,e.y,'#f6dba1',3);}military.events=[];}
@@ -407,8 +406,8 @@ function update(dt:number){
  shards=shards.filter(s=>s.life>0);syncBody();
  for(const c of chunks){c.life-=dt;c.vy+=F.chunkGravity*dt;c.x+=c.vx*dt;c.y+=c.vy*dt;if(c.y+c.s>=C.ground){c.y=C.ground-c.s;if(c.bounces<1&&c.vy>60){c.vy*=-.32;c.vx*=.5;c.bounces++;}else{c.vy=0;c.vx*=Math.exp(-dt*9);}}}chunks=chunks.filter(c=>c.life>0);
  for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=400*dt;p.life-=dt;}particles=particles.filter(p=>p.life>0);
- // Zoom eases toward the stage/height target; the horizontal lead and the vertical follow are worked out in screen space so they hold at any zoom.
- zoom+=(zoomTarget()-zoom)*Math.min(1,dt*C.zoomSpeed);const vw=viewW();
+ // Horizontal lead and vertical follow are worked out in screen space so they hold at any zoom.
+ const vw=viewW();
  const target=Math.max(0,Math.min(worldWidth-vw,player.x+bodyWidth()/2-vw*(.42-.08*player.face)));camera+=(target-camera)*Math.min(1,dt*C.cameraSpeed);
  // Lift only as far as needed to keep the drawn sprite's head (sprites run ~1.4x their hitbox) below line 130, so the street stays in view.
  const head=player.y+bodyHeight()-1.4*bodyHeight(),targetY=Math.max(0,Math.min(C.maxCameraY,C.ground-head+(130-C.ground)/zoom));cameraY+=(targetY-cameraY)*Math.min(1,dt*C.cameraSpeed*1.4);
