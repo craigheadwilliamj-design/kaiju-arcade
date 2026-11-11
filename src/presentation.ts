@@ -44,6 +44,8 @@ const S3_NATIVE={scale:173/256,anchor:41+128*173/256};
 const S2_NATIVE={scale:194/256,anchor:31+128*194/256};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
+// Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
+const KB1_LEFT={scale:139/256,anchor:18+128*139/256};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
@@ -119,6 +121,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  // generated. Same 120-unit width as Mogurodon Stage 1, so the hitbox is unchanged. The walk is a 12-frame boar gallop at 15 fps
  // (same 0.8s cycle as the other walks); the eye on its pitched stretch frames 6-9 was placed by hand from the tusk root.
  Kaiban:{width:120,anims:{idle:{src:'assets/kaiban-s1-idle.png',frames:8,fps:8,...KB1_NATIVE},walk:{src:'assets/kaiban-s1-walk.png',frames:12,fps:15,...KB1_NATIVE},
+  // Light combo: tusk hook (dip, then whip the tusks up), headbutt (lurching forward), low lunging gore with a head toss at the end
+  // (stays on all fours so it reads apart from the heavy). Generated from the left-shifted base; eye placed from the snout position.
+  light1:{src:'assets/kaiban-s1-light1.png',frames:8,fps:24,once:true,...KB1_LEFT},light2:{src:'assets/kaiban-s1-light2.png',frames:8,fps:21,once:true,...KB1_LEFT},
+  light3:{src:'assets/kaiban-s1-light3.png',frames:8,fps:20,once:true,...KB1_LEFT},
   // Heavy: head lowers and braces (rear), shudders with power while K is held (hold, generated from rear's last frame), then gores up
   // and forward with the tusks (slam, starting on the jab with its slash arc). Rear and slam are cut from one 16-frame generation
   // (rear 0-4, slam 6-9,11,13-15); timing matches Mogurodon's heavy. The reared-back strike frames tip the head up, so they have no eye.
