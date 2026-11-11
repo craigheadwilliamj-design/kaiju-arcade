@@ -49,6 +49,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // Light combo by hit order (each form picks its own moves): Stage 2 = near-claw overhead swipe, far-claw swipe, bite.
   light1:{src:'assets/mogurodon-swipe-right.png',frames:8,fps:24,once:true,...S2_NATIVE},light2:{src:'assets/mogurodon-swipe-left.png',frames:10,fps:26,once:true,...S2_NATIVE},light3:{src:'assets/mogurodon-bite.png',frames:8,fps:20,once:true,...S2_NATIVE},
   heavyRear:{src:'assets/mogurodon-heavy-rear.png',frames:5,fps:20,once:true,...S2_NATIVE},heavyHold:{src:'assets/mogurodon-heavy-hold.png',frames:4,fps:10,...S2_NATIVE},heavySlam:{src:'assets/mogurodon-heavy-slam.png',frames:9,fps:18,once:true,...S2_NATIVE},
+  // Tremor Slam (L, grounded): the heavy-slam strip at a snappier tempo; the forward shockwave launches on impact frame 2.
+  rangedSlam:{src:'assets/mogurodon-heavy-slam.png',frames:9,fps:24,once:true,impact:2,...S2_NATIVE},
   rangedStand:{src:'assets/mogurodon-ranged-stand.png',frames:9,fps:20,once:true,...S2_NATIVE},rangedCrouch:{src:'assets/mogurodon-ranged-crouch.png',frames:8,fps:20,once:true,...S2_NATIVE},
   // Crouch art is drawn at full size; crouchUp is crouchDown reversed.
   crouch:{src:'assets/mogurodon-crouch.png',frames:4,fps:6,...S2_NATIVE},crouchDown:{src:'assets/mogurodon-crouch-down.png',frames:5,fps:22,once:true,...S2_NATIVE},crouchUp:{src:'assets/mogurodon-crouch-up.png',frames:5,fps:22,once:true,...S2_NATIVE},
@@ -76,6 +78,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    heavyRear:{src:'assets/mogurodon-s1-heavy-rear.png',frames:5,fps:20,once:true,...S1_NATIVE},heavyHold:{src:'assets/mogurodon-s1-heavy-hold.png',frames:4,fps:10,...S1_NATIVE},
    heavySlam:{src:'assets/mogurodon-s1-heavy-slam.png',frames:8,fps:16,once:true,...S1_NATIVE},
    // Ranged: no tail at Stage 1. Head down, back arched like a hissing cat, quills bristling; the projectile spawn is unchanged.
+   rangedSlam:{src:'assets/mogurodon-s1-heavy-slam.png',frames:8,fps:22,once:true,impact:1,...S1_NATIVE},
    rangedStand:{src:'assets/mogurodon-s1-ranged-stand.png',frames:8,fps:18,once:true,...S1_NATIVE},rangedCrouch:{src:'assets/mogurodon-s1-ranged-crouch.png',frames:8,fps:20,once:true,...S1_NATIVE},
    // Crouch: flat stalking crouch; crouchUp is crouchDown reversed.
    crouch:{src:'assets/mogurodon-s1-crouch.png',frames:4,fps:6,...S1_NATIVE},crouchDown:{src:'assets/mogurodon-s1-crouch-down.png',frames:5,fps:22,once:true,...S1_NATIVE},crouchUp:{src:'assets/mogurodon-s1-crouch-up.png',frames:5,fps:22,once:true,...S1_NATIVE},
@@ -98,6 +101,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    heavyRear:{src:'assets/mogurodon-s3-heavy-rear.png',frames:5,fps:20,once:true,...S3_NATIVE},heavyHold:{src:'assets/mogurodon-s3-heavy-hold.png',frames:4,fps:10,...S3_NATIVE},
    heavySlam:{src:'assets/mogurodon-s3-heavy-slam.png',frames:8,fps:16,once:true,...S3_NATIVE},
    jumpRise:{src:'assets/mogurodon-s3-jump-rise.png',frames:9,fps:24,once:true,...S3_NATIVE},jumpAir:{src:'assets/mogurodon-s3-jump-air.png',frames:4,fps:8,...S3_NATIVE},jumpLand:{src:'assets/mogurodon-s3-jump-land.png',frames:5,fps:20,once:true,...S3_NATIVE},
+   rangedSlam:{src:'assets/mogurodon-s3-heavy-slam.png',frames:8,fps:22,once:true,impact:1,...S3_NATIVE},
    rangedStand:{src:'assets/mogurodon-s3-ranged-stand.png',frames:8,fps:18,once:true,...S3_NATIVE},rangedCrouch:{src:'assets/mogurodon-s3-ranged-crouch.png',frames:8,fps:18,once:true,...S3_NATIVE},
    crouch:{src:'assets/mogurodon-s3-crouch.png',frames:4,fps:6,...S3_NATIVE},crouchDown:{src:'assets/mogurodon-s3-crouch-down.png',frames:5,fps:22,once:true,...S3_NATIVE},crouchUp:{src:'assets/mogurodon-s3-crouch-up.png',frames:5,fps:22,once:true,...S3_NATIVE},
    climbGrab:{src:'assets/mogurodon-s3-climb-grab.png',frames:5,fps:20,once:true,...S3_NATIVE},climb:{src:'assets/mogurodon-s3-climb.png',frames:8,fps:12,...S3_NATIVE},
