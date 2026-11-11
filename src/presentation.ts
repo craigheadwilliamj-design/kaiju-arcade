@@ -33,8 +33,9 @@ const images=new Map<string,HTMLImageElement>();
 type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][]};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
 // Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (every strip) override Stages 1 and 3.
-// Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips.
-type Form={width:number,anims:Record<string,Strip>};
+// Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips. With
+// `borrow` set it plays the base form's strip for that move instead (mixed art while a new form is being filled in, but every move animates).
+type Form={width:number,anims:Record<string,Strip>,borrow?:boolean};
 // Stage 1 strips: the mogurodon-s1 base still, a 151px-wide sprite at x=52 keyed from the transparent render.
 const S1_NATIVE={scale:151/256,anchor:52+128*151/256};
 // Stage 3 strips generated from the native-resolution base (the mogurodon-s3 base still: the 173px-wide sprite at x=41, one art pixel per
@@ -46,6 +47,16 @@ const S2_NATIVE={scale:194/256,anchor:31+128*194/256};
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
 const KB1_LEFT={scale:139/256,anchor:18+128*139/256};
+// Kaiban Stage 2 strips: the kaiban-s2 base still, a 200px-wide sprite at x=28 (idle, walk).
+const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
+// Kaiban Stage 2 forward-slam strips: generated from the same base shifted 24px left (sprite at x=4) so the punches stay in the frame.
+const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
+// Kaiban Stage 2 form, in progress: idle, walk and the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while the near
+// fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo). `borrow`: every move not drawn yet plays the
+// Stage 1 strip. Stage 3 uses this form too until it has its own art.
+const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-idle.png',frames:8,fps:8,...KB2_NATIVE},walk:{src:'assets/kaiban-s2-walk.png',frames:8,fps:10,...KB2_NATIVE},
+ light1:{src:'assets/kaiban-s2-light1.png',frames:8,fps:24,once:true,...KB2_LEFT},light2:{src:'assets/kaiban-s2-light2.png',frames:8,fps:21,once:true,...KB2_LEFT},
+ light3:{src:'assets/kaiban-s2-light3.png',frames:8,fps:20,once:true,...KB2_LEFT}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
@@ -161,16 +172,22 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // Crouch: flattens low with the belly near the ground (95px tall to 75px), breathing loop from the last frame; crouchUp is crouchDown
   // reversed.
   crouch:{src:'assets/kaiban-s1-crouch.png',frames:4,fps:6,...KB1_NATIVE},crouchDown:{src:'assets/kaiban-s1-crouch-down.png',frames:5,fps:22,once:true,...KB1_NATIVE},
-  crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}}},
+  crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}},
+  stages:{2:KAIBAN_S2,3:KAIBAN_S2}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
 function preload(src:string){if(typeof Image==='undefined'||images.has(src))return;const img=new Image();img.src=src;images.set(src,img);}
 function ready(src?:string){const img=src?images.get(src):null;return !!img?.complete&&!!img.naturalWidth;}
 export function loadPresentationArt(){for(const src of [ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).flatMap(s=>[s,...Object.values(s.stages??{})].flatMap(f=>Object.values(f.anims).map(a=>a.src)))])if(src)preload(src);}
-export function hasAnim(name:string,anim:string,stage?:number){return ready(form(name,stage)?.anims[anim]?.src);}
+// The form and strip drawn for a move: the stage form's own strip, else (a `borrow` form) the base form's, else the stage form's idle.
+function pick(name:string,anim:string,stage?:number):{f:Form,a:Strip}|null{const f=form(name,stage);if(!f)return null;
+ if(f.anims[anim]&&ready(f.anims[anim].src))return {f,a:f.anims[anim]};
+ const b=SPRITES[name];if(f.borrow&&b.anims[anim]&&ready(b.anims[anim].src))return {f:b,a:b.anims[anim]};
+ return f.anims.idle?{f,a:f.anims.idle}:null;}
+export function hasAnim(name:string,anim:string,stage?:number){const f=form(name,stage);return ready(f?.anims[anim]?.src)||(!!f?.borrow&&ready(SPRITES[name].anims[anim]?.src));}
 export function hasSprite(name:string,stage?:number){return ready(form(name,stage)?.anims.idle?.src);}
-function strip(name:string,anim:string,stage?:number){const a=form(name,stage)?.anims;return a?.[anim]&&ready(a[anim].src)?a[anim]:a?.idle;}
+function strip(name:string,anim:string,stage?:number){return pick(name,anim,stage)?.a;}
 export function spriteFrame(name:string,t:number,anim='idle',stage?:number){const a=strip(name,anim,stage);if(!a)return 0;const f=Math.floor(Math.max(0,t)*a.fps);return a.once?Math.min(f,a.frames-1):f%a.frames;}
 // Gameplay timing (attack length, intros, impact frame) is data only so headless runs match the browser. A stage form that has not
 // animated a strip yet borrows the base form's timing, so combat plays identically while the art catches up.
@@ -182,13 +199,13 @@ export function animDuration(name:string,anim:string,stage?:number){const a=timi
 // Where a carried prop's bottom-centre sits in this frame, relative to the feet origin in unflipped, unscaled sprite units (the caller
 // applies facing and Stage scale). Null when the strip has no hold points or its art is not loaded (the caller keeps its fallback).
 export function holdPoint(name:string,anim:string,t:number,stage?:number):[number,number]|null{
- const s=form(name,stage),a=s?.anims[anim];if(!s||!a?.hold||!ready(a.src))return null;
+ const p0=pick(name,anim,stage),s=p0?.f,a=p0?.a;if(!s||!a?.hold||a!==s.anims[anim])return null;
  const img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),f=spriteFrame(name,t,anim,stage);
  const p=(typeof a.hold[0]==='number'?a.hold:(a.hold as number[][])[f]) as number[];
  return [(p[0]-(a.anchor??fw/2))*k,-(img.naturalHeight-1-p[1])*k];}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
 export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;
- const s=form(name,stage)!,a=strip(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),w=fw*k,h=img.naturalHeight*k;
+ const {f:s,a}=pick(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),w=fw*k,h=img.naturalHeight*k;
  const smooth=ctx.imageSmoothingEnabled,sx=spriteFrame(name,t,anim,stage)*fw,fh=img.naturalHeight,dx=-(a.anchor??fw/2)*k;
  // Enlarged sprites (Stage 3, title art): nearest-neighbour at a non-integer zoom doubles some source pixels and not others, so
  // lines change thickness and crawl as the sprite moves. Scale up by a whole number first, then smooth down to the target size.
