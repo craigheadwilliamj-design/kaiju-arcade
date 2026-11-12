@@ -89,7 +89,11 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // arms plant on the knuckles, the body vaults over them and the hind legs swing through, lifting only for the gather (frames 2-8 of a
  // 12-frame generation that repeats with an exact 7-frame period), 7 frames at 20 fps: a quick 0.35s stride to keep pace with the
  // charge, which runs stampedeReach x stage scale.
- ultRoar:{src:'assets/kaiban-s2-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB2_NATIVE},ultPound:{src:'assets/kaiban-s2-ult-pound.png',frames:7,fps:20,...KB2_NATIVE}}};
+ ultRoar:{src:'assets/kaiban-s2-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB2_NATIVE},ultPound:{src:'assets/kaiban-s2-ult-pound.png',frames:7,fps:20,...KB2_NATIVE},
+ // Jump: crouches on the knuckles and springs off all fours (rise), a tucked airborne loop from the rise's last frame (frames 1-4 of its
+ // generation), and a heavy fists-first squash landing closed on the base pose. Bottom-aligned; frame counts and fps match Stage 1's jump.
+ jumpRise:{src:'assets/kaiban-s2-jump-rise.png',frames:9,fps:24,once:true,...KB2_NATIVE},jumpAir:{src:'assets/kaiban-s2-jump-air.png',frames:4,fps:8,...KB2_NATIVE},
+ jumpLand:{src:'assets/kaiban-s2-jump-land.png',frames:5,fps:20,once:true,...KB2_NATIVE}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
