@@ -52,7 +52,7 @@ const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Kaiban Stage 2 forward-slam strips: generated from the same base shifted 24px left (sprite at x=4) so the punches stay in the frame.
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
 // Kaiban Stage 2 form, in progress: idle, walk, the heavy, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while
-// the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw and the climb set. `borrow`: every move not drawn yet plays the
+// the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw, the climb set and the Stampede. `borrow`: every move not drawn yet plays the
 // Stage 1 strip. Stage 3 uses this form too until it has its own art.
 const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-idle.png',frames:8,fps:8,...KB2_NATIVE},walk:{src:'assets/kaiban-s2-walk.png',frames:8,fps:10,...KB2_NATIVE},
  light1:{src:'assets/kaiban-s2-light1.png',frames:8,fps:24,once:true,...KB2_LEFT},light2:{src:'assets/kaiban-s2-light2.png',frames:8,fps:21,once:true,...KB2_LEFT},
@@ -81,7 +81,13 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  grab:{src:'assets/kaiban-s2-grab.png',frames:9,fps:22,once:true,...KB2_NATIVE,hold:[[222,255],[222,255],[222,255],[219,255],[197,151],[192,91],[120,30],[107,3],[107,3]]},
  carry:{src:'assets/kaiban-s2-carry.png',frames:4,fps:6,...KB2_NATIVE,hold:[[107,3],[107,3],[107,3],[107,3]]},
  carryWalk:{src:'assets/kaiban-s2-carry-walk.png',frames:8,fps:10,...KB2_NATIVE,hold:[[107,3],[109,3],[111,3],[112,3],[111,3],[111,3],[109,3],[108,3]]},
- throw:{src:'assets/kaiban-s2-throw.png',frames:8,fps:18,once:true,...KB2_NATIVE}}};
+ throw:{src:'assets/kaiban-s2-throw.png',frames:8,fps:18,once:true,...KB2_NATIVE},
+ // Ultimate (Stampede), gorilla-style. Roar: 256x256 (the base padded to 256 tall like the grab, so KB2_NATIVE lines up) because he
+ // stands to full height. Rises onto the hind legs, fists to the chest, throws the head back and bellows (impact frame 5 = the bellow
+ // blast, Stage 1's timing), then drops onto all four knuckles in a low head-down charge stance. 9 of a 16-frame generation (frames
+ // 0-3,5,7,9-11). Pound: the charge loop, a head-down knuckle gallop with compact strides (frames 4-9 of a 12-frame generation, which
+ // close onto each other; a full stretch at this scale runs off a 256px frame), 6 frames at 12 fps for Stage 1's 0.5s stride.
+ ultRoar:{src:'assets/kaiban-s2-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB2_NATIVE},ultPound:{src:'assets/kaiban-s2-ult-pound.png',frames:6,fps:12,...KB2_NATIVE}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
