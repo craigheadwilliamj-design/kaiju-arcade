@@ -60,7 +60,7 @@ let debris:{t:number,dir:number}|null=null;
 type Rock={x:number,y:number,vx:number,vy:number,life:number,damage:number,knockback:number,spin:number,size:number};
 let rocks:Rock[]=[];
 // Kaiban's Stampede: bellow (blast on the roar's impact frame), then the charge. `hits` resets when he turns, so each pass hits once.
-let stampede:{dir:number,hits:Set<object>,turned:boolean,bellowed:boolean,charging:boolean,start:number}|null=null;
+let stampede:{dir:number,hits:Set<object>,turned:boolean,bellowed:boolean,charging:boolean,start:number,reach:number}|null=null;
 function viewW(){return C.width/zoom;}
 function screenX(wx:number){return (wx-camera)*zoom;}
 function screenY(wy:number){return C.ground+(wy+cameraY-C.ground)*zoom;}
@@ -330,8 +330,9 @@ function drainMilitary(){for(const e of military.events){if(e.kind==='reward'){s
 // First fissure waits for the roar's crash-down so the waves come out of the slam.
 // Kaiban's Stampede bellows on the same impact frame, then charges (tickStampede) instead of sending fissures.
 function useUltimate(){if(!activateUltimate(combat))return;attack=null;tremor=null;debris=null;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;
- stampede=activeKaiju==='Kaiban'?{dir:player.face,hits:new Set(),turned:false,bellowed:false,charging:false,start:player.x}:null;}
-// Stampede: the bellow knocks back whatever is close, then once the roar strip ends he charges stampedeReach out and back (no building
+ stampede=activeKaiju==='Kaiban'?{dir:player.face,hits:new Set(),turned:false,bellowed:false,charging:false,start:player.x,reach:B.stampedeReach*scale(combat)}:null;}
+// Stampede: the bellow knocks back whatever is close, then once the roar strip ends he charges stampedeReach x stage scale (fixed at
+// activation) out and back, so a bigger form charges further and faster in the same time (no building
 // collision while charging), turning early at the world edge. Every building he touches is destroyed outright (trainWreck); everything
 // else takes Ultimate damage once per pass.
 // A building in the Stampede's path: destroyed whatever its HP (tall ones topple the way he is charging, via impactFeel), its facade
@@ -348,8 +349,8 @@ function tickStampede(dt:number,w:number,h:number){
   const life=B.bellowRange/B.ultimateSpeed;for(const direction of [-1,1])waves.push({x:player.x+w/2,vx:direction*B.ultimateSpeed,life,max:life,damage:B.bellowDamage*damageMultiplier(combat),hits:new Set(),ult:true,size:1.1,knockback:B.stampedeKnockback});}
  if(el<roar)return;
  s.charging=true;
- const atEdge=s.dir<0?player.x<=0:player.x>=worldWidth-w,speed=2*B.stampedeReach/Math.max(.2,B.ultimateDuration-roar);
- if(!s.turned&&(Math.abs(player.x-s.start)>=B.stampedeReach||atEdge)){s.turned=true;s.dir=-s.dir;s.hits=new Set();}
+ const atEdge=s.dir<0?player.x<=0:player.x>=worldWidth-w,speed=2*s.reach/Math.max(.2,B.ultimateDuration-roar);
+ if(!s.turned&&(Math.abs(player.x-s.start)>=s.reach||atEdge)){s.turned=true;s.dir=-s.dir;s.hits=new Set();}
  // Home again: stop at the start line (he finishes where he began) and let the gallop play out the last instants.
  const home=s.turned&&(s.dir>0?player.x>=s.start:player.x<=s.start);
  player.face=s.dir;if(!home)player.x=Math.max(0,Math.min(worldWidth-w,player.x+s.dir*speed*dt));
