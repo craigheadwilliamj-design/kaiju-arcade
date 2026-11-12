@@ -85,9 +85,10 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // Ultimate (Stampede), gorilla-style. Roar: 256x256 (the base padded to 256 tall like the grab, so KB2_NATIVE lines up) because he
  // stands to full height. Rises onto the hind legs, fists to the chest, throws the head back and bellows (impact frame 5 = the bellow
  // blast, Stage 1's timing), then drops onto all four knuckles in a low head-down charge stance. 9 of a 16-frame generation (frames
- // 0-3,5,7,9-11). Pound: the charge loop, a head-down knuckle gallop with compact strides (frames 4-9 of a 12-frame generation, which
- // close onto each other; a full stretch at this scale runs off a 256px frame), 6 frames at 12 fps for Stage 1's 0.5s stride.
- ultRoar:{src:'assets/kaiban-s2-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB2_NATIVE},ultPound:{src:'assets/kaiban-s2-ult-pound.png',frames:6,fps:12,...KB2_NATIVE}}};
+ // 0-3,5,7,9-11). Pound: the charge loop, a gorilla gallop: both arms plant on the knuckles, the body vaults over them, the hind legs
+ // swing through under the chest and the arms reach out again, shoulders rocking high, head and tusks low (frames 3-9 of a 12-frame
+ // generation, frame 9 running back into 3), 7 frames at 14 fps for Stage 1's 0.5s stride.
+ ultRoar:{src:'assets/kaiban-s2-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB2_NATIVE},ultPound:{src:'assets/kaiban-s2-ult-pound.png',frames:7,fps:14,...KB2_NATIVE}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
