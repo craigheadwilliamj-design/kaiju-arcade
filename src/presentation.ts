@@ -93,7 +93,11 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // Jump: crouches on the knuckles and springs off all fours (rise), a tucked airborne loop from the rise's last frame (frames 1-4 of its
  // generation), and a heavy fists-first squash landing closed on the base pose. Bottom-aligned; frame counts and fps match Stage 1's jump.
  jumpRise:{src:'assets/kaiban-s2-jump-rise.png',frames:9,fps:24,once:true,...KB2_NATIVE},jumpAir:{src:'assets/kaiban-s2-jump-air.png',frames:4,fps:8,...KB2_NATIVE},
- jumpLand:{src:'assets/kaiban-s2-jump-land.png',frames:5,fps:20,once:true,...KB2_NATIVE}}};
+ jumpLand:{src:'assets/kaiban-s2-jump-land.png',frames:5,fps:20,once:true,...KB2_NATIVE},
+ // Crouch: bends the elbows and knees and drops the chest low on all four knuckles (135px tall to 110px, seed 7), a breathing loop from
+ // the last frame closed on it; crouchUp is crouchDown reversed. Frame counts and fps match Stage 1.
+ crouch:{src:'assets/kaiban-s2-crouch.png',frames:4,fps:6,...KB2_NATIVE},crouchDown:{src:'assets/kaiban-s2-crouch-down.png',frames:5,fps:22,once:true,...KB2_NATIVE},
+ crouchUp:{src:'assets/kaiban-s2-crouch-up.png',frames:5,fps:22,once:true,...KB2_NATIVE}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
