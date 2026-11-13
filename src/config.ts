@@ -44,9 +44,11 @@ export const COMBAT = {
  // breathing and refills at jetRegen per second; running it dry locks the jet until it is back to jetRelight. A tap still breathes for
  // jetMinBurst. Everything inside the cone takes jetDamage every jetTick (pierces); the cone stops at the first building and at the
  // street. W/S tilt it up to jetUp / down to jetDown degrees at jetTurn deg/s. Length and width grow with sqrt(stage scale). He creeps
- // at jetSlow walking speed while breathing.
+ // at jetSlow walking speed while breathing. Past the aim strip's top angle the head holds its last frame while the flame keeps tilting,
+ // so he can torch a hovering helicopter; aircraft caught in the cone take jetAirMult damage (fire shreds rotors and wings).
+ jetAirMult:1.6,
  jetSeconds:2,jetRegen:.5,jetRelight:.35,jetMinBurst:.25,jetMinStart:.08,jetTick:.12,jetDamage:7,jetKnockback:30,jetCarPush:.3,
- jetRange:260,jetWidth:[6,34],jetUp:35,jetDown:25,jetTurn:140,jetSlow:.25,jetCooldown:.2,
+ jetRange:260,jetWidth:[6,34],jetUp:58,jetDown:25,jetTurn:140,jetSlow:.25,jetCooldown:.2,
  // Lingering fire, kept on a short leash so it never burns the block down on its own. Where the flame washes along the street it
  // leaves fire patches (one per jetFireCell px, at most jetFireCap; patch width, flame height and burn zone grow with sqrt(stage scale)) that burn for jetFireSeconds after the flame leaves, jetFireDamage
  // every jetFireTick. Walls the flame touches catch the same way, in jetWallCell rows (x sqrt(stage scale)), so tilting across a wall
@@ -172,5 +174,8 @@ export const MOVE = {
  // scale) x drop power, lavaDamage each on the first thing hit). A street landing leaves a lava pool under him, and every glob that
  // reaches the street leaves a small one: pools burn whatever stands in them for lavaPoolDamage every lavaPoolTick until they cool.
  lavaGlobs:8,lavaSpeed:[220,420],lavaAngle:[30,70],lavaDamage:10,lavaPoolSeconds:2.2,lavaPoolTick:.25,lavaPoolDamage:6,lavaPoolWidth:1.3,lavaGlobPool:46,
+ // His grounded heavy splashes heavyLavaGlobs (+2 near full charge) from the impact point, at drop power heavyLavaPower[0..1] by
+ // charge, and on the street leaves a pool heavyLavaPoolWidth x body width there.
+ heavyLavaGlobs:4,heavyLavaPower:[.6,1.2],heavyLavaPoolWidth:.5,
  poundMult:1.25,poundCooldown:.34,poundKnockback:120,
 };

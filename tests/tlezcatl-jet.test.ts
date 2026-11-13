@@ -118,3 +118,33 @@ test('Tlézcatl Flame Jet: sweeping up a wall leaves a track of fire up its side
   assert.ok(lost>0&&lost<=cap,`one afterburn tick per building however many spots (${lost.toFixed(1)} ≤ ${cap.toFixed(1)} in 1s)`);
  }finally{h.release();h.cleanup();}
 });
+
+test('Tlézcatl heavy: the slam splashes lava globs both ways, more when charged, and leaves a pool on the street',async()=>{
+ const h=await tlezcatlCity();const {MOVE:MV}=await import('../src/config.ts');
+ try{h.step(30);
+  h.tap('KeyK');h.step();
+  const tap=h.state().entityCounts.lavaGlobs;assert.equal(tap,MV.heavyLavaGlobs,`a tapped heavy splashes ${MV.heavyLavaGlobs} globs (${tap})`);
+  assert.ok(h.state().entityCounts.lavaPools>=1,'a pool where the slam hit the street');
+  assert.ok(until(h,()=>h.state().entityCounts.lavaGlobs===0&&h.state().entityCounts.lavaPools===0,400),'globs come down and pools cool');
+  h.down('KeyK');h.step(Math.ceil(B.maxCharge*60)+5);h.up('KeyK');h.step();
+  assert.equal(h.state().entityCounts.lavaGlobs,MV.heavyLavaGlobs+2,'a full charge splashes extra globs');
+ }finally{h.release();h.cleanup();}
+});
+
+test('Tlézcatl Flame Jet: tilted all the way up, the flame reaches the airspace a hovering helicopter holds',async()=>{
+ const h=await tlezcatlCity();const {UNIT_CONFIG:U}=await import('../src/config.ts');
+ try{h.step(30);
+  // Face west into the open plaza so no wall cuts the flame short.
+  h.down('KeyA');h.step(2);h.up('KeyA');h.step(3);assert.equal(h.state().face,-1);
+  h.down('KeyL');h.down('KeyW');until(h,()=>h.state().jet==='on',40);h.step(40);
+  const s=h.state(),[ox,oy]=s.jetOrigin,a=s.jetAngle*Math.PI/180,cx=s.x+s.width/2,R=B.jetRange;
+  assert.ok(Math.abs(s.jetAngle-B.jetUp)<.5);
+  // A helicopter hovers at 70% of its weapon range from the kaiju, at its fixed altitude (top edge y=285).
+  const heli={x:cx-U.helicopter.range*.7-U.helicopter.w/2,y:285,w:U.helicopter.w,h:U.helicopter.h};
+  let reach=false;
+  for(let d=0;d<=s.jetLen;d+=8){const r=B.jetWidth[0]+(B.jetWidth[1]-B.jetWidth[0])*Math.min(1,d/R),x=ox-Math.cos(a)*d,y=oy-Math.sin(a)*d;
+   const nx=Math.max(heli.x,Math.min(x,heli.x+heli.w)),ny=Math.max(heli.y,Math.min(y,heli.y+heli.h));if((x-nx)**2+(y-ny)**2<=r*r)reach=true;}
+  assert.ok(reach,`the cone at ${B.jetUp}° passes through a hovering helicopter`);
+  h.up('KeyW');h.up('KeyL');
+ }finally{h.release();h.cleanup();}
+});
