@@ -79,3 +79,31 @@ test('a street slam makes a shockwave; S on the wall still climbs down instead o
   h.down('KeyS');h.step(3);assert.equal(h.state().diving,false);assert.ok(h.state().clinging);h.up('KeyS');
  }finally{h.cleanup();}
 });
+
+test('a street slam with a direction held rolls the cannonball, plows ahead and ricochets off the first wall',async()=>{
+ const h=await drills();
+ try{
+  // Back off west so there is street to roll on before the first building.
+  h.down('KeyA');h.step(90);h.up('KeyA');h.step(30);
+  const i=h.state().buildings.findIndex((b:any)=>b.x>h.state().x),hp=h.state().buildings[i].hp;
+  h.tap('Space');h.step(15);h.tap('KeyS');h.down('KeyD');
+  for(let n=0;n<60&&h.state().diving;n++)h.step();
+  assert.equal(h.state().rolling,true,'kept rolling after the street slam');h.up('KeyD');
+  h.step(6);const x0=h.state().x;h.step(6);assert.ok(h.state().x-x0>6*205/60*2,'rolls faster than walking without input');
+  let bounced=false;for(let n=0;n<90&&h.state().rolling;n++){h.step();if(h.state().face<0)bounced=true;}
+  assert.ok(h.state().buildings[i].hp<hp,'the ball smacked the wall');assert.ok(bounced,'ricocheted back west');
+  for(let n=0;n<120&&h.state().rolling;n++)h.step();assert.equal(h.state().rolling,false,'roll ends');
+  // Without a direction held the slam just bursts out.
+  h.step(30);h.tap('Space');h.step(15);h.tap('KeyS');for(let n=0;n<60&&h.state().diving;n++)h.step();assert.equal(h.state().rolling,false);
+ }finally{h.cleanup();}
+});
+
+test('Space jumps out of the roll; attacks are ignored inside the ball',async()=>{
+ const h=await drills();
+ try{
+  h.down('KeyA');h.step(90);h.up('KeyA');h.step(30);
+  h.tap('Space');h.step(15);h.tap('KeyS');h.down('KeyD');for(let n=0;n<60&&h.state().diving;n++)h.step();
+  assert.equal(h.state().rolling,true);const c=h.state().combo;h.tap('KeyJ');h.step(1);assert.equal(h.state().combo,c,'no swipe while rolling');
+  h.tap('Space');h.step(2);assert.equal(h.state().rolling,false);assert.equal(h.state().grounded,false,'jumped out');h.up('KeyD');
+ }finally{h.cleanup();}
+});

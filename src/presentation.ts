@@ -127,7 +127,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   grab:{src:'assets/mogurodon-grab.png',frames:9,fps:22,once:true,...S2_NATIVE,hold:[[201,191],[213,191],[230,191],[230,191],[230,191],[226,191],[219,152],[221,90],[144,21]]},
   carry:{src:'assets/mogurodon-carry.png',frames:4,fps:6,...S2_NATIVE,hold:[[144,21],[148,24],[152,25],[148,23]]},
   carryWalk:{src:'assets/mogurodon-carry-walk.png',frames:8,fps:10,...S2_NATIVE,hold:[[144,21],[146,20],[150,20],[151,21],[152,23],[150,23],[148,22],[146,22]]},
-  throw:{src:'assets/mogurodon-throw.png',frames:8,fps:18,once:true,...S2_NATIVE}},
+  throw:{src:'assets/mogurodon-throw.png',frames:8,fps:18,once:true,...S2_NATIVE},
+  // Slam cannonball (see stages[1] for how dive/slamLand are cut and played).
+  dive:{src:'assets/mogurodon-dive.png',frames:3,fps:28,once:true,...S2_NATIVE,pivot:[134.6,113.7],spinFrom:2},
+  slamLand:{src:'assets/mogurodon-slam-land.png',frames:8,fps:16,once:true,...S2_NATIVE}},
   stages:{1:{width:120,anims:{
    // Stage 1 form: every strip generated from the native-resolution base (S1_NATIVE), 256x192 except the 256x256 climb. Frame counts,
    // fps and impact frames match the previous art, so combat timing is unchanged.
@@ -177,7 +180,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    grab:{src:'assets/mogurodon-s3-grab.png',frames:9,fps:22,once:true,...S3_NATIVE,hold:[[195,191],[206,191],[219,191],[217,191],[215,191],[211,191],[202,150],[196,100],[134,25]]},
    carry:{src:'assets/mogurodon-s3-carry.png',frames:4,fps:6,...S3_NATIVE,hold:[[134,25],[134,24],[134,23],[134,24]]},
    carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S3_NATIVE,hold:[[134,25],[140,24],[149,24],[158,24],[162,24],[157,24],[150,24],[140,24]]},
-   throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE}}}}},
+   throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE},
+   // Slam cannonball: a crystal-studded spike ball.
+   dive:{src:'assets/mogurodon-s3-dive.png',frames:3,fps:28,once:true,...S3_NATIVE,pivot:[126.8,104.9],spinFrom:2},
+   slamLand:{src:'assets/mogurodon-s3-slam-land.png',frames:8,fps:16,once:true,...S3_NATIVE}}}}},
  // Kaiban (woolly boar juggernaut): every Stage 1 strip is done; only the Stage 1 form exists, so it is the base form and every stage draws it until Stage 2/3 are
  // generated. Same 120-unit width as Mogurodon Stage 1, so the hitbox is unchanged. The walk is a 12-frame boar gallop at 15 fps
  // (same 0.8s cycle as the other walks); the eye on its pitched stretch frames 6-9 was placed by hand from the tusk root.
