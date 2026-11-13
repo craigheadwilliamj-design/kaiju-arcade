@@ -10,3 +10,23 @@ test('completion with each selected kaiju unlocks only its corresponding ending'
 test('known completed M4 leaderboard records migrate into gallery, failures do not',()=>{const p=emptyPermanent();p.scores=[{id:'complete',initials:'ABC',kaiju:'Mogurodon',score:500,cities:5,completed:true},{id:'failed',initials:'XYZ',kaiju:'Kaiban',score:100,cities:2,completed:false}];const loaded=readSaves({getItem:k=>k===PERMANENT_KEY?JSON.stringify(p):null,setItem:()=>{},removeItem:()=>{}});assert.deepEqual(loaded.permanent.gallery,['Mogurodon']);});
 test('missing original epilogues remain explicit empty slots rather than invented lore',()=>{assert.ok(ENDINGS.every(e=>e.epilogue===null));});
 test('HUD score keeps the sign ahead of the zero padding',()=>{assert.deepEqual([0,42,123456,1234567,-12,-0.4,-99999,-123456].map(n=>hudScore(n)),['000000','000042','123456','1234567','-00012','000000','-99999','-123456']);});
+
+test('move lists: signature moves are per kaiju, combat and controls are shared',async()=>{
+ const {moveList}=await import('../src/presentation.ts');
+ const names=(k:string)=>moveList(k).moves.flatMap(s=>s.moves.map(m=>m.name));
+ assert.ok(names('Mogurodon').includes('Cannonball')&&names('Mogurodon').includes('Tremor Slam'));
+ assert.ok(names('Kaiban').includes('Stampede')&&names('Kaiban').includes('Debris Shotgun')&&!names('Kaiban').includes('Cannonball'));
+ assert.ok(names('Kaiban').includes('Gore Charge')&&names('Kaiban').includes('Meteor Drop'));
+ for(const k of ['Mogurodon','Kaiban','Belial']){assert.ok(names(k).includes('Pound')&&names(k).some(n=>/Slam$|Meteor Drop/.test(n)));assert.ok(moveList(k).controls.flatMap(s=>s.moves).some(m=>m.name==='Leap-grab'));}
+});
+
+test('pause menu opens the Moves & Controls panel with tabs and returns to pause',async()=>{
+ const {bootGame}=await import('./helpers/game-harness.ts');const h=await bootGame(.75);
+ try{
+  h.click('#drills');h.click('#start');h.step(2);h.tap('Escape');assert.equal(h.state().mode,'paused');
+  h.click('#moves');const o=h.node('#overlay');assert.match(o.innerHTML,/Cannonball/);assert.match(o.innerHTML,/MOGURODON/);
+  h.click('#tab-controls');assert.match(o.innerHTML,/Leap-grab/);assert.doesNotMatch(o.innerHTML,/Cannonball/);
+  h.click('#moves-back');assert.match(o.innerHTML,/RESUME/);assert.equal(h.state().mode,'paused');
+  h.click('#resume');assert.equal(h.state().mode,'playing');
+ }finally{h.cleanup();}
+});
