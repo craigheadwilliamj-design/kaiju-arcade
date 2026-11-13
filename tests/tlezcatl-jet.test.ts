@@ -82,3 +82,22 @@ test('Tlézcatl Magma Dive: plays his own dive and landing, splashes lava globs 
   assert.ok(until(h,()=>h.state().entityCounts.lavaPools===0,Math.ceil(MV.lavaPoolSeconds*60)+30),'pools cool off');
  }finally{h.release();h.cleanup();}
 });
+
+test('Tlézcatl Flame Jet: leaves fire behind (street patches, afterburn on the wall) that dies out and never collapses a building alone',async()=>{
+ const h=await tlezcatlCity();
+ try{h.step(30);
+  const s0=h.state(),cx=s0.x+s0.width/2;
+  const ahead=s0.buildings.filter((b:any)=>b.hp>0&&b.x>cx).sort((a:any,b:any)=>a.x-b.x)[0];
+  const i=h.state().buildings.findIndex((b:any)=>b.x===ahead.x);
+  // From the spawn, aimed down: the flame washes along the street into the next building's wall, then let go.
+  h.down('KeyL');h.down('KeyS');until(h,()=>h.state().jet==='on',40);h.step(40);h.up('KeyS');h.up('KeyL');
+  until(h,()=>h.state().jet===null,60);
+  assert.ok(h.state().entityCounts.jetFires>0,`street fire left behind (${h.state().entityCounts.jetFires})`);
+  assert.ok(h.state().entityCounts.jetFires<=B.jetFireCap);
+  assert.equal(h.state().entityCounts.burning,1,'the building it hit keeps burning');
+  const hp=h.state().buildingHP[i];h.step(30);
+  assert.ok(h.state().buildingHP[i]<hp,'afterburn keeps chipping it');
+  assert.ok(until(h,()=>h.state().entityCounts.jetFires===0&&h.state().entityCounts.burning===0,Math.ceil(B.jetBurnSeconds*60)+30),'all of it burns out');
+  assert.ok(h.state().buildingHP.every((v:number,n:number)=>n===i||v===s0.buildingHP[n]),'no spread to other buildings');
+ }finally{h.release();h.cleanup();}
+});
