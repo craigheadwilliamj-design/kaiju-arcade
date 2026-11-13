@@ -30,7 +30,7 @@ const images=new Map<string,HTMLImageElement>();
 // `scale`/`anchor` are for padded strips generated from a shrunken base (room for lunges): `scale` is the art's size relative to a
 // full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
 // `hold` (grab/carry strips): frame px where a carried prop's bottom-centre sits, one [x,y] per frame or a single pair for every frame.
-type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][]};
+type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][],pivot?:number[],spinFrom?:number};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
 // Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (every strip) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips. With
@@ -94,6 +94,11 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // 12-frame generation that repeats with an exact 7-frame period), 7 frames at 20 fps: a quick 0.35s stride to keep pace with the
  // charge, which runs stampedeReach x stage scale.
  ultRoar:{src:'assets/kaiban-s2-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB2_NATIVE},ultPound:{src:'assets/kaiban-s2-ult-pound.png',frames:7,fps:20,...KB2_NATIVE},
+ // Gore Charge: running reuses the Stampede knuckle gallop. Pound (S+J) reuses light1's overhead fist hammer.
+ // Meteor Drop: dive = rear up and plunge fists-first (frames 0,1,4,8 of a 9-frame generation, bottom-aligned, held on the last);
+ // slamLand = frames 1-8 of a generation from that pose on the ground to the base: fists hit, burst, push up into the stance.
+ run:{src:'assets/kaiban-s2-ult-pound.png',frames:7,fps:20,...KB2_NATIVE},pound:{src:'assets/kaiban-s2-light1.png',frames:8,fps:24,once:true,...KB2_LEFT},
+ dive:{src:'assets/kaiban-s2-dive.png',frames:4,fps:24,once:true,...KB2_NATIVE},slamLand:{src:'assets/kaiban-s2-slam-land.png',frames:8,fps:16,once:true,...KB2_NATIVE},
  // Jump: crouches on the knuckles and springs off all fours (rise), a tucked airborne loop from the rise's last frame (frames 1-4 of its
  // generation), and a heavy fists-first squash landing closed on the base pose. Bottom-aligned; frame counts and fps match Stage 1's jump.
  jumpRise:{src:'assets/kaiban-s2-jump-rise.png',frames:9,fps:24,once:true,...KB2_NATIVE},jumpAir:{src:'assets/kaiban-s2-jump-air.png',frames:4,fps:8,...KB2_NATIVE},
@@ -127,7 +132,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   grab:{src:'assets/mogurodon-grab.png',frames:9,fps:22,once:true,...S2_NATIVE,hold:[[201,191],[213,191],[230,191],[230,191],[230,191],[226,191],[219,152],[221,90],[144,21]]},
   carry:{src:'assets/mogurodon-carry.png',frames:4,fps:6,...S2_NATIVE,hold:[[144,21],[148,24],[152,25],[148,23]]},
   carryWalk:{src:'assets/mogurodon-carry-walk.png',frames:8,fps:10,...S2_NATIVE,hold:[[144,21],[146,20],[150,20],[151,21],[152,23],[150,23],[148,22],[146,22]]},
-  throw:{src:'assets/mogurodon-throw.png',frames:8,fps:18,once:true,...S2_NATIVE}},
+  throw:{src:'assets/mogurodon-throw.png',frames:8,fps:18,once:true,...S2_NATIVE},
+  // Slam cannonball (see stages[1] for how dive/slamLand are cut and played).
+  run:{src:'assets/mogurodon-run.png',frames:8,fps:15,...S2_NATIVE},
+  dive:{src:'assets/mogurodon-dive.png',frames:3,fps:28,once:true,...S2_NATIVE,pivot:[134.6,113.7],spinFrom:2},
+  slamLand:{src:'assets/mogurodon-slam-land.png',frames:8,fps:16,once:true,...S2_NATIVE}},
   stages:{1:{width:120,anims:{
    // Stage 1 form: every strip generated from the native-resolution base (S1_NATIVE), 256x192 except the 256x256 climb. Frame counts,
    // fps and impact frames match the previous art, so combat timing is unchanged.
@@ -154,7 +163,14 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    grab:{src:'assets/mogurodon-s1-grab.png',frames:9,fps:22,once:true,...S1_NATIVE,hold:[[171,191],[177,191],[205,191],[205,191],[205,191],[201,184],[180,128],[183,92],[128,39]]},
    carry:{src:'assets/mogurodon-s1-carry.png',frames:4,fps:6,...S1_NATIVE,hold:[[128,39],[128,41],[129,43],[128,41]]},
    carryWalk:{src:'assets/mogurodon-s1-carry-walk.png',frames:8,fps:10,...S1_NATIVE,hold:[[128,39],[131,35],[134,35],[137,38],[134,39],[133,35],[129,35],[127,37]]},
-   throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_NATIVE}}},
+   throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_NATIVE},
+   // Slam: the dive tucks from the airborne gallop into a quills-out spike ball (frames 0-2, bottom-aligned) and holds it; the game
+   // rolls the ball forward about `pivot` (its centre) from `spinFrom`. slamLand starts at impact: squash flat in a dust ring,
+   // rebound, burst out of the ball and settle on the base pose (frames 1-8 of a 9-frame generation ending on the base).
+   // Run (Shift / double-tap): a bounding gallop loop from the base pose back to it; the two airborne frames are left lifted so it bounces.
+   run:{src:'assets/mogurodon-s1-run.png',frames:8,fps:15,...S1_NATIVE},
+   dive:{src:'assets/mogurodon-s1-dive.png',frames:3,fps:28,once:true,...S1_NATIVE,pivot:[128.5,109],spinFrom:2},
+   slamLand:{src:'assets/mogurodon-s1-slam-land.png',frames:8,fps:16,once:true,...S1_NATIVE}}},
   // Stage 3 form: every strip generated from the native-resolution base (S3_NATIVE); frame counts, fps and impact frames match the
   // previous art so combat timing is unchanged. Climb strips are 256x256 with the gripping claws on the wall line (frame x=162).
   // Light combo: leading-arm strike, chest-arm swipe (the other arm), lunge-bite.
@@ -172,7 +188,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    grab:{src:'assets/mogurodon-s3-grab.png',frames:9,fps:22,once:true,...S3_NATIVE,hold:[[195,191],[206,191],[219,191],[217,191],[215,191],[211,191],[202,150],[196,100],[134,25]]},
    carry:{src:'assets/mogurodon-s3-carry.png',frames:4,fps:6,...S3_NATIVE,hold:[[134,25],[134,24],[134,23],[134,24]]},
    carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S3_NATIVE,hold:[[134,25],[140,24],[149,24],[158,24],[162,24],[157,24],[150,24],[140,24]]},
-   throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE}}}}},
+   throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE},
+   // Slam cannonball: a crystal-studded spike ball.
+   run:{src:'assets/mogurodon-s3-run.png',frames:8,fps:15,...S3_NATIVE},
+   dive:{src:'assets/mogurodon-s3-dive.png',frames:3,fps:28,once:true,...S3_NATIVE,pivot:[126.8,104.9],spinFrom:2},
+   slamLand:{src:'assets/mogurodon-s3-slam-land.png',frames:8,fps:16,once:true,...S3_NATIVE}}}}},
  // Kaiban (woolly boar juggernaut): every Stage 1 strip is done; only the Stage 1 form exists, so it is the base form and every stage draws it until Stage 2/3 are
  // generated. Same 120-unit width as Mogurodon Stage 1, so the hitbox is unchanged. The walk is a 12-frame boar gallop at 15 fps
  // (same 0.8s cycle as the other walks); the eye on its pitched stretch frames 6-9 was placed by hand from the tusk root.
@@ -208,6 +228,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // charge stance, then a head-down battering-ram gallop for the rest of the 2.4s Ultimate: one long flat bounding stride (frames 2-9 of
   // a 12-frame generation; the near-still ends were dropped so the loop doesn't stutter) with the head held low the whole way.
   ultRoar:{src:'assets/kaiban-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB1_NATIVE},ultPound:{src:'assets/kaiban-s1-ult-pound.png',frames:8,fps:16,...KB1_NATIVE},
+  // Gore Charge run = the Stampede head-down charge; Pound = the rear-and-stomp heavy slam. Meteor Drop: dive tips nose-down into
+  // a tusks-first plunge (frames 0,2,4,8, bottom-aligned); slamLand rams the tusks in, cracks a crater and heaves back out.
+  run:{src:'assets/kaiban-s1-ult-pound.png',frames:8,fps:16,...KB1_NATIVE},pound:{src:'assets/kaiban-s1-heavy-slam.png',frames:8,fps:16,once:true,...KB1_NATIVE},
+  dive:{src:'assets/kaiban-s1-dive.png',frames:4,fps:24,once:true,...KB1_NATIVE},slamLand:{src:'assets/kaiban-s1-slam-land.png',frames:8,fps:16,once:true,...KB1_NATIVE},
   // Ranged (debris shotgun): plows both tusks down and forward into the street (frames 1-4, dirt clod at the tusks), then wrenches the
   // head up so the tusks fling the debris up and forward (impact frame 5, with the dirt crescent), and settles. Loose dirt erased: the
   // game draws the projectiles. The upswing frames tip the head up, so they have no eye.
@@ -240,13 +264,15 @@ function timing(name:string,anim:string,stage?:number){return form(name,stage)?.
 // Seconds from the start of a strip to its impact frame; 0 if none.
 export function animImpact(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?.impact?a.impact/a.fps:0;}
 // Seconds a one-shot animation runs; 0 if this kaiju has no such strip (callers then skip it).
+// Frame index from which a strip spins about its pivot (the dive's spike ball); null when it does not spin.
+export function spinFrom(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?.spinFrom!=null?a.spinFrom/a.fps:null;}
 export function animDuration(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?a.frames/a.fps:0;}
 // Where a carried prop's bottom-centre sits in this frame, relative to the feet origin in unflipped, unscaled sprite units (the caller
 // applies facing and Stage scale). Null when the strip has no hold points or its art is not loaded (the caller keeps its fallback).
-export function holdPoint(name:string,anim:string,t:number,stage?:number):[number,number]|null{
- const p0=pick(name,anim,stage),s=p0?.f,a=p0?.a;if(!s||!a?.hold||a!==s.anims[anim])return null;
+export function holdPoint(name:string,anim:string,t:number,stage?:number,key:'hold'|'pivot'='hold'):[number,number]|null{
+ const p0=pick(name,anim,stage),s=p0?.f,a=p0?.a;if(!s||!a?.[key]||a!==s.anims[anim])return null;
  const img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),f=spriteFrame(name,t,anim,stage);
- const p=(typeof a.hold[0]==='number'?a.hold:(a.hold as number[][])[f]) as number[];
+ const p=(typeof a[key][0]==='number'?a[key]:(a[key] as number[][])[f]) as number[];
  return [(p[0]-(a.anchor??fw/2))*k,-(img.naturalHeight-1-p[1])*k];}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
 export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;
@@ -304,4 +330,49 @@ export function drawIntro(ctx:CanvasRenderingContext2D,elapsed:number){const sce
 }
 export function drawEnding(ctx:CanvasRenderingContext2D,name:string){if(art(ctx,ART_SLOTS.endings[name]))return;
  const index=Math.max(0,KAIJU.indexOf(name));box(ctx,0,0,960,540,['#475952','#624c41','#4b5d4c','#63574a','#514d62','#37574c'][index]);box(ctx,0,150,960,320,'#718276');ruins(ctx,'#344e46',440);drawSilhouette(ctx,name,720,455,4,0);box(ctx,0,435,960,105,'#253d34');box(ctx,0,0,960,540,'#0b171755');
+}
+
+// Pause-menu move list. `keys` notation: '+' held together, '/' alternatives, '›' in sequence (rendered as key caps).
+// Signature moves differ per kaiju; combat and controls are shared. Only Mogurodon's dive art spins, so only he rolls.
+export type MoveEntry={keys:string,name:string,desc:string};
+export type MoveSection={title:string,moves:MoveEntry[]};
+export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection[]}{
+ const slam:MoveEntry={keys:'SPACE › S',name:'Slam',desc:'Dive straight down from the air. Hits the roof or street you land on plus everything nearby, harder the further you fell. A roof that gives way keeps you falling into whatever is below.'};
+ const signature:MoveEntry[]=kaiju==='Mogurodon'?[
+  {keys:'L',name:'Tremor Slam',desc:'On the ground: a forward rupture that tears along the street, piercing everything in its path.'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Howl, crash down and pound out shockwaves both ways. Invulnerable while it lasts.'},
+  {keys:'SHIFT+A/D › S',name:'Cannonball',desc:'While running, curl into a spike ball and bowl forward through troops, cars and newsstands. Ricochets off the first wall, bursts out at the second. Keep tapping S to stay curled up and keep rolling.'},
+  {keys:'SPACE › S › A/D',name:'Cannonball Slam',desc:'Dive as a spinning spike ball. Touch a direction any time in the fall (or dive out of a running jump) and you keep rolling when you land.'},
+  {keys:'L',name:'Quill (air / wall)',desc:'Airborne or clinging: flick a single quill. His only anti-air ranged attack.'}]
+ :kaiju==='Kaiban'?[
+  {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
+  {keys:'U',name:'Stampede',desc:'Full meter. A bellow blasts back anything close, then a head-down charge out and back flattens every building it touches.'},
+  {keys:'SHIFT+A/D',name:'Gore Charge',desc:'His run is a head-down tusk charge. Ramming a building with a running start hits far harder than a normal barge (back off and charge again for another hit), troops get thrown, and cars get flipped up over his tusks.'},
+  {...slam,name:'Meteor Drop',desc:'Dive tusks- or fists-first. The landing cracks the ground and hurls a ring of rock chunks out both ways, on top of the slam itself.'},
+  {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging there is no street to scoop: fire one shot.'}]
+ :[
+  {keys:'L',name:'Spine',desc:'A horizontal ranged spine.'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  slam];
+ return {
+  moves:[{title:'Signature',moves:signature},{title:'Combat',moves:[
+   {keys:'J › J › J',name:'Light combo',desc:'Three-hit string; the third hit is the big one.'},
+   {keys:'K',name:'Heavy',desc:'Hold to charge (up to 1.5s), release to smash. Charged heavies hit far harder.'},
+   {keys:'S+J',name:'Pound',desc:'Beat down on whatever you stand on. On a rooftop it hammers the building under your feet; the third pound in a row is the biggest.'},
+   {keys:'H',name:'Grab',desc:'Pick up a car, wreck, enemy vehicle, lamppost or barricade. At Stage 3, whole small buildings.'},
+   {keys:'H/J/K',name:'Throw',desc:'Throw what you are carrying. Hold W to lob it upward at aircraft.'},
+   {keys:'J',name:'Wall punch',desc:'While clinging to a building: punch into the wall without letting go.'},
+   {keys:'SHIFT+A/D',name:'Shoulder barge',desc:'Run into a building with a running start to slam it (back off and charge again to repeat); troops in your path get bowled over.'},
+   {keys:'I',name:'Super',desc:'Stage 3 at full HP with a full Super charge: ~20 seconds of extra damage, speed and toughness.'}]}],
+  controls:[{title:'Movement',moves:[
+   {keys:'A/D',name:'Move',desc:'Walk left and right.'},
+   {keys:'SHIFT+A/D',name:'Run',desc:'Hold Shift, or double-tap A/D (the double-tap opens with a dash). A running jump carries the speed.'},
+   {keys:'SPACE',name:'Jump',desc:'Jump. Jump height grows a little as you evolve.'},
+   {keys:'S',name:'Crouch',desc:'Duck low. Crouched L fires low.'}]},
+  {title:'Climbing',moves:[
+   {keys:'W',name:'Climb',desc:'Grab the building beside you. W/S climb up and down; you hang in place when idle and mantle onto the roof at the top.'},
+   {keys:'SPACE › A/D',name:'Leap-grab',desc:'Jump into a wall while holding toward it to catch it. Near the top you pull straight up onto the roof.'},
+   {keys:'A/D',name:'Climb by pushing',desc:'While clinging, pushing into the wall climbs just like W.'},
+   {keys:'SPACE',name:'Hop off',desc:'While clinging: hop off the wall. Hold the direction away from it to leap off at run speed.'}]},
+  {title:'Game',moves:[{keys:'ESC',name:'Pause',desc:'Pause, restart or quit; this list lives here.'}]}]};
 }
