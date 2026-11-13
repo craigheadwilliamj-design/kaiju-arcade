@@ -67,17 +67,18 @@ RUN=[   # near leg contact -> down -> push -> flight -> far leg contact -> down 
  dict(lean=24,head=12,LL=KNEEUP,RL=PUSH,L=BACK,R=FWD,ground=False,lift=6),
  dict(lean=23,head=13,LL=CONTACT,RL=FLIGHT_BACK,L=BACK,R=FWD,ground=False,lift=3),
 ]
-CHEST_L=(30,-165); CHEST_R=(75,150)   # fist folded onto the chest (near arm), far fist swung across onto it
-UP_L=(70,-170); UP_R=(95,175)          # fist cocked up off the chest for the next blow
-WIDE_L=(120,150); WIDE_R=(-120,-150)   # arms flung wide and up
+# Kept in profile: spreading the arms front and back, or swinging the far fist across onto the chest, makes PixelLab turn him to
+# face the camera, so only the near fist pounds (the far arm stays back at the side) and the bellow raises both arms up and forward.
+CHEST_L=(30,-165); UP_L=(75,-175)      # near fist folded onto the chest / cocked up off it for the next blow
+FAR=(-22,15)                           # far arm hanging back at the side
 ROAR=[
- dict(lean=-2,head=-3,L=UP_L,R=(20,60)),
- dict(lean=-5,head=-6,L=CHEST_L,R=UP_R),            # near fist pounds
- dict(lean=-5,head=-6,L=UP_L,R=CHEST_R),            # far fist pounds
- dict(lean=-6,head=-6,L=CHEST_L,R=UP_R),            # near again
- dict(lean=-12,head=-38,L=WIDE_L,R=WIDE_R),         # head thrown back (bellow on strip frame 5 = this + the base)
- dict(lean=-13,head=-42,L=(125,155),R=(-125,-155)),
- dict(lean=6,head=4,L=(35,70),R=(-25,10),LL=(22,2),RL=(-8,-25)),
+ dict(lean=-2,head=-3,L=UP_L,R=FAR),
+ dict(lean=-5,head=-6,L=CHEST_L,R=FAR),             # pound
+ dict(lean=-5,head=-6,L=UP_L,R=FAR),
+ dict(lean=-6,head=-8,L=CHEST_L,R=FAR),             # pound
+ dict(lean=-12,head=-38,L=(150,165),R=(135,155)),   # head thrown back, both fists raised overhead (bellow on strip frame 5)
+ dict(lean=-13,head=-42,L=(155,170),R=(140,160)),
+ dict(lean=4,head=2,L=(60,80),R=(30,60),LL=(22,2),RL=(-8,-25)),
  dict(lean=18,head=11,L=(-20,30),R=(45,100),LL=(26,6),RL=(-18,-50)),
 ]
 ROAR.append(RUN[0])

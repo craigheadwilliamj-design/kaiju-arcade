@@ -111,11 +111,14 @@ const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',fram
  // Ultimate (Stampede). Roar: rises to full height, pounds the fists on the chest, throws the head back and bellows (impact frame 5),
  // then drops into a head-down knuckle charge stance (frames 0,3,4,5,7,8,11,14,16 of a 16-frame generation). Pound: the charge loop,
  // a goring gorilla gallop from that stance (frames 2-9 of a 12-frame generation; the near-still ends were dropped).
- ultRoar:{src:'assets/kaiban-s3-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB3_NATIVE},ultPound:{src:'assets/kaiban-s3-ult-pound.png',frames:8,fps:16,...KB3_NATIVE},
- // Gore Charge run = the Stampede gallop; Pound (S+J) = light3's double-fist overhead hammer. Meteor Drop: dive rears up with both fists
- // overhead and tips into a fists-first plunge (frames 0,2,4,8 of a 9-frame generation, bottom-aligned, held on the last); slamLand
- // (frames 1-8 of a generation from that pose on the ground) crashes in with a burst, squashes flat and pushes back up into the stance.
- run:{src:'assets/kaiban-s3-ult-pound.png',frames:8,fps:16,...KB3_NATIVE},pound:{src:'assets/kaiban-s3-light3.png',frames:8,fps:20,once:true,...KB3_LEFT},
+ ultRoar:{src:'assets/kaiban-s3-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB3_NATIVE},ultPound:{src:'assets/kaiban-s3-run.png',frames:8,fps:16,...KB3_HEAVY},
+ // Gore Charge run, skeleton-posed (tools/kaiban_s3_charge_poses.py, base shifted 20px left): he stays upright like the walk, so
+ // walk/run swap without a silhouette pop. Torso pitched forward, head down so the tusks lead, long strides, fists pumping opposite
+ // the legs. Bottom-aligned: the feet never leave the street line. Pound (S+J) = light3's double-fist overhead hammer. Meteor Drop:
+ // dive rears up with both fists overhead and tips into a fists-first plunge (frames 0,2,4,8 of a 9-frame generation, bottom-aligned,
+ // held on the last); slamLand (frames 1-8 of a generation from that pose on the ground) crashes in with a burst, squashes flat and
+ // pushes back up into the stance.
+ run:{src:'assets/kaiban-s3-run.png',frames:8,fps:16,...KB3_HEAVY},pound:{src:'assets/kaiban-s3-light3.png',frames:8,fps:20,once:true,...KB3_LEFT},
  dive:{src:'assets/kaiban-s3-dive.png',frames:4,fps:24,once:true,...KB3_NATIVE},slamLand:{src:'assets/kaiban-s3-slam-land.png',frames:8,fps:16,once:true,...KB3_NATIVE}}};
 // Kaiban Stage 2 form, in progress: idle, walk, the heavy, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while
 // the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw, the climb set and the Stampede. `borrow`: every move not drawn yet plays the
