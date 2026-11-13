@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
-"""Script the skeleton poses for Kaiban Stage 3's light combo (PixelLab /animate-with-skeleton-v3).
+"""Script the skeleton poses for Kaiban Stage 3's light combo and heavy (PixelLab /animate-with-skeleton-v3).
 
-Usage: python3 tools/kaiban_s3_light_poses.py OUTDIR   (run from the repo root)
+Usage: python3 tools/kaiban_s3_light_poses.py OUTDIR [DX] [STRIPS]   (run from the repo root; lights: DX -30, heavy: DX -20 heavy)
 
-Reads tools/kaiban-s3-skeleton.json (the /estimate-skeleton result for kaiban-s3.png), shifts it DX px left to match the
-left-shifted base OUTDIR/base-left.png it also writes (sprite at x=44+DX so forward punches stay in the 256px frame), and
-writes OUTDIR/light{1,2,3}.json ({first, frames}) plus OUTDIR/light{1,2,3}_sheet.png stick-figure previews.
-Each strip is 8 frames from keyframes (lean, hip drop, and per-arm upper/fore angles in degrees from straight down,
+Reads tools/kaiban-s3-skeleton.json (the /estimate-skeleton result for kaiban-s3.png), shifts it by DX px (default -30) to match the
+shifted base OUTDIR/base{DX}.png it also writes (sprite at x=44+DX; -30 keeps forward punches in the 256px frame), and
+writes OUTDIR/{light1,light2,light3,heavy}.json ({first, frames}) plus OUTDIR/*_sheet.png stick-figure previews.
+Each strip is a list of per-frame keyframes (lean, hip drop, and per-arm upper/fore angles in degrees from straight down,
 positive swinging forward), eased between and ending on the base pose so the combo chains. LEFT is the screen-right arm.
   light1: front-fist jab, cocked back then fired straight out with a lean.
   light2: rear-fist haymaker, wound back behind him then swung across the body, front arm pulled back.
   light3: double-fist hammer, both fists overhead then slammed down in front, knees bending.
+  heavy: 13 frames, cut into heavyRear (1-5, both fists raised far back overhead) and heavySlam (6-13, both fists crashed down to the street).
 """
 import json, math, sys
 from PIL import Image, ImageDraw
-OUT=sys.argv[1]; DX=-30
+OUT=sys.argv[1]; DX=int(sys.argv[2]) if len(sys.argv)>2 else -30; ONLY=sys.argv[3].split(',') if len(sys.argv)>3 else None
 kp=json.load(open('tools/kaiban-s3-skeleton.json'))['keypoints']
 B={p['label']:[p['x']*256+DX,p['y']*256] for p in kp}; Z={p['label']:int(p['z_index']) for p in kp}
 B['LEFT LEG']=[148+DX,244]; B['RIGHT LEG']=[78+DX,244]
-base=Image.open('public/assets/kaiban-s3.png'); left=Image.new('RGBA',base.size); left.paste(base,(DX,0)); left.save(f'{OUT}/base-left.png')
+base=Image.open('public/assets/kaiban-s3.png'); left=Image.new('RGBA',base.size); left.paste(base,(DX,0)); left.save(f'{OUT}/base{DX}.png')
 def ang(a,b): return math.degrees(math.atan2(b[0]-a[0],b[1]-a[1]))
 LEN={s:(math.dist(B[f'{s} SHOULDER'],B[f'{s} ELBOW']),math.dist(B[f'{s} ELBOW'],B[f'{s} ARM'])) for s in ('LEFT','RIGHT')}
 REST={s:(ang(B[f'{s} SHOULDER'],B[f'{s} ELBOW']),ang(B[f'{s} ELBOW'],B[f'{s} ARM'])) for s in ('LEFT','RIGHT')}
@@ -42,6 +43,14 @@ STRIPS={
            4:dict(lean=10,L=(88,90),R=(5,115),step=8),5:dict(lean=9,L=(86,88),R=(5,115),step=8),6:dict(lean=4,L=(45,70),R=(0,80),step=4),7:dict(lean=1,L=(20,40),step=1),8:{}},
  'light2':{0:{},1:dict(lean=-5,R=(-30,0),L=(20,90)),2:dict(lean=-8,R=(-32,0),L=(25,110)),3:dict(lean=2,R=(10,60),L=(5,60)),
            4:dict(lean=10,R=(82,86),L=(-15,20),step=6),5:dict(lean=12,R=(92,94),L=(-20,15),step=8),6:dict(lean=7,R=(75,80),L=(-5,20),step=5),7:dict(lean=2,R=(20,40),step=2),8:{}},
+ # heavy (generate with DX -20): rear (frames 1-5) and slam (6-13) in one generation. Rear raises both fists up and far back over
+ # the head with the body arching back; slam brings both over the top and crashes them down to the street in front, deep crouch and
+ # lean on impact (frames 8-10), then recovers to the base pose.
+ 'heavy':{0:{},1:dict(lean=-2,L=(40,80),R=(35,80)),2:dict(lean=-5,drop=-2,L=(100,140),R=(95,140)),3:dict(lean=-8,drop=-3,L=(150,175),R=(145,175)),
+          4:dict(lean=-11,drop=-4,L=(170,195),R=(165,190)),5:dict(lean=-12,drop=-4,L=(175,200),R=(170,195)),
+          6:dict(lean=-4,drop=-2,L=(140,140),R=(135,140)),7:dict(lean=10,drop=6,L=(90,80),R=(85,80),step=6),8:dict(lean=26,drop=24,L=(35,20),R=(30,20),step=10),
+          9:dict(lean=30,drop=30,L=(30,15),R=(25,15),step=10),10:dict(lean=28,drop=28,L=(30,15),R=(25,15),step=10),11:dict(lean=16,drop=14,L=(25,20),R=(15,20),step=7),
+          12:dict(lean=6,drop=5,L=(15,25),R=(0,25),step=3),13:{}},
  'light3':{0:{},1:dict(lean=-3,L=(90,140),R=(80,140)),2:dict(lean=-6,L=(145,160),R=(140,160),drop=-2),3:dict(lean=-8,L=(150,170),R=(145,165),drop=-3),
            4:dict(lean=8,L=(110,100),R=(105,100),drop=2),5:dict(lean=18,L=(55,40),R=(50,40),drop=10,step=6),6:dict(lean=16,L=(45,30),R=(42,32),drop=9,step=6),7:dict(lean=7,L=(25,25),R=(5,25),drop=4,step=3),8:{}},
 }
@@ -53,9 +62,10 @@ def lerp(a,b,t):
 def j(q): return [{'x':min(max(q[k][0]/256,0),1),'y':min(max(q[k][1]/256,0),1),'label':k,'z_index':Z[k]} for k in q]
 bones=[('NECK','LEFT SHOULDER'),('NECK','RIGHT SHOULDER'),('LEFT SHOULDER','LEFT ELBOW'),('LEFT ELBOW','LEFT ARM'),('RIGHT SHOULDER','RIGHT ELBOW'),('RIGHT ELBOW','RIGHT ARM'),('NECK','LEFT HIP'),('NECK','RIGHT HIP'),('LEFT HIP','LEFT KNEE'),('LEFT KNEE','LEFT LEG'),('RIGHT HIP','RIGHT KNEE'),('RIGHT KNEE','RIGHT LEG'),('NECK','NOSE')]
 for name,keys in STRIPS.items():
-    frames=[pose(**full(keys[i])) for i in range(1,9)]
+    if ONLY and name not in ONLY: continue
+    frames=[pose(**full(keys[i])) for i in range(1,len(keys))]
     json.dump({'first':j(pose()),'frames':[j(q) for q in frames]},open(f'{OUT}/{name}.json','w'))
-    sheet=Image.new('RGBA',(256*8,256),(40,40,60,255))
+    sheet=Image.new('RGBA',(256*len(frames),256),(40,40,60,255))
     for i,q in enumerate(frames):
         c=Image.new('RGBA',(256,256),(40,40,60,255)); g=left.copy(); g.putalpha(g.getchannel('A').point(lambda a:a*.25)); c.alpha_composite(g); d=ImageDraw.Draw(c)
         for a,b in bones: d.line([tuple(q[a]),tuple(q[b])],fill=(0,255,255) if 'LEFT' in a+b else (255,255,0),width=3)
