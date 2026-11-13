@@ -322,6 +322,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): only the Stage 1 form exists, so it is the base
  // form and every stage draws it. The render keys to a 128x59 sprite at x=64 (TZ1_NATIVE); same 120-unit width as the others.
  'Tlézcatl':{width:120,anims:{idle:{src:'assets/tlezcatl-s1-idle.png',frames:8,fps:8,...TZ1_NATIVE},walk:{src:'assets/tlezcatl-s1-walk.png',frames:8,fps:10,...TZ1_NATIVE},
+  // Run (Shift / double-tap): a low bounding sprint loop closed on the base, body stretched long, lifting clear on frame 4, dust off the claws.
+  run:{src:'assets/tlezcatl-s1-run.png',frames:8,fps:15,...TZ1_NATIVE},
   // Light combo: near-claw forward rake (slash arc in front of the snout), snapping lunge bite (head and shoulders shoot forward low),
   // scorpion tail whip (the tail curls up over the back and cracks down in front of the snout with a spark on frame 4). Frame counts
   // and fps match the other forms' combos, so combat timing is unchanged; each strip ends on the left-shifted base pose.
