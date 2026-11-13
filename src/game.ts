@@ -12,7 +12,7 @@ import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,res
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
 import {createRival,hitRival,tickRival} from './rival.ts';
 import type {Rival} from './rival.ts';
-import {hudScore,ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,hasSprite,hasAnim,holdPoint,spinFrom,animDuration,animImpact,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
+import {moveList,hudScore,ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,hasSprite,hasAnim,holdPoint,spinFrom,animDuration,animImpact,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
 import type {FreePlayChoice} from './presentation.ts';
 const canvas=document.querySelector<HTMLCanvasElement>('#game')!;
 const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=false;
@@ -169,11 +169,20 @@ function loadBlock(drill=false){
  if(openLayout()&&!drill){action=`${block.buildings.filter(b=>b.landmark).length} LANDMARKS · EXITS EAST AND WEST`;actionTime=3.5;}
  mode='playing';overlay.innerHTML='';focus();
 }
-function pause(){if(mode!=='playing')return;mode='paused';keys.clear();cancelCharge(combat);panel(`<div class="eyebrow">${session==='campaign'?'CAMPAIGN':session==='freeplay'?'FREE PLAY':'DRILL'} PAUSED</div><h1>PAUSED</h1><p>${session==='campaign'?`${CITIES[cityIndex].name} · Block ${blockIndex+1}<br>Restart resets the entire city and its score.`:session==='freeplay'?`${CITIES[cityIndex].name} · Block ${blockIndex+1}<br>Free Play has no campaign score or save.`:'Your drill progress is paused.'}</p><button class="primary" id="resume">RESUME</button><button id="restart">${session==='drill'?'RESTART DRILL':'RESTART CITY'}</button><button id="menu">QUIT TO MENU</button>`);
- document.querySelector('#resume')!.addEventListener('click',resume);document.querySelector('#restart')!.addEventListener('click',()=>confirmAction(session!=='drill'?'Restart this city at Block 1? Current city score and meters will reset.':'Restart the drill? Its score and progress will reset.',()=>{if(session==='campaign'&&run){restartCity(run);blockIndex=0;score=0;combat=createCombat();citySettled=false;loadBlock();}else if(session==='freeplay')startFreePlay();else start();},pauseAgain));
+function pause(){if(mode!=='playing')return;mode='paused';keys.clear();cancelCharge(combat);panel(`<div class="eyebrow">${session==='campaign'?'CAMPAIGN':session==='freeplay'?'FREE PLAY':'DRILL'} PAUSED</div><h1>PAUSED</h1><p>${session==='campaign'?`${CITIES[cityIndex].name} · Block ${blockIndex+1}<br>Restart resets the entire city and its score.`:session==='freeplay'?`${CITIES[cityIndex].name} · Block ${blockIndex+1}<br>Free Play has no campaign score or save.`:'Your drill progress is paused.'}</p><button class="primary" id="resume">RESUME</button><button id="moves">MOVES &amp; CONTROLS</button><button id="restart">${session==='drill'?'RESTART DRILL':'RESTART CITY'}</button><button id="menu">QUIT TO MENU</button>`);
+ document.querySelector('#resume')!.addEventListener('click',resume);document.querySelector('#moves')!.addEventListener('click',()=>movesPanel('moves'));document.querySelector('#restart')!.addEventListener('click',()=>confirmAction(session!=='drill'?'Restart this city at Block 1? Current city score and meters will reset.':'Restart the drill? Its score and progress will reset.',()=>{if(session==='campaign'&&run){restartCity(run);blockIndex=0;score=0;combat=createCombat();citySettled=false;loadBlock();}else if(session==='freeplay')startFreePlay();else start();},pauseAgain));
  document.querySelector('#menu')!.addEventListener('click',()=>confirmAction(session==='campaign'?`Quit? All progress in ${CITIES[cityIndex].name} will be lost. Continue resumes at Block 1. Earlier city scores remain saved.`:session==='freeplay'?'Leave Free Play? This city session is not saved. Campaign progress is unaffected.':'Leave the drill? Its score and progress will be lost.',title,pauseAgain));
 }
 function pauseAgain(){mode='playing';pause();}
+// Pause → Moves & Controls: the active kaiju's signature moves and shared combat (Moves tab), movement and climbing (Controls tab).
+const keyCaps=(keys:string)=>keys.split(' › ').map(step=>step.split('+').map(held=>held.split('/').map(k=>`<kbd>${k}</kbd>`).join('<i>/</i>')).join('<i>+</i>')).join('<i>›</i>');
+function movesPanel(tab:'moves'|'controls'){const list=moveList(activeKaiju)[tab];
+ panel(`<div class="eyebrow">${activeKaiju.toUpperCase()} · STAGE ${combat.stage}</div><h1>${tab==='moves'?'MOVES':'CONTROLS'}</h1>
+ <div class="moves-tabs"><button id="tab-moves" class="${tab==='moves'?'active':''}">MOVES</button><button id="tab-controls" class="${tab==='controls'?'active':''}">CONTROLS</button></div>
+ <div class="move-list">${list.map(sec=>`<h2>${sec.title}</h2>${sec.moves.map(m=>`<div class="move"><div class="move-keys">${keyCaps(m.keys)}</div><div><b>${m.name}</b><span>${m.desc}</span></div></div>`).join('')}`).join('')}</div>
+ <button class="primary" id="moves-back">BACK</button>`,true);
+ document.querySelector('#tab-moves')!.addEventListener('click',()=>movesPanel('moves'));document.querySelector('#tab-controls')!.addEventListener('click',()=>movesPanel('controls'));
+ document.querySelector('#moves-back')!.addEventListener('click',pauseAgain);}
 function resume(){mode='playing';overlay.innerHTML='';keys.clear();focus();}
 function confirmAction(message:string,callback:()=>void,cancel=title){mode='confirm';panel(`<div class="eyebrow">CONFIRM</div><h1>ARE YOU<br><span>SURE?</span></h1><p>${message}</p><button id="yes" class="primary">CONFIRM</button><button id="no">CANCEL</button>`);document.querySelector('#yes')!.addEventListener('click',callback);document.querySelector('#no')!.addEventListener('click',cancel);}
 function results(){if(cleared)return;if(session==='campaign'&&run&&!latchBlock(run))return;cleared=true;mode='results';keys.clear();const bonus=block.kind==='district'?perfectBonus(buildings):0;score+=bonus;const blockScore=Math.round(cityScore()-(session==='freeplay'?freeBlockStart:run?.blockStart||0));panel(`<div class="eyebrow">${CITIES[cityIndex].name.toUpperCase()} · BLOCK ${blockIndex+1}</div><h1>BLOCK<br><span>CLEARED.</span></h1><p>${block.kind==='stronghold'?'CENTRAL CRYSTAL SHATTERED':`DESTRUCTION ${Math.round(destruction(buildings)*100)}%`}<br>BLOCK SCORE ${blockScore.toLocaleString()}<br>${session==='campaign'?'CAMPAIGN':'SESSION'} SCORE ${netScore().toLocaleString()}${bonus?`<br>PERFECT DESTRUCTION +${bonus}`:''}</p><button id="advance" class="primary">${session==='drill'?'PLAY AGAIN →':'NEXT BLOCK →'}</button><button id="back">MAIN MENU</button>`);
@@ -685,8 +694,7 @@ function hud(){
  if(objective||rival){const value=objective?objective.hp/objective.maxHP:rival!.hp/rival!.maxHP;const label=objective?'STRONGHOLD CRYSTAL':`${bossName().toUpperCase()} / M4 RIVAL`;text(label,330,94,10,'#344f49');rect(330,101,300,6,'#6b8c83');rect(330,101,300*value,6,'#e9a0c8');text(objective?.shattered?'CRYSTAL SHATTERED':`${Math.ceil(objective?.hp??rival!.hp)} HP`,650,107,10,'#344f49');}
  if(block.kind==='boss'&&rival)text('ARENA LOCKED',935,126,11,'#344f49','right');
  if(objectiveOpen()){text(openLayout()?'EXITS OPEN ← →':'EXIT OPEN →',935,103,13,'#203c35','right');if(camera<worldWidth-viewW()-30)text('EAST →',925,275,12,'#243e35','right');if(openLayout()&&camera>30)text('← WEST',35,275,12,'#243e35');}
- else if(time<15&&mode==='playing')text(`J: COMBO   K: HEAVY   L: ${activeKaiju==='Mogurodon'?'TREMOR':activeKaiju==='Kaiban'?'DEBRIS':'SPINE'}   H: GRAB/THROW   U: ULT   I: SUPER`,480,409,11,'#f7f0cd','center');
- if(!objectiveOpen()&&time<15&&mode==='playing')text('SHIFT: RUN   RUN+S: CANNONBALL   JUMP INTO A WALL: GRAB   S IN AIR: SLAM (+A/D: ROLL)   S+J: POUND',480,424,11,'#f7f0cd','center');
+ else if(time<8&&mode==='playing')text('ESC: PAUSE  ·  MOVES & CONTROLS',480,416,11,'#f7f0cd','center');
  if(actionTime>0)text(action,480,153,12,'#243f37','center');
  meters();
  minimap();text('TEMP ART / M7',939,530,8,'#a0af99','right');

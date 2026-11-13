@@ -318,3 +318,47 @@ export function drawIntro(ctx:CanvasRenderingContext2D,elapsed:number){const sce
 export function drawEnding(ctx:CanvasRenderingContext2D,name:string){if(art(ctx,ART_SLOTS.endings[name]))return;
  const index=Math.max(0,KAIJU.indexOf(name));box(ctx,0,0,960,540,['#475952','#624c41','#4b5d4c','#63574a','#514d62','#37574c'][index]);box(ctx,0,150,960,320,'#718276');ruins(ctx,'#344e46',440);drawSilhouette(ctx,name,720,455,4,0);box(ctx,0,435,960,105,'#253d34');box(ctx,0,0,960,540,'#0b171755');
 }
+
+// Pause-menu move list. `keys` notation: '+' held together, '/' alternatives, '›' in sequence (rendered as key caps).
+// Signature moves differ per kaiju; combat and controls are shared. Only Mogurodon's dive art spins, so only he rolls.
+export type MoveEntry={keys:string,name:string,desc:string};
+export type MoveSection={title:string,moves:MoveEntry[]};
+export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection[]}{
+ const slam:MoveEntry={keys:'SPACE › S',name:'Slam',desc:'Dive straight down from the air. Hits the roof or street you land on plus everything nearby, harder the further you fell. A roof that gives way keeps you falling into whatever is below.'};
+ const signature:MoveEntry[]=kaiju==='Mogurodon'?[
+  {keys:'L',name:'Tremor Slam',desc:'On the ground: a forward rupture that tears along the street, piercing everything in its path.'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Howl, crash down and pound out shockwaves both ways. Invulnerable while it lasts.'},
+  {keys:'SHIFT+A/D › S',name:'Cannonball',desc:'While running, curl into a spike ball and bowl forward through troops, cars and newsstands. Ricochets off the first wall, bursts out at the second.'},
+  {keys:'SPACE › S › A/D',name:'Cannonball Slam',desc:'Dive as a spinning spike ball. Touch a direction any time in the fall (or dive out of a running jump) and you keep rolling when you land.'},
+  {keys:'L',name:'Quill (air / wall)',desc:'Airborne or clinging: flick a single quill. His only anti-air ranged attack.'}]
+ :kaiju==='Kaiban'?[
+  {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
+  {keys:'U',name:'Stampede',desc:'Full meter. A bellow blasts back anything close, then a head-down charge out and back flattens every building it touches.'},
+  {...slam,name:'Slam'},
+  {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging there is no street to scoop: fire one shot.'}]
+ :[
+  {keys:'L',name:'Spine',desc:'A horizontal ranged spine.'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  slam];
+ return {
+  moves:[{title:'Signature',moves:signature},{title:'Combat',moves:[
+   {keys:'J › J › J',name:'Light combo',desc:'Three-hit string; the third hit is the big one.'},
+   {keys:'K',name:'Heavy',desc:'Hold to charge (up to 1.5s), release to smash. Charged heavies hit far harder.'},
+   {keys:'S+J',name:'Pound',desc:'Beat down on whatever you stand on. On a rooftop it hammers the building under your feet; the third pound in a row is the biggest.'},
+   {keys:'H',name:'Grab',desc:'Pick up a car, wreck, enemy vehicle, lamppost or barricade. At Stage 3, whole small buildings.'},
+   {keys:'H/J/K',name:'Throw',desc:'Throw what you are carrying. Hold W to lob it upward at aircraft.'},
+   {keys:'J',name:'Wall punch',desc:'While clinging to a building: punch into the wall without letting go.'},
+   {keys:'SHIFT+A/D',name:'Shoulder barge',desc:'Run into a building to slam it; troops in your path get bowled over.'},
+   {keys:'I',name:'Super',desc:'Stage 3 at full HP with a full Super charge: ~20 seconds of extra damage, speed and toughness.'}]}],
+  controls:[{title:'Movement',moves:[
+   {keys:'A/D',name:'Move',desc:'Walk left and right.'},
+   {keys:'SHIFT+A/D',name:'Run',desc:'Hold Shift, or double-tap A/D (the double-tap opens with a dash). A running jump carries the speed.'},
+   {keys:'SPACE',name:'Jump',desc:'Jump. Jump height grows a little as you evolve.'},
+   {keys:'S',name:'Crouch',desc:'Duck low. Crouched L fires low.'}]},
+  {title:'Climbing',moves:[
+   {keys:'W',name:'Climb',desc:'Grab the building beside you. W/S climb up and down; you hang in place when idle and mantle onto the roof at the top.'},
+   {keys:'SPACE › A/D',name:'Leap-grab',desc:'Jump into a wall while holding toward it to catch it. Near the top you pull straight up onto the roof.'},
+   {keys:'A/D',name:'Climb by pushing',desc:'While clinging, pushing into the wall climbs just like W.'},
+   {keys:'SPACE',name:'Hop off',desc:'While clinging: hop off the wall. Hold the direction away from it to leap off at run speed.'}]},
+  {title:'Game',moves:[{keys:'ESC',name:'Pause',desc:'Pause, restart or quit; this list lives here.'}]}]};
+}
