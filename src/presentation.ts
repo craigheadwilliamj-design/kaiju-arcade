@@ -53,10 +53,11 @@ const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
 // Kaiban Stage 3 strips: the kaiban-s3 base still, a 167x224 upright sprite at x=44 in a 256x256 frame (tall, so raised fists fit).
 const KB3_NATIVE={scale:167/256,anchor:44+128*167/256};
-// Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists), just started: only the base still as a
-// static idle, so every move holds this pose while gameplay timing falls back to the base form. 80 units wide keeps the 167x224 art
-// about 300px tall at the 2.8x Stage 3 scale, a little taller than Mogurodon's Stage 3 since he stands upright.
-const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3.png',frames:1,fps:1,...KB3_NATIVE}}};
+// Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists), in progress: idle (breathing, fists and
+// broken chains swaying, tail flicks) and walk (lumbering upright stride, side view, shackled fists swinging; feet bottom-aligned).
+// Every other move holds the idle while gameplay timing falls back to the base form. 80 units wide keeps the 167x224 art about 300px
+// tall at the 2.8x Stage 3 scale, a little taller than Mogurodon's Stage 3 since he stands upright.
+const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:8,fps:10,...KB3_NATIVE}}};
 // Kaiban Stage 2 form, in progress: idle, walk, the heavy, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while
 // the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw, the climb set and the Stampede. `borrow`: every move not drawn yet plays the
 // Stage 1 strip.
