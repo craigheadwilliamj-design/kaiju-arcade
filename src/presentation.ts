@@ -338,7 +338,18 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // the jaws shut and settles onto the base pose.
   jetStart:{src:'assets/tlezcatl-s1-jet-start.png',frames:5,fps:22,once:true,...TZ1_LEFT,mouth:[155,172]},
   jetAim:{src:'assets/tlezcatl-s1-jet-aim.png',frames:5,fps:10,once:true,...TZ1_LEFT,angles:[-20,0,10,22,35],mouth:[[155,176],[155,172],[154,165],[151,157],[149,150]]},
-  jetEnd:{src:'assets/tlezcatl-s1-jet-end.png',frames:4,fps:16,once:true,...TZ1_LEFT}}},
+  jetEnd:{src:'assets/tlezcatl-s1-jet-end.png',frames:4,fps:16,once:true,...TZ1_LEFT},
+  // Crouch: splays the legs and presses belly and chin flat to the street with the crest laid back (59px tall to 37px, about the
+  // crouch hitbox), a slow breathing loop lying flat, and crouchUp = crouchDown reversed. Timing matches the other forms.
+  crouchDown:{src:'assets/tlezcatl-s1-crouch-down.png',frames:5,fps:22,once:true,...TZ1_NATIVE},crouch:{src:'assets/tlezcatl-s1-crouch.png',frames:4,fps:6,...TZ1_NATIVE},
+  crouchUp:{src:'assets/tlezcatl-s1-crouch-up.png',frames:5,fps:22,once:true,...TZ1_NATIVE},
+  // Climb: 256x256 strips, clinging to the wall like a gecko (body vertical, belly to the wall, head up, tail hanging) with the gripping
+  // claws on the wall line at frame x=154 (the hitbox edge 24 world units out) and the tail tip on the bottom row. The grab leaps from
+  // the base pose and eases 46px onto the wall line, every frame bottom-aligned; the climb loop is hand over hand; the punch draws the
+  // upper claw back and slams it into the wall with a flash on impact frame 5; the mantle starts 15px further back (the game's roof
+  // slide) and eases into the base pose. PixelLab drew no wall this time. Timing matches the other forms.
+  climbGrab:{src:'assets/tlezcatl-s1-climb-grab.png',frames:5,fps:20,once:true,...TZ1_NATIVE},climb:{src:'assets/tlezcatl-s1-climb.png',frames:8,fps:12,...TZ1_NATIVE},
+  climbMantle:{src:'assets/tlezcatl-s1-climb-mantle.png',frames:9,fps:20,once:true,...TZ1_NATIVE},climbPunch:{src:'assets/tlezcatl-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
