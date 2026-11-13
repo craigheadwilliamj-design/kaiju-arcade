@@ -107,3 +107,22 @@ test('Space jumps out of the roll; attacks are ignored inside the ball',async()=
   h.tap('Space');h.step(2);assert.equal(h.state().rolling,false);assert.equal(h.state().grounded,false,'jumped out');h.up('KeyD');
  }finally{h.cleanup();}
 });
+
+test('the roll is easy to trigger: a tap of A/D during the dive latches it, and Run + S curls up from the ground',async()=>{
+ const h=await drills();
+ try{
+  h.down('KeyA');h.step(90);h.up('KeyA');h.step(30);
+  // Tap D mid-dive and let go before landing: still rolls east.
+  h.tap('Space');h.step(15);h.tap('KeyS');h.tap('KeyD');
+  for(let n=0;n<60&&h.state().diving;n++)h.step();
+  assert.equal(h.state().rolling,true,'direction latched during the dive');assert.equal(h.state().face,1);
+  for(let n=0;n<200&&h.state().rolling;n++)h.step();h.step(30);
+  // Running + S on the ground: straight into the ball.
+  h.down('KeyA');h.step(60);h.up('KeyA');h.step(10);
+  h.down('ShiftLeft');h.down('KeyD');h.step(10);h.tap('KeyS');h.step(1);
+  assert.equal(h.state().rolling,true,'run + S rolls');assert.equal(h.state().crouched,false);
+  h.up('KeyD');h.up('ShiftLeft');for(let n=0;n<200&&h.state().rolling;n++)h.step();assert.equal(h.state().rolling,false);
+  // Walking + S is still just a crouch.
+  h.step(30);h.down('KeyA');h.step(5);h.down('KeyS');h.step(3);assert.equal(h.state().rolling,false);assert.equal(h.state().crouched,true);h.up('KeyS');h.up('KeyA');
+ }finally{h.cleanup();}
+});

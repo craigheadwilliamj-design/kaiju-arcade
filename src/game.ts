@@ -87,7 +87,7 @@ let isClimbing=false,clingTo:ReturnType<typeof createBuildings>[number]|null=nul
 // Run (Shift held, or a double-tapped A/D latched until both are released; the double-tap opens with a dash burst).
 // `airRun` keeps run speed through a running jump (a leap). `grabWait` blocks the airborne leap-grab right after kicking off a wall.
 // `dive` is the aerial slam: S in the air plunges straight down from startY and hits what is under you on landing.
-let runLatch=false,lastTap={code:'',t:-9},dashT=0,airRun=false,running=false,bargeT=0,grabWait=0,dive:{startY:number,t0:number}|null=null;
+let runLatch=false,lastTap={code:'',t:-9},dashT=0,airRun=false,running=false,bargeT=0,grabWait=0,dive:{startY:number,t0:number,dir:number}|null=null;
 // Street roll after a cannonball slam: `t` is time left, `t0` keeps the spin continuous from the dive, `hits` = struck once this roll.
 let roll:{dir:number,t:number,t0:number,power:number,bounced:boolean,hits:Set<object>}|null=null;
 const bargeHits=new Map<object,number>();
@@ -299,10 +299,15 @@ function slamLand(){
  // A form's own slamLand starts at impact; otherwise borrow heavySlam from its crash frames.
  attack=hasAnim(activeKaiju,'slamLand',combat.stage)?{anim:'slamLand',t:0}:{anim:hasAnim(activeKaiju,'heavySlam',combat.stage)?'heavySlam':'jumpLand',t:hasAnim(activeKaiju,'heavySlam',combat.stage)?animDuration(activeKaiju,'heavySlam',combat.stage)*.35:0};
  combat.cooldown=Math.max(combat.cooldown,MV.diveCooldown);action=broke?'SLAM · CRASHED THROUGH':power>1.8?'MEGA SLAM':'SLAM';actionTime=.9;
- // A cannonball form landing on the street with a direction held keeps rolling instead of bursting out.
- const steer=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);
- if(street&&steer&&spinFrom(activeKaiju,'dive',combat.stage)!=null){roll={dir:steer,t:MV.rollSeconds,t0:dive.t0,power,bounced:false,hits:new Set()};player.face=steer;attack=null;action='CANNONBALL';actionTime=1;}
+ // A cannonball form keeps rolling if a direction was touched at any point in the dive (street or rooftop).
+ const steer=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0)||dive.dir;
+ if(!broke&&steer&&canRoll()){roll={dir:steer,t:MV.rollSeconds,t0:dive.t0,power,bounced:false,hits:new Set()};player.face=steer;attack=null;action='CANNONBALL';actionTime=1;}
  return broke;}
+function canRoll(){return spinFrom(activeKaiju,'dive',combat.stage)!=null;}
+// Run + S: curl up on the spot and roll the way you are running (no slam, so base power).
+function startRoll(){if(roll||dive||!player.grounded||clingTo||held||!canAct(combat)||combat.charging||!canRoll())return false;
+ roll={dir:player.face,t:MV.rollSeconds,t0:time-(spinFrom(activeKaiju,'dive',combat.stage)??0),power:1,bounced:false,hits:new Set()};attack=null;
+ burst(player.x+bodyWidth()/2,player.y+bodyHeight()-4,'#c9a77c',10);action='CANNONBALL';actionTime=1;return true;}
 // The roll ends by bursting out of the ball: from the squash when it smacks a wall, else from the rebound frame.
 function endRoll(squash:boolean){if(!roll)return;roll=null;
  if(hasAnim(activeKaiju,'slamLand',combat.stage))attack={anim:'slamLand',t:squash?0:animDuration(activeKaiju,'slamLand',combat.stage)*3/8};}
@@ -317,7 +322,8 @@ function tickRoll(w:number,h:number){if(!roll)return;
  if(rival&&!rival.dead&&overlaps(box,rival)&&first(rival))strikeRival(dmg,kb,r.dir);
  if(player.grounded&&particles.length<C.particleCap&&Math.random()<.7)particles.push({x:player.x+w/2-r.dir*w*.35,y:player.y+h-3,vx:-r.dir*(60+Math.random()*120),vy:-(40+Math.random()*100),life:.3+Math.random()*.25,color:Math.random()<.5?'#c9a77c':'#a8957a',size:2+Math.floor(Math.random()*4)});}
 function startDive(){if(dive||player.grounded||clingTo||held||!canAct(combat)||combat.charging)return false;
- dive={startY:player.y+bodyHeight(),t0:time};player.vy=Math.max(player.vy,MV.diveSpeed*Math.sqrt(scale(combat)));airRun=false;attack=null;action='DIVE';actionTime=.5;return true;}
+ // A dive out of a running leap already rolls the way you were going; touching A/D during the dive (re)latches it.
+ dive={startY:player.y+bodyHeight(),t0:time,dir:airRun?player.face:(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0)};player.vy=Math.max(player.vy,MV.diveSpeed*Math.sqrt(scale(combat)));airRun=false;attack=null;action='DIVE';actionTime=.5;return true;}
 // Mantle: up onto the roof of `b` from the wall, nudged a little inboard of the edge.
 function mantle(b:NonNullable<typeof clingTo>,w:number,h:number){const roof=C.ground-b.h;player.y=roof-h-.01;player.x=Math.max(b.x-w*.4,Math.min(b.x+b.w-w*.6,player.x+(player.x+w/2<b.x+b.w/2?w*.3:-w*.3)));player.vy=0;clingTo=null;mantled=true;}
 function performStrike(strike:Strike|null){
@@ -463,6 +469,8 @@ window.addEventListener('keydown',e=>{
  else if(k==='Space'&&player.grounded&&!keys.has('KeyS')&&canAct(combat)&&!combat.charging){if(roll){roll=null;running=true;}airRun=running;player.vy=-jumpVelocity()*(running?MV.runJumpLift:1);player.grounded=false;}
  // S in the air: slam dive.
  if(k==='KeyS'&&!player.grounded&&!clingTo&&startDive())return;
+ if((k==='KeyA'||k==='KeyD')&&dive)dive.dir=k==='KeyD'?1:-1;
+ if(k==='KeyS'&&running&&player.grounded&&startRoll())return;
  // No attacks or grabs from inside the ball.
  if(roll&&['KeyJ','KeyK','KeyL','KeyH','KeyU'].includes(k))return;
  // While carrying a vehicle H/J/K throw it (L is ignored); otherwise H grabs.
@@ -490,6 +498,7 @@ function update(dt:number){
  if(canAct(combat))player.crouched=crouch;
  syncBody();const w=bodyWidth(),h=bodyHeight();
  if(dive&&(!canAct(combat)||clingTo))dive=null;
+ {const st=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);if(dive&&st)dive.dir=st;}
  if(roll){roll.t-=dt;if(!canAct(combat))roll=null;else if(roll.t<=0)endRoll(false);}
  const steer=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);dashT=Math.max(0,dashT-dt);bargeT=Math.max(0,bargeT-dt);grabWait=Math.max(0,grabWait-dt);
  // Holding against the roll bursts out early.
@@ -677,7 +686,7 @@ function hud(){
  if(block.kind==='boss'&&rival)text('ARENA LOCKED',935,126,11,'#344f49','right');
  if(objectiveOpen()){text(openLayout()?'EXITS OPEN ← →':'EXIT OPEN →',935,103,13,'#203c35','right');if(camera<worldWidth-viewW()-30)text('EAST →',925,275,12,'#243e35','right');if(openLayout()&&camera>30)text('← WEST',35,275,12,'#243e35');}
  else if(time<15&&mode==='playing')text(`J: COMBO   K: HEAVY   L: ${activeKaiju==='Mogurodon'?'TREMOR':activeKaiju==='Kaiban'?'DEBRIS':'SPINE'}   H: GRAB/THROW   U: ULT   I: SUPER`,480,409,11,'#f7f0cd','center');
- if(!objectiveOpen()&&time<15&&mode==='playing')text('SHIFT / DOUBLE-TAP: RUN   JUMP INTO A WALL: GRAB   S IN AIR: SLAM   S+J: POUND',480,424,11,'#f7f0cd','center');
+ if(!objectiveOpen()&&time<15&&mode==='playing')text('SHIFT: RUN   RUN+S: CANNONBALL   JUMP INTO A WALL: GRAB   S IN AIR: SLAM (+A/D: ROLL)   S+J: POUND',480,424,11,'#f7f0cd','center');
  if(actionTime>0)text(action,480,153,12,'#243f37','center');
  meters();
  minimap();text('TEMP ART / M7',939,530,8,'#a0af99','right');
