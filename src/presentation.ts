@@ -64,8 +64,12 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  heavySlam:{src:'assets/kaiban-s2-heavy-slam.png',frames:8,fps:16,once:true,...KB2_LEFT},
  // Ranged (debris shotgun), gorilla-style: leans in, rises and digs both fists into the street (frame 4, rubble in the fists), heaves them
  // up and forward underhand to fling it (impact frame 5, Stage 1's timing), follows through and drops back to all fours. Loose rocks erased:
- // the game draws the projectiles. The crouched shot still borrows Stage 1's.
+ // the game draws the projectiles.
  rangedStand:{src:'assets/kaiban-s2-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB2_LEFT},
+ // Crouched scoop from the crouch pose shifted 24px left, staying low (never taller than the standing pose): rakes both fists into the
+ // street (frames 2-3), whips the forearms forward along the ground in a short underhand flick (impact frame 4, Stage 1's timing) and drops
+ // back onto the knuckles, closing on the crouch. Seed 21; loose rocks erased.
+ rangedCrouch:{src:'assets/kaiban-s2-ranged-crouch.png',frames:8,fps:20,once:true,impact:4,...KB2_LEFT},
  // Climb: 256x256 strips, clinging upright with the fists gripping the wall line (frame x=168, the hitbox edge 24 world units out at this
  // scale), feet braced on the wall, snout and tusks up. PixelLab braced him 37px up the wall, so the climb frames sit 21px lower (as far as
  // the lowest step allows); the grab eases into that and the 53px shift onto the wall line from the base pose. The mantle starts a further
