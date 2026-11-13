@@ -1,6 +1,6 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {CONFIG as C,MILITARY as M,MILITARY_FEEL as MF} from '../src/config.ts';
-import {createMilitary,spawnUnit,tickMilitary,hitUnit,smallArmsScale,waveLabel,UNITS} from '../src/military.ts';
+import {createMilitary,spawnUnit,tickMilitary,hitUnit,smallArmsScale,squadTypes,UNITS,ROSTERS} from '../src/military.ts';
 const player={x:400,y:C.ground-69,w:48,h:69};
 const fresh=(tier=1)=>createMilitary(tier,0,()=>.75);
 const run=(s:ReturnType<typeof fresh>,seconds:number,p=player,stage=1)=>{const out:any[]=[];for(let t=0;t<seconds;t+=.02){tickMilitary(s,.02,0,3840,p,.5,undefined,'player',C.width,stage);out.push(...s.events);s.events=[];}return out;};
@@ -29,22 +29,40 @@ test('small arms fade with stage: half at Stage 1, nothing at Stage 3; explosive
  for(const w of ['shell','rocket','bomb','artillery'] as const)assert.equal(smallArmsScale(w,3),1);
 });
 
-test('reinforcements arrive as announced waves from one side, staggered offscreen',()=>{
+test('reinforcements arrive as a whole squad from one side with one announcement and one radio',()=>{
  const s=fresh(3);s.spawnTimer=0;tickMilitary(s,.01,0,3840,player,0);
- assert.equal(s.units.length,MF.waveSize[2]);const announce=s.events.find(e=>e.kind==='announce') as any;assert.ok(announce);assert.equal(announce.count,MF.waveSize[2]);
- const sides=new Set(s.units.map(u=>u.pass));assert.equal(sides.size,1);
- const xs=s.units.map(u=>u.x+UNITS[u.type].w/2);assert.ok(new Set(xs).size===xs.length);
- assert.equal(waveLabel(['tank']),'ARMOR INBOUND');assert.equal(waveLabel(['jet','soldier']),'AIR STRIKE');assert.equal(waveLabel(['police']),'POLICE RESPONSE');
- // Waves never exceed the cap.
- const t=fresh(1);for(let n=0;n<2000;n++){tickMilitary(t,.05,0,3840,player,1);t.events=[];assert.ok(t.units.length<=M.caps[0]);}
+ const t=MF.squads[2][0],expected=squadTypes(t);assert.equal(s.units.length,expected.length);
+ const announces=s.events.filter(e=>e.kind==='announce') as any[];assert.equal(announces.length,1);assert.equal(announces[0].label,t.label);assert.equal(announces[0].count,expected.length);
+ assert.equal(new Set(s.units.map(u=>u.pass)).size,1);assert.equal(s.units.filter(u=>u.spotter).length,1);
+ assert.deepEqual(s.units.map(u=>u.type),expected);
+ // Destruction adds escorts.
+ const b=fresh(1);b.spawnTimer=0;tickMilitary(b,.01,0,3840,player,1);assert.equal(b.units.length,squadTypes(MF.squads[0][0],MF.squadEscalate).length);
+});
+
+test('the next squad waits until this one is mostly wrecked (plus a breather) or the long timer runs out',()=>{
+ const s=fresh(1);s.spawnTimer=0;tickMilitary(s,.01,0,3840,player,0);s.events=[];
+ for(const u of s.units)u.cooldown=99;
+ const quiet=run(s,MF.squadBreather+1);assert.ok(!quiet.some(e=>e.kind==='announce'),'no new squad while the first is alive');
+ const n=s.units.length;for(const u of s.units.slice(0,Math.ceil(n*(1-MF.squadClear))))hitUnit(s,u,999,'player');s.events=[];
+ const next=run(s,MF.squadBreather+.2);assert.equal(next.filter(e=>e.kind==='announce').length,1,'clearing the squad brings the next after a breather');
+ // Ignored squads still escalate on the long timer.
+ const t=fresh(1);t.spawnTimer=0;tickMilitary(t,.01,0,3840,player,0);t.events=[];
+ const far={...player,x:3000};const later=run(t,MF.squadMax[0]*1.25,far);assert.ok(later.filter(e=>e.kind==='announce').length>=1);
+});
+
+test('squads are trimmed to the cap, never exceed it, and every roster type appears in its tier templates',()=>{
+ for(let tier=1;tier<=5;tier++){const types=new Set(MF.squads[tier-1].flatMap(t=>squadTypes(t)));
+  for(const t of types)assert.ok(ROSTERS[tier-1].includes(t as any),`${t} in tier ${tier} roster`);
+  for(const t of MF.squads[tier-1])assert.ok(squadTypes(t,MF.squadEscalate).length<=M.caps[tier-1]+4);}
+ const s=fresh(5);for(let n=0;n<3000;n++){tickMilitary(s,.05,0,3840,player,1);s.events=[];assert.ok(s.units.length<=M.caps[4]);}
 });
 
 test('a spotter left alive calls an artillery strike on the kaiju; killing it first cancels the call',()=>{
- const s=fresh(2);s.spawnTimer=999;let spotter=null;for(let n=0;n<MF.spotterEvery;n++)spotter=spawnUnit(s,'soldier',650);
+ const s=fresh(2);s.spawnTimer=999;const spotter=spawnUnit(s,'soldier',650,1,true);spawnUnit(s,'soldier',660);
  assert.ok(spotter!.spotter);for(const u of s.units)if(u!==spotter)u.hp=0;s.units=[spotter!];spotter!.cooldown=99;
  const events=run(s,MF.spotterSeconds+.1);const strike=events.find(e=>e.kind==='strike');assert.ok(strike);assert.equal(strike.x,player.x+player.w/2);
  const shell=s.projectiles.find(p=>p.weapon==='artillery')!;assert.equal(shell.radius,MF.strikeRadius);assert.equal(shell.targetX,player.x+player.w/2);
- const b=fresh(2);b.spawnTimer=999;let sp=null;for(let n=0;n<MF.spotterEvery;n++)sp=spawnUnit(b,'soldier',650);b.units=[sp!];sp!.cooldown=99;
+ const b=fresh(2);b.spawnTimer=999;const sp=spawnUnit(b,'soldier',650,1,true);b.units=[sp!];sp!.cooldown=99;
  run(b,MF.spotterSeconds*.6);hitUnit(b,sp!,999,'player');b.events=[];assert.ok(!run(b,MF.spotterSeconds).some(e=>e.kind==='strike'));
 });
 

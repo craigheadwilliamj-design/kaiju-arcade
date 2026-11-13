@@ -172,7 +172,7 @@ function militaryHitsPlayer(e:Extract<MilitaryEvent,{kind:'playerHit'}>){
 function unitDies(e:Extract<MilitaryEvent,{kind:'death'}>){
  const d=UNITS[e.type],m=d.mass,mine=e.source==='player',big=e.cause==='thrown'||e.cause==='ranged',dir=e.dir||1;
  if(e.type==='police'||e.type==='soldier'){
-  decal(e.x-6,12,'splat');burst(e.x,C.ground-4,'#9b3b3b',5);spawnChunks(e.x,C.ground-8,dir,UNIT_TINT[e.type],2,.5);
+  decal(e.x-e.w*.7,e.w*1.4,'splat');burst(e.x,C.ground-4,'#9b3b3b',5);spawnChunks(e.x,C.ground-8,dir,UNIT_TINT[e.type],2,.5);
   if(mine){freeze(.025);if(time-stomp.time<1.1)stomp.count++;else stomp.count=1;stomp.time=time;if(stomp.count>=3){action=`STOMP ×${stomp.count}`;actionTime=.9;}}
   return;}
  const power=big?1.45:1;
@@ -644,7 +644,7 @@ function drainMilitary(){
    if(e.cause!=='ultimate'&&e.cause!=='blast'&&e.damage>=8)freeze(Math.min(.06,.012+e.damage*.0006*m));if(e.interrupted){burst(e.x,e.y-10,'#c9ef83',8);}}}
   else if(e.kind==='death')unitDies(e);
   else if(e.kind==='crash')crashFeel(e);
-  else if(e.kind==='announce'){if(!banner||banner.life<.6)banner={label:e.label,side:e.side,life:2.4};}
+  else if(e.kind==='announce')banner={label:`${e.label} ×${e.count}`,side:e.side,life:2.4};
   else if(e.kind==='strike'){banner={label:'ARTILLERY STRIKE CALLED · MOVE!',side:0,life:2};}
   else burst(e.x,e.y,'#f6dba1',3);
  }}
@@ -1089,7 +1089,7 @@ function drawMilitary(layer:0|1){
   ctx.save();ctx.translate(0,wreck.lane===null?0:VC.laneOffset[wreck.lane]);rect(x,wreck.y+wreck.h*.65,wreck.w,wreck.h*.35,'#3c4945');rect(x+8,wreck.y+wreck.h*.5,wreck.w*.6,6,'#677165');for(let j=0;j<3;j++)rect(x+wreck.w*.5+Math.sin(time+j)*4,wreck.y-8-j*12-(time*12%12),7+j*3,8,'#718077');ctx.restore();}
  for(const u of military.units){const lane=roadLane(u);if(u.hp<=0||u.x+u.w<camera-100||u.x>camera+viewW()+100||front(lane)!==(layer===1))continue;const x=u.x-camera,y=u.y+(lane===null?0:VC.laneOffset[lane]),d=UNITS[u.type];
  ctx.save();ctx.translate(Math.round(x+u.w/2),Math.round(y));ctx.scale(u.face,1);if(u.flash>0)ctx.filter='brightness(0) invert(1)';
- if(u.type==='police'||u.type==='soldier'){
+ if(u.type==='police'||u.type==='soldier'){ctx.scale(u.w/7,u.h/14);
  if(u.spotter){rect(-3,-7,1,7,'#2b3d40');rect(-4,-9,3,3,(u.call>MF.spotterSeconds*.5?Math.sin(time*30)>0:Math.sin(time*6)>0)?'#ff5a4a':'#5a2a2a');}
  rect(-2,0,5,4,'#d7b08c');rect(-3,4,6,6,u.type==='police'?'#445b76':'#647653');rect(-4,-1,7,2,u.type==='police'?'#36516d':'#667354');rect(2,5,7,2,'#263d3d');rect(-3,10,2,4,'#2b3d40');rect(1,10,2,4,'#2b3d40');
  }else if(u.type==='helicopter'){

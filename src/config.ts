@@ -66,7 +66,7 @@ export const COMBAT = {
 
 // M3 provisional military/civilian tuning. No military collision damage.
 export const MILITARY = {
- caps:[5,7,9,12,3],spawnSeconds:[5.5,4.5,3.8,3.2,10],firstSpawn:2,
+ caps:[12,16,20,24,8],firstSpawn:2,
  threatPressure:.4,spawnVariance:.18,spawnMargin:90,despawnDistance:1400,
  projectileCap:100,wreckCap:24,wreckSeconds:4,bulletLife:4,impactSeconds:.35,
  cityHP:.1,cityDamage:.1,cityPressure:.08,burstGap:.14,rocketGap:.28,
@@ -77,9 +77,9 @@ export const MILITARY = {
 
 // Shared M3 unit and weapon definitions; all combat balance lives here.
 export const UNIT_CONFIG = {
- police:{hp:14,w:7,h:13,speed:58,range:180,cooldown:2.8,points:80,air:false,mass:1},
- patrol:{hp:42,w:39,h:19,speed:92,range:200,cooldown:2.9,points:130,air:false,mass:1.3},
- soldier:{hp:20,w:8,h:14,speed:55,range:220,cooldown:3.2,points:100,air:false,mass:1},
+ police:{hp:14,w:13,h:24,speed:58,range:180,cooldown:2.8,points:80,air:false,mass:1},
+ patrol:{hp:42,w:48,h:23,speed:92,range:200,cooldown:2.9,points:130,air:false,mass:1.3},
+ soldier:{hp:20,w:14,h:26,speed:55,range:220,cooldown:3.2,points:100,air:false,mass:1},
  apc:{hp:95,w:52,h:26,speed:60,range:255,cooldown:3.7,points:260,air:false,mass:3},
  tank:{hp:155,w:59,h:31,speed:41,range:320,cooldown:5.2,points:400,air:false,mass:4},
  helicopter:{hp:95,w:49,h:22,speed:98,range:220,cooldown:4.2,points:350,air:true,mass:2},
@@ -105,12 +105,24 @@ export const MILITARY_FEEL = {
  tankWindup:.75,heliWindup:.7,jetWindup:.6,lockAt:.28,heliGunBurst:4,
  // Hitting a unit mid wind-up cancels the shot and stuns it; pays bonus points and Ultimate charge.
  stunSeconds:1.3,interruptPoints:150,interruptUltimate:6,
- // Waves: each spawn is a group of waveSize[tier] arriving together from one side, spaced waveSpacing px apart offscreen.
- // The lull before the next one is spawnSeconds x group size x waveLull (threat still shortens it).
- waveSize:[1,2,3,3,1],waveSpacing:70,waveLull:1.15,
- // Spotters: every spotterEvery-th soldier carries a radio. Alive and onscreen for spotterSeconds, it calls an artillery
+ // Squads: reinforcements arrive as a whole squad (core + escorts) from one side, staggered waveSpacing px apart offscreen,
+ // announced once. A tier picks its templates in rotation. The next squad comes once at most squadClear of the current one is
+ // left (after squadBreather seconds), or after squadMax[tier] seconds regardless (threat and city pressure shorten that).
+ // Destruction (threat) adds up to squadEscalate extra escorts. Squads are trimmed to the tier's cap, but wait (rechecking every
+ // squadRetry seconds) until at least squadMinFit of the squad fits, so no straggler squads.
+ waveSpacing:70,squadClear:.3,squadBreather:5,squadMinFit:.6,squadRetry:2,squadMax:[24,22,20,18,26],squadEscalate:2,
+ squads:[
+  [{label:'POLICE RESPONSE',core:['patrol',6],escort:['police',4]},{label:'RIOT POLICE',core:['patrol',3],escort:['police',8]}],
+  [{label:'NATIONAL GUARD',core:['apc',2],escort:['soldier',6]},{label:'POLICE BACKUP',core:['patrol',4],escort:['police',6]},{label:'CONVOY',core:['apc',3],escort:['patrol',2]}],
+  [{label:'ARMOR COLUMN',core:['tank',2],escort:['soldier',6]},{label:'GUNSHIPS',core:['helicopter',2],escort:['soldier',4]},{label:'MECHANIZED',core:['apc',3],escort:['soldier',4]},
+   {label:'ARTILLERY BATTERY',core:['artillery',2],escort:['emplacement',1],extra:['soldier',4]},{label:'POLICE CORDON',core:['patrol',4],escort:['police',6]}],
+  [{label:'AIR STRIKE',core:['jet',3]},{label:'BOMBING RUN',core:['bomber',2],escort:['jet',1]},{label:'HEAVY ARMOR',core:['tank',3],escort:['apc',2]},
+   {label:'GUNSHIPS',core:['helicopter',3],escort:['tank',2]},{label:'INFANTRY ASSAULT',core:['soldier',8],escort:['police',4]},{label:'ARTILLERY BATTERY',core:['artillery',2],escort:['emplacement',2]}],
+  [{label:'SUPPORT',core:['tank',1],escort:['soldier',4]},{label:'AIR SUPPORT',core:['helicopter',1],escort:['soldier',3]}],
+ ] as {label:string,core:[string,number],escort?:[string,number],extra?:[string,number]}[][],
+ // Spotters: one soldier per squad carries a radio. Alive and onscreen for spotterSeconds, it calls an artillery
  // strike on the kaiju (a big marked shell after strikeFlight seconds). Killing it first cancels the call.
- spotterEvery:3,spotterSeconds:6,strikeFlight:2.4,strikeDamage:18,strikeRadius:105,strikeStrength:360,
+ spotterSeconds:6,strikeFlight:2.4,strikeDamage:18,strikeRadius:105,strikeStrength:360,
  // Destroyed heavies (mass >= blastMass) explode: radius blastRadius + mass x blastPerMass, damage blastDamage x mass to other
  // military, credited to whoever made the kill. Downed aircraft fall and crash with crashRadius/crashDamage.
  blastMass:3,blastRadius:40,blastPerMass:12,blastDamage:9,crashRadius:90,crashDamage:40,airGravity:520,

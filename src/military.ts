@@ -25,13 +25,12 @@ export type MilitaryEvent={kind:'reward',x:number,damage:number,points:number,sh
  |{kind:'crash',type:UnitType,x:number,y:number,radius:number}
  |{kind:'announce',label:string,side:number,count:number}
  |{kind:'strike',x:number,spotter:number};
-export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Projectile[],wrecks:Wreck[],effects:Effect[],events:MilitaryEvent[],spawnTimer:number,sequence:number,nextID:number,rng:()=>number,soldiers:number};
-export function createMilitary(tier=1,city=0,rng=Math.random):MilitaryState{return {tier:Math.max(1,Math.min(5,tier)),city,units:[],projectiles:[],wrecks:[],effects:[],events:[],spawnTimer:M.firstSpawn,sequence:0,nextID:1,rng,soldiers:0};}
+export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Projectile[],wrecks:Wreck[],effects:Effect[],events:MilitaryEvent[],spawnTimer:number,sequence:number,nextID:number,rng:()=>number,squad:number[],squadSize:number,squadLabel:string};
+export function createMilitary(tier=1,city=0,rng=Math.random):MilitaryState{return {tier:Math.max(1,Math.min(5,tier)),city,units:[],projectiles:[],wrecks:[],effects:[],events:[],spawnTimer:M.firstSpawn,sequence:0,nextID:1,rng,squad:[],squadSize:0,squadLabel:''};}
 export function onScreen(r:Rect,camera:number,viewW=C.width){return r.x+r.w>camera&&r.x<camera+viewW;}
-export function spawnUnit(s:MilitaryState,type:UnitType,x:number,side=1):Unit{
+export function spawnUnit(s:MilitaryState,type:UnitType,x:number,side=1,spotter=false):Unit{
  const d=UNITS[type],y=d.air?(type==='helicopter'?285:type==='jet'?267:246):C.ground-d.h;
  const hp=d.hp*(1+s.city*M.cityHP);
- const spotter=type==='soldier'&&s.soldiers++%MF.spotterEvery===MF.spotterEvery-1;
  const u:Unit={id:s.nextID++,type,x,y,w:d.w,h:d.h,hp,maxHP:hp,face:side,pass:side,cooldown:1.1,burst:0,gap:0,shots:0,kb:0,
   windup:0,windTotal:0,aimX:0,aimY:0,pending:null,stun:0,spotter,call:0,vy:0,flash:0};s.units.push(u);return u;
 }
@@ -119,24 +118,31 @@ function fire(s:MilitaryState,u:Unit){
  else if(p==='rockets'){u.burst=2;u.gap=0;}
  else if(p==='strafe'){u.burst=6;u.gap=0;}
 }
-// Which wave is coming, for the announcement banner.
-export function waveLabel(types:UnitType[]){
- if(types.some(t=>UNITS[t].air))return types.some(t=>t==='bomber'||t==='jet')?'AIR STRIKE':'GUNSHIPS';
- if(types.some(t=>t==='tank'||t==='apc'||t==='artillery'||t==='emplacement'))return 'ARMOR INBOUND';
- return types.some(t=>t==='soldier')?'TROOPS INBOUND':'POLICE RESPONSE';
+// Squad templates for a tier, and the units one expands to: core first (it leads), then escorts, plus up to `bonus` extra escorts.
+export function squadTypes(t:{core:[string,number],escort?:[string,number],extra?:[string,number]},bonus=0):UnitType[]{
+ const out:UnitType[]=[],add=(e?:[string,number],n=0)=>{if(e)for(let k=0;k<e[1]+n;k++)out.push(e[0] as UnitType);};
+ add(t.core,t.escort?0:bonus);add(t.escort,bonus);add(t.extra);return out;
+}
+// Spawns the next squad from one side, staggered outward offscreen, one soldier carrying the radio; one announcement.
+export function spawnSquad(s:MilitaryState,camera:number,viewW:number,threat:number){
+ const cap=M.caps[s.tier-1],alive=s.units.filter(u=>u.hp>0).length,list=MF.squads[s.tier-1],t=list[s.sequence++%list.length];
+ const full=squadTypes(t,Math.round(Math.max(0,Math.min(1,threat))*MF.squadEscalate)),types=full.slice(0,Math.max(0,cap-alive));
+ // A squad that would arrive as a straggler or two waits until there is room for most of it (the template is not used up).
+ if(types.length<Math.ceil(full.length*MF.squadMinFit)){s.sequence--;return null;}
+ const side=s.rng()<.5?1:-1,radio=types.indexOf('soldier');s.squad=[];
+ types.forEach((type,k)=>{const def=UNITS[type],off=k*MF.waveSpacing;
+  // Stationary guns arrive just outside the leading viewport and remain fixed.
+  const u=spawnUnit(s,type,side===1?camera-M.spawnMargin-def.w-off:camera+viewW+M.spawnMargin+off,side,k===radio);s.squad.push(u.id);});
+ s.squadSize=types.length;s.squadLabel=t.label;
+ s.events.push({kind:'announce',label:t.label,side:-side,count:types.length});return types;
 }
 export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:number,player:Rect,threat:number,boss?:Rect,contactSource:'player'|'military'='player',viewW=C.width,stage=1){
  s.spawnTimer-=dt;
- const cap=M.caps[s.tier-1],alive=s.units.filter(u=>u.hp>0).length;
- if(s.spawnTimer<=0&&alive<cap){
-  // A wave: a group from one side, staggered outward so it rolls in together.
-  const roster=ROSTERS[s.tier-1],side=s.rng()<.5?1:-1,size=Math.min(cap-alive,MF.waveSize[s.tier-1]),types:UnitType[]=[];
-  for(let k=0;k<size;k++){const type=roster[s.sequence++%roster.length],def=UNITS[type],off=k*MF.waveSpacing;types.push(type);
-   // Stationary guns arrive just outside the leading viewport and remain fixed.
-   spawnUnit(s,type,side===1?camera-M.spawnMargin-def.w-off:camera+viewW+M.spawnMargin+off,side);}
-  s.events.push({kind:'announce',label:waveLabel(types),side:-side,count:size});
-  s.spawnTimer=M.spawnSeconds[s.tier-1]*(size>1?size*MF.waveLull:1)*(1+(s.rng()-.5)*2*M.spawnVariance)/(1+Math.max(0,Math.min(1,threat))*M.threatPressure+s.city*M.cityPressure);
- }
+ // Squad director: the next squad comes when this one is mostly wrecked (after a breather) or when the long timer runs out.
+ if(s.squad.length){const left=s.units.filter(u=>u.hp>0&&s.squad.includes(u.id)).length;
+  if(left<=s.squadSize*MF.squadClear){s.squad=[];s.spawnTimer=Math.min(s.spawnTimer,MF.squadBreather);}}
+ if(s.spawnTimer<=0&&s.units.filter(u=>u.hp>0).length<M.caps[s.tier-1]){if(!spawnSquad(s,camera,viewW,threat)){s.spawnTimer=MF.squadRetry;}else
+  s.spawnTimer=MF.squadMax[s.tier-1]*(1+(s.rng()-.5)*2*M.spawnVariance)/(1+Math.max(0,Math.min(1,threat))*M.threatPressure+s.city*M.cityPressure);}
  const engage=Math.max(camera,Math.min(camera+viewW-C.width,player.x+player.w/2-C.width/2));
  for(const u of s.units){if(u.hp<=0)continue;const d=UNITS[u.type];
   const target=boss&&Math.abs(boss.x-u.x)<Math.abs(player.x-u.x)?boss:player;
