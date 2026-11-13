@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Script the skeleton poses for Kaiban Stage 3's light combo and heavy (PixelLab /animate-with-skeleton-v3).
+"""Script the skeleton poses for Kaiban Stage 3's light combo, heavy and ranged (PixelLab /animate-with-skeleton-v3).
 
-Usage: python3 tools/kaiban_s3_light_poses.py OUTDIR [DX] [STRIPS]   (run from the repo root; lights: DX -30, heavy: DX -20 heavy)
+Usage: python3 tools/kaiban_s3_light_poses.py OUTDIR [DX] [STRIPS]   (run from the repo root; lights and ranged: DX -30, heavy: DX -20 heavy)
 
 Reads tools/kaiban-s3-skeleton.json (the /estimate-skeleton result for kaiban-s3.png), shifts it by DX px (default -30) to match the
 shifted base OUTDIR/base{DX}.png it also writes (sprite at x=44+DX; -30 keeps forward punches in the 256px frame), and
@@ -11,6 +11,7 @@ positive swinging forward), eased between and ending on the base pose so the com
   light1: front-fist jab, cocked back then fired straight out with a lean.
   light2: rear-fist haymaker, wound back behind him then swung across the body, front arm pulled back.
   light3: double-fist hammer, both fists overhead then slammed down in front, knees bending.
+  ranged: debris shotgun, both fists dug into the street then heaved up and forward, released on frame 6.
   heavy: 13 frames, cut into heavyRear (1-5, both fists raised far back overhead) and heavySlam (6-13, both fists crashed down to the street).
 """
 import json, math, sys
@@ -51,6 +52,12 @@ STRIPS={
           6:dict(lean=-4,drop=-2,L=(140,140),R=(135,140)),7:dict(lean=10,drop=6,L=(90,80),R=(85,80),step=6),8:dict(lean=26,drop=24,L=(35,20),R=(30,20),step=10),
           9:dict(lean=30,drop=30,L=(30,15),R=(25,15),step=10),10:dict(lean=28,drop=28,L=(30,15),R=(25,15),step=10),11:dict(lean=16,drop=14,L=(25,20),R=(15,20),step=7),
           12:dict(lean=6,drop=5,L=(15,25),R=(0,25),step=3),13:{}},
+ # ranged (generate with DX -30): debris shotgun. Leans and crouches deep, both fists driven into the street in front (frames 3-4),
+ # then hauled up and forward underhand, released at head height on frame 6 (the strip's impact frame 5, 0-based), settling back.
+ 'ranged':{0:{},1:dict(lean=10,drop=6,L=(30,20),R=(25,20),step=4),2:dict(lean=22,drop=18,L=(35,20),R=(30,20),step=8),
+           3:dict(lean=30,drop=32,L=(30,10),R=(25,10),step=10),4:dict(lean=30,drop=34,L=(20,0),R=(15,0),step=10),
+           5:dict(lean=10,drop=12,L=(70,90),R=(65,90),step=10),6:dict(lean=-6,drop=-2,L=(110,120),R=(105,120),step=10),
+           7:dict(lean=-2,drop=0,L=(55,55),R=(45,55),step=5),8:{}},
  'light3':{0:{},1:dict(lean=-3,L=(90,140),R=(80,140)),2:dict(lean=-6,L=(145,160),R=(140,160),drop=-2),3:dict(lean=-8,L=(150,170),R=(145,165),drop=-3),
            4:dict(lean=8,L=(110,100),R=(105,100),drop=2),5:dict(lean=18,L=(55,40),R=(50,40),drop=10,step=6),6:dict(lean=16,L=(45,30),R=(42,32),drop=9,step=6),7:dict(lean=7,L=(25,25),R=(5,25),drop=4,step=3),8:{}},
 }
