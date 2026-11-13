@@ -68,3 +68,17 @@ test('Tlézcatl Flame Jet: creeps slowly while breathing; airborne falls back to
   assert.equal(h.state().entityCounts.playerShots,1,'airborne fires the shared shot');assert.equal(h.state().jet,null);
  }finally{h.release();h.cleanup();}
 });
+
+test('Tlézcatl Magma Dive: plays his own dive and landing, splashes lava globs both ways and leaves burning pools that cool',async()=>{
+ const h=await tlezcatlCity();const {MOVE:MV}=await import('../src/config.ts');
+ try{h.step(30);
+  h.tap('Space');h.step(15);h.tap('KeyS');h.step();assert.equal(h.state().diving,true);
+  for(let n=0;n<60&&h.state().diving;n++)h.step();
+  assert.equal(h.state().rolling,false,'Tlézcatl does not roll');
+  assert.ok(h.state().entityCounts.lavaGlobs>=MV.lavaGlobs*.6,`globs splashed (${h.state().entityCounts.lavaGlobs})`);
+  assert.ok(h.state().entityCounts.lavaPools>=1,'a pool under the landing');
+  assert.ok(until(h,()=>h.state().entityCounts.lavaGlobs===0,120),'globs come down');
+  assert.ok(h.state().entityCounts.lavaPools>1,`globs reaching the street leave pools (${h.state().entityCounts.lavaPools})`);
+  assert.ok(until(h,()=>h.state().entityCounts.lavaPools===0,Math.ceil(MV.lavaPoolSeconds*60)+30),'pools cool off');
+ }finally{h.release();h.cleanup();}
+});
