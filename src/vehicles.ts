@@ -8,7 +8,7 @@ export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'sta
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string,mass?:number};
+ damage:number,hits:Set<object>,label:string,mass?:number,burn?:number};
 export const VEHICLE_SPECS={
  car:{w:33,h:16,mass:1,points:80},
  van:{w:44,h:21,mass:1.6,points:120},

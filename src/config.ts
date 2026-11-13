@@ -91,10 +91,35 @@ export const UNIT_CONFIG = {
 
 export const WEAPON_CONFIG = {
  bullet:{speed:285,damage:1.2,radius:0,strength:0,interceptable:false},
- shell:{speed:290,damage:9,radius:57,strength:230,interceptable:false},
- rocket:{speed:210,damage:7,radius:51,strength:190,interceptable:true},
- bomb:{speed:0,damage:12,radius:75,strength:290,interceptable:true},
- artillery:{speed:0,damage:13,radius:80,strength:320,interceptable:false},
+ shell:{speed:290,damage:12,radius:57,strength:230,interceptable:false},
+ rocket:{speed:210,damage:9,radius:51,strength:190,interceptable:true},
+ bomb:{speed:0,damage:14,radius:75,strength:290,interceptable:true},
+ artillery:{speed:0,damage:15,radius:80,strength:320,interceptable:false},
+};
+
+// Military rework: readable heavy threats, waves instead of a trickle, and destruction with weight.
+export const MILITARY_FEEL = {
+ // Small arms are flavour, not attrition: bullet damage x this per kaiju stage (Stage 3 shrugs them off and only sparks).
+ bulletStage:[.5,.2,0],
+ // Wind-ups: the heavy hitters aim (tracking until lockAt seconds are left), lock, then fire at the locked point, so moving dodges.
+ tankWindup:.75,heliWindup:.7,jetWindup:.6,lockAt:.28,heliGunBurst:4,
+ // Hitting a unit mid wind-up cancels the shot and stuns it; pays bonus points and Ultimate charge.
+ stunSeconds:1.3,interruptPoints:150,interruptUltimate:6,
+ // Waves: each spawn is a group of waveSize[tier] arriving together from one side, spaced waveSpacing px apart offscreen.
+ // The lull before the next one is spawnSeconds x group size x waveLull (threat still shortens it).
+ waveSize:[1,2,3,3,1],waveSpacing:70,waveLull:1.15,
+ // Spotters: every spotterEvery-th soldier carries a radio. Alive and onscreen for spotterSeconds, it calls an artillery
+ // strike on the kaiju (a big marked shell after strikeFlight seconds). Killing it first cancels the call.
+ spotterEvery:3,spotterSeconds:6,strikeFlight:2.4,strikeDamage:18,strikeRadius:105,strikeStrength:360,
+ // Destroyed heavies (mass >= blastMass) explode: radius blastRadius + mass x blastPerMass, damage blastDamage x mass to other
+ // military, credited to whoever made the kill. Downed aircraft fall and crash with crashRadius/crashDamage.
+ blastMass:3,blastRadius:40,blastPerMass:12,blastDamage:9,crashRadius:90,crashDamage:40,airGravity:520,
+ // Knocked-back ground units hop (troops fly in an arc); Stage 2+ crushes ground vehicles it walks into.
+ hopLift:.8,hopMax:320,unitGravity:900,crushStage:2,
+ // Presentation (game.ts): kaiju hurt flash/jolt, hit-stop on heavy hits, wreck launch and burn.
+ hurtFlash:.09,sparkFlash:.05,hurtJolt:9,hurtHitstop:.035,hurtHitstopPerDamage:.004,hurtHitstopMax:.09,
+ deathHitstop:.04,deathHitstopPerMass:.014,deathHitstopBig:.04,deathHitstopMax:.14,
+ wreckLaunch:[260,460],wreckThrowDamage:18,wreckBurn:7,ghostDelay:.45,ghostDrain:28,
 };
 
 export const CAMPAIGN = {
