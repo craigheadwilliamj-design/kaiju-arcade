@@ -343,6 +343,12 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // crouch hitbox), a slow breathing loop lying flat, and crouchUp = crouchDown reversed. Timing matches the other forms.
   crouchDown:{src:'assets/tlezcatl-s1-crouch-down.png',frames:5,fps:22,once:true,...TZ1_NATIVE},crouch:{src:'assets/tlezcatl-s1-crouch.png',frames:4,fps:6,...TZ1_NATIVE},
   crouchUp:{src:'assets/tlezcatl-s1-crouch-up.png',frames:5,fps:22,once:true,...TZ1_NATIVE},
+  // Jump: presses low and coils the tail, then springs off all four legs into a level, legs-tucked leap (rise); the air loop sways the
+  // tail out and back from the rise's last pose (frames 0,1,2,1 of its generation); the landing reaches down with the tail flung up,
+  // squashes flat on all fours and closes on the base. Bottom-aligned: physics moves him, the art only changes pose. Timing matches
+  // the other forms' jumps.
+  jumpRise:{src:'assets/tlezcatl-s1-jump-rise.png',frames:9,fps:24,once:true,...TZ1_NATIVE},jumpAir:{src:'assets/tlezcatl-s1-jump-air.png',frames:4,fps:8,...TZ1_NATIVE},
+  jumpLand:{src:'assets/tlezcatl-s1-jump-land.png',frames:5,fps:20,once:true,...TZ1_NATIVE},
   // Climb: 256x256 strips, clinging to the wall like a gecko (body vertical, belly to the wall, head up, tail hanging) with the gripping
   // claws on the wall line at frame x=154 (the hitbox edge 24 world units out) and the tail tip on the bottom row. The grab leaps from
   // the base pose and eases 46px onto the wall line, every frame bottom-aligned; the climb loop is hand over hand; the punch draws the
