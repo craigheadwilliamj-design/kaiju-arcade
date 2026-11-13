@@ -53,14 +53,11 @@ const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
 // Kaiban Stage 3 strips: the kaiban-s3 base still, a 167x224 upright sprite at x=44 in a 256x256 frame (tall, so raised fists fit).
 const KB3_NATIVE={scale:167/256,anchor:44+128*167/256};
-// Kaiban Stage 3 wide-swing strips: generated from a smaller re-sample of the same render (144x192 at x=56) so swinging fists have
-// room inside PixelLab's 256px frame; drawn at the same size as the full base, so their pixels are about 16% chunkier.
-const KB3_SMALL={scale:144/256,anchor:56+128*144/256};
 // Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists), in progress: idle (breathing, fists and
-// broken chains swaying, tail flicks) and walk (a swagger: the front fist swings up to nearly horizontal ahead of the snout, the back fist far behind the hip, shoulders roll, chains whip; feet bottom-aligned).
+// broken chains swaying, tail flicks) and walk (a swagger posed with PixelLab's skeleton animation: both fists swing through the full arc, alternating, opposite the legs; 11 frames at 14 fps, about the 0.8s cycle of the other walks).
 // Every other move holds the idle while gameplay timing falls back to the base form. 80 units wide keeps the 167x224 art about 300px
 // tall at the 2.8x Stage 3 scale, a little taller than Mogurodon's Stage 3 since he stands upright.
-const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:8,fps:10,...KB3_SMALL}}};
+const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:11,fps:14,...KB3_NATIVE}}};
 // Kaiban Stage 2 form, in progress: idle, walk, the heavy, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while
 // the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw, the climb set and the Stampede. `borrow`: every move not drawn yet plays the
 // Stage 1 strip.
