@@ -131,7 +131,8 @@ export const VEHICLES = {
 // Pound: S+J (crouched light) beats down on whatever you stand on, so on a rooftop it pounds the building under your feet.
 export const MOVE = {
  runSpeed:1.8,dashSpeed:2.7,dashSeconds:.2,doubleTap:.28,runJumpLift:1.08,jumpStageExp:.25,
- bargeDamage:26,bargeCooldown:.45,bargeUnitDamage:18,bargeKnockback:260,
+ // A barge/gore only lands after a run-up: bargeRunUp px (x stage scale) covered running the same way; each hit resets it.
+ bargeDamage:26,bargeCooldown:.45,bargeRunUp:90,bargeUnitDamage:18,bargeKnockback:260,
  ledgeGrab:.45,wallLeap:1.6,grabCooldown:.22,
  diveSpeed:900,diveSteer:.35,diveDamage:48,diveRoofMult:1.7,diveRadius:80,diveFallBonus:300,diveFallMax:1.5,
  diveKnockback:300,diveWaveRange:200,diveWaveSize:.6,diveWaveDamage:.45,diveCooldown:.35,

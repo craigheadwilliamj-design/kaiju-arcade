@@ -347,7 +347,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
  :kaiju==='Kaiban'?[
   {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
   {keys:'U',name:'Stampede',desc:'Full meter. A bellow blasts back anything close, then a head-down charge out and back flattens every building it touches.'},
-  {keys:'SHIFT+A/D',name:'Gore Charge',desc:'His run is a head-down tusk charge. Ramming a building hits far harder than a normal barge, troops get thrown, and cars get flipped up over his tusks.'},
+  {keys:'SHIFT+A/D',name:'Gore Charge',desc:'His run is a head-down tusk charge. Ramming a building with a running start hits far harder than a normal barge (back off and charge again for another hit), troops get thrown, and cars get flipped up over his tusks.'},
   {...slam,name:'Meteor Drop',desc:'Dive tusks- or fists-first. The landing cracks the ground and hurls a ring of rock chunks out both ways, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging there is no street to scoop: fire one shot.'}]
  :[
@@ -362,7 +362,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
    {keys:'H',name:'Grab',desc:'Pick up a car, wreck, enemy vehicle, lamppost or barricade. At Stage 3, whole small buildings.'},
    {keys:'H/J/K',name:'Throw',desc:'Throw what you are carrying. Hold W to lob it upward at aircraft.'},
    {keys:'J',name:'Wall punch',desc:'While clinging to a building: punch into the wall without letting go.'},
-   {keys:'SHIFT+A/D',name:'Shoulder barge',desc:'Run into a building to slam it; troops in your path get bowled over.'},
+   {keys:'SHIFT+A/D',name:'Shoulder barge',desc:'Run into a building with a running start to slam it (back off and charge again to repeat); troops in your path get bowled over.'},
    {keys:'I',name:'Super',desc:'Stage 3 at full HP with a full Super charge: ~20 seconds of extra damage, speed and toughness.'}]}],
   controls:[{title:'Movement',moves:[
    {keys:'A/D',name:'Move',desc:'Walk left and right.'},
