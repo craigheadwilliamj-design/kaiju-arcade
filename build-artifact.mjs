@@ -3,7 +3,7 @@
 // bundles every module into one classic script and embeds the sprites as data URIs. No dependencies:
 // each module runs in its own function scope (no name collisions) and returns the names other modules import.
 // The page body has no <html>/<head>/<body>: the Artifact tool adds that skeleton when it publishes.
-import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,copyFile,rm} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {stripTypeScriptTypes} from 'node:module';
 
@@ -37,10 +37,25 @@ const scoped=order.map(name=>{
 
 let js=scoped;
 const sprites=[...new Set(js.match(/assets\/[\w.-]+\.png/g)??[])];
-// The Artifact limit is 16MB for the whole page and base64 adds a third, so if the sprites are too big the largest are re-saved as
-// 256-colour PNGs (tools/shrink_sprites.py; public/assets is never modified). If Python/Pillow is missing the originals are embedded.
+// `--files`: sprites stay separate files beside the page (dist-artifact/assets/, listed in dist-artifact/files.json for the
+// publisher's supporting-files option) instead of base64 inside it. The page is then a few hundred KB whatever the art weighs, the
+// 16MB page limit and base64's extra third no longer apply, and the game only downloads the kaiju being played.
+// Default: one self-contained page, with the 16MB limit and the shrinking below.
+const separate=process.argv.includes('--files');
 const SPRITE_BUDGET=11e6,shrinkDir='dist-artifact/sprites';let shrunk=new Set();
 await mkdir('dist-artifact',{recursive:true});
+if(separate){
+ await rm('dist-artifact/assets',{recursive:true,force:true});await mkdir('dist-artifact/assets',{recursive:true});
+ const files={};let bytes=0;
+ for(const path of sprites){await copyFile(`public/${path}`,`dist-artifact/${path}`);files[path]=`dist-artifact/${path}`;bytes+=(await readFile(`public/${path}`)).length;}
+ await writeFile('dist-artifact/files.json',JSON.stringify(files,null,1));
+ console.log(`Wrote ${sprites.length} sprites (${(bytes/1e6).toFixed(1)} MB) to dist-artifact/assets/ and their list to dist-artifact/files.json`);
+ // Publisher limits: 255 files per publish, 511 per version, 15MB per file. Past ~450 strips, pack each form's strips into one sheet.
+ if(sprites.length>250)console.warn(`warning: ${sprites.length} sprites is over the 255 files one publish can send; publish them in two batches`);
+ if(sprites.length>450)console.warn(`warning: ${sprites.length} sprites is close to the 511-file limit per Artifact version`);
+}else{
+// The Artifact limit is 16MB for the whole page and base64 adds a third, so if the sprites are too big the largest are re-saved as
+// 256-colour PNGs (tools/shrink_sprites.py; public/assets is never modified). If Python/Pillow is missing the originals are embedded.
 try{shrunk=new Set(JSON.parse(execFileSync('python3',['tools/shrink_sprites.py','--out',shrinkDir,'--budget',String(SPRITE_BUDGET),...sprites.map(p=>`public/${p}`)],{encoding:'utf8'})));}
 catch(e){console.warn(`Could not shrink sprites (${e.message.split('\n')[0]}); embedding the originals.`);}
 for(const path of sprites){
@@ -49,6 +64,7 @@ for(const path of sprites){
  js=js.replaceAll(`'${path}'`,`'${uri}'`).replaceAll(`"${path}"`,`"${uri}"`);
 }
 if(/assets\/[\w.-]+\.png/.test(js))throw Error('A sprite path was not embedded');
+}
 js=js.replaceAll('</script','<\\/script');
 
 const html=await readFile('public/index.html','utf8'),css=await readFile('public/style.css','utf8');
@@ -62,5 +78,5 @@ const page=`<title>${title}</title>\n<style>\n${css}\n</style>\n${errorBar}\n${b
 
 await mkdir('dist-artifact',{recursive:true});
 await writeFile('dist-artifact/index.html',page);
-console.log(`Built dist-artifact/index.html (${order.length} modules, ${sprites.length} sprites${shrunk.size?`, ${shrunk.size} shrunk to 256 colours`:''}, ${(page.length/1e6).toFixed(2)} MB)`);
+console.log(`Built dist-artifact/index.html (${order.length} modules, ${sprites.length} sprites ${separate?'as separate files':'embedded'}${shrunk.size?`, ${shrunk.size} shrunk to 256 colours`:''}, ${(page.length/1e6).toFixed(2)} MB)`);
 if(page.length>16e6)throw Error('Page is over the 16MB Artifact limit');
