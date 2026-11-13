@@ -337,10 +337,13 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   heavySlam:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
   // Eruption (U). Charge: `tlezcatl-s1-ult-charge`, 16 frames at 16 fps = the 1s eruptCharge, played once: he curls into a tight
   // ball, crest spines flaring out like a pinwheel, and molten light leaks through his stripes and spines, orange to yellow-white
-  // (the game shudders him and adds a soft glow). The roar (heavy rear-up, the explosion goes off on its last frame, impact 4 = 0.25s)
-  // and the after-blast loop (crest-ablaze heavy hold) are still placeholders.
+  // (the game shudders him and adds a soft glow). Roar: `tlezcatl-s1-ult-roar`, 8 frames at 16 fps generated from the last charge
+  // frame: the ball bursts in a starburst and fireball (drawn into the strip, under the game's own fireball) and he is revealed
+  // reared up on his hind legs and tail, claws flung wide, jaws gaping, crest blazing. No impact frame, so the explosion goes off
+  // on its first frame, the instant the ball bursts. Loop: `tlezcatl-s1-ult-pound`, the roar's last four frames (the pose holds
+  // while the crest flame pulses orange to white-hot and back), while the fireball fades and the fallout lands.
   ultCharge:{src:'assets/tlezcatl-s1-ult-charge.png',frames:16,fps:16,once:true,...TZ1_NATIVE},
-  ultRoar:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:16,once:true,impact:4,...TZ1_LEFT},ultPound:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
+  ultRoar:{src:'assets/tlezcatl-s1-ult-roar.png',frames:8,fps:16,once:true,...TZ1_NATIVE},ultPound:{src:'assets/tlezcatl-s1-ult-pound.png',frames:4,fps:10,...TZ1_NATIVE},
   // Pound keeps the heavy slam it fell back to before ultPound existed.
   pound:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
   // Flame Jet (the game draws the fire from `mouth`): jetStart inhales, draws the head back and thrusts it forward with the jaws gaping;
