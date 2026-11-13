@@ -151,5 +151,9 @@ export const MOVE = {
  // Kaiban: Gore Charge multiplies the running barge and launches cars high; Meteor Drop flings a ring of rocks on landing
  // (half each way, angles from meteorAngle, speeds meteorSpeed x sqrt(stage scale) x drop power, meteorDamage each).
  goreMult:2.2,goreUnitMult:1.6,goreLift:2.4,meteorRocks:10,meteorSpeed:[260,480],meteorAngle:[25,72],meteorDamage:12,
+ // Tlézcatl: Magma Dive splashes lavaGlobs molten globs out both ways on landing (angles lavaAngle, speeds lavaSpeed x sqrt(stage
+ // scale) x drop power, lavaDamage each on the first thing hit). A street landing leaves a lava pool under him, and every glob that
+ // reaches the street leaves a small one: pools burn whatever stands in them for lavaPoolDamage every lavaPoolTick until they cool.
+ lavaGlobs:8,lavaSpeed:[220,420],lavaAngle:[30,70],lavaDamage:10,lavaPoolSeconds:2.2,lavaPoolTick:.25,lavaPoolDamage:6,lavaPoolWidth:1.3,lavaGlobPool:46,
  poundMult:1.25,poundCooldown:.34,poundKnockback:120,
 };
