@@ -1,4 +1,4 @@
-import {CONFIG as C,COMBAT as B,MILITARY as M,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC} from './config.ts';
+import {CONFIG as C,COMBAT as B,MILITARY as M,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV} from './config.ts';
 import {createParked,createLamps,uproot,upright,impact,makeProp,spawnTraffic,tickDriving,tickFlying,launch,vehicleBox,mass,loose,grounded,liftedBuilding,VEHICLE_SPECS} from './vehicles.ts';
 import type {Vehicle} from './vehicles.ts';
 import {NEW_YORK_BLOCK_ONE,DRILL_BLOCK,CITIES,LEVELS,levelWidth} from './levels.ts';
@@ -84,6 +84,12 @@ let loopIntro:string|null=null;
 // climbGrab into the climb loop, climbMantle on reaching the roof; reaching the street on S just returns to idle.
 // `grabLock` stops W+Space from instantly re-grabbing the wall you just jumped off (cleared when W is released).
 let isClimbing=false,clingTo:ReturnType<typeof createBuildings>[number]|null=null,grabLock=false,climbDir=0,mantled=false;
+// Run (Shift held, or a double-tapped A/D latched until both are released; the double-tap opens with a dash burst).
+// `airRun` keeps run speed through a running jump (a leap). `grabWait` blocks the airborne leap-grab right after kicking off a wall.
+// `dive` is the aerial slam: S in the air plunges straight down from startY and hits what is under you on landing.
+let runLatch=false,lastTap={code:'',t:-9},dashT=0,airRun=false,running=false,bargeT=0,grabWait=0,dive:{startY:number}|null=null;
+const bargeHits=new Map<object,number>();
+function jumpVelocity(){return C.jumpVelocity*scale(combat)**MV.jumpStageExp;}
 function currentAnim():[string,number]{
  if(attack)return [attack.anim,attack.t];
  if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar',combat.stage)){const el=B.ultimateDuration-combat.ultimateTime,roar=animDuration(activeKaiju,'ultRoar',combat.stage);return el<roar?['ultRoar',el]:['ultPound',el-roar];}
@@ -150,7 +156,7 @@ function start(){session='drill';run=null;activeKaiju='Mogurodon';cityIndex=0;bl
 function loadBlock(drill=false){
  block=drill?DRILL_BLOCK:LEVELS[cityIndex][blockIndex];worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:blockIndex+1,cityIndex);population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];chunks=[];hitstop=0;vehicles=[...createParked(block.cars),...createLamps(worldWidth,500)];held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?block.screens*VC.trafficPerScreen:0;shots=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;rocks=[];stampede=null;ambientTimer=0;growthTimer=0;ultimateTimer=0;
  cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
- clingTo=null;grabLock=false;isClimbing=false;climbDir=0;oldWidth=bodyWidth();oldHeight=C.playerHeight*scale(combat);player={x:block.start===undefined?110:block.start-oldWidth/2,y:C.ground-oldHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
+ clingTo=null;grabLock=false;isClimbing=false;climbDir=0;runLatch=false;dashT=0;airRun=false;running=false;bargeT=0;grabWait=0;dive=null;bargeHits.clear();oldWidth=bodyWidth();oldHeight=C.playerHeight*scale(combat);player={x:block.start===undefined?110:block.start-oldWidth/2,y:C.ground-oldHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
  camera=Math.max(0,Math.min(worldWidth-viewW(),player.x+oldWidth/2-viewW()*.34));
  objective=!drill&&block.kind==='stronghold'?{x:worldWidth/2,hp:P.strongholdHP,maxHP:P.strongholdHP,shattered:false}:null;
  rival=!drill&&block.kind==='boss'?createRival(worldWidth,cityIndex):null;
@@ -244,9 +250,59 @@ function projectileTargets(damage:number,knockback:number,dir:number,y:number){
  ...military.projectiles.filter(p=>!p.dead&&WEAPONS[p.weapon].interceptable).map(p=>({rect:{x:p.x-8,y:p.y-8,w:16,h:16},hit:()=>intercept(military,p)})),
  ...vehicles.filter(v=>loose(v)).map(v=>({rect:vehicleBox(v),hit:()=>puntVehicle(v,damage*VC.shotPush,dir)}))];
  return targets.sort((a,b)=>dir>0?a.rect.x-b.rect.x:b.rect.x-a.rect.x);}
+// Pound (S+J): both fists down on whatever is under the feet. Standing on a roof it hits that building (and a neighbour you straddle);
+// on the street it stomps troops, cars and newsstands at your feet. Combo multipliers still apply, so the third pound is the big one.
+function pound(strike:Strike){
+ const w=bodyWidth(),h=bodyHeight(),s=scale(combat),feet=player.y+h,cx=player.x+w/2,damage=strike.damage*MV.poundMult;
+ attack={anim:hasAnim(activeKaiju,'ultPound',combat.stage)?'ultPound':'heavySlam',t:0};player.pose=.25;combat.cooldown=Math.max(combat.cooldown,MV.poundCooldown);
+ const box={x:player.x-w*.15,y:feet-14*s,w:w*1.3,h:30*s},wide={x:box.x-18*s,y:feet-40*s,w:box.w+36*s,h:46*s};let struck=false;
+ for(const b of buildings){if(b.hpNow<=0)continue;const r={x:b.x,y:C.ground-b.h,w:b.w,h:b.h};if(!overlaps(box,r))continue;
+  // Under the feet: the hole lands near the roof; a wall you are stood beside at street level takes it at the base.
+  const onRoof=Math.abs(C.ground-b.h-feet)<6,hx=Math.max(b.x+8,Math.min(b.x+b.w-8,cx));
+  hit(b,damage*(onRoof?1:.6),false,player.face,{x:hx,y:onRoof?C.ground-b.h+10:feet-8});struck=true;
+  if(onRoof)spawnChunks(hx,C.ground-b.h,0,b.color,3,1.2);}
+ for(const u of military.units)if(u.hp>0&&overlaps(wide,u)){hitUnit(military,u,damage,'player',MV.poundKnockback,Math.sign(u.x+u.w/2-cx)||player.face);struck=true;}
+ for(const v of vehicles)if(loose(v)&&overlaps(wide,vehicleBox(v)))flattenVehicle(v,true);
+ for(const g of growths)if(g.hp>0&&overlaps(wide,{x:g.x-20,y:C.ground-55,w:40,h:55}))hitGrowth(g,damage);
+ if(objective&&!objective.shattered&&overlaps(wide,{x:objective.x-30,y:C.ground-100,w:60,h:100}))hitObjective(damage);
+ if(rival&&!rival.dead&&overlaps(wide,rival))strikeRival(damage,MV.poundKnockback,player.face);
+ burst(cx,feet-2,'#c9a77c',strike.combo===3?14:7);shake=Math.max(shake,strike.combo===3?6:3);
+ if(struck)hitstop=Math.max(hitstop,Math.min(F.hitstopMax,F.hitstopBase+damage*F.hitstopPerDamage));
+ action=`POUND ${strike.combo} / 3`;actionTime=.5;}
+// Slam landing: the roof (or street) under the body takes the hit plus a radius around the feet, scaled by the drop.
+// Returns true when the roof gave way, so the dive keeps falling into whatever is below.
+function slamLand(){
+ if(!dive)return false;const w=bodyWidth(),h=bodyHeight(),s=scale(combat),feet=player.y+h,cx=player.x+w/2,fall=Math.max(0,feet-dive.startY);
+ const power=1+Math.min(MV.diveFallMax,fall/MV.diveFallBonus),damage=MV.diveDamage*damageMultiplier(combat)*power,radius=MV.diveRadius*s*(1+(power-1)*.4);
+ const street=feet>=C.ground-1,kb=MV.diveKnockback*(combat.superTime>0?B.superKnockback:1);let broke=false;
+ for(const b of buildings){if(b.hpNow<=0)continue;
+  const under=b.x<player.x+w&&b.x+b.w>player.x&&Math.abs(C.ground-b.h-feet)<6,near=street&&b.x<cx+radius&&b.x+b.w>cx-radius;
+  if(!under&&!near&&!(b.kind==='tiny'&&b.x<cx+radius&&b.x+b.w>cx-radius))continue;
+  hit(b,damage*(under?MV.diveRoofMult:.5),false,Math.sign(b.x+b.w/2-cx)||player.face,{x:Math.max(b.x+8,Math.min(b.x+b.w-8,cx)),y:under?C.ground-b.h+10:C.ground-20});
+  if(under){spawnChunks(cx,C.ground-b.h,0,b.color,6,1.6);if(b.hpNow<=0)broke=true;}}
+ const zone={x:cx-radius,y:feet-radius,w:radius*2,h:radius+8};
+ for(const u of military.units)if(u.hp>0&&overlaps(zone,u))hitUnit(military,u,damage,'player',kb,Math.sign(u.x+u.w/2-cx)||player.face);
+ for(const v of vehicles)if(loose(v)&&overlaps(zone,vehicleBox(v))){if(Math.abs(v.x+v.w/2-cx)<w*.4)flattenVehicle(v,true);else puntVehicle(v,damage*.5,Math.sign(v.x+v.w/2-cx)||player.face,false,1.8);}
+ for(const g of growths)if(g.hp>0&&overlaps(zone,{x:g.x-20,y:C.ground-55,w:40,h:55}))hitGrowth(g,damage);
+ if(objective&&!objective.shattered&&overlaps(zone,{x:objective.x-30,y:C.ground-100,w:60,h:100}))hitObjective(damage);
+ if(rival&&!rival.dead&&overlaps(zone,rival))strikeRival(damage,kb,Math.sign(rival.x+rival.w/2-cx)||player.face);
+ // On the street the impact rolls out as a short shockwave both ways.
+ if(street){const grow=Math.sqrt(s),life=MV.diveWaveRange*grow*power/B.tremorSpeed;
+  for(const dir of [-1,1])waves.push({x:cx+dir*w*.3,vx:dir*B.tremorSpeed,life,max:life,damage:damage*MV.diveWaveDamage,hits:new Set(),ult:false,size:MV.diveWaveSize*grow,knockback:B.tremorKnockback});}
+ burst(cx,feet-3,'#c9a77c',18+Math.round(power*6));spawnChunks(cx,feet-6,1,'#8d7a66',3);spawnChunks(cx,feet-6,-1,'#8d7a66',3);
+ shake=Math.max(shake,6+power*4);hitstop=Math.max(hitstop,.05+power*.02);
+ attack={anim:hasAnim(activeKaiju,'heavySlam',combat.stage)?'heavySlam':'jumpLand',t:hasAnim(activeKaiju,'heavySlam',combat.stage)?animDuration(activeKaiju,'heavySlam',combat.stage)*.35:0};
+ combat.cooldown=Math.max(combat.cooldown,MV.diveCooldown);action=broke?'SLAM · CRASHED THROUGH':power>1.8?'MEGA SLAM':'SLAM';actionTime=.9;
+ return broke;}
+function startDive(){if(dive||player.grounded||clingTo||held||!canAct(combat)||combat.charging)return false;
+ dive={startY:player.y+bodyHeight()};player.vy=Math.max(player.vy,MV.diveSpeed*Math.sqrt(scale(combat)));airRun=false;attack=null;action='DIVE';actionTime=.5;return true;}
+// Mantle: up onto the roof of `b` from the wall, nudged a little inboard of the edge.
+function mantle(b:NonNullable<typeof clingTo>,w:number,h:number){const roof=C.ground-b.h;player.y=roof-h-.01;player.x=Math.max(b.x-w*.4,Math.min(b.x+b.w-w*.6,player.x+(player.x+w/2<b.x+b.w/2?w*.3:-w*.3)));player.vy=0;clingTo=null;mantled=true;}
 function performStrike(strike:Strike|null){
  if(!strike||mode!=='playing')return;
  const {kind,damage}=strike;player.pose=kind==='heavy'?.3:.18;
+ // Crouched light on any footing (street or rooftop) is the Pound: it beats down on what is under your feet.
+ if(kind==='light'&&player.crouched&&player.grounded&&!clingTo){pound(strike);return;}
  attack=kind==='light'?{anim:clingTo?'climbPunch':LIGHT_ANIMS[strike.combo-1],t:0}:kind==='heavy'?{anim:'heavySlam',t:0}:{anim:player.crouched?'rangedCrouch':'rangedStand',t:0};
  const w=bodyWidth(),h=bodyHeight(),y=player.y+h*.45;
  // Mogurodon on the ground: Tremor Slam instead of a quill. Airborne or clinging he still flicks a quill (his only anti-air ranged).
@@ -374,16 +430,22 @@ function syncBody(){
 window.addEventListener('keydown',e=>{
  if(mode==='intro'){e.preventDefault();if(!e.repeat)finishIntro();return;}
  if(['INPUT','SELECT'].includes((e.target as HTMLElement)?.tagName))return;
- const k=e.code;if(['Space','KeyA','KeyD','KeyW','KeyS','KeyJ','KeyK','KeyL','KeyU','KeyI','KeyH','Escape'].includes(k))e.preventDefault();
+ const k=e.code;if(['Space','KeyA','KeyD','KeyW','KeyS','KeyJ','KeyK','KeyL','KeyU','KeyI','KeyH','Escape','ShiftLeft','ShiftRight'].includes(k))e.preventDefault();
  if(k==='Escape'&&!e.repeat){if(mode==='playing')pause();else if(mode==='paused')resume();return;}
  if(mode!=='playing')return;keys.add(k);if(e.repeat)return;
- if(k==='Space'&&clingTo&&canAct(combat)&&!combat.charging){clingTo=null;grabLock=true;player.vy=-C.jumpVelocity;player.grounded=false;}
- else if(k==='Space'&&player.grounded&&!keys.has('KeyS')&&canAct(combat)&&!combat.charging){player.vy=-C.jumpVelocity;player.grounded=false;}
+ // Double-tap A/D: start running (with a dash burst); the run stays latched until both are released.
+ if((k==='KeyA'||k==='KeyD')&&player.grounded&&!clingTo){if(lastTap.code===k&&time-lastTap.t<MV.doubleTap){runLatch=true;dashT=MV.dashSeconds;burst(player.x+bodyWidth()/2,player.y+bodyHeight()-4,'#c9a77c',8);}lastTap={code:k,t:time};}
+ // Off a wall, Space hops straight up; holding the direction away from the wall turns it into a leap away at run speed.
+ if(k==='Space'&&clingTo&&canAct(combat)&&!combat.charging){const away=player.face>0?keys.has('KeyA'):keys.has('KeyD');clingTo=null;grabLock=true;grabWait=MV.grabCooldown;player.vy=-jumpVelocity();player.grounded=false;
+  if(away){airRun=true;player.face=-player.face;player.vy*=MV.runJumpLift;}}
+ else if(k==='Space'&&player.grounded&&!keys.has('KeyS')&&canAct(combat)&&!combat.charging){airRun=running;player.vy=-jumpVelocity()*(running?MV.runJumpLift:1);player.grounded=false;}
+ // S in the air: slam dive.
+ if(k==='KeyS'&&!player.grounded&&!clingTo&&startDive())return;
  // While carrying a vehicle H/J/K throw it (L is ignored); otherwise H grabs.
  if(held){if(k==='KeyH'||k==='KeyJ'||k==='KeyK')throwHeld();if(k==='KeyU'){dropHeld();useUltimate();}return;}
  if(k==='KeyH'){tryGrab();return;}
  if(k==='KeyJ')performStrike(light(combat));if(k==='KeyK')beginHeavy(combat);if(k==='KeyL')performStrike(ranged(combat));if(k==='KeyU')useUltimate();if(k==='KeyI')useSuper();
-});window.addEventListener('keyup',e=>{keys.delete(e.code);if(e.code==='KeyK'&&mode==='playing')performStrike(releaseHeavy(combat));});window.addEventListener('blur',pause);document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
+});window.addEventListener('keyup',e=>{keys.delete(e.code);if(!keys.has('KeyA')&&!keys.has('KeyD'))runLatch=false;if(e.code==='KeyK'&&mode==='playing')performStrike(releaseHeavy(combat));});window.addEventListener('blur',pause);document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
 document.querySelector('#fullscreen')!.addEventListener('click',toggleFullscreen);
 function update(dt:number){
  time+=dt;if(mode==='intro'){introElapsed+=dt;if(introElapsed>=INTRO_DURATION)finishIntro();else if(introScene(introElapsed)!==introIndex)introPanel();return;}if(mode!=='playing')return;
@@ -398,36 +460,50 @@ function update(dt:number){
  {const next=isClimbing?'climb':!player.grounded?'jumpAir':player.crouched?'crouch':walking?(held&&hasAnim(activeKaiju,'carryWalk',combat.stage)?'carryWalk':'walk'):held&&hasAnim(activeKaiju,'carry',combat.stage)?'carry':'idle';
   if(attack||combat.charging||combat.ultimateTime>0){loopAnim=next;loopT=0;loopIntro=null;}
   else if(next!==loopAnim){loopIntro=next==='climb'?'climbGrab':loopAnim==='climb'?(mantled?'climbMantle':null):next==='jumpAir'?(player.vy<0?'jumpRise':null):loopAnim==='jumpAir'?'jumpLand':next==='crouch'?'crouchDown':loopAnim==='crouch'?'crouchUp':null;loopAnim=next;loopT=0;}
-  else loopT+=next==='climb'&&climbDir===0?0:dt;}
+  else loopT+=next==='climb'&&climbDir===0?0:next==='walk'&&running?dt*MV.runSpeed*.8:dt;}
  // Duck or charge, not both: crouch is ignored while a heavy is charging (starting one while ducked stands you up).
  const crouch=keys.has('KeyS')&&player.grounded&&!combat.charging;
  if(canAct(combat))player.crouched=crouch;
  syncBody();const w=bodyWidth(),h=bodyHeight();
- let dx=!canAct(combat)||player.crouched||clingTo?0:((keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0))*C.moveSpeed*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*dt;
+ if(dive&&(!canAct(combat)||clingTo))dive=null;
+ const steer=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);dashT=Math.max(0,dashT-dt);bargeT=Math.max(0,bargeT-dt);grabWait=Math.max(0,grabWait-dt);
+ running=!!steer&&canAct(combat)&&!player.crouched&&!clingTo&&!combat.charging&&!dive&&(player.grounded?keys.has('ShiftLeft')||keys.has('ShiftRight')||runLatch:airRun);
+ const gait=dive?MV.diveSteer:running?(dashT>0&&player.grounded?MV.dashSpeed:MV.runSpeed):1;
+ let dx=!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*dt;
  if(dx)player.face=dx>0?1:-1;
  const inputDx=dx;
  const kb=combat.transform>0||combat.ultimateTime>0?0:combat.knockback*dt;
- dx+=kb;let nx=Math.max(0,Math.min(worldWidth-w,player.x+dx));
- for(const b of buildings)if(solid(b)&&overlaps({x:nx,y:player.y,w,h},{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){nx=dx>0?Math.min(nx,b.x-w):dx<0?Math.max(nx,b.x+b.w):player.x;if(Math.abs(combat.knockback)>M.collisionImpactMin)receiveHit(combat,Math.abs(combat.knockback)*M.collisionPlayerDamage,'environment');combat.knockback=0;}
+ dx+=kb;let nx=Math.max(0,Math.min(worldWidth-w,player.x+dx)),wall:typeof clingTo=null;
+ for(const b of buildings)if(solid(b)&&overlaps({x:nx,y:player.y,w,h},{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){if(inputDx&&Math.sign(b.x+b.w/2-player.x-w/2)===Math.sign(inputDx))wall=b;nx=dx>0?Math.min(nx,b.x-w):dx<0?Math.max(nx,b.x+b.w):player.x;if(Math.abs(combat.knockback)>M.collisionImpactMin)receiveHit(combat,Math.abs(combat.knockback)*M.collisionPlayerDamage,'environment');combat.knockback=0;}
  if(rival&&!rival.dead&&overlaps({x:nx,y:player.y,w,h},rival))nx=dx>0?rival.x-w:dx<0?rival.x+rival.w:player.x;
  walking=inputDx!==0&&player.grounded&&Math.abs(nx-player.x)>.01;player.x=nx;
+ // Shoulder barge: running into a wall hits it (on a short cooldown); running through troops bowls them over.
+ if(running&&player.grounded&&wall&&bargeT<=0){bargeT=MV.bargeCooldown;hit(wall,MV.bargeDamage*damageMultiplier(combat)*(dashT>0?1.5:1),false,player.face,{x:player.face>0?wall.x+4:wall.x+wall.w-4,y:player.y+h*.5});shake=Math.max(shake,4);action='SHOULDER BARGE';actionTime=.6;}
+ if(running&&player.grounded){for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&overlaps({x:player.x,y:player.y,w,h},u)&&(bargeHits.get(u)??-9)<time-.6){bargeHits.set(u,time);hitUnit(military,u,MV.bargeUnitDamage*damageMultiplier(combat),'player',MV.bargeKnockback,player.face);}
+  if(particles.length<C.particleCap&&Math.random()<dt*24)particles.push({x:player.x+w/2-player.face*w*.4,y:player.y+h-3,vx:-player.face*(40+Math.random()*90),vy:-(30+Math.random()*80),life:.3+Math.random()*.25,color:'#c9a77c',size:2+Math.floor(Math.random()*3)});}
  if(Math.abs(kb)>0&&Math.abs(combat.knockback)>M.collisionImpactMin){
  for(const b of buildings)if(b.hpNow>0&&overlaps({x:player.x,y:player.y,w,h},{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){
  if(b.kind!=='large'){damageBuilding(b,Math.abs(combat.knockback)*M.collisionBuildingDamage,'impact');releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);}
  receiveHit(combat,Math.abs(combat.knockback)*M.collisionPlayerDamage,'environment');combat.knockback=0;break;
  }}
- let prevBottom=player.y+h,climbing=false;
+ let prevBottom=player.y+h,climbing=false;const wasGrounded=player.grounded;
  // The Stampede keeps gravity on (so charging off a roof drops him); every other Ultimate holds the kaiju in place.
  if(combat.transform<=0&&(combat.ultimateTime<=0||stampede)){
  player.grounded=false;
  if(!keys.has('KeyW'))grabLock=false;
  const onWall=(b:NonNullable<typeof clingTo>)=>solid(b)&&player.x+w>=b.x-4&&player.x<=b.x+b.w+4&&player.y+h>C.ground-b.h+2;
  if(clingTo&&(!onWall(clingTo)||!canAct(combat)||combat.charging))clingTo=null;
- if(!clingTo&&!grabLock&&!held&&keys.has('KeyW')&&canAct(combat)&&!combat.charging){clingTo=buildings.find(onWall)||null;if(clingTo)mantled=false;}
+ if(!clingTo&&!grabLock&&!held&&!dive&&keys.has('KeyW')&&canAct(combat)&&!combat.charging){clingTo=buildings.find(onWall)||null;if(clingTo)mantled=false;}
+ // Leap-grab: airborne and steering into a wall catches it; feet near the roof pull straight up onto it (ledge grab).
+ if(!clingTo&&wall&&!wasGrounded&&grabWait<=0&&!held&&!dive&&canAct(combat)&&!combat.charging&&onWall(wall)){
+  if(player.y+h<=C.ground-wall.h+h*MV.ledgeGrab){mantle(wall,w,h);prevBottom=C.ground-wall.h-.01;}else{clingTo=wall;mantled=false;airRun=false;}}
  if(clingTo){
  const b=clingTo,roof=C.ground-b.h;
- climbDir=(keys.has('KeyS')?1:0)-(keys.has('KeyW')?1:0);climbing=true;player.face=player.x+w/2<b.x+b.w/2?1:-1;player.vy=climbDir*C.climbSpeed;player.y+=player.vy*dt;
- if(climbDir<0&&player.y+h<=roof+8){player.y=roof-h-.01;player.x=Math.max(b.x-w*.4,Math.min(b.x+b.w-w*.6,player.x+(player.x+w/2<b.x+b.w/2?w*.3:-w*.3)));player.vy=0;climbing=false;clingTo=null;mantled=true;prevBottom=roof-.01;}
+ player.face=player.x+w/2<b.x+b.w/2?1:-1;
+ // Pushing into the wall climbs just like W.
+ const into=player.face>0?keys.has('KeyD'):keys.has('KeyA');
+ climbDir=(keys.has('KeyS')?1:0)-(keys.has('KeyW')||into&&!keys.has('KeyS')?1:0);climbing=true;player.vy=climbDir*C.climbSpeed;player.y+=player.vy*dt;
+ if(climbDir<0&&player.y+h<=roof+8){mantle(b,w,h);climbing=false;prevBottom=roof-.01;}
  }
  if(!climbing){player.vy+=C.gravity*dt;player.y+=player.vy*dt;}
  isClimbing=climbing;
@@ -435,7 +511,9 @@ function update(dt:number){
  if(!climbing&&player.vy>=0)for(const b of buildings){if(!solid(b))continue;const roof=C.ground-b.h;
  if(player.x+w>b.x&&player.x<b.x+b.w&&prevBottom<=roof+1&&player.y+h>=roof){player.y=roof-h-.01;player.vy=0;player.grounded=true;}}
  if(player.y+h>=C.ground){player.y=C.ground-h;player.vy=0;player.grounded=true;}
- if(player.grounded){clingTo=null;isClimbing=false;}
+ if(player.grounded){clingTo=null;isClimbing=false;airRun=false;if(dive){if(slamLand())player.vy=MV.diveSpeed*Math.sqrt(scale(combat));else dive=null;}}
+ // Dive trail: dust streaming up off the plunging body.
+ if(dive&&particles.length<C.particleCap)particles.push({x:player.x+Math.random()*w,y:player.y+Math.random()*h*.4,vx:(Math.random()-.5)*40,vy:-(160+Math.random()*120),life:.25,color:'#e8d8ab',size:2+Math.floor(Math.random()*3)});
  // A charging Stampede plows through buildings; anything still standing pushes him out once the charge ends.
  if(!stampede?.charging)player.x=separateHorizontal({x:player.x,y:player.y,w,h},solidBodies(),worldWidth);
  for(const b of buildings)if(b.topple===1){b.tiltV+=F.toppleAccel*Math.sin(b.tilt+.2)*dt;b.tilt+=b.tiltV*dt;if(b.tilt>=Math.PI/2){b.tilt=Math.PI/2;b.topple=2;landTopple(b);}}
@@ -564,6 +642,7 @@ function hud(){
  if(block.kind==='boss'&&rival)text('ARENA LOCKED',935,126,11,'#344f49','right');
  if(objectiveOpen()){text(openLayout()?'EXITS OPEN ← →':'EXIT OPEN →',935,103,13,'#203c35','right');if(camera<worldWidth-viewW()-30)text('EAST →',925,275,12,'#243e35','right');if(openLayout()&&camera>30)text('← WEST',35,275,12,'#243e35');}
  else if(time<15&&mode==='playing')text(`J: COMBO   K: HEAVY   L: ${activeKaiju==='Mogurodon'?'TREMOR':activeKaiju==='Kaiban'?'DEBRIS':'SPINE'}   H: GRAB/THROW   U: ULT   I: SUPER`,480,409,11,'#f7f0cd','center');
+ if(!objectiveOpen()&&time<15&&mode==='playing')text('SHIFT / DOUBLE-TAP: RUN   JUMP INTO A WALL: GRAB   S IN AIR: SLAM   S+J: POUND',480,424,11,'#f7f0cd','center');
  if(actionTime>0)text(action,480,153,12,'#243f37','center');
  meters();
  minimap();text('TEMP ART / M7',939,530,8,'#a0af99','right');
@@ -703,4 +782,4 @@ function render(){
 let last=-1;function frame(now:number){if(last<0)last=now;const dt=Math.max(0,Math.min((now-last)/1000,C.maxDelta));last=now;update(dt);render();requestAnimationFrame(frame);}title();requestAnimationFrame(frame);
 // Read-only inspection hook for smoke tests; no gameplay mutations.
 loadPresentationArt();window.addEventListener('resize',applyDisplay);applyDisplay();
-Object.defineProperty(window,'kaijuDebug',{get:()=>({cameraY,zoom,camera,mode,clinging:!!clingTo,anim:currentAnim()[0],face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({x:b.x,y:C.ground-b.h,w:b.w,h:b.h,hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length},stampeding:!!stampede?.charging,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length})});
+Object.defineProperty(window,'kaijuDebug',{get:()=>({cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,anim:currentAnim()[0],face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({x:b.x,y:C.ground-b.h,w:b.w,h:b.h,hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length},stampeding:!!stampede?.charging,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length})});
