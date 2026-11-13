@@ -1,0 +1,70 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {bootGame} from './helpers/game-harness.ts';import {emptyPermanent,KAIJU,PERMANENT_KEY} from '../src/campaign.ts';import {COMBAT as B} from '../src/config.ts';
+
+async function tlezcatlCity(){
+ const p=emptyPermanent();p.unlocked=[...KAIJU];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+ h.click('#new');h.click('#skip-intro');h.node('#initials').value='TLZ';h.callbacks.get('#initials:input')!();h.click('#launch');
+ h.click(`#kaiju-${KAIJU.indexOf('Tlézcatl')}`);h.step(2);h.click('#confirm-kaiju');h.click('#begin-city');assert.equal(h.state().activeKaiju,'Tlézcatl');
+ return h;
+}
+const until=(h:any,f:()=>boolean,max=300)=>{for(let n=0;n<max&&!f();n++)h.step();return f();};
+
+test('Tlézcatl Flame Jet: a tap winds up, breathes a short burst, winds down; no projectile; fuel refills',async()=>{
+ const h=await tlezcatlCity();
+ try{h.step(30);
+  h.tap('KeyL');assert.equal(h.state().jet,'start');assert.equal(h.state().entityCounts.playerShots,0,'no spine on the ground');
+  assert.ok(until(h,()=>h.state().jet==='on',40),'wind-up leads into breathing');
+  assert.ok(until(h,()=>h.state().jet==='end',40),'a tap still breathes the minimum burst, then winds down');
+  const fuel=h.state().jetFuel;assert.ok(fuel<1&&fuel>.8,`a short burst spends a little fuel (${fuel.toFixed(2)})`);
+  assert.ok(until(h,()=>h.state().jet===null,40),'wind-down ends the jet');
+  assert.ok(until(h,()=>h.state().jetFuel>=1,120),'fuel refills');
+ }finally{h.release();h.cleanup();}
+});
+
+test('Tlézcatl Flame Jet: holding drains the fuel bar, locks until it refills to the relight level',async()=>{
+ const h=await tlezcatlCity();
+ try{h.step(30);
+  h.down('KeyL');let frames=0;until(h,()=>h.state().jet==='on',40);
+  // Count only simulated frames: a car the flame punts into a troop, or a collapse, freezes the game briefly (hitstop).
+  for(let n=0;h.state().jet==='on'&&n<400;n++){if(h.state().hitstop===0)frames++;h.step();}
+  assert.ok(Math.abs(frames/60-B.jetSeconds)<.1,`a full bar lasts about ${B.jetSeconds}s of breathing (${(frames/60).toFixed(2)}s)`);
+  assert.equal(h.state().jetLocked,true,'running dry locks the jet');h.up('KeyL');
+  until(h,()=>h.state().jet===null,40);
+  h.tap('KeyL');h.step();assert.equal(h.state().jet,null,'locked: L does nothing');
+  assert.ok(until(h,()=>!h.state().jetLocked,200),'unlocks as it refills');assert.ok(h.state().jetFuel>=B.jetRelight-.01);
+  h.step(20);h.tap('KeyL');assert.equal(h.state().jet,'start','breathes again once relit');
+ }finally{h.release();h.cleanup();}
+});
+
+test('Tlézcatl Flame Jet: burns the building in front, stopping at its wall; W/S tilt the flame without crouching',async()=>{
+ const h=await tlezcatlCity();
+ try{h.step(30);
+  const s0=h.state(),cx=s0.x+s0.width/2;
+  const ahead=s0.buildings.filter((b:any)=>b.hp>0&&b.x>cx).sort((a:any,b:any)=>a.x-b.x)[0];
+  assert.ok(ahead,'a building east of the spawn');
+  h.down('KeyD');until(h,()=>h.state().x+h.state().width>ahead.x-60,600);h.up('KeyD');h.step(5);
+  assert.equal(h.state().face,1);
+  const i=h.state().buildings.findIndex((b:any)=>b.x===ahead.x),hp0=h.state().buildingHP[i];
+  h.down('KeyL');until(h,()=>h.state().jet==='on',40);h.step(30);
+  const hp1=h.state().buildingHP[i];
+  assert.ok(hp1<hp0,`the flame burns the building (${hp0} → ${hp1})`);
+  assert.ok(h.state().jetLen<B.jetRange-1,`the cone stops at the wall (${Math.round(h.state().jetLen)})`);
+  assert.equal(h.state().hitstop,0,'damage ticks do not freeze the game');
+  h.down('KeyW');h.step(30);assert.ok(Math.abs(h.state().jetAngle-B.jetUp)<.5,`W tilts up to ${B.jetUp} (${h.state().jetAngle})`);h.up('KeyW');
+  h.down('KeyS');h.step(45);assert.ok(Math.abs(h.state().jetAngle+B.jetDown)<.5,`S tilts down to -${B.jetDown} (${h.state().jetAngle})`);
+  assert.equal(h.state().crouched,false,'S aims instead of crouching');assert.equal(h.state().jet,'on');
+  h.up('KeyS');h.up('KeyL');
+ }finally{h.release();h.cleanup();}
+});
+
+test('Tlézcatl Flame Jet: creeps slowly while breathing; airborne falls back to the single shot',async()=>{
+ const h=await tlezcatlCity();
+ try{h.step(30);
+  let x=h.state().x;h.down('KeyD');h.step(30);const walk=h.state().x-x;h.up('KeyD');h.step(5);
+  h.down('KeyL');until(h,()=>h.state().jet==='on',40);x=h.state().x;h.down('KeyD');h.step(30);const creep=h.state().x-x;h.up('KeyD');h.up('KeyL');
+  assert.ok(creep>0&&creep<walk*.4,`creeps at a fraction of walking speed (${creep.toFixed(1)} vs ${walk.toFixed(1)})`);
+  until(h,()=>h.state().jet===null,60);h.step(20);
+  h.tap('Space');h.step(6);assert.equal(h.state().grounded,false);h.tap('KeyL');h.step();
+  assert.equal(h.state().entityCounts.playerShots,1,'airborne fires the shared shot');assert.equal(h.state().jet,null);
+ }finally{h.release();h.cleanup();}
+});
