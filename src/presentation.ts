@@ -322,6 +322,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): only the Stage 1 form exists, so it is the base
  // form and every stage draws it. The render keys to a 128x59 sprite at x=64 (TZ1_NATIVE); same 120-unit width as the others.
  'Tlézcatl':{width:120,anims:{idle:{src:'assets/tlezcatl-s1-idle.png',frames:8,fps:8,...TZ1_NATIVE},walk:{src:'assets/tlezcatl-s1-walk.png',frames:8,fps:10,...TZ1_NATIVE},
+  // Run (Shift / double-tap): a low bounding sprint loop closed on the base, body stretched long, lifting clear on frame 4, dust off the claws.
+  run:{src:'assets/tlezcatl-s1-run.png',frames:8,fps:15,...TZ1_NATIVE},
   // Light combo: near-claw forward rake (slash arc in front of the snout), snapping lunge bite (head and shoulders shoot forward low),
   // scorpion tail whip (the tail curls up over the back and cracks down in front of the snout with a spark on frame 4). Frame counts
   // and fps match the other forms' combos, so combat timing is unchanged; each strip ends on the left-shifted base pose.
@@ -333,6 +335,13 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // (rear 0-4, slam 8-15); timing matches the other forms' heavies.
   heavyRear:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:20,once:true,...TZ1_LEFT},heavyHold:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
   heavySlam:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
+  // Eruption (U), placeholders until its own strips exist: the crouch-down held flat as the balled-up charge (the game shudders him and
+  // draws the glow), the heavy's rear-up as the roar (the explosion goes off on its last frame, impact 4 = 0.25s), then the
+  // crest-ablaze heavy hold while the fireball fades and the magma falls.
+  ultCharge:{src:'assets/tlezcatl-s1-crouch-down.png',frames:5,fps:12,once:true,...TZ1_NATIVE},
+  ultRoar:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:16,once:true,impact:4,...TZ1_LEFT},ultPound:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
+  // Pound keeps the heavy slam it fell back to before ultPound existed.
+  pound:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
   // Flame Jet (the game draws the fire from `mouth`): jetStart inhales, draws the head back and thrusts it forward with the jaws gaping;
   // jetAim holds that pose with the head aimed from -20 to 35 degrees (frame picked by the jet's angle, never played); jetEnd snaps
   // the jaws shut and settles onto the base pose.
@@ -476,7 +485,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
  :kaiju==='Tlézcatl'?[
   {keys:'L',name:'Flame Jet',desc:'On the ground: hold to breathe a cone of fire that burns everything in it, troops, vehicles, aircraft and incoming rockets alike, until it hits a building or the street. A tap gives a short burst. Drains the flame bar; run it dry and it has to cool off.'},
   {keys:'L+W/S',name:'Aim the jet',desc:'While breathing, hold W to tilt the flame up at aircraft or S to sweep it down across the street. He can creep and turn while he breathes.'},
-  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  {keys:'U',name:'Eruption',desc:'Full meter. He balls up as the pressure builds, then rears up and explodes, blasting everything in a huge circle around him. Molten rock thrown out by the blast rains down all around, leaving burning pools. Invulnerable while it lasts.'},
   {...slam,name:'Magma Dive',desc:'Dive head-first. The crash splashes molten globs out both ways and leaves burning lava pools on the street that scorch anything standing in them, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
