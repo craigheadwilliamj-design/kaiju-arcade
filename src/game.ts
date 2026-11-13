@@ -113,6 +113,9 @@ let runUp=0,runDir=0;
 function jumpVelocity(){return C.jumpVelocity*scale(combat)**MV.jumpStageExp;}
 function currentAnim():[string,number]{
  if(attack)return [attack.anim,attack.t];
+ // A form with an ultSettle strip plays it over the last stretch of the Ultimate, so it comes down from the Ultimate pose and lands on
+ // its idle exactly as the Ultimate ends.
+ if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultSettle',combat.stage)){const d=animDuration(activeKaiju,'ultSettle',combat.stage);if(combat.ultimateTime<=d)return ['ultSettle',d-combat.ultimateTime];}
  if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar',combat.stage)){const pre=eruption?B.eruptCharge:0,el=B.ultimateDuration-combat.ultimateTime-pre;if(el<0)return ['ultCharge',el+pre];const roar=animDuration(activeKaiju,'ultRoar',combat.stage);return el<roar?['ultRoar',el]:['ultPound',el-roar];}
 // Diving: the form's dive strip (time since the dive began) when it has one, else the jumpAir loop.
  if(dive&&hasAnim(activeKaiju,'dive',combat.stage))return ['dive',time-dive.t0];
