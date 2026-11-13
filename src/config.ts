@@ -48,7 +48,7 @@ export const COMBAT = {
  jetSeconds:2,jetRegen:.5,jetRelight:.35,jetMinBurst:.25,jetMinStart:.08,jetTick:.12,jetDamage:7,jetKnockback:30,jetCarPush:.3,
  jetRange:260,jetWidth:[6,34],jetUp:35,jetDown:25,jetTurn:140,jetSlow:.25,jetCooldown:.2,
  // Lingering fire, kept on a short leash so it never burns the block down on its own. Where the flame washes along the street it
- // leaves fire patches (one per jetFireCell px, at most jetFireCap) that burn for jetFireSeconds after the flame leaves, jetFireDamage
+ // leaves fire patches (one per jetFireCell px, at most jetFireCap; patch width, flame height and burn zone grow with sqrt(stage scale)) that burn for jetFireSeconds after the flame leaves, jetFireDamage
  // every jetFireTick. A building the flame touches keeps burning for jetBurnSeconds (jetBurnDamage every jetBurnTick) but never
  // spreads, at most jetBurnCap buildings burn at once, and the afterburn alone can't collapse a building: it smolders at 1 HP.
  jetFireSeconds:1.4,jetFireTick:.3,jetFireDamage:3,jetFireCell:36,jetFireCap:10,jetBurnSeconds:2.5,jetBurnTick:.3,jetBurnDamage:3,jetBurnCap:4,

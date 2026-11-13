@@ -64,7 +64,7 @@ let rocks:Rock[]=[];
 // Eruption globs and pools carry `ult`: their hits are Ultimate damage (no meter gain, no hitstop) and an Eruption glob only collides
 // once it is falling.
 type Glob={x:number,y:number,vx:number,vy:number,life:number,damage:number,size:number,ult?:boolean,grav?:number};
-type Pool={x:number,w:number,life:number,max:number,damage:number,hits:Map<object,number>,ult?:boolean,fire?:boolean,tick?:number};
+type Pool={x:number,w:number,life:number,max:number,damage:number,hits:Map<object,number>,ult?:boolean,fire?:boolean,tick?:number,size?:number};
 let globs:Glob[]=[],pools:Pool[]=[];
 // Flame Jet afterburn: buildings the flame touched keep burning at the spot it hit (x, y = height above the street) for `t` more seconds.
 type Burn={b:typeof buildings[number],x:number,y:number,t:number,last:number};
@@ -321,10 +321,10 @@ function breathe(j:Jet){const s=scale(combat),g=Math.sqrt(s),w=bodyWidth(),h=bod
  const [tx,ty]=jetPoint(j,j.len,w1*g);
  for(let n=0;n<(j.stop||j.bend<j.len?3:1)&&particles.length<C.particleCap;n++)particles.push({x:tx+(Math.random()-.5)*12*g,y:ty+(Math.random()-.5)*10*g,vx:-j.dx*(30+Math.random()*90)+(Math.random()-.5)*80,vy:-(40+Math.random()*120)*g,life:.25+Math.random()*.35,color:['#ffd34d','#ff8a1f','#e8401a','#4a3a3a'][Math.floor(Math.random()*4)],size:2+Math.floor(Math.random()*3)});}
 // Fire patches along the stretch of street the flame is washing over: new cells catch, cells already burning are topped back up.
-function scorchStreet(j:Jet){const cell=B.jetFireCell,a=j.bx,b=j.bx+j.face*(j.len-j.bend),dm=damageMultiplier(combat);
+function scorchStreet(j:Jet){const g=Math.sqrt(scale(combat)),cell=Math.round(B.jetFireCell*g),a=j.bx,b=j.bx+j.face*(j.len-j.bend),dm=damageMultiplier(combat);
  for(let c=Math.floor(Math.min(a,b)/cell);c<=Math.floor(Math.max(a,b)/cell);c++){const x=c*cell,p=pools.find(p=>p.fire&&p.x===x);
   if(p){p.life=p.max;continue;}
-  pools.push({x,w:cell,life:B.jetFireSeconds,max:B.jetFireSeconds,damage:B.jetFireDamage*dm,hits:new Map(),fire:true,tick:B.jetFireTick});
+  pools.push({x,w:cell,life:B.jetFireSeconds,max:B.jetFireSeconds,damage:B.jetFireDamage*dm,hits:new Map(),fire:true,tick:B.jetFireTick,size:g});
   const mine=pools.filter(p=>p.fire);if(mine.length>B.jetFireCap)pools.splice(pools.indexOf(mine.sort((p,q)=>p.life-q.life)[0]),1);}}
 // Set a building alight where the flame touches it (or keep it burning). Oldest fire goes out if too many are burning.
 function ignite(b:typeof buildings[number],x:number,y:number){const o=burns.find(f=>f.b===b);
@@ -415,7 +415,7 @@ function slamLand(){
 function addPool(cx:number,w:number,damage:number,ult=false,life=MV.lavaPoolSeconds){pools.push({x:cx-w/2,w,life,max:life,damage,hits:new Map(),ult});
  const mine=pools.filter(p=>!p.fire&&!!p.ult===ult);if(mine.length>(ult?24:12))pools.splice(pools.indexOf(mine[0]),1);}
 // Lava pools burn everything standing in them on the street (troops, cars, newsstands, growths, the rival, the objective).
-function tickPools(dt:number){for(const p of pools){p.life-=dt;const zone={x:p.x,y:C.ground-16,w:p.w,h:18},kb=p.fire?8:20,every=p.tick??MV.lavaPoolTick;
+function tickPools(dt:number){for(const p of pools){p.life-=dt;const zh=16*(p.size??1),zone={x:p.x,y:C.ground-zh,w:p.w,h:zh+2},kb=p.fire?8:20,every=p.tick??MV.lavaPoolTick;
   const tick=(o:object,f:()=>void)=>{if(time-(p.hits.get(o)??-9)<every)return;p.hits.set(o,time);f();};
   for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&overlaps(zone,u))tick(u,()=>hitUnit(military,u,p.damage,'player',kb,Math.sign(u.x+u.w/2-(p.x+p.w/2))||1,p.ult));
   for(const v of vehicles)if(loose(v)&&overlaps(zone,vehicleBox(v)))tick(v,()=>puntVehicle(v,p.damage*.3,Math.sign(v.x+v.w/2-(p.x+p.w/2))||1,p.ult));
@@ -1005,9 +1005,9 @@ function render(){
  for(const shard of shards){const x=shard.x-camera,y=shard.y+Math.sin(time*3+shard.x)*2;poly([[x,y-8],[x+5,y],[x,y+6],[x-5,y]],'#ffc1e3');rect(x-1,y-5,2,6,'#fff1f6');}
  // Lava pools: a glowing puddle on the street, flickering and shrinking toward the middle as it cools.
  // Flame Jet fires: ragged tongues of flame along the street that shrink and redden as they die down.
- for(const p of pools){if(!p.fire)continue;const f=Math.min(1,p.life/p.max*1.6),x=p.x-camera;if(x>viewW()+40||x+p.w<-40)continue;
+ for(const p of pools){if(!p.fire)continue;const f=Math.min(1,p.life/p.max*1.6),x=p.x-camera,z=p.size??1;if(x>viewW()+40||x+p.w<-40)continue;
   rect(x,C.ground-2,p.w,3,'#3a1a14');
-  for(let k=0;k<3;k++){const cx=x+p.w*(k+.5)/3,hh=(10+8*Math.abs(Math.sin(time*11+p.x*.37+k*2.1)))*f,ww=p.w/6;
+  for(let k=0;k<3;k++){const cx=x+p.w*(k+.5)/3,hh=(10+8*Math.abs(Math.sin(time*11+p.x*.37+k*2.1)))*f*z,ww=p.w/6;
    poly([[cx-ww,C.ground],[cx-ww*.4,C.ground-hh*.6],[cx,C.ground-hh],[cx+ww*.5,C.ground-hh*.55],[cx+ww,C.ground]],f>.5?'#e8401a':'#a8341c');
    if(f>.3)poly([[cx-ww*.5,C.ground],[cx,C.ground-hh*.6],[cx+ww*.5,C.ground]],'#ffb13b');}}
  for(const p of pools){if(p.fire)continue;const f=Math.min(1,p.life/p.max*2.2),w=p.w*(.6+.4*f),x=p.x+(p.w-w)/2-camera,fl=Math.sin(time*18+p.x)>0;
