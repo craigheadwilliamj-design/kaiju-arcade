@@ -333,6 +333,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // (rear 0-4, slam 8-15); timing matches the other forms' heavies.
   heavyRear:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:20,once:true,...TZ1_LEFT},heavyHold:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
   heavySlam:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
+  // Eruption (U), placeholder until its own strips exist: the heavy's rear-up played at half speed as the roar (the blast goes off on
+  // its last frame, impact 4 = 0.4s), then the crest-ablaze heavy hold loops while the column vents and the magma rains.
+  ultRoar:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:10,once:true,impact:4,...TZ1_LEFT},ultPound:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
+  // Pound keeps the heavy slam it fell back to before ultPound existed.
+  pound:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
   // Flame Jet (the game draws the fire from `mouth`): jetStart inhales, draws the head back and thrusts it forward with the jaws gaping;
   // jetAim holds that pose with the head aimed from -20 to 35 degrees (frame picked by the jet's angle, never played); jetEnd snaps
   // the jaws shut and settles onto the base pose.
@@ -476,7 +481,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
  :kaiju==='Tlézcatl'?[
   {keys:'L',name:'Flame Jet',desc:'On the ground: hold to breathe a cone of fire that burns everything in it, troops, vehicles, aircraft and incoming rockets alike, until it hits a building or the street. A tap gives a short burst. Drains the flame bar; run it dry and it has to cool off.'},
   {keys:'L+W/S',name:'Aim the jet',desc:'While breathing, hold W to tilt the flame up at aircraft or S to sweep it down across the street. He can creep and turn while he breathes.'},
-  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  {keys:'U',name:'Eruption',desc:'Full meter. Rooted to the spot, the energy blasts out of him, then his crest vents a column of fire and molten rock rains down all around, leaving burning pools. Invulnerable while it lasts.'},
   {...slam,name:'Magma Dive',desc:'Dive head-first. The crash splashes molten globs out both ways and leaves burning lava pools on the street that scorch anything standing in them, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
