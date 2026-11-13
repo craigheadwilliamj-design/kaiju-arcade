@@ -261,7 +261,13 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // scorpion tail whip (the tail curls up over the back and cracks down in front of the snout with a spark on frame 4). Frame counts
   // and fps match the other forms' combos, so combat timing is unchanged; each strip ends on the left-shifted base pose.
   light1:{src:'assets/tlezcatl-s1-light1.png',frames:8,fps:24,once:true,...TZ1_LEFT},light2:{src:'assets/tlezcatl-s1-light2.png',frames:8,fps:21,once:true,...TZ1_LEFT},
-  light3:{src:'assets/tlezcatl-s1-light3.png',frames:8,fps:20,once:true,...TZ1_LEFT}}},
+  light3:{src:'assets/tlezcatl-s1-light3.png',frames:8,fps:20,once:true,...TZ1_LEFT},
+  // Heavy: rears up onto the hind legs and tail with the claws raised (rear), the flame crest glows and bursts into fire and back while
+  // K is held (hold, generated from the peak pose and played 0,2,3,2 so it pulses), then crashes chest and claws into the street in a
+  // lava burst and settles (slam, starting on the crash so it lands on release). Rear and slam are cut from one 16-frame generation
+  // (rear 0-4, slam 8-15); timing matches the other forms' heavies.
+  heavyRear:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:20,once:true,...TZ1_LEFT},heavyHold:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
+  heavySlam:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
