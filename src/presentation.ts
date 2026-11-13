@@ -30,7 +30,9 @@ const images=new Map<string,HTMLImageElement>();
 // `scale`/`anchor` are for padded strips generated from a shrunken base (room for lunges): `scale` is the art's size relative to a
 // full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
 // `hold` (grab/carry strips): frame px where a carried prop's bottom-centre sits, one [x,y] per frame or a single pair for every frame.
-type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][],pivot?:number[],spinFrom?:number};
+// `mouth` (Flame Jet strips): frame px of the jaws, where the flame starts, one [x,y] per frame or a single pair.
+// `angles` (an aim strip): the degrees above level each frame's head points; the game shows the frame nearest the aim instead of playing it.
+type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][],pivot?:number[],spinFrom?:number,mouth?:number[]|number[][],angles?:number[]};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
 // Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (every strip) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips. With
@@ -43,6 +45,10 @@ const S1_NATIVE={scale:151/256,anchor:52+128*151/256};
 const S3_NATIVE={scale:173/256,anchor:41+128*173/256};
 // Stage 2 (base form) strips: the mogurodon-s2 base still, a 194px-wide sprite at x=31 keyed the same way.
 const S2_NATIVE={scale:194/256,anchor:31+128*194/256};
+// Tlézcatl Stage 1 strips: the tlezcatl-s1 base still, a 128x59 sprite at x=64 in a 256x192 frame, keyed with tools/key_render.py.
+const TZ1_NATIVE={scale:128/256,anchor:64+128*128/256};
+// Tlézcatl Stage 1 attack strips: generated from the same base shifted 40px left (sprite at x=24) so lunges and the tail whip stay in the frame.
+const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
@@ -53,11 +59,74 @@ const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
 // Kaiban Stage 3 strips: the kaiban-s3 base still, a 167x224 upright sprite at x=44 in a 256x256 frame (tall, so raised fists fit).
 const KB3_NATIVE={scale:167/256,anchor:44+128*167/256};
-// Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists), in progress: idle (breathing, fists and
-// broken chains swaying, tail flicks) and walk (a swagger: fists swing far out front and behind, shoulders roll, chains whip; feet bottom-aligned).
-// Every other move holds the idle while gameplay timing falls back to the base form. 80 units wide keeps the 167x224 art about 300px
+// Kaiban Stage 3 punching strips: generated from the same base shifted 30px left (sprite at x=14) so forward punches stay in the frame.
+const KB3_LEFT={scale:167/256,anchor:14+128*167/256};
+// Kaiban Stage 3 heavy strips: the base shifted 20px left (sprite at x=24), room for the fists to land in front without clipping the tail.
+const KB3_HEAVY={scale:167/256,anchor:24+128*167/256};
+// Kaiban Stage 3 climb strips: 352x256 frames (the 256-wide PixelLab frames padded on the right) because he clings with the fists far
+// out in front: the cling pose's fist tips sit at frame x=254, the wall line (the hitbox edge 24 world units out, 50px at this scale),
+// so the anchor is 204 and the base pose is pasted 76px right to line up with the idle.
+const KB3_CLIMB={scale:167/256,anchor:204};
+// Kaiban Stage 3 lift strips (grab, carry, throw): generated from the base shrunk to 80% (134x179 at x=61, feet on the bottom row) so
+// the overhead building press fits the 256px frame height.
+const KB3_LIFT={scale:134/256,anchor:128};
+// Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists): every move animated. Idle (breathing, fists
+// and broken chains swaying, tail flicks) and walk (a swagger posed with PixelLab's skeleton animation: both fists swing through the full
+// arc, alternating, opposite the legs; 11 frames at 14 fps, about the 0.8s cycle of the other walks). Frame counts, fps and impact
+// frames match the Stage 1 timing the form used to borrow, so combat plays the same. 80 units wide keeps the 167x224 art about 300px
 // tall at the 2.8x Stage 3 scale, a little taller than Mogurodon's Stage 3 since he stands upright.
-const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:8,fps:10,...KB3_NATIVE}}};
+const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:11,fps:14,...KB3_NATIVE},
+ // Light combo, skeleton-posed (tools/kaiban_s3_light_poses.py): front-fist jab with a lean, rear-fist hook swung across the body,
+ // then a double-fist overhead hammer slammed down in front with the knees bending. Frame counts and fps match the other forms' combos.
+ light1:{src:'assets/kaiban-s3-light1.png',frames:8,fps:24,once:true,...KB3_LEFT},light2:{src:'assets/kaiban-s3-light2.png',frames:8,fps:21,once:true,...KB3_LEFT},
+ light3:{src:'assets/kaiban-s3-light3.png',frames:8,fps:20,once:true,...KB3_LEFT},
+ // Heavy, skeleton-posed: both fists raised up and back overhead with the body arching (rear), a 1px power shudder of rear's last frame
+ // while K is held (hold, tools/shudder_hold.py), then both fists swung over the top and crashed into the street in a deep crouch with a
+ // dust burst, recovering to the base pose (slam). Rear and slam are cut from one 13-frame generation; counts and fps match the other heavies.
+ heavyRear:{src:'assets/kaiban-s3-heavy-rear.png',frames:5,fps:20,once:true,...KB3_HEAVY},heavyHold:{src:'assets/kaiban-s3-heavy-hold.png',frames:4,fps:10,...KB3_HEAVY},
+ heavySlam:{src:'assets/kaiban-s3-heavy-slam.png',frames:8,fps:16,once:true,...KB3_HEAVY},
+ // Ranged (debris shotgun), skeleton-posed: leans and crouches deep, drives both fists into the street (rubble in the fists), hauls them
+ // up and forward underhand and lets go at head height on impact frame 5 (Stage 1/2 timing), settling back. Detached rocks erased: the
+ // game draws the projectiles. No crouched version until Stage 3 has a crouch.
+ rangedStand:{src:'assets/kaiban-s3-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB3_LEFT},
+ // Crouched ranged: from the crouch pose shifted 30px left, stays low, rakes both fists into the ground and flicks the forearms forward
+ // along the ground (impact frame 4). Generated empty-handed; the few loose rocks PixelLab drew were detached and erased.
+ rangedCrouch:{src:'assets/kaiban-s3-ranged-crouch.png',frames:8,fps:20,once:true,impact:4,...KB3_LEFT},
+ // Crouch: drops onto all fours with the fists on the street (224px tall to 180px), a breathing loop closed on that pose; crouchUp is
+ // crouchDown reversed.
+ crouch:{src:'assets/kaiban-s3-crouch.png',frames:4,fps:6,...KB3_NATIVE},crouchDown:{src:'assets/kaiban-s3-crouch-down.png',frames:5,fps:22,once:true,...KB3_NATIVE},
+ crouchUp:{src:'assets/kaiban-s3-crouch-up.png',frames:5,fps:22,once:true,...KB3_NATIVE},
+ // Jump: squats and springs off both feet into a tuck (rise), a tucked airborne loop from the rise's last frame, and a hard knees-bent
+ // squash landing closed on the base. Bottom-aligned: physics moves him, the art only changes pose.
+ jumpRise:{src:'assets/kaiban-s3-jump-rise.png',frames:9,fps:24,once:true,...KB3_NATIVE},jumpAir:{src:'assets/kaiban-s3-jump-air.png',frames:4,fps:8,...KB3_NATIVE},
+ jumpLand:{src:'assets/kaiban-s3-jump-land.png',frames:5,fps:20,once:true,...KB3_NATIVE},
+ // Climb (KB3_CLIMB, 352x256): the grab leaps onto the wall and eases from the base position onto the wall line; the climb alternates
+ // fists and steps up the wall in place; the mantle hauls him over the edge onto the roof and closes on the base, starting 30px back
+ // (the game slides him 0.3 body widths onto the roof) and easing onto the base position; the punch winds the near fist back and drives
+ // it into the wall with a smear on impact frame 5. PixelLab's thin wall line and roof ledge were erased.
+ climbGrab:{src:'assets/kaiban-s3-climb-grab.png',frames:5,fps:20,once:true,...KB3_CLIMB},climb:{src:'assets/kaiban-s3-climb.png',frames:8,fps:12,...KB3_CLIMB},
+ climbMantle:{src:'assets/kaiban-s3-climb-mantle.png',frames:9,fps:20,once:true,...KB3_CLIMB},climbPunch:{src:'assets/kaiban-s3-climb-punch.png',frames:8,fps:24,once:true,impact:5,...KB3_CLIMB},
+ // Grab/carry/throw (KB3_LIFT): the grab crouches and slides both fists under the prop at the street (hold on the street in front of the
+ // near fist, frames 0-4), rises with it at chest height (5) and presses it straight up overhead (6-8). Carry strains under the overhead
+ // lift; carry-walk lumbers upright with the arms locked up. Throw starts at the release: both arms whip forward and down with swing
+ // arcs on frame 1 (the prop launches on the key press) and he settles on the base. `hold` points sit on top of the fists.
+ grab:{src:'assets/kaiban-s3-grab.png',frames:9,fps:22,once:true,...KB3_LIFT,hold:[[204,255],[204,255],[236,255],[249,255],[236,255],[225,115],[174,11],[106,0],[107,2]]},
+ carry:{src:'assets/kaiban-s3-carry.png',frames:4,fps:6,...KB3_LIFT,hold:[[107,2],[108,2],[109,2],[108,2]]},
+ carryWalk:{src:'assets/kaiban-s3-carry-walk.png',frames:8,fps:10,...KB3_LIFT,hold:[[107,2],[107,0],[107,0],[107,0],[106,0],[107,0],[107,0],[107,0]]},
+ throw:{src:'assets/kaiban-s3-throw.png',frames:6,fps:14,once:true,...KB3_LIFT},
+ // Ultimate (Stampede). Roar, skeleton-posed (tools/kaiban_s3_charge_poses.py) and kept in strict profile: from the base he pounds the
+ // near fist on his chest, throws his head back and bellows with both fists raised overhead (impact frame 5, held on 6), leans in
+ // (frame 7, from a second seed) and lands on the run's first frame (8), so the charge loop picks up seamlessly. Pound: the charge loop
+ // is the Gore Charge run.
+ ultRoar:{src:'assets/kaiban-s3-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB3_NATIVE},ultPound:{src:'assets/kaiban-s3-run.png',frames:8,fps:16,...KB3_HEAVY},
+ // Gore Charge run, skeleton-posed (tools/kaiban_s3_charge_poses.py, base shifted 20px left): he stays upright like the walk, so
+ // walk/run swap without a silhouette pop. Torso pitched forward, head down so the tusks lead, long strides, fists pumping opposite
+ // the legs. Bottom-aligned: the feet never leave the street line. Pound (S+J) = light3's double-fist overhead hammer. Meteor Drop:
+ // dive rears up with both fists overhead and tips into a fists-first plunge (frames 0,2,4,8 of a 9-frame generation, bottom-aligned,
+ // held on the last); slamLand (frames 1-8 of a generation from that pose on the ground) crashes in with a burst, squashes flat and
+ // pushes back up into the stance.
+ run:{src:'assets/kaiban-s3-run.png',frames:8,fps:16,...KB3_HEAVY},pound:{src:'assets/kaiban-s3-light3.png',frames:8,fps:20,once:true,...KB3_LEFT},
+ dive:{src:'assets/kaiban-s3-dive.png',frames:4,fps:24,once:true,...KB3_NATIVE},slamLand:{src:'assets/kaiban-s3-slam-land.png',frames:8,fps:16,once:true,...KB3_NATIVE}}};
 // Kaiban Stage 2 form, in progress: idle, walk, the heavy, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while
 // the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw, the climb set and the Stampede. `borrow`: every move not drawn yet plays the
 // Stage 1 strip.
@@ -250,6 +319,37 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   crouch:{src:'assets/kaiban-s1-crouch.png',frames:4,fps:6,...KB1_NATIVE},crouchDown:{src:'assets/kaiban-s1-crouch-down.png',frames:5,fps:22,once:true,...KB1_NATIVE},
   crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}},
   stages:{2:KAIBAN_S2,3:KAIBAN_S3}},
+ // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): only the Stage 1 form exists, so it is the base
+ // form and every stage draws it. The render keys to a 128x59 sprite at x=64 (TZ1_NATIVE); same 120-unit width as the others.
+ 'Tlézcatl':{width:120,anims:{idle:{src:'assets/tlezcatl-s1-idle.png',frames:8,fps:8,...TZ1_NATIVE},walk:{src:'assets/tlezcatl-s1-walk.png',frames:8,fps:10,...TZ1_NATIVE},
+  // Light combo: near-claw forward rake (slash arc in front of the snout), snapping lunge bite (head and shoulders shoot forward low),
+  // scorpion tail whip (the tail curls up over the back and cracks down in front of the snout with a spark on frame 4). Frame counts
+  // and fps match the other forms' combos, so combat timing is unchanged; each strip ends on the left-shifted base pose.
+  light1:{src:'assets/tlezcatl-s1-light1.png',frames:8,fps:24,once:true,...TZ1_LEFT},light2:{src:'assets/tlezcatl-s1-light2.png',frames:8,fps:21,once:true,...TZ1_LEFT},
+  light3:{src:'assets/tlezcatl-s1-light3.png',frames:8,fps:20,once:true,...TZ1_LEFT},
+  // Heavy: rears up onto the hind legs and tail with the claws raised (rear), the flame crest glows and bursts into fire and back while
+  // K is held (hold, generated from the peak pose and played 0,2,3,2 so it pulses), then crashes chest and claws into the street in a
+  // lava burst and settles (slam, starting on the crash so it lands on release). Rear and slam are cut from one 16-frame generation
+  // (rear 0-4, slam 8-15); timing matches the other forms' heavies.
+  heavyRear:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:20,once:true,...TZ1_LEFT},heavyHold:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
+  heavySlam:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
+  // Flame Jet (the game draws the fire from `mouth`): jetStart inhales, draws the head back and thrusts it forward with the jaws gaping;
+  // jetAim holds that pose with the head aimed from -20 to 35 degrees (frame picked by the jet's angle, never played); jetEnd snaps
+  // the jaws shut and settles onto the base pose.
+  jetStart:{src:'assets/tlezcatl-s1-jet-start.png',frames:5,fps:22,once:true,...TZ1_LEFT,mouth:[155,172]},
+  jetAim:{src:'assets/tlezcatl-s1-jet-aim.png',frames:5,fps:10,once:true,...TZ1_LEFT,angles:[-20,0,10,22,35],mouth:[[155,176],[155,172],[154,165],[151,157],[149,150]]},
+  jetEnd:{src:'assets/tlezcatl-s1-jet-end.png',frames:4,fps:16,once:true,...TZ1_LEFT},
+  // Crouch: splays the legs and presses belly and chin flat to the street with the crest laid back (59px tall to 37px, about the
+  // crouch hitbox), a slow breathing loop lying flat, and crouchUp = crouchDown reversed. Timing matches the other forms.
+  crouchDown:{src:'assets/tlezcatl-s1-crouch-down.png',frames:5,fps:22,once:true,...TZ1_NATIVE},crouch:{src:'assets/tlezcatl-s1-crouch.png',frames:4,fps:6,...TZ1_NATIVE},
+  crouchUp:{src:'assets/tlezcatl-s1-crouch-up.png',frames:5,fps:22,once:true,...TZ1_NATIVE},
+  // Climb: 256x256 strips, clinging to the wall like a gecko (body vertical, belly to the wall, head up, tail hanging) with the gripping
+  // claws on the wall line at frame x=154 (the hitbox edge 24 world units out) and the tail tip on the bottom row. The grab leaps from
+  // the base pose and eases 46px onto the wall line, every frame bottom-aligned; the climb loop is hand over hand; the punch draws the
+  // upper claw back and slams it into the wall with a flash on impact frame 5; the mantle starts 15px further back (the game's roof
+  // slide) and eases into the base pose. PixelLab drew no wall this time. Timing matches the other forms.
+  climbGrab:{src:'assets/tlezcatl-s1-climb-grab.png',frames:5,fps:20,once:true,...TZ1_NATIVE},climb:{src:'assets/tlezcatl-s1-climb.png',frames:8,fps:12,...TZ1_NATIVE},
+  climbMantle:{src:'assets/tlezcatl-s1-climb-mantle.png',frames:9,fps:20,once:true,...TZ1_NATIVE},climbPunch:{src:'assets/tlezcatl-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -276,7 +376,10 @@ export function spinFrom(name:string,anim:string,stage?:number){const a=timing(n
 export function animDuration(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?a.frames/a.fps:0;}
 // Where a carried prop's bottom-centre sits in this frame, relative to the feet origin in unflipped, unscaled sprite units (the caller
 // applies facing and Stage scale). Null when the strip has no hold points or its art is not loaded (the caller keeps its fallback).
-export function holdPoint(name:string,anim:string,t:number,stage?:number,key:'hold'|'pivot'='hold'):[number,number]|null{
+// Time into an aim strip that shows the frame whose head angle is nearest `angle` (degrees above level); 0 when it has no angles.
+export function aimTime(name:string,anim:string,angle:number,stage?:number){const a=pick(name,anim,stage)?.a;if(!a?.angles)return 0;
+ let best=0;a.angles.forEach((v,i)=>{if(Math.abs(v-angle)<Math.abs(a.angles![best]-angle))best=i;});return (best+.5)/a.fps;}
+export function holdPoint(name:string,anim:string,t:number,stage?:number,key:'hold'|'pivot'|'mouth'='hold'):[number,number]|null{
  const p0=pick(name,anim,stage),s=p0?.f,a=p0?.a;if(!s||!a?.[key]||a!==s.anims[anim])return null;
  const img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),f=spriteFrame(name,t,anim,stage);
  const p=(typeof a[key][0]==='number'?a[key]:(a[key] as number[][])[f]) as number[];
@@ -351,6 +454,12 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'SHIFT+A/D › S',name:'Cannonball',desc:'While running, curl into a spike ball and bowl forward through troops, cars and newsstands. Ricochets off the first wall, bursts out at the second. Keep tapping S to stay curled up and keep rolling.'},
   {keys:'SPACE › S › A/D',name:'Cannonball Slam',desc:'Dive as a spinning spike ball. Touch a direction any time in the fall (or dive out of a running jump) and you keep rolling when you land.'},
   {keys:'L',name:'Quill (air / wall)',desc:'Airborne or clinging: flick a single quill. His only anti-air ranged attack.'}]
+ :kaiju==='Tlézcatl'?[
+  {keys:'L',name:'Flame Jet',desc:'On the ground: hold to breathe a cone of fire that burns everything in it, troops, vehicles, aircraft and incoming rockets alike, until it hits a building or the street. A tap gives a short burst. Drains the flame bar; run it dry and it has to cool off.'},
+  {keys:'L+W/S',name:'Aim the jet',desc:'While breathing, hold W to tilt the flame up at aircraft or S to sweep it down across the street. He can creep and turn while he breathes.'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  slam,
+  {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
   {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
   {keys:'U',name:'Stampede',desc:'Full meter. A bellow blasts back anything close, then a head-down charge out and back flattens every building it touches.'},
