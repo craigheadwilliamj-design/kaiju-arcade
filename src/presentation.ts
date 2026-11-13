@@ -328,7 +328,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
  const signature:MoveEntry[]=kaiju==='Mogurodon'?[
   {keys:'L',name:'Tremor Slam',desc:'On the ground: a forward rupture that tears along the street, piercing everything in its path.'},
   {keys:'U',name:'Seismic Rupture',desc:'Full meter. Howl, crash down and pound out shockwaves both ways. Invulnerable while it lasts.'},
-  {keys:'SHIFT+A/D › S',name:'Cannonball',desc:'While running, curl into a spike ball and bowl forward through troops, cars and newsstands. Ricochets off the first wall, bursts out at the second.'},
+  {keys:'SHIFT+A/D › S',name:'Cannonball',desc:'While running, curl into a spike ball and bowl forward through troops, cars and newsstands. Ricochets off the first wall, bursts out at the second. Keep tapping S to stay curled up and keep rolling.'},
   {keys:'SPACE › S › A/D',name:'Cannonball Slam',desc:'Dive as a spinning spike ball. Touch a direction any time in the fall (or dive out of a running jump) and you keep rolling when you land.'},
   {keys:'L',name:'Quill (air / wall)',desc:'Airborne or clinging: flick a single quill. His only anti-air ranged attack.'}]
  :kaiju==='Kaiban'?[
