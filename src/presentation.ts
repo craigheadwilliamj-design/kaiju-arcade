@@ -335,10 +335,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // (rear 0-4, slam 8-15); timing matches the other forms' heavies.
   heavyRear:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:20,once:true,...TZ1_LEFT},heavyHold:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
   heavySlam:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
-  // Eruption (U), placeholders until its own strips exist: the crouch-down held flat as the balled-up charge (the game shudders him and
-  // draws the glow), the heavy's rear-up as the roar (the explosion goes off on its last frame, impact 4 = 0.25s), then the
-  // crest-ablaze heavy hold while the fireball fades and the magma falls.
-  ultCharge:{src:'assets/tlezcatl-s1-crouch-down.png',frames:5,fps:12,once:true,...TZ1_NATIVE},
+  // Eruption (U). Charge: `tlezcatl-s1-ult-charge`, 16 frames at 16 fps = the 1s eruptCharge, played once: he curls into a tight
+  // ball, crest spines flaring out like a pinwheel, and molten light leaks through his stripes and spines, orange to yellow-white
+  // (the game shudders him and adds a soft glow). The roar (heavy rear-up, the explosion goes off on its last frame, impact 4 = 0.25s)
+  // and the after-blast loop (crest-ablaze heavy hold) are still placeholders.
+  ultCharge:{src:'assets/tlezcatl-s1-ult-charge.png',frames:16,fps:16,once:true,...TZ1_NATIVE},
   ultRoar:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:16,once:true,impact:4,...TZ1_LEFT},ultPound:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
   // Pound keeps the heavy slam it fell back to before ultPound existed.
   pound:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
