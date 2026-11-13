@@ -54,7 +54,7 @@ const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
 // Kaiban Stage 3 strips: the kaiban-s3 base still, a 167x224 upright sprite at x=44 in a 256x256 frame (tall, so raised fists fit).
 const KB3_NATIVE={scale:167/256,anchor:44+128*167/256};
 // Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists), in progress: idle (breathing, fists and
-// broken chains swaying, tail flicks) and walk (lumbering upright stride, side view, shackled fists swinging; feet bottom-aligned).
+// broken chains swaying, tail flicks) and walk (a swagger: fists swing far out front and behind, shoulders roll, chains whip; feet bottom-aligned).
 // Every other move holds the idle while gameplay timing falls back to the base form. 80 units wide keeps the 167x224 art about 300px
 // tall at the 2.8x Stage 3 scale, a little taller than Mogurodon's Stage 3 since he stands upright.
 const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:8,fps:10,...KB3_NATIVE}}};
