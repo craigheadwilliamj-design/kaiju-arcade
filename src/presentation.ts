@@ -349,7 +349,16 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // upper claw back and slams it into the wall with a flash on impact frame 5; the mantle starts 15px further back (the game's roof
   // slide) and eases into the base pose. PixelLab drew no wall this time. Timing matches the other forms.
   climbGrab:{src:'assets/tlezcatl-s1-climb-grab.png',frames:5,fps:20,once:true,...TZ1_NATIVE},climb:{src:'assets/tlezcatl-s1-climb.png',frames:8,fps:12,...TZ1_NATIVE},
-  climbMantle:{src:'assets/tlezcatl-s1-climb-mantle.png',frames:9,fps:20,once:true,...TZ1_NATIVE},climbPunch:{src:'assets/tlezcatl-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ1_NATIVE}}},
+  climbMantle:{src:'assets/tlezcatl-s1-climb-mantle.png',frames:9,fps:20,once:true,...TZ1_NATIVE},climbPunch:{src:'assets/tlezcatl-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ1_NATIVE},
+  // Grab/carry/throw (TZ1_NATIVE): the grab dips the snout and scoops both front claws under the prop at the street (hold on the street
+  // in front of the claws, frames 0-3), then rears up onto the hind legs and tail with both claws pressed overhead; carry strains upright
+  // with the claws locked up and carry-walk waddles upright the same way (head thrown back, so no eye). `hold` points sit on the claw
+  // tips. Throw starts at the release: both claws whip forward and down with swing arcs on frame 1 (the prop launches on the key press),
+  // and he drops back onto all fours, ending on the base pose.
+  grab:{src:'assets/tlezcatl-s1-grab.png',frames:9,fps:22,once:true,...TZ1_NATIVE,hold:[[192,191],[194,191],[200,191],[190,191],[176,151],[150,112],[131,90],[125,84],[125,84]]},
+  carry:{src:'assets/tlezcatl-s1-carry.png',frames:4,fps:6,...TZ1_NATIVE,hold:[[125,84],[126,86],[127,87],[126,86]]},
+  carryWalk:{src:'assets/tlezcatl-s1-carry-walk.png',frames:8,fps:10,...TZ1_NATIVE,hold:[[125,84],[125,86],[125,87],[125,88],[125,87],[125,87],[125,86],[125,86]]},
+  throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
