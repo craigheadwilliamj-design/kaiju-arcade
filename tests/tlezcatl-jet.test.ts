@@ -118,3 +118,15 @@ test('Tlézcatl Flame Jet: sweeping up a wall leaves a track of fire up its side
   assert.ok(lost>0&&lost<=cap,`one afterburn tick per building however many spots (${lost.toFixed(1)} ≤ ${cap.toFixed(1)} in 1s)`);
  }finally{h.release();h.cleanup();}
 });
+
+test('Tlézcatl heavy: the slam splashes lava globs both ways, more when charged, and leaves a pool on the street',async()=>{
+ const h=await tlezcatlCity();const {MOVE:MV}=await import('../src/config.ts');
+ try{h.step(30);
+  h.tap('KeyK');h.step();
+  const tap=h.state().entityCounts.lavaGlobs;assert.equal(tap,MV.heavyLavaGlobs,`a tapped heavy splashes ${MV.heavyLavaGlobs} globs (${tap})`);
+  assert.ok(h.state().entityCounts.lavaPools>=1,'a pool where the slam hit the street');
+  assert.ok(until(h,()=>h.state().entityCounts.lavaGlobs===0&&h.state().entityCounts.lavaPools===0,400),'globs come down and pools cool');
+  h.down('KeyK');h.step(Math.ceil(B.maxCharge*60)+5);h.up('KeyK');h.step();
+  assert.equal(h.state().entityCounts.lavaGlobs,MV.heavyLavaGlobs+2,'a full charge splashes extra globs');
+ }finally{h.release();h.cleanup();}
+});

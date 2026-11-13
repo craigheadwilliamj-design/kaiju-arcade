@@ -407,11 +407,7 @@ function slamLand(){
   for(let i=0;i<n;i++){const dir=i%2?1:-1,t=Math.floor(i/2)/Math.max(1,Math.floor(n/2)-1),a=(a0+(a1-a0)*t+(Math.random()-.5)*8)*Math.PI/180,sp=(v1-(v1-v0)*t)*grow*Math.min(1.6,power)*(.9+Math.random()*.2);
    rocks.push({x:cx+dir*w*.25,y:feet-6*s,vx:dir*Math.cos(a)*sp,vy:-Math.sin(a)*sp,life:B.debrisLife*grow*1.3,damage:MV.meteorDamage*damageMultiplier(combat)*power,knockback:B.debrisKnockback,spin:Math.random()*6,size:(6+Math.random()*5)*grow});}}
  // Tlézcatl's Magma Dive: the crash splashes molten globs both ways and, on the street, leaves a lava pool under him.
- if(activeKaiju==='Tlézcatl'){const n=MV.lavaGlobs,grow=Math.sqrt(s),[a0,a1]=MV.lavaAngle,[v0,v1]=MV.lavaSpeed,dm=damageMultiplier(combat);
-  for(let i=0;i<n;i++){const dir=i%2?1:-1,t=Math.floor(i/2)/Math.max(1,Math.floor(n/2)-1),a=(a0+(a1-a0)*t+(Math.random()-.5)*10)*Math.PI/180,sp=(v1-(v1-v0)*t)*grow*Math.min(1.6,power)*(.85+Math.random()*.3);
-   globs.push({x:cx+dir*w*.3,y:feet-8*s,vx:dir*Math.cos(a)*sp,vy:-Math.sin(a)*sp,life:2,damage:MV.lavaDamage*dm*power,size:(4+Math.random()*3)*grow});}
-  if(street)addPool(cx,w*MV.lavaPoolWidth,MV.lavaPoolDamage*dm*power);
-  for(let k=0;k<14&&particles.length<C.particleCap;k++)particles.push({x:cx+(Math.random()-.5)*w*.6,y:feet-4,vx:(Math.random()-.5)*260,vy:-(80+Math.random()*220)*grow,life:.3+Math.random()*.4,color:['#ffd34d','#ff8a1f','#e8401a'][k%3],size:2+Math.floor(Math.random()*4)});}
+ if(activeKaiju==='Tlézcatl')splashLava(cx,feet,w*.3,power,MV.lavaGlobs,street?w*MV.lavaPoolWidth:0,14);
  burst(cx,feet-3,'#c9a77c',18+Math.round(power*6));spawnChunks(cx,feet-6,1,'#8d7a66',3);spawnChunks(cx,feet-6,-1,'#8d7a66',3);
  shake=Math.max(shake,6+power*4);hitstop=Math.max(hitstop,.05+power*.02);
  // A form's own slamLand starts at impact; otherwise borrow heavySlam from its crash frames.
@@ -421,6 +417,14 @@ function slamLand(){
  const steer=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0)||dive.dir;
  if(!broke&&steer&&canRoll()){roll={dir:steer,t:MV.rollSeconds,t0:dive.t0,power,bounced:false,hits:new Set()};player.face=steer;attack=null;action='CANNONBALL';actionTime=1;}
  return broke;}
+// Tlézcatl's lava splash (Magma Dive landing, heavy slam): n molten globs out both ways from x0±spread at the feet, plus an
+// optional pool of width poolW under the impact (street only) and a spray of molten sparks.
+function splashLava(x0:number,feet:number,spread:number,power:number,n:number,poolW:number,sparks:number){
+ const s=scale(combat),grow=Math.sqrt(s),[a0,a1]=MV.lavaAngle,[v0,v1]=MV.lavaSpeed,dm=damageMultiplier(combat);
+ for(let i=0;i<n;i++){const dir=i%2?1:-1,t=Math.floor(i/2)/Math.max(1,Math.floor(n/2)-1),a=(a0+(a1-a0)*t+(Math.random()-.5)*10)*Math.PI/180,sp=(v1-(v1-v0)*t)*grow*Math.min(1.6,power)*(.85+Math.random()*.3);
+  globs.push({x:x0+dir*spread,y:feet-8*s,vx:dir*Math.cos(a)*sp,vy:-Math.sin(a)*sp,life:2,damage:MV.lavaDamage*dm*power,size:(4+Math.random()*3)*grow});}
+ if(poolW>0)addPool(x0,poolW,MV.lavaPoolDamage*dm*power);
+ for(let k=0;k<sparks&&particles.length<C.particleCap;k++)particles.push({x:x0+(Math.random()-.5)*spread*2,y:feet-4,vx:(Math.random()-.5)*260,vy:-(80+Math.random()*220)*grow,life:.3+Math.random()*.4,color:['#ffd34d','#ff8a1f','#e8401a'][k%3],size:2+Math.floor(Math.random()*4)});}
 // At most 12 Magma Dive pools at once; the Eruption's rain keeps its own 24 (oldest cool first). Flame Jet fires are capped separately.
 function addPool(cx:number,w:number,damage:number,ult=false,life=MV.lavaPoolSeconds){pools.push({x:cx-w/2,w,life,max:life,damage,hits:new Map(),ult});
  const mine=pools.filter(p=>!p.fire&&!!p.ult===ult);if(mine.length>(ult?24:12))pools.splice(pools.indexOf(mine[0]),1);}
@@ -487,6 +491,9 @@ function performStrike(strike:Strike|null){
  for(const b of buildings)if(b.hpNow>0&&overlaps(box,{x:b.x,y:C.ground-b.h,w:b.w,h:b.h}))hit(b,damage,false,player.face,{x:player.face===1?Math.max(b.x,box.x)+10:Math.min(b.x+b.w,box.x+box.w)-10,y:y});
  for(const g of growths)if(g.hp>0&&overlaps(box,{x:g.x-20,y:C.ground-55,w:40,h:55}))hitGrowth(g,damage);
  burst(player.x+w/2+player.face*reach*.8,y,kind==='heavy'?'#f2a8cb':'#d7f396',strike.combo===3?12:5);
+ // Tlézcatl's heavy slams lava out of the ground in front of him: a smaller Magma Dive splash that grows with the charge.
+ if(kind==='heavy'&&activeKaiju==='Tlézcatl'&&player.grounded&&!clingTo){const feet=player.y+h,c=strike.charge/B.maxCharge;
+  splashLava(player.x+w/2+player.face*reach*.6,feet,w*.15,MV.heavyLavaPower[0]+(MV.heavyLavaPower[1]-MV.heavyLavaPower[0])*c,MV.heavyLavaGlobs+(c>.8?2:0),feet>=C.ground-1?w*MV.heavyLavaPoolWidth:0,8);}
  if(kind==='light'){action=`LIGHT COMBO ${strike.combo} / 3`;actionTime=.5;}
  if(kind==='heavy'){shake=strike.charge>B.maxCharge*.8?7:3;action=strike.charge>B.maxCharge*.8?'CHARGED HEAVY': 'HEAVY IMPACT';actionTime=.7;}
 }

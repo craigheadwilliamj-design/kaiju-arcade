@@ -172,5 +172,8 @@ export const MOVE = {
  // scale) x drop power, lavaDamage each on the first thing hit). A street landing leaves a lava pool under him, and every glob that
  // reaches the street leaves a small one: pools burn whatever stands in them for lavaPoolDamage every lavaPoolTick until they cool.
  lavaGlobs:8,lavaSpeed:[220,420],lavaAngle:[30,70],lavaDamage:10,lavaPoolSeconds:2.2,lavaPoolTick:.25,lavaPoolDamage:6,lavaPoolWidth:1.3,lavaGlobPool:46,
+ // His grounded heavy splashes heavyLavaGlobs (+2 near full charge) from the impact point, at drop power heavyLavaPower[0..1] by
+ // charge, and on the street leaves a pool heavyLavaPoolWidth x body width there.
+ heavyLavaGlobs:4,heavyLavaPower:[.6,1.2],heavyLavaPoolWidth:.5,
  poundMult:1.25,poundCooldown:.34,poundKnockback:120,
 };
