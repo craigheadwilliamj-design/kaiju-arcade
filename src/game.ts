@@ -498,10 +498,10 @@ function update(dt:number){
  if(tremor){tremor.t-=dt;if(tremor.t<=0)launchTremor();}
  if(debris){debris.t-=dt;if(debris.t<=0)launchDebris();}
  heavyT=combat.charging?heavyT+dt:0;
- {const next=isClimbing?'climb':!player.grounded?'jumpAir':player.crouched?'crouch':walking?(held&&hasAnim(activeKaiju,'carryWalk',combat.stage)?'carryWalk':'walk'):held&&hasAnim(activeKaiju,'carry',combat.stage)?'carry':'idle';
+ {const next=isClimbing?'climb':!player.grounded?'jumpAir':player.crouched?'crouch':walking?(held&&hasAnim(activeKaiju,'carryWalk',combat.stage)?'carryWalk':running&&!held&&hasAnim(activeKaiju,'run',combat.stage)?'run':'walk'):held&&hasAnim(activeKaiju,'carry',combat.stage)?'carry':'idle';
   if(attack||combat.charging||combat.ultimateTime>0){loopAnim=next;loopT=0;loopIntro=null;}
   else if(next!==loopAnim){loopIntro=next==='climb'?'climbGrab':loopAnim==='climb'?(mantled?'climbMantle':null):next==='jumpAir'?(player.vy<0?'jumpRise':null):loopAnim==='jumpAir'?'jumpLand':next==='crouch'?'crouchDown':loopAnim==='crouch'?'crouchUp':null;loopAnim=next;loopT=0;}
-  else loopT+=next==='climb'&&climbDir===0?0:next==='walk'&&running?dt*MV.runSpeed*.8:dt;}
+  else loopT+=next==='climb'&&climbDir===0?0:next==='walk'&&running?dt*MV.runSpeed*.8:next==='run'&&dashT>0?dt*1.3:dt;}
  // Duck or charge, not both: crouch is ignored while a heavy is charging (starting one while ducked stands you up).
  const crouch=keys.has('KeyS')&&player.grounded&&!combat.charging&&!roll;
  if(canAct(combat))player.crouched=crouch;

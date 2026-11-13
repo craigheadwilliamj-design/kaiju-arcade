@@ -161,6 +161,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    // Slam: the dive tucks from the airborne gallop into a quills-out spike ball (frames 0-2, bottom-aligned) and holds it; the game
    // rolls the ball forward about `pivot` (its centre) from `spinFrom`. slamLand starts at impact: squash flat in a dust ring,
    // rebound, burst out of the ball and settle on the base pose (frames 1-8 of a 9-frame generation ending on the base).
+   // Run (Shift / double-tap): a bounding gallop loop from the base pose back to it; the two airborne frames are left lifted so it bounces.
+   run:{src:'assets/mogurodon-s1-run.png',frames:8,fps:15,...S1_NATIVE},
    dive:{src:'assets/mogurodon-s1-dive.png',frames:3,fps:28,once:true,...S1_NATIVE,pivot:[128.5,109],spinFrom:2},
    slamLand:{src:'assets/mogurodon-s1-slam-land.png',frames:8,fps:16,once:true,...S1_NATIVE}}},
   // Stage 3 form: every strip generated from the native-resolution base (S3_NATIVE); frame counts, fps and impact frames match the
