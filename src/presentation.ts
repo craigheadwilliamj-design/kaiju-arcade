@@ -53,9 +53,10 @@ const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
 // Kaiban Stage 3 strips: the kaiban-s3 base still, a 167x224 upright sprite at x=44 in a 256x256 frame (tall, so raised fists fit).
 const KB3_NATIVE={scale:167/256,anchor:44+128*167/256};
-// Kaiban Stage 3 lunging strips (light combo, heavy, ranged): generated from the base shifted 30px left (sprite at x=14) so the punches
-// and the uppercut stay inside the frame.
+// Kaiban Stage 3 punching strips: generated from the same base shifted 30px left (sprite at x=14) so forward punches stay in the frame.
 const KB3_LEFT={scale:167/256,anchor:14+128*167/256};
+// Kaiban Stage 3 heavy strips: the base shifted 20px left (sprite at x=24), room for the fists to land in front without clipping the tail.
+const KB3_HEAVY={scale:167/256,anchor:24+128*167/256};
 // Kaiban Stage 3 climb strips: 352x256 frames (the 256-wide PixelLab frames padded on the right) because he clings with the fists far
 // out in front: the cling pose's fist tips sit at frame x=254, the wall line (the hitbox edge 24 world units out, 50px at this scale),
 // so the anchor is 204 and the base pose is pasted 76px right to line up with the idle.
@@ -63,22 +64,27 @@ const KB3_CLIMB={scale:167/256,anchor:204};
 // Kaiban Stage 3 lift strips (grab, carry, throw): generated from the base shrunk to 80% (134x179 at x=61, feet on the bottom row) so
 // the overhead building press fits the 256px frame height.
 const KB3_LIFT={scale:134/256,anchor:128};
-// Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists): every move animated. Frame counts, fps
-// and impact frames match the Stage 1 timing the form used to borrow, so combat plays the same. 80 units wide keeps the 167x224 art
-// about 300px tall at the 2.8x Stage 3 scale, a little taller than Mogurodon's Stage 3 since he stands upright.
-const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:8,fps:10,...KB3_NATIVE},
- // Light combo: near-fist overhead hammer, far-fist overhead hammer, double-fist smash; each closes on the base pose.
+// Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists): every move animated. Idle (breathing, fists
+// and broken chains swaying, tail flicks) and walk (a swagger posed with PixelLab's skeleton animation: both fists swing through the full
+// arc, alternating, opposite the legs; 11 frames at 14 fps, about the 0.8s cycle of the other walks). Frame counts, fps and impact
+// frames match the Stage 1 timing the form used to borrow, so combat plays the same. 80 units wide keeps the 167x224 art about 300px
+// tall at the 2.8x Stage 3 scale, a little taller than Mogurodon's Stage 3 since he stands upright.
+const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:11,fps:14,...KB3_NATIVE},
+ // Light combo, skeleton-posed (tools/kaiban_s3_light_poses.py): front-fist jab with a lean, rear-fist hook swung across the body,
+ // then a double-fist overhead hammer slammed down in front with the knees bending. Frame counts and fps match the other forms' combos.
  light1:{src:'assets/kaiban-s3-light1.png',frames:8,fps:24,once:true,...KB3_LEFT},light2:{src:'assets/kaiban-s3-light2.png',frames:8,fps:21,once:true,...KB3_LEFT},
  light3:{src:'assets/kaiban-s3-light3.png',frames:8,fps:20,once:true,...KB3_LEFT},
- // Heavy: hunches into a crouch with the fists pulled back (rear: frames 0,2,4,6,8 of a 16-frame generation), trembles while K is held
- // (hold, generated from that crouch), then explodes into a lunging tusk-and-fist uppercut with a slash arc that settles on the base
- // (slam: a separate generation from the crouch, frames 1-8).
- heavyRear:{src:'assets/kaiban-s3-heavy-rear.png',frames:5,fps:20,once:true,...KB3_LEFT},heavyHold:{src:'assets/kaiban-s3-heavy-hold.png',frames:4,fps:10,...KB3_LEFT},
- heavySlam:{src:'assets/kaiban-s3-heavy-slam.png',frames:8,fps:16,once:true,...KB3_LEFT},
- // Ranged (debris shotgun): rakes both fists down the street (frames 1-3) and heaves them up and forward underhand (impact frame 5);
- // the crouched scoop stays low and flicks the forearms forward along the ground (impact frame 4). Generated empty-handed; the few
- // loose rocks PixelLab still drew were detached and erased (the game draws the projectiles).
+ // Heavy, skeleton-posed: both fists raised up and back overhead with the body arching (rear), a 1px power shudder of rear's last frame
+ // while K is held (hold, tools/shudder_hold.py), then both fists swung over the top and crashed into the street in a deep crouch with a
+ // dust burst, recovering to the base pose (slam). Rear and slam are cut from one 13-frame generation; counts and fps match the other heavies.
+ heavyRear:{src:'assets/kaiban-s3-heavy-rear.png',frames:5,fps:20,once:true,...KB3_HEAVY},heavyHold:{src:'assets/kaiban-s3-heavy-hold.png',frames:4,fps:10,...KB3_HEAVY},
+ heavySlam:{src:'assets/kaiban-s3-heavy-slam.png',frames:8,fps:16,once:true,...KB3_HEAVY},
+ // Ranged (debris shotgun), skeleton-posed: leans and crouches deep, drives both fists into the street (rubble in the fists), hauls them
+ // up and forward underhand and lets go at head height on impact frame 5 (Stage 1/2 timing), settling back. Detached rocks erased: the
+ // game draws the projectiles. No crouched version until Stage 3 has a crouch.
  rangedStand:{src:'assets/kaiban-s3-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB3_LEFT},
+ // Crouched ranged: from the crouch pose shifted 30px left, stays low, rakes both fists into the ground and flicks the forearms forward
+ // along the ground (impact frame 4). Generated empty-handed; the few loose rocks PixelLab drew were detached and erased.
  rangedCrouch:{src:'assets/kaiban-s3-ranged-crouch.png',frames:8,fps:20,once:true,impact:4,...KB3_LEFT},
  // Crouch: drops onto all fours with the fists on the street (224px tall to 180px), a breathing loop closed on that pose; crouchUp is
  // crouchDown reversed.
@@ -106,10 +112,10 @@ const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',fram
  // then drops into a head-down knuckle charge stance (frames 0,3,4,5,7,8,11,14,16 of a 16-frame generation). Pound: the charge loop,
  // a goring gorilla gallop from that stance (frames 2-9 of a 12-frame generation; the near-still ends were dropped).
  ultRoar:{src:'assets/kaiban-s3-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB3_NATIVE},ultPound:{src:'assets/kaiban-s3-ult-pound.png',frames:8,fps:16,...KB3_NATIVE},
- // Gore Charge run = the Stampede gallop; Pound (S+J) = light1's overhead hammer. Meteor Drop: dive rears up with both fists overhead
- // and tips into a fists-first plunge (frames 0,2,4,8 of a 9-frame generation, bottom-aligned, held on the last); slamLand (frames 1-8
- // of a generation from that pose on the ground) crashes in with a burst, squashes flat and pushes back up into the stance.
- run:{src:'assets/kaiban-s3-ult-pound.png',frames:8,fps:16,...KB3_NATIVE},pound:{src:'assets/kaiban-s3-light1.png',frames:8,fps:24,once:true,...KB3_LEFT},
+ // Gore Charge run = the Stampede gallop; Pound (S+J) = light3's double-fist overhead hammer. Meteor Drop: dive rears up with both fists
+ // overhead and tips into a fists-first plunge (frames 0,2,4,8 of a 9-frame generation, bottom-aligned, held on the last); slamLand
+ // (frames 1-8 of a generation from that pose on the ground) crashes in with a burst, squashes flat and pushes back up into the stance.
+ run:{src:'assets/kaiban-s3-ult-pound.png',frames:8,fps:16,...KB3_NATIVE},pound:{src:'assets/kaiban-s3-light3.png',frames:8,fps:20,once:true,...KB3_LEFT},
  dive:{src:'assets/kaiban-s3-dive.png',frames:4,fps:24,once:true,...KB3_NATIVE},slamLand:{src:'assets/kaiban-s3-slam-land.png',frames:8,fps:16,once:true,...KB3_NATIVE}}};
 // Kaiban Stage 2 form, in progress: idle, walk, the heavy, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while
 // the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw, the climb set and the Stampede. `borrow`: every move not drawn yet plays the
