@@ -501,7 +501,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
  return {
   moves:[{title:'Signature',moves:signature},{title:'Combat',moves:[
    {keys:'J › J › J',name:'Light combo',desc:'Three-hit string; the third hit is the big one.'},
-   {keys:'K',name:'Heavy',desc:'Hold to charge (up to 1.5s), release to smash. Charged heavies hit far harder.'},
+   {keys:'K',name:'Heavy',desc:kaiju==='Tlézcatl'?'Hold to charge (up to 1.5s), release to smash. On the ground the slam splashes lava out both ways and leaves a burning pool on the street; charged heavies hit far harder and splash more.':'Hold to charge (up to 1.5s), release to smash. Charged heavies hit far harder.'},
    {keys:'S+J',name:'Pound',desc:'Beat down on whatever you stand on. On a rooftop it hammers the building under your feet; the third pound in a row is the biggest.'},
    {keys:'H',name:'Grab',desc:'Pick up a car, wreck, enemy vehicle, lamppost or barricade. At Stage 3, whole small buildings.'},
    {keys:'H/J/K',name:'Throw',desc:'Throw what you are carrying. Hold W to lob it upward at aircraft.'},
