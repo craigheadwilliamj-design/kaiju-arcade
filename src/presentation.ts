@@ -64,8 +64,12 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  heavySlam:{src:'assets/kaiban-s2-heavy-slam.png',frames:8,fps:16,once:true,...KB2_LEFT},
  // Ranged (debris shotgun), gorilla-style: leans in, rises and digs both fists into the street (frame 4, rubble in the fists), heaves them
  // up and forward underhand to fling it (impact frame 5, Stage 1's timing), follows through and drops back to all fours. Loose rocks erased:
- // the game draws the projectiles. The crouched shot still borrows Stage 1's.
+ // the game draws the projectiles.
  rangedStand:{src:'assets/kaiban-s2-ranged-stand.png',frames:8,fps:18,once:true,impact:5,...KB2_LEFT},
+ // Crouched scoop from the crouch pose shifted 24px left, staying low (never taller than the standing pose): rakes both fists into the
+ // street (frames 2-3), whips the forearms forward along the ground in a short underhand flick (impact frame 4, Stage 1's timing) and drops
+ // back onto the knuckles, closing on the crouch. Seed 21; loose rocks erased.
+ rangedCrouch:{src:'assets/kaiban-s2-ranged-crouch.png',frames:8,fps:20,once:true,impact:4,...KB2_LEFT},
  // Climb: 256x256 strips, clinging upright with the fists gripping the wall line (frame x=168, the hitbox edge 24 world units out at this
  // scale), feet braced on the wall, snout and tusks up. PixelLab braced him 37px up the wall, so the climb frames sit 21px lower (as far as
  // the lowest step allows); the grab eases into that and the 53px shift onto the wall line from the base pose. The mantle starts a further
@@ -93,7 +97,11 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // Jump: crouches on the knuckles and springs off all fours (rise), a tucked airborne loop from the rise's last frame (frames 1-4 of its
  // generation), and a heavy fists-first squash landing closed on the base pose. Bottom-aligned; frame counts and fps match Stage 1's jump.
  jumpRise:{src:'assets/kaiban-s2-jump-rise.png',frames:9,fps:24,once:true,...KB2_NATIVE},jumpAir:{src:'assets/kaiban-s2-jump-air.png',frames:4,fps:8,...KB2_NATIVE},
- jumpLand:{src:'assets/kaiban-s2-jump-land.png',frames:5,fps:20,once:true,...KB2_NATIVE}}};
+ jumpLand:{src:'assets/kaiban-s2-jump-land.png',frames:5,fps:20,once:true,...KB2_NATIVE},
+ // Crouch: bends the elbows and knees and drops the chest low on all four knuckles (135px tall to 110px, seed 7), a breathing loop from
+ // the last frame closed on it; crouchUp is crouchDown reversed. Frame counts and fps match Stage 1.
+ crouch:{src:'assets/kaiban-s2-crouch.png',frames:4,fps:6,...KB2_NATIVE},crouchDown:{src:'assets/kaiban-s2-crouch-down.png',frames:5,fps:22,once:true,...KB2_NATIVE},
+ crouchUp:{src:'assets/kaiban-s2-crouch-up.png',frames:5,fps:22,once:true,...KB2_NATIVE}}};
 export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Mogurodon:{width:120,anims:{idle:{src:'assets/mogurodon-idle.png',frames:8,fps:8,...S2_NATIVE},walk:{src:'assets/mogurodon-walk.png',frames:8,fps:10,...S2_NATIVE},
   // Stage 2 (the base form): every strip generated from the native-resolution base (S2_NATIVE), 256x192 except the 256x256 climb.
