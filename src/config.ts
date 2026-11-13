@@ -125,6 +125,8 @@ export const EXPLORE = {
 // Tall buildings topple away from the blow as a rigid rotation and crush whatever they land on (chain reactions).
 export const FEEL = {
  hitstopBase:.02,hitstopPerDamage:.0004,hitstopMax:.1,hitstopCollapse:.07,hitstopTopple:.11,
+ // Follow-up hits (shockwaves, debris, lava, punted cars) may freeze the game at most once per this many seconds.
+ hitstopEcho:.9,
  joltSeconds:.14,joltPixels:5,holeCap:14,holeMin:9,holeMax:24,holeDamage:7,holeInset:14,
  chunkCap:160,chunkLife:2.6,chunkGravity:900,
  liftHeight:50,

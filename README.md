@@ -101,3 +101,13 @@ M5 combat, original ending text and final assets remain unfinished. Final M7 rel
 The full current shared-combat campaign now has a successful 25-block keyboard simulation through ending/unlocks, rather than only state-transition coverage. Phase 7 reproduced and fixed landing/evolution penetration of short or adjacent solids, and clears transient stagger guard at block transitions. `QA_REPORT.md`, `qa/playthrough.json` and `qa/stress.json` contain the actual scope, measurements and remaining blockers. No final balance claim is made for the missing Phase 5 movesets or boss Ultimates.
 
 **Artifact build:** `node build-artifact.mjs` writes one self-contained `dist-artifact/index.html` for publishing as a claude.ai Artifact (16MB limit, base64 sprites add a third). If the sprites exceed an 11MB budget, `tools/shrink_sprites.py` re-saves the largest as 256-colour PNGs in `dist-artifact/sprites/` (mean error ~1/255, `public/assets` untouched) until they fit; the build fails if the page still goes over 16MB.
+
+**Artifact build with separate sprites:** `npm run build:artifact:files` writes the same page without the embedded sprites (about 0.3 MB) plus `dist-artifact/assets/` and `dist-artifact/files.json`, the list to pass as the publisher's supporting files. Use this once the single page nears 16 MB: sprites are no longer limited by the page size or inflated by base64, and the game only downloads the kaiju being played. Limits to watch: 255 files per publish, 511 per Artifact version, 15 MB per file.
+
+**Sprite loading:** boot loads only the slot art and each kaiju's base idle. `loadKaijuArt(name, stage)` (`src/presentation.ts`) loads one kaiju's strips, the stage on screen first, and drops other kaiju's; the selection, progress, drill and free-play screens call it ahead of play.
+
+**Sprite size:** run `python3 tools/optimize_sprites.py` on new strips before committing. It re-saves strips with at most 256 colours as indexed PNGs and recompresses the rest, replacing a file only when the decoded pixels are identical and the file is smaller.
+
+**Hitstop:** direct blows freeze the game as before. Follow-up hits (shockwaves, flying rocks and lava, burning pools, punted cars) freeze it at most once per `FEEL.hitstopEcho` seconds, so one landing in a dense street is one freeze, not a string of them.
+
+**Benchmark:** `npm run perf` plays a drill in headless Chromium and prints sprites fetched, frame-time percentiles and hitstop freezes around street dives (`--scale 2 --throttle 4` for a high-DPI, slow-CPU run; `PERF_DIR=dist-artifact` to test the artifact build). Headless Chromium renders in software, so compare runs with each other rather than reading the numbers as device frame rates.

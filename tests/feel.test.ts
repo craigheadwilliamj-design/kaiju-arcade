@@ -36,3 +36,20 @@ test('real loop: hits leave holes/chunks/hitstop; short buildings squash; tall o
   assert.ok(s.buildings[2].hp<neighbourHP,'landing crushed the neighbour');
  }finally{h.release();h.cleanup();}
 });
+
+test('a street dive freezes the game once: its shockwaves, rocks and punted cars do not re-arm hitstop',async()=>{
+ const {emptyPermanent,KAIJU,PERMANENT_KEY}=await import('../src/campaign.ts');const {FEEL}=await import('../src/config.ts');
+ const p=emptyPermanent();p.unlocked=[...KAIJU];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+ try{
+  h.click('#new');h.click('#skip-intro');h.node('#initials').value='TST';h.callbacks.get('#initials:input')!();h.click('#launch');
+  h.click(`#kaiju-${KAIJU.indexOf('Kaiban')}`);h.step(2);h.click('#confirm-kaiju');h.click('#begin-city');h.step(30);
+  h.down('KeyD');h.step(55);h.up('KeyD');h.step(20);h.tap('Space');h.step(16);h.tap('KeyS');
+  for(let n=0;n<90&&h.state().diving;n++)h.step();
+  assert.ok(h.state().hitstop>0,'the landing itself still freezes');assert.ok(h.state().entityCounts.rocks>0,'Meteor Drop threw its rocks');
+  // Count separate freezes over the next 0.9s: before the echo rule this dive froze the game eight times.
+  let arms=0,prev=0,hurt=0;const hp=h.state().buildingHP.reduce((a:number,b:number)=>a+b,0);
+  for(let f=0;f<Math.round(FEEL.hitstopEcho*60);f++){const hs=h.state().hitstop;if(hs>0&&(prev===0||hs>prev))arms++;prev=hs;h.step();}
+  hurt=hp-h.state().buildingHP.reduce((a:number,b:number)=>a+b,0);
+  assert.equal(arms,1,'one freeze for the whole landing');assert.ok(hurt>0,'the follow-up hits still did their damage');
+ }finally{h.release();h.cleanup();}
+});

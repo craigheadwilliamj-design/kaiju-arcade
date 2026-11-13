@@ -31,3 +31,24 @@ test('pause menu opens the Moves & Controls panel with tabs and returns to pause
   h.click('#resume');assert.equal(h.state().mode,'playing');
  }finally{h.cleanup();}
 });
+
+test('sprite art loads per kaiju: boot fetches only base idles, a run fetches its own kaiju and drops the others',async()=>{
+ const asked:string[]=[];
+ class FakeImage{complete=true;naturalWidth=256;naturalHeight=256;set src(v:string){asked.push(v);}decode(){return Promise.resolve();}}
+ (globalThis as any).Image=FakeImage;
+ try{
+  const art=await import(`../src/presentation.ts?art=${Date.now()}`);const settle=()=>new Promise(r=>setTimeout(r,0));
+  art.loadPresentationArt();
+  assert.ok(asked.length>0&&asked.every(s=>/-idle\.png$|^assets\/mogurodon\.png$/.test(s)||!/assets\//.test(s)),`boot asks for base idles only (${asked.filter(s=>!/idle/.test(s)).slice(0,3)})`);
+  const boot=asked.length;assert.ok(boot<10,'a handful of files at boot, not the whole set');
+  art.loadKaijuArt('Kaiban',1);await settle();
+  const kaiban=asked.slice(boot);assert.ok(kaiban.length>20,'the picked kaiju loads its strips');
+  assert.ok(kaiban.every(s=>s.includes('kaiban')),'and nobody else\'s');assert.ok(kaiban.some(s=>s.includes('kaiban-s3')),'later stages follow in the background');
+  assert.ok(kaiban.findIndex(s=>s.includes('kaiban-s3'))>kaiban.findIndex(s=>!/-s[23]-/.test(s)),'the stage on screen is asked for first');
+  assert.equal(art.hasAnim('Kaiban','walk',1),true);
+  art.loadKaijuArt('Tlézcatl',1);await settle();
+  assert.equal(art.hasAnim('Kaiban','walk',1),false,'the previous kaiju\'s strips are dropped');assert.equal(art.hasSprite('Kaiban'),true,'its base idle stays for previews and endings');
+  assert.equal(art.hasAnim('Tlézcatl','walk',1),true);
+  const again=asked.length;art.loadKaijuArt('Tlézcatl',2);await settle();assert.equal(asked.length,again,'asking again for the same kaiju fetches nothing twice');
+ }finally{delete (globalThis as any).Image;}
+});
