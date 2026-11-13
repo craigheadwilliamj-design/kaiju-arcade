@@ -31,6 +31,13 @@ export const COMBAT = {
  // set so the run fills the rest of the Ultimate; at Stage 1 shorter than Seismic Rupture's ultimateRange, but every building it touches is destroyed
  // outright like a train ran through it). Units, vehicles and the rival take stampedeDamage once per pass.
  stampedeReach:560,stampedeDamage:300,stampedeKnockback:320,stampedeCrunch:.05,bellowRange:260,bellowDamage:20,
+ // Tlézcatl's grounded ranged (Flame Jet): hold L to breathe a cone of fire from the jaws. A fuel bar drains over jetSeconds of
+ // breathing and refills at jetRegen per second; running it dry locks the jet until it is back to jetRelight. A tap still breathes for
+ // jetMinBurst. Everything inside the cone takes jetDamage every jetTick (pierces); the cone stops at the first building and at the
+ // street. W/S tilt it up to jetUp / down to jetDown degrees at jetTurn deg/s. Length and width grow with sqrt(stage scale). He creeps
+ // at jetSlow walking speed while breathing.
+ jetSeconds:2,jetRegen:.5,jetRelight:.35,jetMinBurst:.25,jetMinStart:.08,jetTick:.12,jetDamage:7,jetKnockback:30,jetCarPush:.3,
+ jetRange:260,jetWidth:[6,34],jetUp:35,jetDown:25,jetTurn:140,jetSlow:.25,jetCooldown:.2,
  superMax:40,superDuration:20,superDamage:1.5,superSpeed:1.18,superResistance:.55,superKnockback:1.5,
  rangedMax:12,staggerSeconds:.32,staggerProtection:.9,knockbackFriction:9,
  scorePenaltyPerHP:10,ambientInterval:5,ambientCount:3,growthInterval:30,growthHP:240,

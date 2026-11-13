@@ -30,7 +30,9 @@ const images=new Map<string,HTMLImageElement>();
 // `scale`/`anchor` are for padded strips generated from a shrunken base (room for lunges): `scale` is the art's size relative to a
 // full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
 // `hold` (grab/carry strips): frame px where a carried prop's bottom-centre sits, one [x,y] per frame or a single pair for every frame.
-type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][],pivot?:number[],spinFrom?:number};
+// `mouth` (Flame Jet strips): frame px of the jaws, where the flame starts, one [x,y] per frame or a single pair.
+// `angles` (an aim strip): the degrees above level each frame's head points; the game shows the frame nearest the aim instead of playing it.
+type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][],pivot?:number[],spinFrom?:number,mouth?:number[]|number[][],angles?:number[]};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
 // Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (every strip) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips. With
@@ -43,6 +45,10 @@ const S1_NATIVE={scale:151/256,anchor:52+128*151/256};
 const S3_NATIVE={scale:173/256,anchor:41+128*173/256};
 // Stage 2 (base form) strips: the mogurodon-s2 base still, a 194px-wide sprite at x=31 keyed the same way.
 const S2_NATIVE={scale:194/256,anchor:31+128*194/256};
+// Tlézcatl Stage 1 strips: the tlezcatl-s1 base still, a 128x59 sprite at x=64 in a 256x192 frame, keyed with tools/key_render.py.
+const TZ1_NATIVE={scale:128/256,anchor:64+128*128/256};
+// Tlézcatl Stage 1 attack strips: generated from the same base shifted 40px left (sprite at x=24) so lunges and the tail whip stay in the frame.
+const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
@@ -313,6 +319,26 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   crouch:{src:'assets/kaiban-s1-crouch.png',frames:4,fps:6,...KB1_NATIVE},crouchDown:{src:'assets/kaiban-s1-crouch-down.png',frames:5,fps:22,once:true,...KB1_NATIVE},
   crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}},
   stages:{2:KAIBAN_S2,3:KAIBAN_S3}},
+ // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): only the Stage 1 form exists, so it is the base
+ // form and every stage draws it. The render keys to a 128x59 sprite at x=64 (TZ1_NATIVE); same 120-unit width as the others.
+ 'Tlézcatl':{width:120,anims:{idle:{src:'assets/tlezcatl-s1-idle.png',frames:8,fps:8,...TZ1_NATIVE},walk:{src:'assets/tlezcatl-s1-walk.png',frames:8,fps:10,...TZ1_NATIVE},
+  // Light combo: near-claw forward rake (slash arc in front of the snout), snapping lunge bite (head and shoulders shoot forward low),
+  // scorpion tail whip (the tail curls up over the back and cracks down in front of the snout with a spark on frame 4). Frame counts
+  // and fps match the other forms' combos, so combat timing is unchanged; each strip ends on the left-shifted base pose.
+  light1:{src:'assets/tlezcatl-s1-light1.png',frames:8,fps:24,once:true,...TZ1_LEFT},light2:{src:'assets/tlezcatl-s1-light2.png',frames:8,fps:21,once:true,...TZ1_LEFT},
+  light3:{src:'assets/tlezcatl-s1-light3.png',frames:8,fps:20,once:true,...TZ1_LEFT},
+  // Heavy: rears up onto the hind legs and tail with the claws raised (rear), the flame crest glows and bursts into fire and back while
+  // K is held (hold, generated from the peak pose and played 0,2,3,2 so it pulses), then crashes chest and claws into the street in a
+  // lava burst and settles (slam, starting on the crash so it lands on release). Rear and slam are cut from one 16-frame generation
+  // (rear 0-4, slam 8-15); timing matches the other forms' heavies.
+  heavyRear:{src:'assets/tlezcatl-s1-heavy-rear.png',frames:5,fps:20,once:true,...TZ1_LEFT},heavyHold:{src:'assets/tlezcatl-s1-heavy-hold.png',frames:4,fps:10,...TZ1_LEFT},
+  heavySlam:{src:'assets/tlezcatl-s1-heavy-slam.png',frames:8,fps:16,once:true,...TZ1_LEFT},
+  // Flame Jet (the game draws the fire from `mouth`): jetStart inhales, draws the head back and thrusts it forward with the jaws gaping;
+  // jetAim holds that pose with the head aimed from -20 to 35 degrees (frame picked by the jet's angle, never played); jetEnd snaps
+  // the jaws shut and settles onto the base pose.
+  jetStart:{src:'assets/tlezcatl-s1-jet-start.png',frames:5,fps:22,once:true,...TZ1_LEFT,mouth:[155,172]},
+  jetAim:{src:'assets/tlezcatl-s1-jet-aim.png',frames:5,fps:10,once:true,...TZ1_LEFT,angles:[-20,0,10,22,35],mouth:[[155,176],[155,172],[154,165],[151,157],[149,150]]},
+  jetEnd:{src:'assets/tlezcatl-s1-jet-end.png',frames:4,fps:16,once:true,...TZ1_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -339,7 +365,10 @@ export function spinFrom(name:string,anim:string,stage?:number){const a=timing(n
 export function animDuration(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?a.frames/a.fps:0;}
 // Where a carried prop's bottom-centre sits in this frame, relative to the feet origin in unflipped, unscaled sprite units (the caller
 // applies facing and Stage scale). Null when the strip has no hold points or its art is not loaded (the caller keeps its fallback).
-export function holdPoint(name:string,anim:string,t:number,stage?:number,key:'hold'|'pivot'='hold'):[number,number]|null{
+// Time into an aim strip that shows the frame whose head angle is nearest `angle` (degrees above level); 0 when it has no angles.
+export function aimTime(name:string,anim:string,angle:number,stage?:number){const a=pick(name,anim,stage)?.a;if(!a?.angles)return 0;
+ let best=0;a.angles.forEach((v,i)=>{if(Math.abs(v-angle)<Math.abs(a.angles![best]-angle))best=i;});return (best+.5)/a.fps;}
+export function holdPoint(name:string,anim:string,t:number,stage?:number,key:'hold'|'pivot'|'mouth'='hold'):[number,number]|null{
  const p0=pick(name,anim,stage),s=p0?.f,a=p0?.a;if(!s||!a?.[key]||a!==s.anims[anim])return null;
  const img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),f=spriteFrame(name,t,anim,stage);
  const p=(typeof a[key][0]==='number'?a[key]:(a[key] as number[][])[f]) as number[];
@@ -414,6 +443,12 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'SHIFT+A/D › S',name:'Cannonball',desc:'While running, curl into a spike ball and bowl forward through troops, cars and newsstands. Ricochets off the first wall, bursts out at the second. Keep tapping S to stay curled up and keep rolling.'},
   {keys:'SPACE › S › A/D',name:'Cannonball Slam',desc:'Dive as a spinning spike ball. Touch a direction any time in the fall (or dive out of a running jump) and you keep rolling when you land.'},
   {keys:'L',name:'Quill (air / wall)',desc:'Airborne or clinging: flick a single quill. His only anti-air ranged attack.'}]
+ :kaiju==='Tlézcatl'?[
+  {keys:'L',name:'Flame Jet',desc:'On the ground: hold to breathe a cone of fire that burns everything in it, troops, vehicles, aircraft and incoming rockets alike, until it hits a building or the street. A tap gives a short burst. Drains the flame bar; run it dry and it has to cool off.'},
+  {keys:'L+W/S',name:'Aim the jet',desc:'While breathing, hold W to tilt the flame up at aircraft or S to sweep it down across the street. He can creep and turn while he breathes.'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  slam,
+  {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
   {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
   {keys:'U',name:'Stampede',desc:'Full meter. A bellow blasts back anything close, then a head-down charge out and back flattens every building it touches.'},
