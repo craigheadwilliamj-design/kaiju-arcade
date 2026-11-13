@@ -55,15 +55,22 @@ const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
 const KB3_NATIVE={scale:167/256,anchor:44+128*167/256};
 // Kaiban Stage 3 punching strips: generated from the same base shifted 30px left (sprite at x=14) so forward punches stay in the frame.
 const KB3_LEFT={scale:167/256,anchor:14+128*167/256};
+// Kaiban Stage 3 heavy strips: the base shifted 20px left (sprite at x=24), room for the fists to land in front without clipping the tail.
+const KB3_HEAVY={scale:167/256,anchor:24+128*167/256};
 // Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists), in progress: idle (breathing, fists and
 // broken chains swaying, tail flicks) and walk (a swagger posed with PixelLab's skeleton animation: both fists swing through the full arc, alternating, opposite the legs; 11 frames at 14 fps, about the 0.8s cycle of the other walks).
-// The light combo is below. Every other move holds the idle while gameplay timing falls back to the base form. 80 units wide keeps the 167x224 art about 300px
+// The light combo and heavy are below. Every other move holds the idle while gameplay timing falls back to the base form. 80 units wide keeps the 167x224 art about 300px
 // tall at the 2.8x Stage 3 scale, a little taller than Mogurodon's Stage 3 since he stands upright.
 const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:11,fps:14,...KB3_NATIVE},
  // Light combo, skeleton-posed (tools/kaiban_s3_light_poses.py): front-fist jab with a lean, rear-fist hook swung across the body,
  // then a double-fist overhead hammer slammed down in front with the knees bending. Frame counts and fps match the other forms' combos.
  light1:{src:'assets/kaiban-s3-light1.png',frames:8,fps:24,once:true,...KB3_LEFT},light2:{src:'assets/kaiban-s3-light2.png',frames:8,fps:21,once:true,...KB3_LEFT},
- light3:{src:'assets/kaiban-s3-light3.png',frames:8,fps:20,once:true,...KB3_LEFT}}};
+ light3:{src:'assets/kaiban-s3-light3.png',frames:8,fps:20,once:true,...KB3_LEFT},
+ // Heavy, skeleton-posed: both fists raised up and back overhead with the body arching (rear), a 1px power shudder of rear's last frame
+ // while K is held (hold, tools/shudder_hold.py), then both fists swung over the top and crashed into the street in a deep crouch with a
+ // dust burst, recovering to the base pose (slam). Rear and slam are cut from one 13-frame generation; counts and fps match the other heavies.
+ heavyRear:{src:'assets/kaiban-s3-heavy-rear.png',frames:5,fps:20,once:true,...KB3_HEAVY},heavyHold:{src:'assets/kaiban-s3-heavy-hold.png',frames:4,fps:10,...KB3_HEAVY},
+ heavySlam:{src:'assets/kaiban-s3-heavy-slam.png',frames:8,fps:16,once:true,...KB3_HEAVY}}};
 // Kaiban Stage 2 form, in progress: idle, walk, the heavy, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while
 // the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw, the climb set and the Stampede. `borrow`: every move not drawn yet plays the
 // Stage 1 strip.
