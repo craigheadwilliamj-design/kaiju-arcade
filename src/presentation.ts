@@ -51,9 +51,16 @@ const KB1_LEFT={scale:139/256,anchor:18+128*139/256};
 const KB2_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Kaiban Stage 2 forward-slam strips: generated from the same base shifted 24px left (sprite at x=4) so the punches stay in the frame.
 const KB2_LEFT={scale:200/256,anchor:4+128*200/256};
+// Kaiban Stage 3 strips: the kaiban-s3 base still, a 167x224 upright sprite at x=44 in a 256x256 frame (tall, so raised fists fit).
+const KB3_NATIVE={scale:167/256,anchor:44+128*167/256};
+// Kaiban Stage 3 form (upright crystal-maned juggernaut with shackled, crystal-studded fists), in progress: idle (breathing, fists and
+// broken chains swaying, tail flicks) and walk (a swagger posed with PixelLab's skeleton animation: both fists swing through the full arc, alternating, opposite the legs; 11 frames at 14 fps, about the 0.8s cycle of the other walks).
+// Every other move holds the idle while gameplay timing falls back to the base form. 80 units wide keeps the 167x224 art about 300px
+// tall at the 2.8x Stage 3 scale, a little taller than Mogurodon's Stage 3 since he stands upright.
+const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',frames:8,fps:8,...KB3_NATIVE},walk:{src:'assets/kaiban-s3-walk.png',frames:11,fps:14,...KB3_NATIVE}}};
 // Kaiban Stage 2 form, in progress: idle, walk, the heavy, the gorilla overhead-punch light combo (near-fist hammer, far-fist hammer while
 // the near fist stays planted, reared double-fist smash; frame counts and fps match the Stage 1 combo), ranged scoop, grab/carry/throw, the climb set and the Stampede. `borrow`: every move not drawn yet plays the
-// Stage 1 strip. Stage 3 uses this form too until it has its own art.
+// Stage 1 strip.
 const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-idle.png',frames:8,fps:8,...KB2_NATIVE},walk:{src:'assets/kaiban-s2-walk.png',frames:8,fps:10,...KB2_NATIVE},
  light1:{src:'assets/kaiban-s2-light1.png',frames:8,fps:24,once:true,...KB2_LEFT},light2:{src:'assets/kaiban-s2-light2.png',frames:8,fps:21,once:true,...KB2_LEFT},
  light3:{src:'assets/kaiban-s2-light3.png',frames:8,fps:20,once:true,...KB2_LEFT},
@@ -242,7 +249,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // reversed.
   crouch:{src:'assets/kaiban-s1-crouch.png',frames:4,fps:6,...KB1_NATIVE},crouchDown:{src:'assets/kaiban-s1-crouch-down.png',frames:5,fps:22,once:true,...KB1_NATIVE},
   crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}},
-  stages:{2:KAIBAN_S2,3:KAIBAN_S2}},
+  stages:{2:KAIBAN_S2,3:KAIBAN_S3}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
