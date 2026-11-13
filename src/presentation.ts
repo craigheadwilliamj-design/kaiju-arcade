@@ -338,7 +338,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // the jaws shut and settles onto the base pose.
   jetStart:{src:'assets/tlezcatl-s1-jet-start.png',frames:5,fps:22,once:true,...TZ1_LEFT,mouth:[155,172]},
   jetAim:{src:'assets/tlezcatl-s1-jet-aim.png',frames:5,fps:10,once:true,...TZ1_LEFT,angles:[-20,0,10,22,35],mouth:[[155,176],[155,172],[154,165],[151,157],[149,150]]},
-  jetEnd:{src:'assets/tlezcatl-s1-jet-end.png',frames:4,fps:16,once:true,...TZ1_LEFT}}},
+  jetEnd:{src:'assets/tlezcatl-s1-jet-end.png',frames:4,fps:16,once:true,...TZ1_LEFT},
+  // Crouch: splays the legs and presses belly and chin flat to the street with the crest laid back (59px tall to 37px, about the
+  // crouch hitbox), a slow breathing loop lying flat, and crouchUp = crouchDown reversed. Timing matches the other forms.
+  crouchDown:{src:'assets/tlezcatl-s1-crouch-down.png',frames:5,fps:22,once:true,...TZ1_NATIVE},crouch:{src:'assets/tlezcatl-s1-crouch.png',frames:4,fps:6,...TZ1_NATIVE},
+  crouchUp:{src:'assets/tlezcatl-s1-crouch-up.png',frames:5,fps:22,once:true,...TZ1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
