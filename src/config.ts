@@ -31,16 +31,15 @@ export const COMBAT = {
  // set so the run fills the rest of the Ultimate; at Stage 1 shorter than Seismic Rupture's ultimateRange, but every building it touches is destroyed
  // outright like a train ran through it). Units, vehicles and the rival take stampedeDamage once per pass.
  stampedeReach:560,stampedeDamage:300,stampedeKnockback:320,stampedeCrunch:.05,bellowRange:260,bellowDamage:20,
- // Tlézcatl's Ultimate (Eruption): planted. On the roar's impact frame the energy detonates out of him, a blast eruptBlastRange
- // (x sqrt(stage scale)) each side of his middle that hits everything in it once for eruptBlastDamage. Then his crest vents a fire
- // column (eruptColumn tall, eruptColumnWidth wide, x sqrt(scale)) that burns aircraft and shots above him every eruptColumnTick, and
- // spits eruptGlobs molten globs evenly through the rest of the Ultimate. They are not aimed: each picks a random landing spot out to
- // eruptRange (x sqrt(scale)) either side, is thrown high (eruptGravity, flying eruptFlight seconds, so it comes down steeply from
- // above the skyline) and hits the first thing it falls onto (never on the way up) for
- // eruptGlobDamage, leaving an eruptPool-wide lava pool on the street. All of it is Ultimate damage, so it never refills the meter,
- // and the pools outlast the Ultimate.
- eruptBlastRange:150,eruptBlastDamage:70,eruptBlastKnockback:320,eruptColumn:300,eruptColumnWidth:56,eruptColumnTick:.15,eruptColumnDamage:16,
- eruptGlobs:36,eruptRange:800,eruptFlight:[1.2,1.6],eruptGravity:1900,eruptGlobDamage:50,eruptGlobSize:10,eruptPool:60,eruptPoolSeconds:3.5,eruptPoolDamage:8,
+ // Tlézcatl's Ultimate (Eruption): planted. He balls up for eruptCharge seconds while the pressure builds (glow, shudder, embers
+ // drawn in), rears up, and on the roar's impact frame explodes: a true circle of eruptBlastRange radius (x sqrt(stage scale)) round
+ // his middle that hits everything inside it once for eruptBlastDamage with eruptBlastKnockback, aircraft and shots included. That
+ // blast is the Ultimate. As a side effect it hurls eruptGlobs molten globs out of the fireball in one burst; they are not aimed:
+ // each picks a random landing spot out to eruptRange (x sqrt(scale)) either side, flies eruptFlight seconds under eruptGravity and
+ // hits the first thing it falls onto (never on the way up) for eruptGlobDamage, leaving an eruptPool-wide lava pool on the street
+ // that burns for eruptPoolSeconds. All of it is Ultimate damage, so it never refills the meter.
+ eruptCharge:1,eruptBlastRange:270,eruptBlastDamage:320,eruptBlastKnockback:420,
+ eruptGlobs:30,eruptRange:820,eruptFlight:[.9,1.5],eruptGravity:1900,eruptGlobDamage:30,eruptGlobSize:10,eruptPool:60,eruptPoolSeconds:3.5,eruptPoolDamage:8,
  // Tlézcatl's grounded ranged (Flame Jet): hold L to breathe a cone of fire from the jaws. A fuel bar drains over jetSeconds of
  // breathing and refills at jetRegen per second; running it dry locks the jet until it is back to jetRelight. A tap still breathes for
  // jetMinBurst. Everything inside the cone takes jetDamage every jetTick (pierces); the cone stops at the first building and at the

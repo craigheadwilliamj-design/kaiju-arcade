@@ -73,10 +73,10 @@ let globs:Glob[]=[],pools:Pool[]=[];
 type Jet={phase:'start'|'on'|'end',t:number,on:number,angle:number,hits:Map<object,number>,ox:number,oy:number,dx:number,dy:number,len:number,stop:boolean,bend:number,bx:number,face:number};
 let jet:Jet|null=null,jetFuel=1,jetLocked=false;
 // Kaiban's Stampede: bellow (blast on the roar's impact frame), then the charge. `hits` resets when he turns, so each pass hits once.
-// Tlézcatl's Eruption: `blasted` once the detonation has gone off, `spat` globs launched so far, `column` = last burn tick per target.
+// Tlézcatl's Eruption: `blasted` once the explosion has gone off, `boom` seconds since, `spat` globs thrown, `flash` the white-out left.
 // Where each Eruption glob came down (roof, wall, unit or street), for the debug view; cleared when the next Eruption starts.
 let eruptLandings:number[]=[];
-let eruption:{blasted:boolean,spat:number,column:Map<object,number>,flash:number}|null=null;
+let eruption:{blasted:boolean,spat:number,flash:number,boom:number}|null=null;
 let stampede:{dir:number,hits:Set<object>,turned:boolean,bellowed:boolean,charging:boolean,start:number,reach:number}|null=null;
 function viewW(){return C.width/zoom;}
 function screenX(wx:number){return (wx-camera)*zoom;}
@@ -113,7 +113,7 @@ let runUp=0,runDir=0;
 function jumpVelocity(){return C.jumpVelocity*scale(combat)**MV.jumpStageExp;}
 function currentAnim():[string,number]{
  if(attack)return [attack.anim,attack.t];
- if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar',combat.stage)){const el=B.ultimateDuration-combat.ultimateTime,roar=animDuration(activeKaiju,'ultRoar',combat.stage);return el<roar?['ultRoar',el]:['ultPound',el-roar];}
+ if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar',combat.stage)){const pre=eruption?B.eruptCharge:0,el=B.ultimateDuration-combat.ultimateTime-pre;if(el<0)return ['ultCharge',el+pre];const roar=animDuration(activeKaiju,'ultRoar',combat.stage);return el<roar?['ultRoar',el]:['ultPound',el-roar];}
 // Diving: the form's dive strip (time since the dive began) when it has one, else the jumpAir loop.
  if(dive&&hasAnim(activeKaiju,'dive',combat.stage))return ['dive',time-dive.t0];
  if(roll&&hasAnim(activeKaiju,'dive',combat.stage))return ['dive',time-roll.t0];
@@ -520,37 +520,42 @@ function drainMilitary(){for(const e of military.events){if(e.kind==='reward'){s
 // Kaiban's Stampede bellows on the same impact frame, then charges (tickStampede) instead of sending fissures.
 function useUltimate(){if(!activateUltimate(combat))return;attack=null;tremor=null;debris=null;jet=null;jet=null;jetFuel=1;jetLocked=false;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;
  stampede=activeKaiju==='Kaiban'?{dir:player.face,hits:new Set(),turned:false,bellowed:false,charging:false,start:player.x,reach:B.stampedeReach*scale(combat)}:null;
- eruptLandings=[];eruption=activeKaiju==='Tlézcatl'?{blasted:false,spat:0,column:new Map(),flash:0}:null;}
-// Eruption: planted. On the roar's impact frame the built-up energy detonates out of him (one hit on everything within eruptBlastRange
-// either side), then the crest vents a fire column for the rest of the Ultimate and spits eruptGlobs molten globs at an even rate.
-// The globs are not aimed: each picks a random landing spot out to eruptRange either side, and its throw is solved to fly eruptFlight
-// seconds to the street, so the rain covers the area evenly instead of bunching at his feet. Everything is Ultimate damage.
-function eruptionVent(w:number,h:number){const g=Math.sqrt(scale(combat));return {x:player.x+w*.5,y:player.y+h*.12,g};}
+ eruptLandings=[];eruption=activeKaiju==='Tlézcatl'?{blasted:false,spat:0,flash:0,boom:0}:null;
+ if(eruption)ultimateTimer+=B.eruptCharge;}
+// Eruption: planted. He balls up for eruptCharge seconds while the pressure builds, rears up (the roar strip), and on its impact
+// frame explodes: one hit on everything inside a true circle of eruptBlastRange round his middle. The blast is the Ultimate; the
+// magma is its fallout, hurled out of the fireball in one burst. The globs are not aimed: each picks a random landing spot out to
+// eruptRange either side and its throw is solved to fly eruptFlight seconds, so the fallout covers the area evenly and keeps landing
+// for a while after the blast. Everything is Ultimate damage.
+function eruptionCore(w:number,h:number){return {x:player.x+w/2,y:player.y+h*.5,g:Math.sqrt(scale(combat))};}
+// Circle-vs-rectangle: the nearest point of the rectangle lies within r of the centre.
+function inCircle(cx:number,cy:number,r:number,b:{x:number,y:number,w:number,h:number}){const dx=cx-Math.max(b.x,Math.min(cx,b.x+b.w)),dy=cy-Math.max(b.y,Math.min(cy,b.y+b.h));return dx*dx+dy*dy<=r*r;}
 function tickEruption(dt:number,w:number,h:number){
- const e=eruption!,el=B.ultimateDuration-combat.ultimateTime,dm=damageMultiplier(combat),{x:vx0,y:vy0,g}=eruptionVent(w,h),cx=player.x+w/2;
- e.flash=Math.max(0,e.flash-dt);ultimateTimer-=dt;const side=(x:number)=>Math.sign(x-cx)||player.face;
- if(!e.blasted&&ultimateTimer<=0){e.blasted=true;e.flash=.35;shake=Math.max(shake,14);hitstop=Math.max(hitstop,.08);
-  const R=B.eruptBlastRange*g,box={x:cx-R,y:player.y-R*.6,w:2*R,h:C.ground-(player.y-R*.6)+4},dmg=B.eruptBlastDamage*dm,kb=B.eruptBlastKnockback;
-  for(const b of buildings)if(b.hpNow>0&&overlaps(box,{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){const d=side(b.x+b.w/2);hit(b,dmg,true,d,{x:d>0?b.x+6:b.x+b.w-6,y:Math.max(C.ground-b.h+6,player.y+h*.5)});}
-  for(const gr of growths)if(gr.hp>0&&overlaps(box,{x:gr.x-20,y:C.ground-55,w:40,h:55}))hitGrowth(gr,dmg);
-  if(objective&&!objective.shattered&&overlaps(box,{x:objective.x-30,y:C.ground-100,w:60,h:100}))hitObjective(dmg);
-  if(rival&&!rival.dead&&overlaps(box,rival))strikeRival(dmg,kb,side(rival.x+rival.w/2),true);
-  for(const u of military.units)if(u.hp>0&&overlaps(box,u))hitUnit(military,u,dmg,'player',kb,side(u.x+u.w/2),true);
-  for(const p of military.projectiles)if(!p.dead&&overlaps(box,{x:p.x-6,y:p.y-6,w:12,h:12}))intercept(military,p);
-  for(const v of vehicles)if(loose(v)&&overlaps(box,vehicleBox(v)))puntVehicle(v,dmg*.5,side(v.x+v.w/2),true,1.6);
-  for(let k=0;k<40&&particles.length<C.particleCap;k++){const a=Math.random()*Math.PI,sp=(200+Math.random()*320)*g;particles.push({x:cx,y:player.y+h*.5,vx:Math.cos(a)*sp,vy:-Math.sin(a)*sp,life:.3+Math.random()*.4,color:['#fff2c0','#ffd34d','#ff8a1f','#e8401a'][k%4],size:2+Math.floor(Math.random()*4)});}}
- if(!e.blasted)return;
- // Fire column: burns aircraft, troops on roofs above him and incoming shots.
- const col={x:vx0-B.eruptColumnWidth*g/2,y:vy0-B.eruptColumn*g,w:B.eruptColumnWidth*g,h:B.eruptColumn*g},tick=(o:object)=>{if(time-(e.column.get(o)??-9)<B.eruptColumnTick)return false;e.column.set(o,time);return true;};
- for(const u of military.units)if(u.hp>0&&overlaps(col,u)&&tick(u))hitUnit(military,u,B.eruptColumnDamage*dm,'player',30,side(u.x+u.w/2),true);
- for(const p of military.projectiles)if(!p.dead&&overlaps(col,{x:p.x-6,y:p.y-6,w:12,h:12}))intercept(military,p);
- // Spit globs at an even rate from the blast until a little before the end (the last ones land after the Ultimate).
- const start=animImpact(activeKaiju,'ultRoar',combat.stage),span=Math.max(.3,B.ultimateDuration-.25-start),due=Math.min(B.eruptGlobs,Math.ceil((el-start)/span*B.eruptGlobs));
- const R=B.eruptRange*g,inner=B.eruptBlastRange*g*.5,[t0,t1]=B.eruptFlight;
- for(;e.spat<due;e.spat++){const dx=(Math.random()<.5?-1:1)*(inner+Math.random()*(R-inner)),land=Math.max(4,Math.min(worldWidth-4,vx0+dx)),T=t0+Math.random()*(t1-t0),x0=vx0+(Math.random()-.5)*w*.2;
-  globs.push({x:x0,y:vy0,vx:(land-x0)/T,vy:(C.ground-2-vy0-.5*B.eruptGravity*T*T)/T,grav:B.eruptGravity,life:T+1,damage:B.eruptGlobDamage*dm,size:B.eruptGlobSize*g*(.8+Math.random()*.4),ult:true});}
- shake=Math.max(shake,3);
- for(let n=0;n<3&&particles.length<C.particleCap;n++)if(Math.random()<dt*40)particles.push({x:vx0+(Math.random()-.5)*w*.25,y:vy0,vx:(Math.random()-.5)*120,vy:-(160+Math.random()*260)*g,life:.3+Math.random()*.4,color:['#fff2c0','#ffd34d','#ff8a1f','#e8401a'][n%4],size:2+Math.floor(Math.random()*3)});}
+ const e=eruption!,el=B.ultimateDuration-combat.ultimateTime,dm=damageMultiplier(combat),{x:cx,y:cy,g}=eruptionCore(w,h);
+ e.flash=Math.max(0,e.flash-dt);ultimateTimer-=dt;
+ if(!e.blasted){
+  // Pressure building: embers drawn in toward him, a rising rumble.
+  const p=Math.min(1,el/B.eruptCharge);shake=Math.max(shake,1+p*4);
+  for(let n=0;n<2&&particles.length<C.particleCap;n++)if(Math.random()<dt*(10+40*p)){const a=Math.random()*Math.PI*2,r=(50+Math.random()*60)*g,life=.35;
+   particles.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r*.7,vx:-Math.cos(a)*r/life,vy:-Math.sin(a)*r*.7/life,life,color:Math.random()<.5?'#ffd34d':'#ff8a1f',size:2+Math.floor(Math.random()*2)});}
+  if(ultimateTimer>0)return;
+  e.blasted=true;e.boom=0;e.flash=.4;shake=Math.max(shake,18);hitstop=Math.max(hitstop,.12);
+  const R=B.eruptBlastRange*g,dmg=B.eruptBlastDamage*dm,kb=B.eruptBlastKnockback,side=(x:number)=>Math.sign(x-cx)||player.face,hits=(r:{x:number,y:number,w:number,h:number})=>inCircle(cx,cy,R,r);
+  for(const b of buildings)if(b.hpNow>0&&hits({x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){const d=side(b.x+b.w/2),near=d>0?b.x:b.x+b.w;hit(b,dmg,true,d,{x:near+d*6,y:Math.max(C.ground-b.h+6,Math.min(C.ground-6,cy))});}
+  for(const gr of growths)if(gr.hp>0&&hits({x:gr.x-20,y:C.ground-55,w:40,h:55}))hitGrowth(gr,dmg);
+  if(objective&&!objective.shattered&&hits({x:objective.x-30,y:C.ground-100,w:60,h:100}))hitObjective(dmg);
+  if(rival&&!rival.dead&&hits(rival))strikeRival(dmg,kb,side(rival.x+rival.w/2),true);
+  for(const u of military.units)if(u.hp>0&&hits(u))hitUnit(military,u,dmg,'player',kb,side(u.x+u.w/2),true);
+  for(const p of military.projectiles)if(!p.dead&&hits({x:p.x-6,y:p.y-6,w:12,h:12}))intercept(military,p);
+  for(const v of vehicles)if(loose(v)&&hits(vehicleBox(v)))puntVehicle(v,dmg*.5,side(v.x+v.w/2),true,1.8);
+  for(let k=0;k<60&&particles.length<C.particleCap;k++){const a=Math.random()*Math.PI*2,sp=(250+Math.random()*400)*g;particles.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.8,life:.3+Math.random()*.5,color:['#fff2c0','#ffd34d','#ff8a1f','#e8401a','#5a1d12'][k%5],size:2+Math.floor(Math.random()*5)});}
+  // The fallout: every glob thrown out of the fireball at once, from the point on its edge facing where it will land.
+  const reach=B.eruptRange*g,[t0,t1]=B.eruptFlight;
+  for(let i=0;i<B.eruptGlobs;i++){const dir=i%2?1:-1,land=Math.max(4,Math.min(worldWidth-4,cx+dir*(R*.6+Math.random()*(reach-R*.6)))),T=t0+Math.random()*(t1-t0),a=-Math.PI/2+dir*(.25+Math.random()*.9);
+   const x0=cx+Math.cos(a)*R*.35,y0=Math.min(C.ground-10,cy+Math.sin(a)*R*.35);
+   globs.push({x:x0,y:y0,vx:(land-x0)/T,vy:(C.ground-2-y0-.5*B.eruptGravity*T*T)/T,grav:B.eruptGravity,life:T+1,damage:B.eruptGlobDamage*dm,size:B.eruptGlobSize*g*(.8+Math.random()*.4),ult:true});}
+  e.spat=B.eruptGlobs;}
+ e.boom+=dt;}
 // Stampede: the bellow knocks back whatever is close, then once the roar strip ends he charges stampedeReach x stage scale (fixed at
 // activation) out and back, so a bigger form charges further and faster in the same time (no building
 // collision while charging), turning early at the world edge. Every building he touches is destroyed outright (trainWreck); everything
@@ -945,15 +950,22 @@ function drawJet(){const j=jet;if(!j||j.phase!=='on'||j.len<=0)return;
   for(let d=0;d<=j.len;d+=5){const f=Math.min(1,d/R),tip=Math.min(1,(j.len-d)/(14*g)+.35),wob=Math.sin(time*47+d*.37+k*9),full=(w0+(w1-w0)*f)*g,r=full*k*tip*(.82+.18*Math.sin(time*61+d*.23));
    if(r<1)continue;const [px,py]=jetPoint(j,d,full),bent=d>=j.bend,x=px+(bent?0:nx*wob*r*.3)-camera,y=py+(bent?-Math.abs(wob)*r*.25:ny*wob*r*.3),q=r*.41;
    poly([[x-q,y-r],[x+q,y-r],[x+r,y-q],[x+r,y+q],[x+q,y+r],[x-q,y+r],[x-r,y+q],[x-r,y-q]],col);}}
-// Eruption: the fire column venting from the crest (layered flickering octagons like the jet, widening and ragging toward the top)
-// and, just after the detonation, a ring of fire racing out to the blast range.
-function drawEruption(){const e=eruption;if(!e?.blasted)return;const w=bodyWidth(),h=bodyHeight(),{x:vx,y:vy,g}=eruptionVent(w,h),L=B.eruptColumn*g,W=B.eruptColumnWidth*g,x0=vx-camera;
- for(const [k,col] of [[1,'#a8281a'],[.78,'#ec5a17'],[.52,'#ffae2e'],[.26,'#fff2c0']] as [number,string][])
-  for(let d=0;d<=L;d+=6){const f=d/L,r=W*.5*k*(.55+.75*f)*(1-Math.max(0,f-.8)*3.5)*(.8+.2*Math.sin(time*53+d*.31+k*7));if(r<1)continue;
-   const x=x0+Math.sin(time*29+d*.07)*W*.18*f,y=vy-d,q=r*.41;poly([[x-q,y-r],[x+q,y-r],[x+r,y-q],[x+r,y+q],[x+q,y+r],[x-q,y+r],[x-r,y+q],[x-r,y-q]],col);}
- if(e.flash>0){const t=1-e.flash/.35,R=B.eruptBlastRange*g*(.25+.75*t),cy=player.y+h*.5,n=28;
-  for(let i=0;i<=n;i++){const a=Math.PI*i/n,px=player.x+w/2-camera+Math.cos(a)*R,py=Math.min(C.ground-4,cy-Math.sin(a)*R*.6),z=(10-6*t)*g;
-   rect(px-z/2,py-z/2,z,z,i%2?'#ff8a1f':'#ffd34d');rect(px-z/4,py-z/4,z/2,z/2,'#fff2c0');}}}
+// Eruption: while charging, a pulsing glow round him that swells and flickers faster as the pressure builds; then the explosion, a
+// fireball filling the blast circle (layered polygons, white core to dark rim) with a shock ring racing just ahead of it, then fading.
+function disc(x:number,y:number,r:number,col:string,n=20){const pts:number[][]=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2;pts.push([x+Math.cos(a)*r,y+Math.sin(a)*r]);}poly(pts,col);}
+// The charge shudders him in place, harder as the pressure builds.
+function eruptionShudder(){const e=eruption;if(!e||e.blasted)return 0;const p=Math.min(1,(B.ultimateDuration-combat.ultimateTime)/B.eruptCharge);return Math.round(Math.sin(time*70)*p*2.2);}
+function drawEruptionGlow(){const e=eruption;if(!e||e.blasted)return;const w=bodyWidth(),h=bodyHeight(),{x,y,g}=eruptionCore(w,h),p=Math.min(1,(B.ultimateDuration-combat.ultimateTime)/B.eruptCharge),pulse=.5+.5*Math.sin(time*(8+30*p));
+ const r=(36+64*p+10*pulse)*g,sx=x-camera,sy=Math.min(C.ground-r*.2,y+h*.2);
+ disc(sx,sy,r*1.3,`rgba(232,64,26,${(.18+.25*p*pulse).toFixed(3)})`);disc(sx,sy,r,`rgba(255,138,31,${(.22+.35*p*pulse).toFixed(3)})`);disc(sx,sy,r*.55,`rgba(255,226,140,${(.2+.5*p*pulse).toFixed(3)})`);}
+// Over the body: the hide itself glows hotter as the pressure builds.
+function drawEruptionHeat(){const e=eruption;if(!e||e.blasted)return;const w=bodyWidth(),h=bodyHeight(),{x,y,g}=eruptionCore(w,h),p=Math.min(1,(B.ultimateDuration-combat.ultimateTime)/B.eruptCharge),pulse=.5+.5*Math.sin(time*(8+30*p));
+ disc(x-camera,Math.min(C.ground-8,y+h*.25),(26+14*p)*g,`rgba(255,200,90,${(.12+.3*p*pulse).toFixed(3)})`);}
+function drawEruption(){const e=eruption;if(!e?.blasted)return;const w=bodyWidth(),h=bodyHeight(),{x,y,g}=eruptionCore(w,h),R=B.eruptBlastRange*g,t=e.boom,grow=Math.min(1,t/.18),fade=Math.max(0,1-Math.max(0,t-.25)/.5),sx=x-camera;
+ if(fade<=0)return;const r=R*(.3+.7*Math.sqrt(grow)),a=(v:number)=>(v*fade).toFixed(3);
+ for(const [k,col] of [[1,`rgba(168,40,26,${a(.55)})`],[.82,`rgba(236,90,23,${a(.7)})`],[.6,`rgba(255,174,46,${a(.8)})`],[.35,`rgba(255,242,192,${a(.9)})`]] as [number,string][]){
+  const pts:number[][]=[];for(let i=0;i<28;i++){const an=i/28*Math.PI*2,j=1+.07*Math.sin(time*40+i*2.3+k*5);pts.push([sx+Math.cos(an)*r*k*j,y+Math.sin(an)*r*k*j]);}poly(pts,col);}
+ const ring=R*(.4+.75*Math.min(1,t/.3));if(t<.45)for(let i=0;i<36;i++){const an=i/36*Math.PI*2,z=(9-12*t)*g;rect(sx+Math.cos(an)*ring-z/2,y+Math.sin(an)*ring-z/2,z,z,i%2?'#ffd34d':'#fff2c0');}}
 function render(){
  fitCanvas();
  if(mode==='intro'){drawIntro(ctx,introElapsed);return;}
@@ -983,7 +995,7 @@ function render(){
   rect(x+d*6*z-3*z,C.ground-(62*z+j*2),6*z,6*z,'#c9a77c');rect(x-d*8*z-2*z,C.ground-(48*z-j*2),4*z,4*z,'#8d7a66');
   rect(Math.min(x,x+d*40*z),C.ground,40*z,3,'#ffe0a8');}
  if(combat.superTime>0){const x=player.x-camera;rect(x-7,player.y-7,bodyWidth()+14,bodyHeight()+10,Math.sin(time*10)>0?'#c47cab':'#8d799e');}
- monster(player.x-camera,player.y,player.face,player.crouched,player.pose);drawJet();drawEruption();drawVehicles(1);drawMilitary(1);
+ drawEruptionGlow();monster(player.x-camera+eruptionShudder(),player.y,player.face,player.crouched,player.pose);drawEruptionHeat();drawJet();drawEruption();drawVehicles(1);drawMilitary(1);
  if(combat.transform>0){const x=player.x-camera+bodyWidth()/2,y=player.y+bodyHeight()/2;const radius=bodyHeight()*.75;poly([[x,y-radius],[x+radius*.6,y],[x,y+radius],[x-radius*.6,y]],'#f4b0d8');poly([[x,y-radius*.85],[x+radius*.35,y],[x,y+radius*.8],[x-radius*.35,y]],'#ffe0f1');}
  if(combat.ultimateTime>0)text(ultimateLabel(),player.x-camera+bodyWidth()/2,player.y-24,10,'#fff1d8','center');
  // Launched tail quill: bone-white spike pointing along its flight, dark base, faint motion streak.
