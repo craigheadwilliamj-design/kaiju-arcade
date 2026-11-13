@@ -132,9 +132,17 @@ export const VEHICLES = {
 // Pound: S+J (crouched light) beats down on whatever you stand on, so on a rooftop it pounds the building under your feet.
 export const MOVE = {
  runSpeed:1.8,dashSpeed:2.7,dashSeconds:.2,doubleTap:.28,runJumpLift:1.08,jumpStageExp:.25,
- bargeDamage:26,bargeCooldown:.45,bargeUnitDamage:18,bargeKnockback:260,
+ // A barge/gore only lands after a run-up: bargeRunUp px (x stage scale) covered running the same way; each hit resets it.
+ bargeDamage:26,bargeCooldown:.45,bargeRunUp:90,bargeUnitDamage:18,bargeKnockback:260,
  ledgeGrab:.45,wallLeap:1.6,grabCooldown:.22,
  diveSpeed:900,diveSteer:.35,diveDamage:48,diveRoofMult:1.7,diveRadius:80,diveFallBonus:300,diveFallMax:1.5,
  diveKnockback:300,diveWaveRange:200,diveWaveSize:.6,diveWaveDamage:.45,diveCooldown:.35,
+ diveSpin:16,
+ // Street roll: a street Slam with a direction held keeps the spike ball rolling (forms whose dive strip spins, i.e. Mogurodon).
+ // It plows troops/cars/growths once each, ricochets off the first wall with a hop, and bursts out at the second wall or on time.
+ rollSpeed:2.6,rollSeconds:.9,rollDamage:30,rollWallDamage:70,rollKnockback:320,rollHop:.45,rollAfterBounce:.45,
+ // Kaiban: Gore Charge multiplies the running barge and launches cars high; Meteor Drop flings a ring of rocks on landing
+ // (half each way, angles from meteorAngle, speeds meteorSpeed x sqrt(stage scale) x drop power, meteorDamage each).
+ goreMult:2.2,goreUnitMult:1.6,goreLift:2.4,meteorRocks:10,meteorSpeed:[260,480],meteorAngle:[25,72],meteorDamage:12,
  poundMult:1.25,poundCooldown:.34,poundKnockback:120,
 };
