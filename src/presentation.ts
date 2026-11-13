@@ -129,6 +129,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carryWalk:{src:'assets/mogurodon-carry-walk.png',frames:8,fps:10,...S2_NATIVE,hold:[[144,21],[146,20],[150,20],[151,21],[152,23],[150,23],[148,22],[146,22]]},
   throw:{src:'assets/mogurodon-throw.png',frames:8,fps:18,once:true,...S2_NATIVE},
   // Slam cannonball (see stages[1] for how dive/slamLand are cut and played).
+  run:{src:'assets/mogurodon-run.png',frames:8,fps:15,...S2_NATIVE},
   dive:{src:'assets/mogurodon-dive.png',frames:3,fps:28,once:true,...S2_NATIVE,pivot:[134.6,113.7],spinFrom:2},
   slamLand:{src:'assets/mogurodon-slam-land.png',frames:8,fps:16,once:true,...S2_NATIVE}},
   stages:{1:{width:120,anims:{
@@ -184,6 +185,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    carryWalk:{src:'assets/mogurodon-s3-carry-walk.png',frames:8,fps:10,...S3_NATIVE,hold:[[134,25],[140,24],[149,24],[158,24],[162,24],[157,24],[150,24],[140,24]]},
    throw:{src:'assets/mogurodon-s3-throw.png',frames:8,fps:18,once:true,...S3_NATIVE},
    // Slam cannonball: a crystal-studded spike ball.
+   run:{src:'assets/mogurodon-s3-run.png',frames:8,fps:15,...S3_NATIVE},
    dive:{src:'assets/mogurodon-s3-dive.png',frames:3,fps:28,once:true,...S3_NATIVE,pivot:[126.8,104.9],spinFrom:2},
    slamLand:{src:'assets/mogurodon-s3-slam-land.png',frames:8,fps:16,once:true,...S3_NATIVE}}}}},
  // Kaiban (woolly boar juggernaut): every Stage 1 strip is done; only the Stage 1 form exists, so it is the base form and every stage draws it until Stage 2/3 are
