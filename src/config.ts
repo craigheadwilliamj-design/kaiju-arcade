@@ -122,3 +122,18 @@ export const VEHICLES = {
  // Lampposts stand every lampSpacing px; uprooted they become a light javelin that pierces troops and vehicles.
  lampSpacing:450,lampLift:110,lampPierce:.95,
 };
+
+// Movement and aerial attacks. Run: hold Shift or double-tap A/D (the double-tap opens with a short dash burst). Running
+// shoulder-barges buildings and troops it hits, and a running jump carries run speed through the air (a leap).
+// Airborne, steering into a wall grabs it (leap-grab); feet near the roof pull straight up onto it (ledge grab).
+// Pushing into the wall while clinging climbs like W. Slam: S in the air dives straight down; the landing hits what is under
+// you (the roof you land on takes diveRoofMult) plus a radius, scaled by how far you fell; crashing through a roof keeps the dive going.
+// Pound: S+J (crouched light) beats down on whatever you stand on, so on a rooftop it pounds the building under your feet.
+export const MOVE = {
+ runSpeed:1.8,dashSpeed:2.7,dashSeconds:.2,doubleTap:.28,runJumpLift:1.08,jumpStageExp:.25,
+ bargeDamage:26,bargeCooldown:.45,bargeUnitDamage:18,bargeKnockback:260,
+ ledgeGrab:.45,wallLeap:1.6,grabCooldown:.22,
+ diveSpeed:900,diveSteer:.35,diveDamage:48,diveRoofMult:1.7,diveRadius:80,diveFallBonus:300,diveFallMax:1.5,
+ diveKnockback:300,diveWaveRange:200,diveWaveSize:.6,diveWaveDamage:.45,diveCooldown:.35,
+ poundMult:1.25,poundCooldown:.34,poundKnockback:120,
+};
