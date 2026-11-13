@@ -139,5 +139,8 @@ export const MOVE = {
  // Street roll: a street Slam with a direction held keeps the spike ball rolling (forms whose dive strip spins, i.e. Mogurodon).
  // It plows troops/cars/growths once each, ricochets off the first wall with a hop, and bursts out at the second wall or on time.
  rollSpeed:2.6,rollSeconds:.9,rollDamage:30,rollWallDamage:70,rollKnockback:320,rollHop:.45,rollAfterBounce:.45,
+ // Kaiban: Gore Charge multiplies the running barge and launches cars high; Meteor Drop flings a ring of rocks on landing
+ // (half each way, angles from meteorAngle, speeds meteorSpeed x sqrt(stage scale) x drop power, meteorDamage each).
+ goreMult:2.2,goreUnitMult:1.6,goreLift:2.4,meteorRocks:10,meteorSpeed:[260,480],meteorAngle:[25,72],meteorDamage:12,
  poundMult:1.25,poundCooldown:.34,poundKnockback:120,
 };

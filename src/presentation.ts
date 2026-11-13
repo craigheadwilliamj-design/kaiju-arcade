@@ -94,6 +94,11 @@ const KAIBAN_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/kaiban-s2-i
  // 12-frame generation that repeats with an exact 7-frame period), 7 frames at 20 fps: a quick 0.35s stride to keep pace with the
  // charge, which runs stampedeReach x stage scale.
  ultRoar:{src:'assets/kaiban-s2-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB2_NATIVE},ultPound:{src:'assets/kaiban-s2-ult-pound.png',frames:7,fps:20,...KB2_NATIVE},
+ // Gore Charge: running reuses the Stampede knuckle gallop. Pound (S+J) reuses light1's overhead fist hammer.
+ // Meteor Drop: dive = rear up and plunge fists-first (frames 0,1,4,8 of a 9-frame generation, bottom-aligned, held on the last);
+ // slamLand = frames 1-8 of a generation from that pose on the ground to the base: fists hit, burst, push up into the stance.
+ run:{src:'assets/kaiban-s2-ult-pound.png',frames:7,fps:20,...KB2_NATIVE},pound:{src:'assets/kaiban-s2-light1.png',frames:8,fps:24,once:true,...KB2_LEFT},
+ dive:{src:'assets/kaiban-s2-dive.png',frames:4,fps:24,once:true,...KB2_NATIVE},slamLand:{src:'assets/kaiban-s2-slam-land.png',frames:8,fps:16,once:true,...KB2_NATIVE},
  // Jump: crouches on the knuckles and springs off all fours (rise), a tucked airborne loop from the rise's last frame (frames 1-4 of its
  // generation), and a heavy fists-first squash landing closed on the base pose. Bottom-aligned; frame counts and fps match Stage 1's jump.
  jumpRise:{src:'assets/kaiban-s2-jump-rise.png',frames:9,fps:24,once:true,...KB2_NATIVE},jumpAir:{src:'assets/kaiban-s2-jump-air.png',frames:4,fps:8,...KB2_NATIVE},
@@ -223,6 +228,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // charge stance, then a head-down battering-ram gallop for the rest of the 2.4s Ultimate: one long flat bounding stride (frames 2-9 of
   // a 12-frame generation; the near-still ends were dropped so the loop doesn't stutter) with the head held low the whole way.
   ultRoar:{src:'assets/kaiban-s1-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB1_NATIVE},ultPound:{src:'assets/kaiban-s1-ult-pound.png',frames:8,fps:16,...KB1_NATIVE},
+  // Gore Charge run = the Stampede head-down charge; Pound = the rear-and-stomp heavy slam. Meteor Drop: dive tips nose-down into
+  // a tusks-first plunge (frames 0,2,4,8, bottom-aligned); slamLand rams the tusks in, cracks a crater and heaves back out.
+  run:{src:'assets/kaiban-s1-ult-pound.png',frames:8,fps:16,...KB1_NATIVE},pound:{src:'assets/kaiban-s1-heavy-slam.png',frames:8,fps:16,once:true,...KB1_NATIVE},
+  dive:{src:'assets/kaiban-s1-dive.png',frames:4,fps:24,once:true,...KB1_NATIVE},slamLand:{src:'assets/kaiban-s1-slam-land.png',frames:8,fps:16,once:true,...KB1_NATIVE},
   // Ranged (debris shotgun): plows both tusks down and forward into the street (frames 1-4, dirt clod at the tusks), then wrenches the
   // head up so the tusks fling the debris up and forward (impact frame 5, with the dirt crescent), and settles. Loose dirt erased: the
   // game draws the projectiles. The upswing frames tip the head up, so they have no eye.
@@ -338,7 +347,8 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
  :kaiju==='Kaiban'?[
   {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
   {keys:'U',name:'Stampede',desc:'Full meter. A bellow blasts back anything close, then a head-down charge out and back flattens every building it touches.'},
-  {...slam,name:'Slam'},
+  {keys:'SHIFT+A/D',name:'Gore Charge',desc:'His run is a head-down tusk charge. Ramming a building hits far harder than a normal barge, troops get thrown, and cars get flipped up over his tusks.'},
+  {...slam,name:'Meteor Drop',desc:'Dive tusks- or fists-first. The landing cracks the ground and hurls a ring of rock chunks out both ways, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging there is no street to scoop: fire one shot.'}]
  :[
   {keys:'L',name:'Spine',desc:'A horizontal ranged spine.'},

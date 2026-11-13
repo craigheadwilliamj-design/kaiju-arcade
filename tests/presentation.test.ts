@@ -16,7 +16,8 @@ test('move lists: signature moves are per kaiju, combat and controls are shared'
  const names=(k:string)=>moveList(k).moves.flatMap(s=>s.moves.map(m=>m.name));
  assert.ok(names('Mogurodon').includes('Cannonball')&&names('Mogurodon').includes('Tremor Slam'));
  assert.ok(names('Kaiban').includes('Stampede')&&names('Kaiban').includes('Debris Shotgun')&&!names('Kaiban').includes('Cannonball'));
- for(const k of ['Mogurodon','Kaiban','Belial']){assert.ok(names(k).includes('Pound')&&names(k).some(n=>/Slam$/.test(n)));assert.ok(moveList(k).controls.flatMap(s=>s.moves).some(m=>m.name==='Leap-grab'));}
+ assert.ok(names('Kaiban').includes('Gore Charge')&&names('Kaiban').includes('Meteor Drop'));
+ for(const k of ['Mogurodon','Kaiban','Belial']){assert.ok(names(k).includes('Pound')&&names(k).some(n=>/Slam$|Meteor Drop/.test(n)));assert.ok(moveList(k).controls.flatMap(s=>s.moves).some(m=>m.name==='Leap-grab'));}
 });
 
 test('pause menu opens the Moves & Controls panel with tabs and returns to pause',async()=>{
