@@ -1,5 +1,5 @@
 // Browser benchmark: node tools/perf.mjs [--scale 2] [--throttle 4]   (run `npm run build` first)
-// Serves dist/, plays a drill in headless Chromium and reports what was fetched and how frames behaved around street dives.
+// Serves dist/ (or PERF_DIR), plays a drill in headless Chromium and reports what was fetched and how frames behaved around street dives.
 // Headless Chromium rasterises in software, so compare runs against each other; these are not real-device frame rates.
 import {createServer} from 'node:http';import {readFile} from 'node:fs/promises';import {extname,join,normalize} from 'node:path';
 import {createRequire} from 'node:module';
@@ -8,7 +8,7 @@ const arg=(name,fallback)=>{const i=process.argv.indexOf('--'+name);return i>0?N
 const scale=arg('scale',1),throttle=arg('throttle',1),dives=arg('dives',4);
 const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png'};
 const server=createServer(async(req,res)=>{try{const path=normalize(decodeURIComponent(new URL(req.url,'http://x').pathname)).replace(/^(\.\.[/\\])+/,'');
- const file=/[/\\]$/.test(path)?path+'index.html':path,body=await readFile(join('dist',file));res.writeHead(200,{'content-type':types[extname(file)]||'application/octet-stream'});res.end(body);}catch{res.writeHead(404);res.end();}});
+ const file=/[/\\]$/.test(path)?path+'index.html':path,body=await readFile(join(process.env.PERF_DIR||'dist',file));res.writeHead(200,{'content-type':types[extname(file)]||'application/octet-stream'});res.end(body);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1280,height:900},deviceScaleFactor:scale});
 const fetched=[],errors=[];page.on('response',async r=>{if(r.url().endsWith('.png')&&r.ok())fetched.push((await r.body().catch(()=>Buffer.alloc(0))).length);});
