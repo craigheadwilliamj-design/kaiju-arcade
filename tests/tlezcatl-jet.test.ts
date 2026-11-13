@@ -83,6 +83,42 @@ test('Tlézcatl Magma Dive: plays his own dive and landing, splashes lava globs 
  }finally{h.release();h.cleanup();}
 });
 
+test('Tlézcatl Flame Jet: leaves fire behind (street patches, afterburn on the wall) that dies out and never collapses a building alone',async()=>{
+ const h=await tlezcatlCity();
+ try{h.step(30);
+  const s0=h.state(),cx=s0.x+s0.width/2;
+  const ahead=s0.buildings.filter((b:any)=>b.hp>0&&b.x>cx).sort((a:any,b:any)=>a.x-b.x)[0];
+  const i=h.state().buildings.findIndex((b:any)=>b.x===ahead.x);
+  // From the spawn, aimed down: the flame washes along the street into the next building's wall, then let go.
+  h.down('KeyL');h.down('KeyS');until(h,()=>h.state().jet==='on',40);h.step(40);h.up('KeyS');h.up('KeyL');
+  until(h,()=>h.state().jet===null,60);
+  assert.ok(h.state().entityCounts.jetFires>0,`street fire left behind (${h.state().entityCounts.jetFires})`);
+  assert.ok(h.state().entityCounts.jetFires<=B.jetFireCap);
+  assert.ok(h.state().entityCounts.burning>=1,'the building it hit keeps burning');
+  const hp=h.state().buildingHP[i];h.step(30);
+  assert.ok(h.state().buildingHP[i]<hp,'afterburn keeps chipping it');
+  assert.ok(until(h,()=>h.state().entityCounts.jetFires===0&&h.state().entityCounts.burning===0,Math.ceil(B.jetBurnSeconds*60)+30),'all of it burns out');
+  assert.ok(h.state().buildingHP.every((v:number,n:number)=>n===i||v===s0.buildingHP[n]),'no spread to other buildings');
+ }finally{h.release();h.cleanup();}
+});
+
+test('Tlézcatl Flame Jet: sweeping up a wall leaves a track of fire up its side; more spots do not stack the damage',async()=>{
+ const h=await tlezcatlCity();
+ try{h.step(30);
+  const s0=h.state(),cx=s0.x+s0.width/2;
+  const ahead=s0.buildings.filter((b:any)=>b.hp>0&&b.x>cx).sort((a:any,b:any)=>a.x-b.x)[0];
+  h.down('KeyD');until(h,()=>h.state().x+h.state().width>ahead.x-90,600);h.up('KeyD');h.step(5);
+  const i=h.state().buildings.findIndex((b:any)=>b.x===ahead.x);
+  h.down('KeyL');h.down('KeyS');until(h,()=>h.state().jet==='on',40);h.step(15);h.up('KeyS');h.down('KeyW');h.step(30);h.up('KeyW');h.up('KeyL');
+  until(h,()=>h.state().jet===null,60);
+  const n=h.state().entityCounts.burning;
+  assert.ok(n>=3,`a track of fire spots up the wall (${n})`);assert.ok(n<=B.jetWallCap);
+  const hp=h.state().buildingHP[i];h.step(60);
+  const lost=hp-h.state().buildingHP[i],cap=B.jetBurnDamage*1.01*(Math.ceil(1/B.jetBurnTick)+1);
+  assert.ok(lost>0&&lost<=cap,`one afterburn tick per building however many spots (${lost.toFixed(1)} ≤ ${cap.toFixed(1)} in 1s)`);
+ }finally{h.release();h.cleanup();}
+});
+
 test('Tlézcatl heavy: the slam splashes lava globs both ways, more when charged, and leaves a pool on the street',async()=>{
  const h=await tlezcatlCity();const {MOVE:MV}=await import('../src/config.ts');
  try{h.step(30);
@@ -92,5 +128,23 @@ test('Tlézcatl heavy: the slam splashes lava globs both ways, more when charged
   assert.ok(until(h,()=>h.state().entityCounts.lavaGlobs===0&&h.state().entityCounts.lavaPools===0,400),'globs come down and pools cool');
   h.down('KeyK');h.step(Math.ceil(B.maxCharge*60)+5);h.up('KeyK');h.step();
   assert.equal(h.state().entityCounts.lavaGlobs,MV.heavyLavaGlobs+2,'a full charge splashes extra globs');
+ }finally{h.release();h.cleanup();}
+});
+
+test('Tlézcatl Flame Jet: tilted all the way up, the flame reaches the airspace a hovering helicopter holds',async()=>{
+ const h=await tlezcatlCity();const {UNIT_CONFIG:U}=await import('../src/config.ts');
+ try{h.step(30);
+  // Face west into the open plaza so no wall cuts the flame short.
+  h.down('KeyA');h.step(2);h.up('KeyA');h.step(3);assert.equal(h.state().face,-1);
+  h.down('KeyL');h.down('KeyW');until(h,()=>h.state().jet==='on',40);h.step(40);
+  const s=h.state(),[ox,oy]=s.jetOrigin,a=s.jetAngle*Math.PI/180,cx=s.x+s.width/2,R=B.jetRange;
+  assert.ok(Math.abs(s.jetAngle-B.jetUp)<.5);
+  // A helicopter hovers at 70% of its weapon range from the kaiju, at its fixed altitude (top edge y=285).
+  const heli={x:cx-U.helicopter.range*.7-U.helicopter.w/2,y:285,w:U.helicopter.w,h:U.helicopter.h};
+  let reach=false;
+  for(let d=0;d<=s.jetLen;d+=8){const r=B.jetWidth[0]+(B.jetWidth[1]-B.jetWidth[0])*Math.min(1,d/R),x=ox-Math.cos(a)*d,y=oy-Math.sin(a)*d;
+   const nx=Math.max(heli.x,Math.min(x,heli.x+heli.w)),ny=Math.max(heli.y,Math.min(y,heli.y+heli.h));if((x-nx)**2+(y-ny)**2<=r*r)reach=true;}
+  assert.ok(reach,`the cone at ${B.jetUp}° passes through a hovering helicopter`);
+  h.up('KeyW');h.up('KeyL');
  }finally{h.release();h.cleanup();}
 });
