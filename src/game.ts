@@ -66,9 +66,10 @@ let rocks:Rock[]=[];
 type Glob={x:number,y:number,vx:number,vy:number,life:number,damage:number,size:number,ult?:boolean,grav?:number};
 type Pool={x:number,w:number,life:number,max:number,damage:number,hits:Map<object,number>,ult?:boolean,fire?:boolean,tick?:number,size?:number};
 let globs:Glob[]=[],pools:Pool[]=[];
-// Flame Jet afterburn: buildings the flame touched keep burning at the spot it hit (x, y = height above the street) for `t` more seconds.
-type Burn={b:typeof buildings[number],x:number,y:number,t:number,last:number};
-let burns:Burn[]=[];
+// Flame Jet afterburn: a track of fire spots up the wall where the flame touched (x = wall face, y = height above the street, snapped
+// to jetWallCell rows), each burning `t` more seconds. Damage ticks once per building however many spots it has (`burnHits`).
+type Burn={b:typeof buildings[number],x:number,y:number,t:number,size:number,side:number};
+let burns:Burn[]=[],burnHits=new Map<object,number>();
 // Tlézcatl's Flame Jet: `start` plays the wind-up strip, `on` breathes (the aim strip's frame follows `angle`, degrees above level,
 // negative = down), `end` plays the wind-down. `on` is time spent breathing; `hits` is the last tick time per target. The cone's
 // current origin, direction and length are kept for drawing. Fuel (0-1) drains while breathing; running dry locks it until jetRelight.
@@ -182,7 +183,7 @@ function scoresScreen(){mode='scores';panel(`<div class="eyebrow">LOCAL CAMPAIGN
 function drills(){mode='setup';panel(`<div class="eyebrow">PRACTICE / NO CAMPAIGN SCORE</div><h1>COMBAT<br><span>DRILLS.</span></h1><label class="drill-label" for="tier">REINFORCEMENTS</label><select id="tier"><option value="1">Block 1 — Police patrol</option><option value="2">Drill — National Guard</option><option value="3">Drill — Stronghold forces</option><option value="4">Drill — Full military assault</option><option value="5">Drill — Limited arena support</option></select><button class="primary" id="start">ENTER DRILL →</button><button id="back">MAIN MENU</button><p class="note">Uses the original New York Block 1 map.<br>No checkpoint, unlock or Top 10 changes.</p>`);const select=document.querySelector<HTMLSelectElement>('#tier')!;select.value=String(selectedTier);select.addEventListener('change',()=>selectedTier=Number(select.value));document.querySelector('#start')!.addEventListener('click',start);document.querySelector('#back')!.addEventListener('click',title);}
 function start(){session='drill';run=null;activeKaiju='Mogurodon';cityIndex=0;blockIndex=0;citySettled=false;score=0;combat=createCombat();loadBlock(true);}
 function loadBlock(drill=false){
- block=drill?DRILL_BLOCK:LEVELS[cityIndex][blockIndex];worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:blockIndex+1,cityIndex);population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];chunks=[];hitstop=0;vehicles=[...createParked(block.cars),...createLamps(worldWidth,500)];held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?block.screens*VC.trafficPerScreen:0;shots=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];rocks=[];globs=[];pools=[];stampede=null;eruption=null;ambientTimer=0;growthTimer=0;ultimateTimer=0;
+ block=drill?DRILL_BLOCK:LEVELS[cityIndex][blockIndex];worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:blockIndex+1,cityIndex);population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];chunks=[];hitstop=0;vehicles=[...createParked(block.cars),...createLamps(worldWidth,500)];held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?block.screens*VC.trafficPerScreen:0;shots=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];stampede=null;eruption=null;ambientTimer=0;growthTimer=0;ultimateTimer=0;
  cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
  clingTo=null;grabLock=false;isClimbing=false;climbDir=0;runLatch=false;dashT=0;airRun=false;running=false;bargeT=0;grabWait=0;dive=null;roll=null;runUp=0;runDir=0;bargeHits.clear();oldWidth=bodyWidth();oldHeight=C.playerHeight*scale(combat);player={x:block.start===undefined?110:block.start-oldWidth/2,y:C.ground-oldHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
  camera=Math.max(0,Math.min(worldWidth-viewW(),player.x+oldWidth/2-viewW()*.34));
@@ -309,7 +310,7 @@ function breathe(j:Jet){const s=scale(combat),g=Math.sqrt(s),w=bodyWidth(),h=bod
  const dmg=B.jetDamage*damageMultiplier(combat),kb=B.jetKnockback*(combat.superTime>0?B.superKnockback:1),dir=player.face;
  const inCone=(r:{x:number,y:number,w:number,h:number})=>circles.some(([x,y,rr])=>circleRect(x,y,rr,r));
  const tick=(o:object,f:()=>void)=>{if(time-(j.hits.get(o)??-9)<B.jetTick)return;j.hits.set(o,time);f();};
- if(wall){const b=wall,end=circles[circles.length-1];tick(b,()=>hit(b,dmg,false,dir,{x:end[0],y:end[1]},true));if(b.hpNow>0)ignite(b,end[0],C.ground-end[1]);}
+ if(wall){const b=wall,end=circles[circles.length-1];tick(b,()=>hit(b,dmg,false,dir,{x:end[0],y:end[1]},true));if(b.hpNow>0)ignite(b,C.ground-end[1]);}
  if(j.bend<j.len)scorchStreet(j);
  if(objective&&!objective.shattered&&inCone({x:objective.x-30,y:C.ground-100,w:60,h:100}))tick(objective,()=>hitObjective(dmg));
  if(rival&&!rival.dead&&inCone(rival))tick(rival,()=>strikeRival(dmg,kb,dir));
@@ -326,14 +327,20 @@ function scorchStreet(j:Jet){const g=Math.sqrt(scale(combat)),cell=Math.round(B.
   if(p){p.life=p.max;continue;}
   pools.push({x,w:cell,life:B.jetFireSeconds,max:B.jetFireSeconds,damage:B.jetFireDamage*dm,hits:new Map(),fire:true,tick:B.jetFireTick,size:g});
   const mine=pools.filter(p=>p.fire);if(mine.length>B.jetFireCap)pools.splice(pools.indexOf(mine.sort((p,q)=>p.life-q.life)[0]),1);}}
-// Set a building alight where the flame touches it (or keep it burning). Oldest fire goes out if too many are burning.
-function ignite(b:typeof buildings[number],x:number,y:number){const o=burns.find(f=>f.b===b);
- if(o){o.t=B.jetBurnSeconds;o.x=x;o.y=y;return;}
- burns.push({b,x,y,t:B.jetBurnSeconds,last:time});if(burns.length>B.jetBurnCap)burns.sort((p,q)=>p.t-q.t).shift();}
-// Afterburn: a slow tick that stops at 1 HP (it softens a building, it never brings one down), and no spreading to neighbours.
+// Set the wall alight at the row the flame touches (or top that row back up), on the face toward him. Tilting the jet across a wall
+// paints a track of fire up or down it, like the street. Oldest spots go out past jetWallCap, and past jetBurnCap burning buildings.
+function ignite(b:typeof buildings[number],y:number){const g=Math.sqrt(scale(combat)),cell=B.jetWallCell*g,side=player.face,row=Math.max(cell/2,Math.min(b.h-cell/2,(Math.floor(y/cell)+.5)*cell));
+ const x=side>0?b.x:b.x+b.w-7,o=burns.find(f=>f.b===b&&f.side===side&&Math.abs(f.y-row)<cell/2);
+ if(o){o.t=B.jetBurnSeconds;return;}
+ burns.push({b,x,y:row,t:B.jetBurnSeconds,size:g,side});
+ const oldest=()=>burns.reduce((p,q)=>q.t<p.t?q:p);
+ while(burns.length>B.jetWallCap)burns.splice(burns.indexOf(oldest()),1);
+ while(new Set(burns.map(f=>f.b)).size>B.jetBurnCap){const b0=oldest().b;burns=burns.filter(f=>f.b!==b0);}}
+// Afterburn: one slow tick per burning building (more spots don't stack damage), stopping at 1 HP (it softens a building, it never
+// brings one down), and no spreading to neighbours.
 function tickBurns(dt:number){for(const f of burns){f.t-=dt;const b=f.b;if(b.hpNow<=0||b.topple||b.lifted){f.t=0;continue;}
-  if(time-f.last>=B.jetBurnTick){f.last=time;const d=Math.min(B.jetBurnDamage*damageMultiplier(combat),b.hpNow-1);if(d>0)hit(b,d,false,player.face,undefined,true);}
-  if(particles.length<C.particleCap&&Math.random()<.6)particles.push({x:f.x+(Math.random()-.5)*14,y:C.ground-f.y-Math.random()*8,vx:(Math.random()-.5)*20,vy:-(40+Math.random()*60),life:.3+Math.random()*.4,color:['#ffd34d','#ff8a1f','#e8401a','#4a3a3a'][Math.floor(Math.random()*4)],size:2+Math.floor(Math.random()*3)});}
+  if(time-(burnHits.get(b)??-9)>=B.jetBurnTick){burnHits.set(b,time);const d=Math.min(B.jetBurnDamage*damageMultiplier(combat),b.hpNow-1);if(d>0)hit(b,d,false,player.face,undefined,true);}
+  if(particles.length<C.particleCap&&Math.random()<.25)particles.push({x:f.x+(Math.random()-.5)*14,y:C.ground-f.y-Math.random()*8,vx:(Math.random()-.5)*20,vy:-(40+Math.random()*60),life:.3+Math.random()*.4,color:['#ffd34d','#ff8a1f','#e8401a','#4a3a3a'][Math.floor(Math.random()*4)],size:2+Math.floor(Math.random()*3)});}
  burns=burns.filter(f=>f.t>0);}
 function launchTremor(){if(!tremor)return;const dir=tremor.dir;tremor=null;if(combat.dead)return;
  const w=bodyWidth(),grow=Math.sqrt(scale(combat)),x=player.x+w/2+dir*w*.42,life=B.tremorRange*grow/B.tremorSpeed;
@@ -963,8 +970,8 @@ function drawCampaignObjective(){
  }
 }
 // Afterburn: a cluster of flickering flame tongues licking up the wall where the jet hit, dying down over its last second.
-function drawBurns(){for(const f of burns){const x=f.x-camera,y=C.ground-f.y,k=Math.min(1,f.t);if(x<-40||x>viewW()+40)continue;
- for(let n=0;n<3;n++){const cx=x+(n-1)*9,hh=(14+10*Math.abs(Math.sin(time*9+n*1.7+f.x*.1)))*k,ww=6+n%2*2;
+function drawBurns(){for(const f of burns){const z=f.size,x=f.x-camera+f.side*5*z,y=C.ground-f.y,k=Math.min(1,f.t);if(x<-40||x>viewW()+40)continue;
+ for(let n=0;n<2;n++){const cx=x+f.side*n*7*z,hh=(12+9*Math.abs(Math.sin(time*9+n*1.7+f.y*.3)))*k*z,ww=(5+n*2)*z;
   poly([[cx-ww,y+6],[cx-ww*.3,y-hh*.5],[cx,y-hh],[cx+ww*.4,y-hh*.45],[cx+ww,y+6]],'#e8401a');
   poly([[cx-ww*.5,y+6],[cx,y-hh*.55],[cx+ww*.5,y+6]],'#ffb13b');}}}
 // Flame Jet: flickering octagons marched along the cone, dark red outside to a white-hot core, ragged at the tip.
