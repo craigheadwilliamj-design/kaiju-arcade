@@ -108,9 +108,10 @@ const KAIBAN_S3:Form={width:80,anims:{idle:{src:'assets/kaiban-s3-idle.png',fram
  carry:{src:'assets/kaiban-s3-carry.png',frames:4,fps:6,...KB3_LIFT,hold:[[107,2],[108,2],[109,2],[108,2]]},
  carryWalk:{src:'assets/kaiban-s3-carry-walk.png',frames:8,fps:10,...KB3_LIFT,hold:[[107,2],[107,0],[107,0],[107,0],[106,0],[107,0],[107,0],[107,0]]},
  throw:{src:'assets/kaiban-s3-throw.png',frames:6,fps:14,once:true,...KB3_LIFT},
- // Ultimate (Stampede). Roar: rises to full height, pounds the fists on the chest, throws the head back and bellows (impact frame 5),
- // then drops into a head-down knuckle charge stance (frames 0,3,4,5,7,8,11,14,16 of a 16-frame generation). Pound: the charge loop,
- // a goring gorilla gallop from that stance (frames 2-9 of a 12-frame generation; the near-still ends were dropped).
+ // Ultimate (Stampede). Roar, skeleton-posed (tools/kaiban_s3_charge_poses.py) and kept in strict profile: from the base he pounds the
+ // near fist on his chest, throws his head back and bellows with both fists raised overhead (impact frame 5, held on 6), leans in
+ // (frame 7, from a second seed) and lands on the run's first frame (8), so the charge loop picks up seamlessly. Pound: the charge loop
+ // is the Gore Charge run.
  ultRoar:{src:'assets/kaiban-s3-ult-roar.png',frames:9,fps:14,once:true,impact:5,...KB3_NATIVE},ultPound:{src:'assets/kaiban-s3-run.png',frames:8,fps:16,...KB3_HEAVY},
  // Gore Charge run, skeleton-posed (tools/kaiban_s3_charge_poses.py, base shifted 20px left): he stays upright like the walk, so
  // walk/run swap without a silhouette pop. Torso pitched forward, head down so the tusks lead, long strides, fists pumping opposite
