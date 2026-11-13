@@ -349,7 +349,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // upper claw back and slams it into the wall with a flash on impact frame 5; the mantle starts 15px further back (the game's roof
   // slide) and eases into the base pose. PixelLab drew no wall this time. Timing matches the other forms.
   climbGrab:{src:'assets/tlezcatl-s1-climb-grab.png',frames:5,fps:20,once:true,...TZ1_NATIVE},climb:{src:'assets/tlezcatl-s1-climb.png',frames:8,fps:12,...TZ1_NATIVE},
-  climbMantle:{src:'assets/tlezcatl-s1-climb-mantle.png',frames:9,fps:20,once:true,...TZ1_NATIVE},climbPunch:{src:'assets/tlezcatl-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ1_NATIVE}}},
+  climbMantle:{src:'assets/tlezcatl-s1-climb-mantle.png',frames:9,fps:20,once:true,...TZ1_NATIVE},climbPunch:{src:'assets/tlezcatl-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ1_NATIVE},
+  // Magma Dive: dive tips nose-down off the base pose into a vertical head-first plunge, claws reaching down and tail straight up
+  // (frames 0-3 of a 9-frame generation, bottom-aligned, held on the last); slamLand = frames 1-8 of a generation from that plunge on
+  // the street to the base pose: the snout drives in with a lava burst both sides, he slams flat on his belly and pushes back up.
+  dive:{src:'assets/tlezcatl-s1-dive.png',frames:4,fps:24,once:true,...TZ1_NATIVE},slamLand:{src:'assets/tlezcatl-s1-slam-land.png',frames:8,fps:16,once:true,...TZ1_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -458,7 +462,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'L',name:'Flame Jet',desc:'On the ground: hold to breathe a cone of fire that burns everything in it, troops, vehicles, aircraft and incoming rockets alike, until it hits a building or the street. A tap gives a short burst. Drains the flame bar; run it dry and it has to cool off.'},
   {keys:'L+W/S',name:'Aim the jet',desc:'While breathing, hold W to tilt the flame up at aircraft or S to sweep it down across the street. He can creep and turn while he breathes.'},
   {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
-  slam,
+  {...slam,name:'Magma Dive',desc:'Dive head-first. The crash splashes molten globs out both ways and leaves burning lava pools on the street that scorch anything standing in them, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
   {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
