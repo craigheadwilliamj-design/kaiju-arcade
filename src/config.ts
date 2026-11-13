@@ -135,5 +135,5 @@ export const MOVE = {
  ledgeGrab:.45,wallLeap:1.6,grabCooldown:.22,
  diveSpeed:900,diveSteer:.35,diveDamage:48,diveRoofMult:1.7,diveRadius:80,diveFallBonus:300,diveFallMax:1.5,
  diveKnockback:300,diveWaveRange:200,diveWaveSize:.6,diveWaveDamage:.45,diveCooldown:.35,
- poundMult:1.25,poundCooldown:.34,poundKnockback:120,
+ diveSpin:16,poundMult:1.25,poundCooldown:.34,poundKnockback:120,
 };

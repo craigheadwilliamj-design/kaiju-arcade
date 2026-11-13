@@ -30,7 +30,7 @@ const images=new Map<string,HTMLImageElement>();
 // `scale`/`anchor` are for padded strips generated from a shrunken base (room for lunges): `scale` is the art's size relative to a
 // full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
 // `hold` (grab/carry strips): frame px where a carried prop's bottom-centre sits, one [x,y] per frame or a single pair for every frame.
-type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][]};
+type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][],pivot?:number[],spinFrom?:number};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
 // Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (every strip) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips. With
@@ -154,7 +154,12 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    grab:{src:'assets/mogurodon-s1-grab.png',frames:9,fps:22,once:true,...S1_NATIVE,hold:[[171,191],[177,191],[205,191],[205,191],[205,191],[201,184],[180,128],[183,92],[128,39]]},
    carry:{src:'assets/mogurodon-s1-carry.png',frames:4,fps:6,...S1_NATIVE,hold:[[128,39],[128,41],[129,43],[128,41]]},
    carryWalk:{src:'assets/mogurodon-s1-carry-walk.png',frames:8,fps:10,...S1_NATIVE,hold:[[128,39],[131,35],[134,35],[137,38],[134,39],[133,35],[129,35],[127,37]]},
-   throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_NATIVE}}},
+   throw:{src:'assets/mogurodon-s1-throw.png',frames:8,fps:18,once:true,...S1_NATIVE},
+   // Slam: the dive tucks from the airborne gallop into a quills-out spike ball (frames 0-2, bottom-aligned) and holds it; the game
+   // rolls the ball forward about `pivot` (its centre) from `spinFrom`. slamLand starts at impact: squash flat in a dust ring,
+   // rebound, burst out of the ball and settle on the base pose (frames 1-8 of a 9-frame generation ending on the base).
+   dive:{src:'assets/mogurodon-s1-dive.png',frames:3,fps:28,once:true,...S1_NATIVE,pivot:[128.5,109],spinFrom:2},
+   slamLand:{src:'assets/mogurodon-s1-slam-land.png',frames:8,fps:16,once:true,...S1_NATIVE}}},
   // Stage 3 form: every strip generated from the native-resolution base (S3_NATIVE); frame counts, fps and impact frames match the
   // previous art so combat timing is unchanged. Climb strips are 256x256 with the gripping claws on the wall line (frame x=162).
   // Light combo: leading-arm strike, chest-arm swipe (the other arm), lunge-bite.
@@ -240,13 +245,15 @@ function timing(name:string,anim:string,stage?:number){return form(name,stage)?.
 // Seconds from the start of a strip to its impact frame; 0 if none.
 export function animImpact(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?.impact?a.impact/a.fps:0;}
 // Seconds a one-shot animation runs; 0 if this kaiju has no such strip (callers then skip it).
+// Frame index from which a strip spins about its pivot (the dive's spike ball); null when it does not spin.
+export function spinFrom(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?.spinFrom!=null?a.spinFrom/a.fps:null;}
 export function animDuration(name:string,anim:string,stage?:number){const a=timing(name,anim,stage);return a?a.frames/a.fps:0;}
 // Where a carried prop's bottom-centre sits in this frame, relative to the feet origin in unflipped, unscaled sprite units (the caller
 // applies facing and Stage scale). Null when the strip has no hold points or its art is not loaded (the caller keeps its fallback).
-export function holdPoint(name:string,anim:string,t:number,stage?:number):[number,number]|null{
- const p0=pick(name,anim,stage),s=p0?.f,a=p0?.a;if(!s||!a?.hold||a!==s.anims[anim])return null;
+export function holdPoint(name:string,anim:string,t:number,stage?:number,key:'hold'|'pivot'='hold'):[number,number]|null{
+ const p0=pick(name,anim,stage),s=p0?.f,a=p0?.a;if(!s||!a?.[key]||a!==s.anims[anim])return null;
  const img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),f=spriteFrame(name,t,anim,stage);
- const p=(typeof a.hold[0]==='number'?a.hold:(a.hold as number[][])[f]) as number[];
+ const p=(typeof a[key][0]==='number'?a[key]:(a[key] as number[][])[f]) as number[];
  return [(p[0]-(a.anchor??fw/2))*k,-(img.naturalHeight-1-p[1])*k];}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
 export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;
