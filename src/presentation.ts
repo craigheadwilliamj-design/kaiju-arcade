@@ -53,7 +53,7 @@ const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
 // Tlézcatl Stage 2 attack strips: generated from the same base shifted 40px left (sprite at x=9) so the reaching rakes and the lunge stay in the frame.
 const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
-// Tlézcatl Stage 2 form (in progress): idle, walk, the light combo, the heavy, the Flame Jet, the crouch and the jump so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
+// Tlézcatl Stage 2 form (in progress): idle, walk, the light combo, the heavy, the Flame Jet, the crouch, the jump and the climb so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
  // hook rake (the arm shoots out past the snout and hooks down, crescent on frame 3), lunging bite (head and shoulders drive forward low,
@@ -82,7 +82,14 @@ const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
  // the air loop sways the tail out behind and back (frames 0,1,2,1 of its generation, held at the rise's last pose height so the
  // body stays put); the landing reaches the hind legs down, squashes low in a dust puff with the tail flung up and closes on the base.
  jumpRise:{src:'assets/tlezcatl-s2-jump-rise.png',frames:9,fps:24,once:true,...TZ2_NATIVE},jumpAir:{src:'assets/tlezcatl-s2-jump-air.png',frames:4,fps:8,...TZ2_NATIVE},
- jumpLand:{src:'assets/tlezcatl-s2-jump-land.png',frames:5,fps:20,once:true,...TZ2_NATIVE}}};
+ jumpLand:{src:'assets/tlezcatl-s2-jump-land.png',frames:5,fps:20,once:true,...TZ2_NATIVE},
+ // Climb: 256x256 strips (the base padded to 256 tall, feet on the bottom row), clinging gecko-style with the body upright against the
+ // wall, head up and tail hanging, the gripping claws on the wall line at frame x=159 (the hitbox edge 24 world units out). The grab
+ // leaps from the base and eases 75px onto the wall line; the loop is hand over hand; the punch draws the upper claw back off the wall
+ // and slams it in with a streak and starburst on impact frame 5; the mantle starts 19px further back (the game's roof slide), hauls
+ // over onto the roof and closes on the base.
+ climbGrab:{src:'assets/tlezcatl-s2-climb-grab.png',frames:5,fps:20,once:true,...TZ2_NATIVE},climb:{src:'assets/tlezcatl-s2-climb.png',frames:8,fps:12,...TZ2_NATIVE},
+ climbMantle:{src:'assets/tlezcatl-s2-climb-mantle.png',frames:9,fps:20,once:true,...TZ2_NATIVE},climbPunch:{src:'assets/tlezcatl-s2-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ2_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
