@@ -51,8 +51,8 @@ const TZ1_NATIVE={scale:128/256,anchor:64+128*128/256};
 const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 // Tlézcatl Stage 3 strips: the tlezcatl-s3 base still, a 181x126 hunched sprite at x=37 in a 256x192 frame, keyed with tools/key_render.py.
 const TZ3_NATIVE={scale:181/256,anchor:37+128*181/256};
-// Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a lumbering
-// diagonal-pair stalk, tail kept curled) so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
+// theropod stalk on the hind legs only, clawed hands held raised in front of the chest, never touching the street) so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
 // 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
 const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
   walk:{src:'assets/tlezcatl-s3-walk.png',frames:8,fps:10,...TZ3_NATIVE}}};
