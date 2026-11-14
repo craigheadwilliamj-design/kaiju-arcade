@@ -51,8 +51,33 @@ const TZ1_NATIVE={scale:128/256,anchor:64+128*128/256};
 const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 // Tlézcatl Stage 2 strips: the tlezcatl-s2 base still, a 157x125 semi-upright sprite at x=49 in a 256x192 frame, keyed with tools/key_render.py.
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
-// Tlézcatl Stage 2 form (in progress): idle and walk loops so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
-const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE}}};
+// Tlézcatl Stage 2 attack strips: generated from the same base shifted 40px left (sprite at x=9) so the reaching rakes and the lunge stay in the frame.
+const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
+// Tlézcatl Stage 2 form (in progress): idle, walk, the light combo, the heavy, the Flame Jet and the crouch so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
+const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
+ // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
+ // hook rake (the arm shoots out past the snout and hooks down, crescent on frame 3), lunging bite (head and shoulders drive forward low,
+ // jaws gaping, the crest flares yellow-white on the snap at frame 3). Same frame counts and fps as the other forms' combos; each strip
+ // ends on the left-shifted base pose.
+ light1:{src:'assets/tlezcatl-s2-light1.png',frames:8,fps:24,once:true,...TZ2_LEFT},light2:{src:'assets/tlezcatl-s2-light2.png',frames:8,fps:21,once:true,...TZ2_LEFT},
+ light3:{src:'assets/tlezcatl-s2-light3.png',frames:8,fps:20,once:true,...TZ2_LEFT},
+ // Heavy, a two-claw overhead smash: rises tall on the hind legs with both claws thrown overhead (rear), the crest bursts into flame
+ // and pulses while K is held (hold, 256 tall so the flame clears the frame; strips draw bottom-anchored), then crashes forward and
+ // drives both claws into the street in a lava burst, dust rolling off as he settles (slam, starting on the crash). Stage timing.
+ heavyRear:{src:'assets/tlezcatl-s2-heavy-rear.png',frames:5,fps:20,once:true,...TZ2_LEFT},heavyHold:{src:'assets/tlezcatl-s2-heavy-hold.png',frames:4,fps:10,...TZ2_LEFT},
+ heavySlam:{src:'assets/tlezcatl-s2-heavy-slam.png',frames:8,fps:16,once:true,...TZ2_LEFT},
+ // Pound reuses the slam, as on Stage 1.
+ pound:{src:'assets/tlezcatl-s2-heavy-slam.png',frames:8,fps:16,once:true,...TZ2_LEFT},
+ // Flame Jet (the game draws the fire from `mouth`): jetStart puffs the chest up on the inhale, rears the head back, then drops forward
+ // with the jaws thrown wide; jetAim is that breath pose with the head at the measured `angles` (rotation-matched against the breath
+ // head), `mouth` at the front of the open jaws per frame; jetEnd snaps the jaws shut and settles onto the shifted base.
+ jetStart:{src:'assets/tlezcatl-s2-jet-start.png',frames:5,fps:22,once:true,...TZ2_LEFT,mouth:[180,122]},
+ jetAim:{src:'assets/tlezcatl-s2-jet-aim.png',frames:6,fps:10,once:true,...TZ2_LEFT,angles:[-21,0,10,21,29,34],mouth:[[180,152],[180,122],[179,113],[173,98],[167,87],[161,79]]},
+ jetEnd:{src:'assets/tlezcatl-s2-jet-end.png',frames:4,fps:16,once:true,...TZ2_LEFT},
+ // Crouch (the unshifted base): drops off the hind legs onto all fours, belly and chin low, crest laid back (125px tall to 78px), a
+ // breathing loop lying low, and the drop reversed to stand back up. Stage timing.
+ crouchDown:{src:'assets/tlezcatl-s2-crouch-down.png',frames:5,fps:22,once:true,...TZ2_NATIVE},crouch:{src:'assets/tlezcatl-s2-crouch.png',frames:4,fps:6,...TZ2_NATIVE},
+ crouchUp:{src:'assets/tlezcatl-s2-crouch-up.png',frames:5,fps:22,once:true,...TZ2_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
