@@ -390,7 +390,21 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
 function preload(src:string){if(typeof Image==='undefined'||images.has(src))return;const img=new Image();img.src=src;images.set(src,img);}
 function ready(src?:string){const img=src?images.get(src):null;return !!img?.complete&&!!img.naturalWidth;}
-export function loadPresentationArt(){for(const src of [ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).flatMap(s=>[s,...Object.values(s.stages??{})].flatMap(f=>Object.values(f.anims).map(a=>a.src)))])if(src)preload(src);}
+// Art loads per kaiju, not all at once: every strip of every form is ~30MB of PNG (~300MB decoded) and a run draws one kaiju.
+// Boot loads the slot art and each kaiju's base idle (intro, endings, previews before a kaiju is picked).
+const slotArt=()=>[ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).map(s=>s.anims.idle?.src)].filter(Boolean) as string[];
+const strips=(f?:Form)=>f?Object.values(f.anims).map(a=>a.src):[];
+export function loadPresentationArt(){for(const src of slotArt())preload(src);}
+// Loads one kaiju's strips and drops every other kaiju's (base idles stay). The `first` stage's form, and the base form a `borrow`
+// form plays, load and decode before the other stages, so what is on screen is ready soonest; the rest follow so that a stage change
+// in either direction never waits on the network. Calling it again for the same kaiju only reorders what is still to load.
+let artFor='';
+export function loadKaijuArt(name:string,first=1){const s=SPRITES[name];if(typeof Image==='undefined'||!s)return;
+ const now=[...new Set([...strips(form(name,first)),...strips(s)])],all=[...new Set([...now,...Object.values(s.stages??{}).flatMap(strips)])];
+ if(artFor!==name){artFor=name;const keep=new Set([...slotArt(),...all]);for(const src of [...images.keys()])if(!keep.has(src))images.delete(src);}
+ for(const src of now)preload(src);
+ const settled=(img:HTMLImageElement)=>img.decode?img.decode().catch(()=>{}):new Promise<void>(r=>{if(img.complete)r();else img.onload=img.onerror=()=>r();});
+ Promise.all(now.map(src=>settled(images.get(src)!))).then(()=>{if(artFor===name)for(const src of all)preload(src);});}
 // The form and strip drawn for a move: the stage form's own strip, else (a `borrow` form) the base form's, else the stage form's idle.
 function pick(name:string,anim:string,stage?:number):{f:Form,a:Strip}|null{const f=form(name,stage);if(!f)return null;
  if(f.anims[anim]&&ready(f.anims[anim].src))return {f,a:f.anims[anim]};

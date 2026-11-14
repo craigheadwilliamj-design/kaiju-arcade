@@ -1,4 +1,4 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {COMBAT as B} from '../src/config.ts';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {COMBAT as B,MILITARY as M} from '../src/config.ts';
 test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart',async()=>{
  const callbacks=new Map<string,Function>(),events=new Map<string,Function>();let nextFrame:Function=()=>{},now=performance.now();
  const savedRandom=Math.random;Math.random=()=>.75;
@@ -40,7 +40,7 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  key('Space');step(10);key('Space','keyup');key('KeyL');key('KeyL','keyup');assert.equal(state().shotCount,1,'airborne ranged still fires a quill');step(80);
  // With M3 weapons active, standing idle now causes real damage and eventual defeat.
  step(60*150);assert.ok(state().damageTaken>0);assert.equal(state().mode,'gameover');
- assert.ok(state().enemyShots<=100);assert.ok(state().military.length<=5);
+ assert.ok(state().enemyShots<=100);assert.ok(state().military.length<=M.caps[0]);
  assert.ok(state().shards<=120);assert.ok(state().growths<=3);
  assert.equal(savedData.size,0,'drills never write campaign scores or checkpoint');
  callbacks.get('#back:click')!();callbacks.get('#new:click')!();assert.equal(state().mode,'intro');callbacks.get('#skip-intro:click')!();
