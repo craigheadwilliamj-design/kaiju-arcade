@@ -8,7 +8,7 @@ export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'sta
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string,mass?:number,burn?:number};
+ damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean};
 export const VEHICLE_SPECS={
  car:{w:33,h:16,mass:1,points:80},
  van:{w:44,h:21,mass:1.6,points:120},
@@ -26,6 +26,9 @@ export const VEHICLE_SPECS={
  building:{w:80,h:100,mass:4,points:0},
 } as const;
 // Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
+// Road vehicles: what explodes when thrown and wrecks with a bang.
+export const EXPLOSIVE=new Set<VehicleKind>(['car','van','bus','patrol','apc','tank','artillery']);
+export const CIVILIAN=new Set<VehicleKind>(['car','van','bus']);
 const IMPACT:Partial<Record<VehicleKind,number>>={lamp:1.6};
 export function impact(v:Vehicle){return IMPACT[v.kind]??mass(v);}
 const COLORS=['#b16d5b','#70958e','#a09b65','#7d84a6','#c1a06a'];
