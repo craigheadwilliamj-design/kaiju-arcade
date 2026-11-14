@@ -61,7 +61,8 @@ test('real loop: lift the newsstand whole (it counts as destroyed, leaves no rub
   assert.equal(h.state().buildings[shopIndex].hp,0);h.step(60);
   // Close in until the stand is in reach but not underfoot, then lift it.
   for(let n=0;n<200&&h.state().x-30>1470+32;n++){h.down('KeyA');h.step(1);h.up('KeyA');}
-  const before=h.state().score;h.tap('KeyH');h.step(1);
+  // Parked rows stand beside the newsstand: a grab may come up with a car first, so throw those away until it is the stand.
+  let before=0;for(let n=0;n<6;n++){before=h.state().score;h.tap('KeyH');h.step(1);if(h.state().held==='stand'||!h.state().held)break;h.tap('KeyH');h.step(40);}
   let s=h.state();assert.equal(s.held,'stand');assert.equal(s.buildings[standIndex].hp,0);assert.equal(s.buildings[standIndex].lifted,true);assert.ok(s.score>before,'lifting pays the building value');
   h.tap('KeyH');h.step(1);assert.equal(h.state().held,null);
   s=h.state();assert.ok(s.vehicles.some((v:any)=>v.kind==='stand'&&v.state==='flying'),'stand thrown');
@@ -125,4 +126,12 @@ test('real loop: punting a parked car hits like a military kill: hit-stop, fire,
   let hit=false;for(let n=0;n<40&&!hit;n++){h.tap('KeyJ');for(let f=0;f<20&&!hit;f++){h.step();const v=h.state().vehicles.find((v:any)=>v.id===car.id);if(v.state==='flying'){hit=true;assert.ok(v.burn>0,'on fire');}}}
   assert.ok(hit,'punted');assert.ok(h.state().hitstop>0||h.state().fireballs>0,'it landed with weight');
  }finally{h.release();h.cleanup();}
+});
+
+test('each authored parked spot becomes a bumper-to-bumper row, originals keep their ids and kinds',async()=>{
+ const xs=[200,1000,1800,2600],cars=createParked(xs);assert.equal(cars.length,xs.length*(1+V.parkedRow));
+ xs.forEach((x,i)=>{assert.equal(cars[i].id,i+1);assert.equal(cars[i].x,x);assert.equal(cars[i].kind,i%4===3?'van':'car');});
+ assert.equal(new Set(cars.map(c=>c.id)).size,cars.length,'unique ids');assert.ok(cars.every(c=>c.id<500),'below the lamppost ids');
+ for(const c of cars)for(const o of cars)if(c!==o&&c.lane===o.lane)assert.ok(c.x+c.w<=o.x||o.x+o.w<=c.x,'no overlap within a lane');
+ assert.ok(cars.some(c=>c.kind==='bus')&&cars.some(c=>c.kind==='van'),'mixed row');
 });

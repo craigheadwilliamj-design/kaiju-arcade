@@ -5,9 +5,13 @@ export type Car={x:number,crushed:boolean,color:string};
 export type Population={civilians:Civilian[],cars:Car[],released:Set<number>,rng:()=>number};
 const STREET=[175,375,520,805,1005,1185,1425,1605,1715,1920,2160,2330,2570,2815,3130,3390,3630];
 const PARKED=[230,710,1005,1195,1580,1910,2160,2370,2550,2830,3120,3380,3650];
-export function createPopulation(rng=Math.random,street=STREET,parked=PARKED):Population{return {civilians:street.map((x,i)=>({x,variant:i%3,escaped:false,squashed:false,panicked:false})),cars:parked.map((x,i)=>({x,crushed:false,color:['#b16d5b','#70958e','#a09b65'][i%3]})),released:new Set(),rng};}
+// Each street spot is a small crowd centred on it; the first person in each crowd stands exactly on the spot.
+function crowd(street:number[]):Civilian[]{const out:Civilian[]=[],n=M.crowdSize;
+ for(let i=0;i<street.length;i++)for(let k=0;k<n;k++){const off=k===0?0:(k%2?1:-1)*Math.ceil(k/2)*M.crowdSpread;out.push({x:street[i]+off,variant:(i+k)%3,escaped:false,squashed:false,panicked:false});}
+ return out;}
+export function createPopulation(rng=Math.random,street=STREET,parked=PARKED):Population{return {civilians:crowd(street),cars:parked.map((x,i)=>({x,crushed:false,color:['#b16d5b','#70958e','#a09b65'][i%3]})),released:new Set(),rng};}
 export function releaseOccupants(s:Population,buildingID:number,x:number){
- if(s.released.has(buildingID))return 0;s.released.add(buildingID);const count=1+Math.floor(s.rng()*3);
+ if(s.released.has(buildingID))return 0;s.released.add(buildingID);const [lo,hi]=M.occupants,count=lo+Math.min(hi-lo,Math.floor(s.rng()*(hi-lo+1)));
  for(let n=0;n<count&&s.civilians.length<M.civilianMax;n++)s.civilians.push({x:x+n*8,variant:(buildingID+n)%3,escaped:false,squashed:false,panicked:true});return count;
 }
 export function crushCar(car:Car){if(car.crushed)return 0;car.crushed=true;return M.carPoints;}

@@ -72,7 +72,10 @@ export const MILITARY = {
  cityHP:.1,cityDamage:.1,cityPressure:.08,burstGap:.14,rocketGap:.28,
  knockbackFriction:7,collisionImpactMin:100,collisionBuildingDamage:.3,collisionPlayerDamage:.025,
  unitShards:1,civilianPoints:5,carPoints:80,carShards:0,civilianSpeed:62,
- civilianMax:180,carHP:1,
+ civilianMax:420,carHP:1,
+ // Crowds to match squad-sized military: every authored street spot holds crowdSize people crowdSpread px apart, and a
+ // building's first damage lets out occupants[0]..occupants[1] people.
+ crowdSize:4,crowdSpread:7,occupants:[3,6],
 };
 
 // Shared M3 unit and weapon definitions; all combat balance lives here.
@@ -182,9 +185,12 @@ export const VEHICLES = {
  kickSpeed:230,kickLift:210,kickDamage:.6,shotPush:.4,
  throwSpeed:780,throwLift:230,throwMassExp:.25,upSpeed:150,upLift:660,throwDamage:42,holdSlow:.85,grabReach:46,
  impactKeep:.45,unitKeep:.7,chainPush:.6,
- trafficInterval:2.1,trafficCap:6,trafficPerScreen:5,trafficSpeed:[90,150],trafficPoints:.5,spawnMargin:60,despawn:1500,
+ trafficInterval:1.1,trafficCap:12,trafficPerScreen:10,trafficSpeed:[90,150],trafficPoints:.5,spawnMargin:60,despawn:1500,
  busChance:.12,vanChance:.22,panicRange:270,panicDecel:520,panicSpeed:1.7,
- laneOffset:[5,17],vehicleCap:70,
+ laneOffset:[5,17],vehicleCap:160,
+ // Each authored parked spot is a row: the original car plus parkedRow more, bumper to bumper (parkedGap px) eastward,
+ // alternating lanes, with a van or bus mixed in.
+ parkedRow:2,parkedGap:10,
  // Lampposts stand every lampSpacing px; uprooted they become a light javelin that pierces troops and vehicles.
  lampSpacing:450,lampLift:110,lampPierce:.95,
  // Thrown road vehicles detonate on their first impact (anything solid, or the street): a blast of radius

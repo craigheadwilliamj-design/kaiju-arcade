@@ -49,7 +49,12 @@ export function makeProp(id:number,kind:VehicleKind,x:number,color:string,label=
 export function liftedBuilding(id:number,b:{x:number,w:number,h:number,color:string,label:string}):Vehicle{
  const v=makeProp(id,'building',b.x,b.color,b.label);v.w=b.w;v.h=b.h;v.y=C.ground-b.h;
  const [lo,hi]=F.liftMassRange;v.mass=Math.max(lo,Math.min(hi,b.w*b.h/F.liftMassArea));return v;}
-export function createParked(xs:number[]):Vehicle[]{return xs.map((x,i)=>make(i+1,i%4===3?'van':'car',x,0,COLORS[i%COLORS.length]));}
+// The authored spots keep ids 1..n and their kinds; each then grows a row of V.parkedRow more vehicles eastward.
+export function createParked(xs:number[]):Vehicle[]{
+ const out=xs.map((x,i)=>make(i+1,i%4===3?'van':'car',x,0,COLORS[i%COLORS.length]));let id=xs.length+1;
+ xs.forEach((x,i)=>{let end=x+VEHICLE_SPECS[out[i].kind].w;
+  for(let k=1;k<=V.parkedRow;k++){const r=(i*3+k)%7,kind:VehicleKind=r===0?'bus':r===3||r===5?'van':'car',v=make(id++,kind,end+V.parkedGap,(k%2) as 0|1,COLORS[(i+k*2)%COLORS.length]);out.push(v);end=v.x+v.w;}});
+ return out;}
 // Street lamps keep the old backdrop spacing (every lampSpacing px from the west edge), now as real props.
 export function createLamps(worldWidth:number,firstId:number):Vehicle[]{const out:Vehicle[]=[];for(let x=V.lampSpacing,i=0;x<worldWidth-40;x+=V.lampSpacing,i++)out.push(make(firstId+i,'lamp',x-2,0,'#44575a'));return out;}
 export function upright(v:Vehicle){return v.kind==='lamp'&&v.w<v.h;}
