@@ -54,13 +54,18 @@ const TZ3_NATIVE={scale:181/256,anchor:37+128*181/256};
 // Tlézcatl Stage 3 walk: generated from the base shifted 30px right (room behind him for the swinging tail); the generation drew the
 // body about 4px left of that, so the sprite sits at x=63.
 const TZ3_WALK={scale:181/256,anchor:63+128*181/256};
+// Tlézcatl Stage 3 run: also from the base shifted 30px right; the body came out 2px left of that (sprite at x=65).
+const TZ3_RUN={scale:181/256,anchor:65+128*181/256};
 // Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
 // theropod stalk on the hind legs only, skeleton-posed so both feet run a full stride and pass each other, the body sinking into each
 // stomp, the head dipping a beat late, shoulders rolling and raised claws swinging, the tail swinging out as a counterweight; the
-// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks) so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks) and run so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
 // 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
 const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
-  walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK}}};
+  walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK},
+  // Run (Shift / double-tap): a charging theropod sprint, body pitched forward and low, claws tucked high and pumping, tail streaming
+  // straight back; 8 frames at 15 fps like the Stage 1 run.
+  run:{src:'assets/tlezcatl-s3-run.png',frames:8,fps:15,...TZ3_RUN}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
