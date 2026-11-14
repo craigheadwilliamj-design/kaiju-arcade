@@ -53,7 +53,7 @@ const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
 // Tlézcatl Stage 2 attack strips: generated from the same base shifted 40px left (sprite at x=9) so the reaching rakes and the lunge stay in the frame.
 const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
-// Tlézcatl Stage 2 form (in progress): idle, walk, the light combo, the heavy, the Flame Jet and the crouch so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
+// Tlézcatl Stage 2 form (in progress): idle, walk, the light combo, the heavy, the Flame Jet, the crouch and the jump so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
  // hook rake (the arm shoots out past the snout and hooks down, crescent on frame 3), lunging bite (head and shoulders drive forward low,
@@ -77,7 +77,12 @@ const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
  // Crouch (the unshifted base): drops off the hind legs onto all fours, belly and chin low, crest laid back (125px tall to 78px), a
  // breathing loop lying low, and the drop reversed to stand back up. Stage timing.
  crouchDown:{src:'assets/tlezcatl-s2-crouch-down.png',frames:5,fps:22,once:true,...TZ2_NATIVE},crouch:{src:'assets/tlezcatl-s2-crouch.png',frames:4,fps:6,...TZ2_NATIVE},
- crouchUp:{src:'assets/tlezcatl-s2-crouch-up.png',frames:5,fps:22,once:true,...TZ2_NATIVE}}};
+ crouchUp:{src:'assets/tlezcatl-s2-crouch-up.png',frames:5,fps:22,once:true,...TZ2_NATIVE},
+ // Jump (the unshifted base): sinks deep on the hind legs and springs straight up, legs tucked and the tail streaming down (rise);
+ // the air loop sways the tail out behind and back (frames 0,1,2,1 of its generation, held at the rise's last pose height so the
+ // body stays put); the landing reaches the hind legs down, squashes low in a dust puff with the tail flung up and closes on the base.
+ jumpRise:{src:'assets/tlezcatl-s2-jump-rise.png',frames:9,fps:24,once:true,...TZ2_NATIVE},jumpAir:{src:'assets/tlezcatl-s2-jump-air.png',frames:4,fps:8,...TZ2_NATIVE},
+ jumpLand:{src:'assets/tlezcatl-s2-jump-land.png',frames:5,fps:20,once:true,...TZ2_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
