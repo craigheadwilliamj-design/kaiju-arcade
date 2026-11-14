@@ -180,13 +180,18 @@ export const FEEL = {
 export const VEHICLES = {
  gravity:900,restitution:.35,friction:.6,bounceMin:220,
  kickSpeed:230,kickLift:210,kickDamage:.6,shotPush:.4,
- throwSpeed:580,throwLift:190,upSpeed:150,upLift:660,throwDamage:42,holdSlow:.85,grabReach:46,
+ throwSpeed:780,throwLift:230,throwMassExp:.25,upSpeed:150,upLift:660,throwDamage:42,holdSlow:.85,grabReach:46,
  impactKeep:.45,unitKeep:.7,chainPush:.6,
  trafficInterval:2.1,trafficCap:6,trafficPerScreen:5,trafficSpeed:[90,150],trafficPoints:.5,spawnMargin:60,despawn:1500,
  busChance:.12,vanChance:.22,panicRange:270,panicDecel:520,panicSpeed:1.7,
  laneOffset:[5,17],vehicleCap:70,
  // Lampposts stand every lampSpacing px; uprooted they become a light javelin that pierces troops and vehicles.
  lampSpacing:450,lampLift:110,lampPierce:.95,
+ // Thrown road vehicles detonate on their first impact (anything solid, or the street): a blast of radius
+ // blastRadius + mass x blastPerMass dealing blastDamage x impact weight x stage multiplier, then they tumble on as burning wrecks.
+ blastRadius:55,blastPerMass:18,blastDamage:26,blastBounce:240,blastKeep:.35,
+ // Civilian wrecks get the military kill treatment: hit-stop, shake, a fireball scaled by mass; punted ones burn as they tumble.
+ wreckFireball:12,wreckPerMass:8,crushHitstop:.025,
 };
 
 // Movement and aerial attacks. Run: hold Shift or double-tap A/D (the double-tap opens with a short dash burst). Running

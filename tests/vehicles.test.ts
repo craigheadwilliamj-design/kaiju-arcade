@@ -31,7 +31,9 @@ test('real loop: traffic drives by; grab a parked car with H and throw it into a
   const carried=h.state().vehicles.find((v:any)=>v.id===car.id)!;assert.equal(carried.state,'held');assert.ok(carried.y<h.state().y,'carried overhead');
   const target=h.state().buildings.find((b:any)=>b.x===2120)!;
   h.tap('KeyH');h.step(1);assert.equal(h.state().held,null);assert.equal(h.state().vehicles.find((v:any)=>v.id===car.id).state,'flying');
-  for(let n=0;n<240&&h.state().vehicles.find((v:any)=>v.id===car.id).state==='flying';n++)h.step();
+  assert.equal(h.state().vehicles.find((v:any)=>v.id===car.id).thrown,true,'armed to detonate');
+  let blew=false;for(let n=0;n<240&&h.state().vehicles.find((v:any)=>v.id===car.id).state==='flying';n++){h.step();const v=h.state().vehicles.find((v:any)=>v.id===car.id);if(!blew&&!v.thrown){blew=true;assert.ok(v.burn>0,'detonated into a burning wreck');assert.ok(h.state().hitstop>0,'the blast freezes the frame');}}
+  assert.ok(blew,'the thrown car detonated on impact');
   assert.ok(h.state().buildings.find((b:any)=>b.x===2120).hp<target.hp,'thrown car damaged the building');
   assert.equal(h.state().vehicles.find((v:any)=>v.id===car.id).state,'wreck');
   // Traffic arrives from off-screen over the next few seconds.
@@ -98,3 +100,29 @@ test('only Stage 3 can lift buildings up to mid-rise size; landmarks and towers 
  assert.equal(liftable(mid,2),false);assert.equal(liftable(mid,3),true,'Stage 3 rips up a full mid-rise');
 });
 
+
+test('real loop: a thrown car flies far down an open street and detonates when it lands',async()=>{
+ const h=await bootGame(.75);
+ try{
+  h.click('#new');h.click('#skip-intro');h.node('#initials').value='FAR';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  const car=h.state().vehicles.find((v:any)=>v.x===2000)!;
+  for(let n=0;n<40&&h.state().x+h.state().width+30<car.x;n++){h.down('KeyD');h.step(1);h.up('KeyD');}
+  h.tap('KeyH');h.step(1);assert.equal(h.state().held,'car');
+  // Turn round (west is open street back to the start) and throw.
+  h.down('KeyA');h.step(1);h.up('KeyA');const from=h.state().vehicles.find((v:any)=>v.id===car.id).x;
+  h.tap('KeyH');let landed=0;
+  for(let n=0;n<240;n++){h.step();const v=h.state().vehicles.find((v:any)=>v.id===car.id);if(!v.thrown){landed=v.x;break;}}
+  assert.ok(landed,'detonated on landing');assert.ok(from-landed>200,`flew ${Math.round(from-landed)}px`);
+ }finally{h.release();h.cleanup();}
+});
+
+test('real loop: punting a parked car hits like a military kill: hit-stop, fire, a burning tumble',async()=>{
+ const h=await bootGame(.75);
+ try{
+  h.click('#new');h.click('#skip-intro');h.node('#initials').value='PNT';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  const car=h.state().vehicles.find((v:any)=>v.x===2000)!;
+  for(let n=0;n<40&&h.state().x+h.state().width+30<car.x;n++){h.down('KeyD');h.step(1);h.up('KeyD');}
+  let hit=false;for(let n=0;n<40&&!hit;n++){h.tap('KeyJ');for(let f=0;f<20&&!hit;f++){h.step();const v=h.state().vehicles.find((v:any)=>v.id===car.id);if(v.state==='flying'){hit=true;assert.ok(v.burn>0,'on fire');}}}
+  assert.ok(hit,'punted');assert.ok(h.state().hitstop>0||h.state().fireballs>0,'it landed with weight');
+ }finally{h.release();h.cleanup();}
+});
