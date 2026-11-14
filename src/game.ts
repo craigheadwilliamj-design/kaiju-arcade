@@ -1061,10 +1061,22 @@ function drawVehicle(v:Vehicle){
  if(v.burn&&v.burn>0&&v.state!=='flat'&&v.state!=='held'){const f=Math.sin(time*19+v.id)>0,k=Math.min(1,v.burn/2),cy=v.state==='flying'?v.y+h*.3:v.y+(v.state==='wreck'?h*.3:0)+off;ctx.globalAlpha=k;poly([[x+w*.2,cy+h*.4],[x+w*.3,cy-8-(f?6:0)],[x+w*.45,cy],[x+w*.55,cy-14+(f?5:0)],[x+w*.7,cy-2],[x+w*.8,cy+h*.4]],f?'#ff8a1f':'#ff6a1a');poly([[x+w*.38,cy+h*.3],[x+w*.5,cy-6-(f?0:4)],[x+w*.62,cy+h*.3]],'#ffd34d');ctx.globalAlpha=1;for(let n=0;n<3;n++)rect(x+w*.5+Math.sin(time*3+n+v.id)*4,cy-14-n*11-(time*11+v.id)%11,5+n*3,6,n?'#6d7970':'#4f5552');}
  if(v.state==='wreck'&&v.rewarded&&v.kind!=='lamp')for(let n=0;n<2;n++)rect(x+w*.5+Math.sin(time*3+n+v.id)*3,v.y-6-n*9-(time*9+v.id)%9,4+n*2,5,'#6d7970');
 }
+// A civilian on the troops' 7x14 grid, scaled to civilianW x civilianH: hair, skin, shirt, trousers and legs vary by variant.
+// Panicked ones run away from the kaiju with their arms up; calm ones idle with a slight bob.
+const CIV_SKIN=['#e7b691','#a87562','#d2b28c'],CIV_SHIRT=['#d1cb9d','#9c7884','#71a7a9'],CIV_PANTS=['#4e5b6d','#5d4b3f','#3f4f4a'],CIV_HAIR=['#3a2b22','#1f2326','#8a6a3a'];
+function drawCivilian(c:{x:number,variant:number,panicked:boolean},x:number){
+ const v=c.variant,run=c.panicked,dir=run?(c.x<player.x+bodyWidth()/2?-1:1):1,step=run?Math.sin(time*18+c.x):0,bob=run?0:Math.sin(time*3+c.x)*.3;
+ ctx.save();ctx.translate(Math.round(x+M.civilianW/2),Math.round(C.ground-M.civilianH));ctx.scale(dir*M.civilianW/7,M.civilianH/14);ctx.translate(0,bob);
+ rect(-2,0,4,4,CIV_SKIN[v]);rect(-2,-1,4,2,CIV_HAIR[v]);if(v===2)rect(-3,0,1,3,CIV_HAIR[v]);
+ rect(-3,4,6,5,CIV_SHIRT[v]);rect(-3,9,6,2,CIV_PANTS[v]);
+ if(run){rect(-4,1,1,4,CIV_SHIRT[v]);rect(3,1,1,4,CIV_SHIRT[v]);rect(-4,0,1,1,CIV_SKIN[v]);rect(3,0,1,1,CIV_SKIN[v]);}
+ else{rect(-4,4,1,4,CIV_SHIRT[v]);rect(3,4,1,4,CIV_SHIRT[v]);}
+ rect(-3+step,11,2,3,CIV_PANTS[v]);rect(1-step,11,2,3,CIV_PANTS[v]);rect(-3+step,13,2,1,'#2b3d40');rect(1-step,13,2,1,'#2b3d40');
+ ctx.restore();}
 function drawPopulation(){
  for(const c of population.civilians){if(c.escaped)continue;const x=c.x-camera;if(x<-20||x>viewW()+20)continue;
- if(c.squashed){rect(x,C.ground-1,5,1,'#646d5c');continue;}
- const sway=Math.sin(time*16+c.x)*1;rect(x,C.ground-9,3,3,['#e7b691','#a87562','#d2b28c'][c.variant]);rect(x,C.ground-6,3,4,['#d1cb9d','#9c7884','#71a7a9'][c.variant]);rect(x-1+sway,C.ground-2,2,2,'#3b4e4c');rect(x+2-sway,C.ground-2,2,2,'#3b4e4c');}
+ if(c.squashed){const w=M.civilianW*1.3;rect(x-w*.15,C.ground-2,w,2,'#7a2a2a');rect(x+w*.2,C.ground-3,w*.35,1,'#646d5c');continue;}
+ drawCivilian(c,x);}
 }
 // Ground unit body, drawn from its top-centre (shared by live units and carried/thrown props).
 function drawGroundUnit(type:string,w:number,h:number){

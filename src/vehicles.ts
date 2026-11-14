@@ -10,9 +10,10 @@ export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:num
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
  damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean};
 export const VEHICLE_SPECS={
- car:{w:33,h:16,mass:1,points:80},
- van:{w:44,h:21,mass:1.6,points:120},
- bus:{w:66,h:25,mass:2.6,points:200},
+ // Sized to sit with the military's road vehicles (patrol car 48x23, APC 52x26, tank 59x31).
+ car:{w:48,h:23,mass:1,points:80},
+ van:{w:62,h:29,mass:1.6,points:120},
+ bus:{w:94,h:35,mass:2.6,points:200},
  // Props pay out when lifted (kill points / building value), so points here are 0.
  patrol:{w:U.patrol.w,h:U.patrol.h,mass:U.patrol.mass,points:0},
  apc:{w:U.apc.w,h:U.apc.h,mass:U.apc.mass,points:0},
@@ -49,11 +50,13 @@ export function makeProp(id:number,kind:VehicleKind,x:number,color:string,label=
 export function liftedBuilding(id:number,b:{x:number,w:number,h:number,color:string,label:string}):Vehicle{
  const v=makeProp(id,'building',b.x,b.color,b.label);v.w=b.w;v.h=b.h;v.y=C.ground-b.h;
  const [lo,hi]=F.liftMassRange;v.mass=Math.max(lo,Math.min(hi,b.w*b.h/F.liftMassArea));return v;}
-// The authored spots keep ids 1..n and their kinds; each then grows a row of V.parkedRow more vehicles eastward.
+// The authored spots keep ids 1..n and their kinds; each then grows a row of up to V.parkedRow more vehicles eastward,
+// stopping short of the next authored spot so rows never run into each other.
 export function createParked(xs:number[]):Vehicle[]{
  const out=xs.map((x,i)=>make(i+1,i%4===3?'van':'car',x,0,COLORS[i%COLORS.length]));let id=xs.length+1;
- xs.forEach((x,i)=>{let end=x+VEHICLE_SPECS[out[i].kind].w;
-  for(let k=1;k<=V.parkedRow;k++){const r=(i*3+k)%7,kind:VehicleKind=r===0?'bus':r===3||r===5?'van':'car',v=make(id++,kind,end+V.parkedGap,(k%2) as 0|1,COLORS[(i+k*2)%COLORS.length]);out.push(v);end=v.x+v.w;}});
+ xs.forEach((x,i)=>{let end=x+VEHICLE_SPECS[out[i].kind].w;const limit=Math.min(...xs.filter(o=>o>x),Infinity)-V.parkedGap;
+  for(let k=1;k<=V.parkedRow;k++){const r=(i*3+k)%7,kind:VehicleKind=r===0?'bus':r===3||r===5?'van':'car',start=end+V.parkedGap;
+   if(start+VEHICLE_SPECS[kind].w>limit)break;const v=make(id++,kind,start,(k%2) as 0|1,COLORS[(i+k*2)%COLORS.length]);out.push(v);end=v.x+v.w;}});
  return out;}
 // Street lamps keep the old backdrop spacing (every lampSpacing px from the west edge), now as real props.
 export function createLamps(worldWidth:number,firstId:number):Vehicle[]{const out:Vehicle[]=[];for(let x=V.lampSpacing,i=0;x<worldWidth-40;x+=V.lampSpacing,i++)out.push(make(firstId+i,'lamp',x-2,0,'#44575a'));return out;}

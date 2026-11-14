@@ -15,11 +15,13 @@ export function releaseOccupants(s:Population,buildingID:number,x:number){
  for(let n=0;n<count&&s.civilians.length<M.civilianMax;n++)s.civilians.push({x:x+n*8,variant:(buildingID+n)%3,escaped:false,squashed:false,panicked:true});return count;
 }
 export function crushCar(car:Car){if(car.crushed)return 0;car.crushed=true;return M.carPoints;}
-export function carBox(car:Car):Rect{return {x:car.x,y:C.ground-16,w:33,h:16};}
+export function carBox(car:Car):Rect{return {x:car.x,y:C.ground-23,w:48,h:23};}
+// c.x is the left edge; civilians stand on the street.
+export function civilianBox(c:Civilian):Rect{return {x:c.x,y:C.ground-M.civilianH,w:M.civilianW,h:M.civilianH};}
 export function tickPopulation(s:Population,dt:number,player:Rect,worldWidth:number,awardPoints=true){
  let points=0;
  for(const c of s.civilians){if(c.escaped||c.squashed)continue;
- if(overlaps(player,{x:c.x,y:C.ground-8,w:3,h:8})){c.squashed=true;if(awardPoints)points+=M.civilianPoints;continue;}
+ if(overlaps(player,civilianBox(c))){c.squashed=true;if(awardPoints)points+=M.civilianPoints;continue;}
  if(Math.abs(c.x-player.x)<420)c.panicked=true;if(!c.panicked)continue;
  c.x+=(c.x<player.x+player.w/2?-1:1)*M.civilianSpeed*dt;
  if(c.x<-15||c.x>worldWidth+15)c.escaped=true;

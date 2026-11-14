@@ -133,5 +133,6 @@ test('each authored parked spot becomes a bumper-to-bumper row, originals keep t
  xs.forEach((x,i)=>{assert.equal(cars[i].id,i+1);assert.equal(cars[i].x,x);assert.equal(cars[i].kind,i%4===3?'van':'car');});
  assert.equal(new Set(cars.map(c=>c.id)).size,cars.length,'unique ids');assert.ok(cars.every(c=>c.id<500),'below the lamppost ids');
  for(const c of cars)for(const o of cars)if(c!==o&&c.lane===o.lane)assert.ok(c.x+c.w<=o.x||o.x+o.w<=c.x,'no overlap within a lane');
+ const tight=createParked([1850,2000]);assert.ok(tight.every((c,i)=>i<2||c.x>2000||c.x+c.w<2000),'a row stops before the next authored car');assert.equal(tight[1].x,2000);
  assert.ok(cars.some(c=>c.kind==='bus')&&cars.some(c=>c.kind==='van'),'mixed row');
 });

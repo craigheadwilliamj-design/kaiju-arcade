@@ -75,7 +75,9 @@ export const MILITARY = {
  civilianMax:420,carHP:1,
  // Crowds to match squad-sized military: every authored street spot holds crowdSize people crowdSpread px apart, and a
  // building's first damage lets out occupants[0]..occupants[1] people.
- crowdSize:4,crowdSpread:7,occupants:[3,6],
+ crowdSize:4,crowdSpread:11,occupants:[3,6],
+ // Civilians are drawn and collide at troop scale (police are 13x24): civilianW x civilianH, on the same 7x14 pixel grid.
+ civilianW:12,civilianH:22,
 };
 
 // Shared M3 unit and weapon definitions; all combat balance lives here.
