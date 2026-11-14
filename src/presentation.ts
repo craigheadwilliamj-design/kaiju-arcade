@@ -49,6 +49,10 @@ const S2_NATIVE={scale:194/256,anchor:31+128*194/256};
 const TZ1_NATIVE={scale:128/256,anchor:64+128*128/256};
 // Tlézcatl Stage 1 attack strips: generated from the same base shifted 40px left (sprite at x=24) so lunges and the tail whip stay in the frame.
 const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
+// Tlézcatl Stage 2 strips: the tlezcatl-s2 base still, a 157x125 semi-upright sprite at x=49 in a 256x192 frame, keyed with tools/key_render.py.
+const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
+// Tlézcatl Stage 2 form (in progress): idle and walk loops so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
+const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
@@ -384,7 +388,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   grab:{src:'assets/tlezcatl-s1-grab.png',frames:9,fps:22,once:true,...TZ1_NATIVE,hold:[[192,191],[194,191],[200,191],[190,191],[176,151],[150,112],[131,90],[125,84],[125,84]]},
   carry:{src:'assets/tlezcatl-s1-carry.png',frames:4,fps:6,...TZ1_NATIVE,hold:[[125,84],[126,86],[127,87],[126,86]]},
   carryWalk:{src:'assets/tlezcatl-s1-carry-walk.png',frames:8,fps:10,...TZ1_NATIVE,hold:[[125,84],[125,86],[125,87],[125,88],[125,87],[125,87],[125,86],[125,86]]},
-  throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}}},
+  throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
+  stages:{2:TLEZCATL_S2}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
