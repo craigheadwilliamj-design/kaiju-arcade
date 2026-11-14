@@ -53,7 +53,7 @@ const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
 // Tlézcatl Stage 2 attack strips: generated from the same base shifted 40px left (sprite at x=9) so the reaching rakes and the lunge stay in the frame.
 const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
-// Tlézcatl Stage 2 form (in progress): idle, walk, the light combo, the heavy, the Flame Jet, the crouch, the jump and the climb so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
+// Tlézcatl Stage 2 form (in progress): idle, walk, the light combo, the heavy, the Flame Jet, the crouch, the jump, the climb and grab/carry/throw so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
  // hook rake (the arm shoots out past the snout and hooks down, crescent on frame 3), lunging bite (head and shoulders drive forward low,
@@ -89,7 +89,16 @@ const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
  // and slams it in with a streak and starburst on impact frame 5; the mantle starts 19px further back (the game's roof slide), hauls
  // over onto the roof and closes on the base.
  climbGrab:{src:'assets/tlezcatl-s2-climb-grab.png',frames:5,fps:20,once:true,...TZ2_NATIVE},climb:{src:'assets/tlezcatl-s2-climb.png',frames:8,fps:12,...TZ2_NATIVE},
- climbMantle:{src:'assets/tlezcatl-s2-climb-mantle.png',frames:9,fps:20,once:true,...TZ2_NATIVE},climbPunch:{src:'assets/tlezcatl-s2-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ2_NATIVE}}};
+ climbMantle:{src:'assets/tlezcatl-s2-climb-mantle.png',frames:9,fps:20,once:true,...TZ2_NATIVE},climbPunch:{src:'assets/tlezcatl-s2-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ2_NATIVE},
+ // Grab/carry/throw: 256x256 strips (the base padded to 256 tall, feet on the bottom row) since the overhead lift reaches the top of
+ // the frame. The grab dips and slides both claws under the prop (frames 0-3 keep it on the street in front of the front claw), heaves
+ // it past the knees, chest and face and locks both arms straight up overhead, head tipped back; carry strains upright with the arms
+ // locked up and carry-walk stomps forward the same way. `hold` points follow the hands, then sit on the claw tips. Throw starts at the
+ // release: both arms whip forward and down with swoosh arcs on frame 1 (the prop launches on the key press) and he settles onto the base.
+ grab:{src:'assets/tlezcatl-s2-grab.png',frames:9,fps:22,once:true,...TZ2_NATIVE,hold:[[202,255],[217,255],[213,255],[210,255],[198,225],[193,200],[182,148],[162,115],[120,72]]},
+ carry:{src:'assets/tlezcatl-s2-carry.png',frames:4,fps:6,...TZ2_NATIVE,hold:[[120,72],[123,73],[127,75],[124,74]]},
+ carryWalk:{src:'assets/tlezcatl-s2-carry-walk.png',frames:8,fps:10,...TZ2_NATIVE,hold:[[120,72],[120,70],[120,69],[120,70],[120,72],[120,71],[120,69],[120,70]]},
+ throw:{src:'assets/tlezcatl-s2-throw.png',frames:8,fps:18,once:true,...TZ2_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
