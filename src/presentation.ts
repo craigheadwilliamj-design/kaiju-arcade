@@ -99,8 +99,8 @@ const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
  carry:{src:'assets/tlezcatl-s2-carry.png',frames:4,fps:6,...TZ2_NATIVE,hold:[[120,72],[123,73],[127,75],[124,74]]},
  carryWalk:{src:'assets/tlezcatl-s2-carry-walk.png',frames:8,fps:10,...TZ2_NATIVE,hold:[[120,72],[120,70],[120,69],[120,70],[120,72],[120,71],[120,69],[120,70]]},
  throw:{src:'assets/tlezcatl-s2-throw.png',frames:8,fps:18,once:true,...TZ2_NATIVE},
- // Run (Shift / double-tap): a leaning biped sprint loop closed on the base, long strides with both feet off the street on frame 3,
- // tail straight out behind, dust off the feet.
+ // Run (Shift / double-tap): a theropod (T. rex) run loop closed on a level running pose rather than the upright base, so the body stays
+ // horizontal, head forward and tail straight back as a counterweight; two even strides per cycle with the same 5px dip on each footfall.
  run:{src:'assets/tlezcatl-s2-run.png',frames:8,fps:15,...TZ2_NATIVE},
  // Magma Dive (256x256, the padded base): dive tips forward into a vertical head-first plunge, claws reaching down and tail straight up
  // (frames 0,2,3,4 of a generation, bottom-aligned, held on the last); slamLand = frames 1-8 of a generation from that plunge to the
