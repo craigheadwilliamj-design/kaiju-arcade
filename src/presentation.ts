@@ -53,7 +53,7 @@ const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
 // Tlézcatl Stage 2 attack strips: generated from the same base shifted 40px left (sprite at x=9) so the reaching rakes and the lunge stay in the frame.
 const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
-// Tlézcatl Stage 2 form (in progress): idle, walk, the light combo, the heavy, the Flame Jet, the crouch, the jump, the climb and grab/carry/throw so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
+// Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
  // hook rake (the arm shoots out past the snout and hooks down, crescent on frame 3), lunging bite (head and shoulders drive forward low,
@@ -98,7 +98,22 @@ const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
  grab:{src:'assets/tlezcatl-s2-grab.png',frames:9,fps:22,once:true,...TZ2_NATIVE,hold:[[202,255],[217,255],[213,255],[210,255],[198,225],[193,200],[182,148],[162,115],[120,72]]},
  carry:{src:'assets/tlezcatl-s2-carry.png',frames:4,fps:6,...TZ2_NATIVE,hold:[[120,72],[123,73],[127,75],[124,74]]},
  carryWalk:{src:'assets/tlezcatl-s2-carry-walk.png',frames:8,fps:10,...TZ2_NATIVE,hold:[[120,72],[120,70],[120,69],[120,70],[120,72],[120,71],[120,69],[120,70]]},
- throw:{src:'assets/tlezcatl-s2-throw.png',frames:8,fps:18,once:true,...TZ2_NATIVE}}};
+ throw:{src:'assets/tlezcatl-s2-throw.png',frames:8,fps:18,once:true,...TZ2_NATIVE},
+ // Run (Shift / double-tap): a leaning biped sprint loop closed on the base, long strides with both feet off the street on frame 3,
+ // tail straight out behind, dust off the feet.
+ run:{src:'assets/tlezcatl-s2-run.png',frames:8,fps:15,...TZ2_NATIVE},
+ // Magma Dive (256x256, the padded base): dive tips forward into a vertical head-first plunge, claws reaching down and tail straight up
+ // (frames 0,2,3,4 of a generation, bottom-aligned, held on the last); slamLand = frames 1-8 of a generation from that plunge to the
+ // base: snout and claws smash into the street in a lava splash both ways, a belly-flop, and he pushes back up.
+ dive:{src:'assets/tlezcatl-s2-dive.png',frames:4,fps:24,once:true,...TZ2_NATIVE},slamLand:{src:'assets/tlezcatl-s2-slam-land.png',frames:8,fps:16,once:true,...TZ2_NATIVE},
+ // Eruption (256x256, the padded base; Stage 1 timing). Charge: curls into a ball, the crest spines flaring into a spiked corona that
+ // heats from orange to white. Roar: the ball bursts white on its first frame (the blast) and he is revealed reared up, arms flung wide,
+ // crest blazing, stripes white-hot; the loop is the roar's last four frames; settle lowers onto the base as the flames die to embers
+ // and the stripes cool. The reared pose was generated 13px up, so charge (from the curl), roar, loop and the settle's start sit 13px
+ // lower to keep the feet on the street.
+ ultCharge:{src:'assets/tlezcatl-s2-ult-charge.png',frames:16,fps:16,once:true,...TZ2_NATIVE},
+ ultRoar:{src:'assets/tlezcatl-s2-ult-roar.png',frames:8,fps:16,once:true,...TZ2_NATIVE},ultPound:{src:'assets/tlezcatl-s2-ult-pound.png',frames:4,fps:10,...TZ2_NATIVE},
+ ultSettle:{src:'assets/tlezcatl-s2-ult-settle.png',frames:8,fps:16,once:true,...TZ2_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
@@ -369,8 +384,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   crouch:{src:'assets/kaiban-s1-crouch.png',frames:4,fps:6,...KB1_NATIVE},crouchDown:{src:'assets/kaiban-s1-crouch-down.png',frames:5,fps:22,once:true,...KB1_NATIVE},
   crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}},
   stages:{2:KAIBAN_S2,3:KAIBAN_S3}},
- // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): only the Stage 1 form exists, so it is the base
- // form and every stage draws it. The render keys to a 128x59 sprite at x=64 (TZ1_NATIVE); same 120-unit width as the others.
+ // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): the Stage 1 form is the base form (Stages 1 and
+ // 3 draw it); Stage 2 has its own complete set in TLEZCATL_S2. The render keys to a 128x59 sprite at x=64 (TZ1_NATIVE); same 120-unit width as the others.
  'Tlézcatl':{width:120,anims:{idle:{src:'assets/tlezcatl-s1-idle.png',frames:8,fps:8,...TZ1_NATIVE},walk:{src:'assets/tlezcatl-s1-walk.png',frames:8,fps:10,...TZ1_NATIVE},
   // Run (Shift / double-tap): a low bounding sprint loop closed on the base, body stretched long, lifting clear on frame 4, dust off the claws.
   run:{src:'assets/tlezcatl-s1-run.png',frames:8,fps:15,...TZ1_NATIVE},
