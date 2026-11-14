@@ -51,8 +51,16 @@ const TZ1_NATIVE={scale:128/256,anchor:64+128*128/256};
 const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 // Tlézcatl Stage 2 strips: the tlezcatl-s2 base still, a 157x125 semi-upright sprite at x=49 in a 256x192 frame, keyed with tools/key_render.py.
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
-// Tlézcatl Stage 2 form (in progress): idle and walk loops so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
-const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE}}};
+// Tlézcatl Stage 2 attack strips: generated from the same base shifted 40px left (sprite at x=9) so the reaching rakes and the lunge stay in the frame.
+const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
+// Tlézcatl Stage 2 form (in progress): idle, walk and the light combo so far. `borrow`: every move not drawn yet plays the Stage 1 strip.
+const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
+ // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
+ // hook rake (the arm shoots out past the snout and hooks down, crescent on frame 3), lunging bite (head and shoulders drive forward low,
+ // jaws gaping, the crest flares yellow-white on the snap at frame 3). Same frame counts and fps as the other forms' combos; each strip
+ // ends on the left-shifted base pose.
+ light1:{src:'assets/tlezcatl-s2-light1.png',frames:8,fps:24,once:true,...TZ2_LEFT},light2:{src:'assets/tlezcatl-s2-light2.png',frames:8,fps:21,once:true,...TZ2_LEFT},
+ light3:{src:'assets/tlezcatl-s2-light3.png',frames:8,fps:20,once:true,...TZ2_LEFT}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
