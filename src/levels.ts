@@ -2,7 +2,7 @@
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean};
 // Fixed New York Block 1: four screen widths, authored positions, never generated.
-export const NEW_YORK_BLOCK_ONE:BuildingSpec[]=[
+const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:295,w:64,h:82,hp:60,value:70,kind:'medium',label:'DELI',color:'#577b84'},
  {x:405,w:92,h:118,hp:90,value:100,kind:'medium',label:'MARKET',color:'#b36d57'},
  {x:570,w:126,h:220,hp:150,value:180,kind:'large',label:'',color:'#62708b'},
@@ -37,11 +37,15 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // Third entry element: a landmark's name (key 'L') or 'cache'.
 type Entry=[number,keyof typeof BUILDING_PRESETS]|[number,keyof typeof BUILDING_PRESETS,string];
 const LANDMARK_COLORS=['#c3b48d','#b7a37c','#a9a9a0'];
-// Every coordinate below is authored data. Runtime only expands reusable building presets.
+// Every coordinate below is authored data at the original scale. Runtime expands the presets and multiplies positions and sizes
+// by CONFIG.cityScale. A building's width is scaled through its right edge, so wall-to-wall rows stay flush after rounding.
+const sc=(n:number)=>Math.round(n*CONFIG.cityScale);
+function scaled<T extends {x:number,w:number,h:number}>(b:T):T{return {...b,x:sc(b.x),w:sc(b.x+b.w)-sc(b.x),h:sc(b.h)};}
+export const NEW_YORK_BLOCK_ONE:BuildingSpec[]=NEW_YORK_BLOCK_ONE_AUTHORED.map(scaled);
 function district(city:number,name:string,screens:number,entries:Entry[],street:number[],cars:number[],kind:BlockDef['kind']='district',start?:number):BlockDef{
- const theme=CITIES[city];let landmarks=0;return {name,screens,kind,street,cars,...(start===undefined?{}:{start}),buildings:entries.map(([x,key,tag],i)=>{
-  if(key==='L')return {...BUILDING_PRESETS[key],x,label:tag??'',color:LANDMARK_COLORS[landmarks++%LANDMARK_COLORS.length],landmark:true};
-  return {...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:{})};
+ const theme=CITIES[city];let landmarks=0;return {name,screens,kind,street:street.map(sc),cars:cars.map(sc),...(start===undefined?{}:{start:sc(start)}),buildings:entries.map(([x,key,tag],i)=>{
+  if(key==='L')return scaled({...BUILDING_PRESETS[key],x,label:tag??'',color:LANDMARK_COLORS[landmarks++%LANDMARK_COLORS.length],landmark:true});
+  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:{})});
  })};
 }
 // The original packed wall-to-wall Lower Manhattan stays as the Combat Drills map.
@@ -83,4 +87,4 @@ export const LEVELS:BlockDef[][]=[
  district(4,'Sargathoth Arena',4,[[530,'h'],[980,'l'],[1440,'m'],[1850,'s'],[2250,'t'],[2630,'h'],[3070,'l'],[3510,'s']],[360,860,1320,2130,2940,3390],[390,1280,2090,2920],'boss'),
  ],
 ];
-export function levelWidth(block:BlockDef){return block.screens*CONFIG.width;}
+export function levelWidth(block:BlockDef){return sc(block.screens*CONFIG.width);}
