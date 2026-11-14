@@ -19,8 +19,9 @@ export const VEHICLE_SPECS={
  apc:{w:U.apc.w,h:U.apc.h,mass:U.apc.mass,points:0},
  tank:{w:U.tank.w,h:U.tank.h,mass:U.tank.mass,points:0},
  artillery:{w:U.artillery.w,h:U.artillery.h,mass:U.artillery.mass,points:0},
- stand:{w:BP.t.w,h:BP.t.h,mass:1.4,points:0},
- barrier:{w:BP.b.w,h:BP.b.h,mass:3,points:0},
+ // Lifted newsstands and barriers keep the size of the (city-scaled) structure they were.
+ stand:{w:Math.round(BP.t.w*C.cityScale),h:Math.round(BP.t.h*C.cityScale),mass:1.4,points:0},
+ barrier:{w:Math.round(BP.b.w*C.cityScale),h:Math.round(BP.b.h*C.cityScale),mass:3,points:0},
  // Standing lamppost (8x88); once uprooted it is laid flat (88x8) and flies point-first.
  lamp:{w:8,h:88,mass:.8,points:15},
  // A whole small building lifted by Stage 3: size and mass are set per prop (liftedBuilding), these are placeholders.

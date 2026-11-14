@@ -1,5 +1,10 @@
+// City scale: every building and every authored x position (buildings, street crowds, parked cars, spawns) is multiplied by
+// this at load, so buildings sit at the same proportion to the troop-sized civilians and patrol-car-sized traffic, and blocks get
+// this much longer. Size-based rules below (lift, topple) are scaled with it so they still pick out the same buildings.
+export const CITY_SCALE=1.4;
 // Provisional M1 values. Future balance changes belong here.
 export const CONFIG = {
+ cityScale:CITY_SCALE,
  width:960,height:540,ground:435,screenCount:4,moveSpeed:205,crouchHeight:38,
  playerWidth:48,playerHeight:69,gravity:1250,jumpVelocity:530,climbSpeed:230,maxCameraY:560,
  lightDamage:30,heavyDamage:68,rangedDamage:23,attackCooldown:.28,
@@ -171,14 +176,14 @@ export const FEEL = {
  hitstopEcho:.9,
  joltSeconds:.14,joltPixels:5,holeCap:14,holeMin:9,holeMax:24,holeDamage:7,holeInset:14,
  chunkCap:160,chunkLife:2.6,chunkGravity:900,
- liftHeight:50,
+ liftHeight:50*CITY_SCALE,
  // Stage 3 can rip up whole buildings (no landmarks) up to this height/width, i.e. every 's'/'m' preset (the 112x240 mid-rise) but not
  // the 'h' 130x330 tower or taller; thrown with mass = area/liftMassArea clamped.
- liftHeightStage3:240,liftWidthStage3:115,liftMassArea:2500,liftMassRange:[3,6] as [number,number],
- toppleMinHeight:200,toppleKick:.35,toppleAccel:5.5,toppleUnitFactor:.6,
+ liftHeightStage3:240*CITY_SCALE,liftWidthStage3:115*CITY_SCALE,liftMassArea:2500*CITY_SCALE**2,liftMassRange:[3,6] as [number,number],
+ toppleMinHeight:200*CITY_SCALE,toppleKick:.35,toppleAccel:5.5,toppleUnitFactor:.6,
  // Crush damage: height × toppleDamage for the first building hit; each further building in the path takes toppleFalloff of the last,
  // and a building toppled by another falls at toppleChain^generation strength, so chains die out. Kaiju stage does not scale it.
- toppleDamage:.5,toppleFalloff:.35,toppleChain:.35,
+ toppleDamage:.5/CITY_SCALE,toppleFalloff:.35,toppleChain:.35,
 };
 
 // Traffic, vehicle physics and grab/throw. Mass (VEHICLE_SPECS) slows throws/punts and scales impact damage.
@@ -194,7 +199,7 @@ export const VEHICLES = {
  // alternating lanes, with a van or bus mixed in.
  parkedRow:2,parkedGap:10,
  // Lampposts stand every lampSpacing px; uprooted they become a light javelin that pierces troops and vehicles.
- lampSpacing:450,lampLift:110,lampPierce:.95,
+ lampSpacing:Math.round(450*CITY_SCALE),lampLift:110,lampPierce:.95,
  // Thrown road vehicles detonate on their first impact (anything solid, or the street): a blast of radius
  // blastRadius + mass x blastPerMass dealing blastDamage x impact weight x stage multiplier, then they tumble on as burning wrecks.
  blastRadius:55,blastPerMass:18,blastDamage:26,blastBounce:240,blastKeep:.35,

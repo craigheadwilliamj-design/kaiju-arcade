@@ -19,7 +19,7 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  const beforeCrouch=state().y;key('KeyS');step();assert.equal(state().crouched,true);assert.ok(state().y>beforeCrouch);hold('KeyD',20);key('KeyS','keyup');step();assert.equal(state().crouched,false);
  key('Space');step(10);assert.ok(state().y<beforeCrouch-20);key('Space','keyup');step(80);
  // Move to the first solid building. It blocks horizontal movement.
- hold('KeyD',150);assert.equal(state().x,352);assert.equal(state().exitOpen,false);
+ hold('KeyD',150);assert.equal(state().x,Math.round(400*1.4)-48,'stopped at the first building (x 400 authored, city-scaled)');assert.equal(state().exitOpen,false);
  key('Escape');assert.equal(state().mode,'paused');const px=state().x;step(60);assert.equal(state().x,px);callbacks.get('#resume:click')!();
  // Walk the district, destroying all structures with the actual attack path.
  // Strike both directions at regular intervals so passable targets are included.
@@ -49,7 +49,7 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  callbacks.get('#begin-city:click')!();assert.equal(state().session,'campaign');assert.equal(state().hp,B.startHP);
  // Play the first campaign district through the real input path. It is an open layout: start mid-map,
  // sweep west to the edge, then turn around and smash east until the quota opens and the east exit triggers.
- const cityStart=state().x;assert.ok(cityStart>1700&&cityStart<2000,'open district starts mid-map');
+ const cityStart=state().x;assert.ok(cityStart>1700*1.4&&cityStart<2000*1.4,'open district starts mid-map');
  const sweep=(fwd:string,back:string,done:()=>boolean,limit:number)=>{for(let n=0;n<limit&&state().mode==='playing'&&!done();n++){
   if(state().ultimate>=100&&state().transform===0){key('KeyU');key('KeyU','keyup');}
   hold(fwd,8);key('KeyK');key('KeyK','keyup');step(40);hold(back,1);key('KeyK');key('KeyK','keyup');step(40);hold(fwd,3);
@@ -57,7 +57,7 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  sweep('KeyA','KeyD',()=>state().x<120,110);assert.equal(state().mode,'playing','west sweep alone does not finish the block');
  sweep('KeyD','KeyA',()=>false,170);
  assert.equal(state().mode,'results');const hp=state().hp,energy=state().ultimate,superCharge=state().superCharge;
- callbacks.get('#advance:click')!();assert.equal(state().blockIndex,1);assert.equal(state().worldWidth,5760);assert.equal(state().hp,hp);assert.equal(state().ultimate,energy);assert.equal(state().superCharge,superCharge);assert.equal(state().checkpoint.city,0);assert.equal(state().checkpoint.banked,0);
+ callbacks.get('#advance:click')!();assert.equal(state().blockIndex,1);assert.equal(state().worldWidth,Math.round(5760*1.4));assert.equal(state().hp,hp);assert.equal(state().ultimate,energy);assert.equal(state().superCharge,superCharge);assert.equal(state().checkpoint.city,0);assert.equal(state().checkpoint.banked,0);
  key('Escape');callbacks.get('#restart:click')!();assert.equal(state().mode,'confirm');callbacks.get('#no:click')!();assert.equal(state().mode,'paused');assert.equal(state().blockIndex,1);
  callbacks.get('#restart:click')!();callbacks.get('#yes:click')!();assert.equal(state().blockIndex,0);assert.equal(state().hp,B.startHP);assert.equal(state().score,0);assert.equal(state().ultimate,0);assert.equal(state().superCharge,0);
  key('Escape');callbacks.get('#menu:click')!();assert.equal(state().mode,'confirm');callbacks.get('#yes:click')!();assert.equal(state().mode,'title');assert.equal(JSON.parse(savedData.get('kaiju-arcade:campaign:v1')!).city,0);
