@@ -49,6 +49,13 @@ const S2_NATIVE={scale:194/256,anchor:31+128*194/256};
 const TZ1_NATIVE={scale:128/256,anchor:64+128*128/256};
 // Tlézcatl Stage 1 attack strips: generated from the same base shifted 40px left (sprite at x=24) so lunges and the tail whip stay in the frame.
 const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
+// Tlézcatl Stage 3 strips: the tlezcatl-s3 base still, a 181x126 hunched sprite at x=37 in a 256x192 frame, keyed with tools/key_render.py.
+const TZ3_NATIVE={scale:181/256,anchor:37+128*181/256};
+// Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a lumbering
+// diagonal-pair stalk, tail kept curled) so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
+const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
+  walk:{src:'assets/tlezcatl-s3-walk.png',frames:8,fps:10,...TZ3_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
@@ -319,8 +326,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   crouch:{src:'assets/kaiban-s1-crouch.png',frames:4,fps:6,...KB1_NATIVE},crouchDown:{src:'assets/kaiban-s1-crouch-down.png',frames:5,fps:22,once:true,...KB1_NATIVE},
   crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}},
   stages:{2:KAIBAN_S2,3:KAIBAN_S3}},
- // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): only the Stage 1 form exists, so it is the base
- // form and every stage draws it. The render keys to a 128x59 sprite at x=64 (TZ1_NATIVE); same 120-unit width as the others.
+ // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): the Stage 1 form is the base form, drawn at
+ // Stages 1 and 2; Stage 3 is TLEZCATL_S3. The render keys to a 128x59 sprite at x=64 (TZ1_NATIVE); same 120-unit width as the others.
  'Tlézcatl':{width:120,anims:{idle:{src:'assets/tlezcatl-s1-idle.png',frames:8,fps:8,...TZ1_NATIVE},walk:{src:'assets/tlezcatl-s1-walk.png',frames:8,fps:10,...TZ1_NATIVE},
   // Run (Shift / double-tap): a low bounding sprint loop closed on the base, body stretched long, lifting clear on frame 4, dust off the claws.
   run:{src:'assets/tlezcatl-s1-run.png',frames:8,fps:15,...TZ1_NATIVE},
@@ -384,7 +391,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   grab:{src:'assets/tlezcatl-s1-grab.png',frames:9,fps:22,once:true,...TZ1_NATIVE,hold:[[192,191],[194,191],[200,191],[190,191],[176,151],[150,112],[131,90],[125,84],[125,84]]},
   carry:{src:'assets/tlezcatl-s1-carry.png',frames:4,fps:6,...TZ1_NATIVE,hold:[[125,84],[126,86],[127,87],[126,86]]},
   carryWalk:{src:'assets/tlezcatl-s1-carry-walk.png',frames:8,fps:10,...TZ1_NATIVE,hold:[[125,84],[125,86],[125,87],[125,88],[125,87],[125,87],[125,86],[125,86]]},
-  throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}}},
+  throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
+  stages:{3:TLEZCATL_S3}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
