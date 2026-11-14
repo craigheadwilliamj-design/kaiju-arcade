@@ -2,6 +2,8 @@ import {test} from 'node:test';import assert from 'node:assert/strict';
 import {bootGame} from './helpers/game-harness.ts';
 import {createParked,spawnTraffic,tickDriving,tickFlying,launch} from '../src/vehicles.ts';
 import {CONFIG as C,VEHICLES as V} from '../src/config.ts';
+// Authored world x positions are city-scaled at load.
+const S=(x:number)=>Math.round(x*C.cityScale);
 
 test('a launched vehicle flies, bounces and settles as a wreck on the street',()=>{
  const [v]=createParked([500]);launch(v,300,-300,40);assert.equal(v.state,'flying');
@@ -24,17 +26,17 @@ test('real loop: traffic drives by; grab a parked car with H and throw it into a
  const h=await bootGame(.75);
  try{
   h.click('#new');h.click('#skip-intro');h.node('#initials').value='CAR';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
-  const s0=h.state(),car=s0.vehicles.find((v:any)=>v.x===2000)!;assert.equal(car.state,'parked');
+  const s0=h.state(),car=s0.vehicles.find((v:any)=>v.x===S(2000))!;assert.equal(car.state,'parked');
   // Close in until the car is within reach but not underfoot, then grab.
   for(let n=0;n<40&&h.state().x+h.state().width+30<car.x;n++){h.down('KeyD');h.step(1);h.up('KeyD');}
   h.tap('KeyH');h.step(1);assert.equal(h.state().held,'car');
   const carried=h.state().vehicles.find((v:any)=>v.id===car.id)!;assert.equal(carried.state,'held');assert.ok(carried.y<h.state().y,'carried overhead');
-  const target=h.state().buildings.find((b:any)=>b.x===2120)!;
+  const target=h.state().buildings.find((b:any)=>b.x===S(2120))!;
   h.tap('KeyH');h.step(1);assert.equal(h.state().held,null);assert.equal(h.state().vehicles.find((v:any)=>v.id===car.id).state,'flying');
   assert.equal(h.state().vehicles.find((v:any)=>v.id===car.id).thrown,true,'armed to detonate');
   let blew=false;for(let n=0;n<240&&h.state().vehicles.find((v:any)=>v.id===car.id).state==='flying';n++){h.step();const v=h.state().vehicles.find((v:any)=>v.id===car.id);if(!blew&&!v.thrown){blew=true;assert.ok(v.burn>0,'detonated into a burning wreck');assert.ok(h.state().hitstop>0,'the blast freezes the frame');}}
   assert.ok(blew,'the thrown car detonated on impact');
-  assert.ok(h.state().buildings.find((b:any)=>b.x===2120).hp<target.hp,'thrown car damaged the building');
+  assert.ok(h.state().buildings.find((b:any)=>b.x===S(2120)).hp<target.hp,'thrown car damaged the building');
   assert.equal(h.state().vehicles.find((v:any)=>v.id===car.id).state,'wreck');
   // Traffic arrives from off-screen over the next few seconds.
   h.step(60*8);assert.ok(h.state().vehicles.some((v:any)=>v.traffic),'traffic spawned');
@@ -54,14 +56,15 @@ test('real loop: lift the newsstand whole (it counts as destroyed, leaves no rub
  const h=await bootGame(.75);
  try{
   h.click('#new');h.click('#skip-intro');h.node('#initials').value='NWS';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
-  const shopIndex=h.state().buildings.findIndex((b:any)=>b.x===1600),standIndex=h.state().buildings.findIndex((b:any)=>b.x===1470&&b.kind==='tiny');assert.ok(standIndex>=0);
+  const shopIndex=h.state().buildings.findIndex((b:any)=>b.x===S(1600)),standIndex=h.state().buildings.findIndex((b:any)=>b.x===S(1470)&&b.kind==='tiny');assert.ok(standIndex>=0);
   // Face west and smash the shop between the start plaza and the newsstand.
   h.down('KeyA');h.step(30);h.up('KeyA');
   for(let n=0;n<40&&h.state().buildings[shopIndex].hp>0;n++){h.down('KeyK');h.step(15);h.up('KeyK');h.step(30);h.down('KeyA');h.step(4);h.up('KeyA');}
   assert.equal(h.state().buildings[shopIndex].hp,0);h.step(60);
   // Close in until the stand is in reach but not underfoot, then lift it.
-  for(let n=0;n<200&&h.state().x-30>1470+32;n++){h.down('KeyA');h.step(1);h.up('KeyA');}
-  const before=h.state().score;h.tap('KeyH');h.step(1);
+  for(let n=0;n<200&&h.state().x-30>S(1470)+S(1502)-S(1470);n++){h.down('KeyA');h.step(1);h.up('KeyA');}
+  // Parked rows stand beside the newsstand: a grab may come up with a car first, so throw those away until it is the stand.
+  let before=0;for(let n=0;n<6;n++){before=h.state().score;h.tap('KeyH');h.step(1);if(h.state().held==='stand'||!h.state().held)break;h.tap('KeyH');h.step(40);}
   let s=h.state();assert.equal(s.held,'stand');assert.equal(s.buildings[standIndex].hp,0);assert.equal(s.buildings[standIndex].lifted,true);assert.ok(s.score>before,'lifting pays the building value');
   h.tap('KeyH');h.step(1);assert.equal(h.state().held,null);
   s=h.state();assert.ok(s.vehicles.some((v:any)=>v.kind==='stand'&&v.state==='flying'),'stand thrown');
@@ -80,7 +83,7 @@ test('real loop: rip a lamppost out with H and throw it point-first',async()=>{
  const h=await bootGame(.75);
  try{
   h.click('#new');h.click('#skip-intro');h.node('#initials').value='LMP';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
-  const lamp=h.state().vehicles.find((v:any)=>v.kind==='lamp'&&v.x===1798)!;assert.equal(lamp.state,'parked');
+  const lamp=h.state().vehicles.find((v:any)=>v.kind==='lamp'&&v.x===S(1800)-2)!;assert.equal(lamp.state,'parked');
   for(let n=0;n<60&&h.state().x-30>lamp.x+lamp.w;n++){h.down('KeyA');h.step(1);h.up('KeyA');}
   h.tap('KeyH');h.step(1);assert.equal(h.state().held,'lamp');
   const carried=h.state().vehicles.find((v:any)=>v.id===lamp.id)!;assert.ok(carried.w>carried.h,'carried lengthwise');
@@ -90,7 +93,9 @@ test('real loop: rip a lamppost out with H and throw it point-first',async()=>{
 });
 
 test('only Stage 3 can lift buildings up to mid-rise size; landmarks and towers stay put',async()=>{
- const {createBuildings,liftable}=await import('../src/rules.ts');
+ const {createBuildings:raw,liftable}=await import('../src/rules.ts');
+ // Specs are authored-size; the game city-scales them at load, so scale them here the same way.
+ const createBuildings=(specs:any[])=>raw(specs.map(b=>({...b,x:S(b.x),w:S(b.x+b.w)-S(b.x),h:S(b.h)})));
  const [deli,hotel,landmark,stand]=createBuildings([{x:0,w:64,h:82,hp:60,value:70,kind:'medium',label:'DELI',color:'#577b84'},{x:200,w:130,h:330,hp:420,value:290,kind:'medium',label:'HOTEL',color:'#8b7688'},
   {x:400,w:80,h:120,hp:90,value:100,kind:'medium',label:'HALL',color:'#8b7688',landmark:true},{x:600,w:32,h:42,hp:20,value:20,kind:'tiny',label:'NEWS',color:'#ca9a50'}]);
  for(const stage of [1,2])assert.equal(liftable(deli,stage),false,`Stage ${stage} cannot lift the deli`);
@@ -105,7 +110,7 @@ test('real loop: a thrown car flies far down an open street and detonates when i
  const h=await bootGame(.75);
  try{
   h.click('#new');h.click('#skip-intro');h.node('#initials').value='FAR';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
-  const car=h.state().vehicles.find((v:any)=>v.x===2000)!;
+  const car=h.state().vehicles.find((v:any)=>v.x===S(2000))!;
   for(let n=0;n<40&&h.state().x+h.state().width+30<car.x;n++){h.down('KeyD');h.step(1);h.up('KeyD');}
   h.tap('KeyH');h.step(1);assert.equal(h.state().held,'car');
   // Turn round (west is open street back to the start) and throw.
@@ -120,9 +125,18 @@ test('real loop: punting a parked car hits like a military kill: hit-stop, fire,
  const h=await bootGame(.75);
  try{
   h.click('#new');h.click('#skip-intro');h.node('#initials').value='PNT';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
-  const car=h.state().vehicles.find((v:any)=>v.x===2000)!;
+  const car=h.state().vehicles.find((v:any)=>v.x===S(2000))!;
   for(let n=0;n<40&&h.state().x+h.state().width+30<car.x;n++){h.down('KeyD');h.step(1);h.up('KeyD');}
   let hit=false;for(let n=0;n<40&&!hit;n++){h.tap('KeyJ');for(let f=0;f<20&&!hit;f++){h.step();const v=h.state().vehicles.find((v:any)=>v.id===car.id);if(v.state==='flying'){hit=true;assert.ok(v.burn>0,'on fire');}}}
   assert.ok(hit,'punted');assert.ok(h.state().hitstop>0||h.state().fireballs>0,'it landed with weight');
  }finally{h.release();h.cleanup();}
+});
+
+test('each authored parked spot becomes a bumper-to-bumper row, originals keep their ids and kinds',async()=>{
+ const xs=[200,1000,1800,2600],cars=createParked(xs);assert.equal(cars.length,xs.length*(1+V.parkedRow));
+ xs.forEach((x,i)=>{assert.equal(cars[i].id,i+1);assert.equal(cars[i].x,x);assert.equal(cars[i].kind,i%4===3?'van':'car');});
+ assert.equal(new Set(cars.map(c=>c.id)).size,cars.length,'unique ids');assert.ok(cars.every(c=>c.id<500),'below the lamppost ids');
+ for(const c of cars)for(const o of cars)if(c!==o&&c.lane===o.lane)assert.ok(c.x+c.w<=o.x||o.x+o.w<=c.x,'no overlap within a lane');
+ const tight=createParked([1850,2000]);assert.ok(tight.every((c,i)=>i<2||c.x>2000||c.x+c.w<2000),'a row stops before the next authored car');assert.equal(tight[1].x,2000);
+ assert.ok(cars.some(c=>c.kind==='bus')&&cars.some(c=>c.kind==='van'),'mixed row');
 });

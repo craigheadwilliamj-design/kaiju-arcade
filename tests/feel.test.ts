@@ -9,10 +9,12 @@ test('topple span runs from the pivot edge out to full height in the fall direct
  const [short]=createBuildings([{x:0,w:80,h:150,hp:10,value:10,kind:'medium',label:'',color:'#000'}]);assert.equal(canTopple(short),false);
 });
 
-test('crush damage falls off along the path and across chain generations',()=>{
- assert.equal(Math.round(crushDamage(330,0,0)),165);assert.ok(crushDamage(330,0,0)<190,'an ordinary tower cannot one-shot even a small building');
- assert.ok(crushDamage(330,1,0)<crushDamage(330,0,0)*.4);assert.ok(crushDamage(330,0,1)<crushDamage(330,0,0)*.4);
- assert.ok(crushDamage(500,0,0)>190&&crushDamage(500,1,0)<190,'a landmark flattens only a small building it lands on');
+test('crush damage falls off along the path and across chain generations',async()=>{
+ // Heights are city-scaled ('h' tower 330, landmark 500 authored); crush damage is the same as before the scale-up.
+ const {CONFIG}=await import('../src/config.ts');const tower=Math.round(330*CONFIG.cityScale),mark=Math.round(500*CONFIG.cityScale);
+ assert.equal(Math.round(crushDamage(tower,0,0)),165);assert.ok(crushDamage(tower,0,0)<190,'an ordinary tower cannot one-shot even a small building');
+ assert.ok(crushDamage(tower,1,0)<crushDamage(tower,0,0)*.4);assert.ok(crushDamage(tower,0,1)<crushDamage(tower,0,0)*.4);
+ assert.ok(crushDamage(mark,0,0)>190&&crushDamage(mark,1,0)<190,'a landmark flattens only a small building it lands on');
 });
 
 test('real loop: hits leave holes/chunks/hitstop; short buildings squash; tall ones topple away and crush neighbours',async()=>{

@@ -89,7 +89,9 @@ test('Tlézcatl Flame Jet: leaves fire behind (street patches, afterburn on the 
   const s0=h.state(),cx=s0.x+s0.width/2;
   const ahead=s0.buildings.filter((b:any)=>b.hp>0&&b.x>cx).sort((a:any,b:any)=>a.x-b.x)[0];
   const i=h.state().buildings.findIndex((b:any)=>b.x===ahead.x);
-  // From the spawn, aimed down: the flame washes along the street into the next building's wall, then let go.
+  // Walk up to within flame range (the city-scaled start plaza is wider than the jet), then aim down: the flame washes along
+  // the street into the next building's wall, then let go.
+  for(let n=0;n<120&&ahead.x-(h.state().x+h.state().width)>B.jetRange*.6;n++){h.down('KeyD');h.step(1);h.up('KeyD');}
   h.down('KeyL');h.down('KeyS');until(h,()=>h.state().jet==='on',40);h.step(40);h.up('KeyS');h.up('KeyL');
   until(h,()=>h.state().jet===null,60);
   assert.ok(h.state().entityCounts.jetFires>0,`street fire left behind (${h.state().entityCounts.jetFires})`);

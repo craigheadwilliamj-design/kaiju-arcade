@@ -75,7 +75,7 @@ test('a street slam makes a shockwave; S on the wall still climbs down instead o
   h.step(30);h.tap('Space');h.step(15);assert.equal(h.state().grounded,false,'airborne');h.tap('KeyS');assert.equal(h.state().diving,true);
   for(let n=0;n<60&&h.state().diving;n++)h.step();
   assert.equal(h.state().diving,false);assert.ok(h.state().entityCounts.tremorWaves>=2,'shockwave both ways');
-  h.down('KeyD');h.step(120);h.up('KeyD');h.down('KeyW');h.step(30);h.up('KeyW');assert.equal(h.state().clinging,true);
+  h.down('KeyD');h.step(180);h.up('KeyD');h.down('KeyW');h.step(30);h.up('KeyW');assert.equal(h.state().clinging,true);
   h.down('KeyS');h.step(3);assert.equal(h.state().diving,false);assert.ok(h.state().clinging);h.up('KeyS');
  }finally{h.cleanup();}
 });
@@ -83,8 +83,8 @@ test('a street slam makes a shockwave; S on the wall still climbs down instead o
 test('a street slam with a direction held rolls the cannonball, plows ahead and ricochets off the first wall',async()=>{
  const h=await drills();
  try{
-  // Back off west so there is street to roll on before the first building.
-  h.down('KeyA');h.step(90);h.up('KeyA');h.step(30);
+  // Close in to within a roll of the first building, leaving street to roll on.
+  h.down('KeyD');h.step(30);h.up('KeyD');h.step(30);
   const i=h.state().buildings.findIndex((b:any)=>b.x>h.state().x),hp=h.state().buildings[i].hp;
   h.tap('Space');h.step(15);h.tap('KeyS');h.down('KeyD');
   for(let n=0;n<60&&h.state().diving;n++)h.step();

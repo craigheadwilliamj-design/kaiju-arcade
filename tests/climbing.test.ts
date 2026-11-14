@@ -4,7 +4,7 @@ test('buildings are solid, can be climbed with W, stood on, and dropped from whe
  const h=await bootGame(.75);
  try{
   h.click('#drills');h.click('#start');assert.equal(h.state().mode,'playing');
-  h.down('KeyD');h.step(120);h.up('KeyD');
+  h.down('KeyD');h.step(180);h.up('KeyD');
   const wallX=h.state().x,first=h.state().buildings.find((b:any)=>b.x>wallX)!;
   assert.equal(wallX,first.x-h.state().width,'solid building blocks walking');
   const roof=first.y;

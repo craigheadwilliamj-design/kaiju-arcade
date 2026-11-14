@@ -1,6 +1,7 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {bootGame} from './helpers/game-harness.ts';
 import {LEVELS,DRILL_BLOCK,levelWidth} from '../src/levels.ts';
+import {CONFIG} from '../src/config.ts';
 
 test('open NYC districts: mid-map start plaza, named landmarks, hidden caches; drills keep the packed wall',()=>{
  const open=LEVELS[0].filter(b=>b.start!==undefined);
@@ -15,7 +16,7 @@ test('open NYC districts: mid-map start plaza, named landmarks, hidden caches; d
   const solid=b.buildings.filter(x=>x.kind!=='tiny').sort((p,q)=>p.x-q.x);
   const gaps=solid.slice(1).filter((x,i)=>x.x-(solid[i].x+solid[i].w)>=100).length;assert.ok(gaps>=4,`${b.name} has open gaps (${gaps})`);
  }
- assert.equal(DRILL_BLOCK.start,undefined);assert.equal(DRILL_BLOCK.buildings[0].x,400);
+ assert.equal(DRILL_BLOCK.start,undefined);assert.equal(DRILL_BLOCK.buildings[0].x,Math.round(400*CONFIG.cityScale));
  assert.ok(!DRILL_BLOCK.buildings.some(x=>x.landmark||x.cache));
 });
 
