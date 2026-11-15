@@ -541,6 +541,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // Run (Shift / double-tap): a low bounding gallop, the body gathering and stretching with a short flight phase on frames 4-5 and dust
   // kicked back, tail streaming straight behind. Starts on the base and loops back to it.
   run:{src:'assets/belial-s2-run.png',frames:8,fps:15,...BL2_NATIVE},
+  // Jump: crouches and coils the tail up over his back, then springs off all four legs into a level, legs-tucked leap (rise); the air
+  // loop is frames 0,1,2,1 of a generation from the rise's last pose; the landing reaches the legs down with the tail flung up,
+  // squashes low and closes on the base. Bottom-aligned: physics moves him, the art only changes pose. Timing matches the other forms.
+  jumpRise:{src:'assets/belial-s2-jump-rise.png',frames:9,fps:24,once:true,...BL2_NATIVE},jumpAir:{src:'assets/belial-s2-jump-air.png',frames:4,fps:8,...BL2_NATIVE},
+  jumpLand:{src:'assets/belial-s2-jump-land.png',frames:5,fps:20,once:true,...BL2_NATIVE},
   // Light combo: forward claw swipe (the near claw cocks up by the head and rakes down in front of the chest, slash on frames 4-5),
   // backhand rake (the far claw shoots out past the snout and hooks back down, crescent on frames 4-5), lunging bite (head thrust
   // forward with the jaws gaping, snapping shut in a puff of acid on frame 4). Shared frame counts and fps; each strip starts on the
