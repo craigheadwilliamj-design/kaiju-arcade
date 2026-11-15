@@ -128,7 +128,7 @@ const TZ3_LEFT2={scale:181/256,anchor:4.5+128*181/256};
 // Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
 // theropod stalk on the hind legs only, skeleton-posed so both feet run a full stride and pass each other, the body sinking into each
 // stomp, the head dipping a beat late, shoulders rolling and raised claws swinging, the tail swinging out as a counterweight; the
-// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch, the jump and the climb so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch, the jump, the climb and grab/carry/throw so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
 // 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
 const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
   walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK},
@@ -172,7 +172,17 @@ const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
   // upper claw back off the wall and slams it in with a starburst on impact frame 5; the mantle starts 22px further back (the game's
   // roof slide), hauls up over the edge and ends on the base.
   climbGrab:{src:'assets/tlezcatl-s3-climb-grab.png',frames:5,fps:20,once:true,...TZ3_NATIVE},climb:{src:'assets/tlezcatl-s3-climb.png',frames:8,fps:12,...TZ3_NATIVE},
-  climbMantle:{src:'assets/tlezcatl-s3-climb-mantle.png',frames:9,fps:20,once:true,...TZ3_NATIVE},climbPunch:{src:'assets/tlezcatl-s3-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ3_NATIVE}}};
+  climbMantle:{src:'assets/tlezcatl-s3-climb-mantle.png',frames:9,fps:20,once:true,...TZ3_NATIVE},climbPunch:{src:'assets/tlezcatl-s3-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ3_NATIVE},
+  // Grab/carry/throw (256x256, the base padded to 256 tall so TZ3_NATIVE lines up; generated without any object, the game draws the
+  // prop): the grab dips and scoops both claws along the street, then rears upright and raises them past the chest and face until both
+  // arms lock straight up overhead; the carry strains under it and the carry-walk stomps forward with the arms locked up (both loops
+  // closed on the grab's last frame); the throw whips both arms forward and down with swooshes on frame 1 and settles onto the base.
+  // `hold`: frames 0-4 keep the prop on the street at the front claw, 5-7 follow the rising hands, then it sits on the midpoint of the
+  // two raised claws.
+  grab:{src:'assets/tlezcatl-s3-grab.png',frames:9,fps:22,once:true,...TZ3_NATIVE,hold:[[204,255],[242,255],[237,255],[223,255],[198,255],[172,192],[195,148],[138,98],[125,53]]},
+  carry:{src:'assets/tlezcatl-s3-carry.png',frames:4,fps:6,...TZ3_NATIVE,hold:[[125,53],[128,56],[132,58],[130,56]]},
+  carryWalk:{src:'assets/tlezcatl-s3-carry-walk.png',frames:8,fps:10,...TZ3_NATIVE,hold:[[125,52],[124,51],[123,49],[122,49],[121,51],[122,50],[124,49],[125,52]]},
+  throw:{src:'assets/tlezcatl-s3-throw.png',frames:8,fps:18,once:true,...TZ3_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
