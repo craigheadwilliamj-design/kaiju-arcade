@@ -557,7 +557,14 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   vomitStart:{src:'assets/belial-s2-vomit-start.png',frames:5,fps:20,once:true,...BL2_LEFT,mouth:[235,151]},
   vomitAim:{src:'assets/belial-s2-vomit-aim.png',frames:7,fps:10,once:true,...BL2_LEFT,angles:[-25,-12,0,8,18,32,45],
    mouth:[[230,170],[235,160],[235,151],[236,146],[234,138],[229,122],[221,111]]},
-  vomitEnd:{src:'assets/belial-s2-vomit-end.png',frames:4,fps:16,once:true,...BL2_LEFT}}},
+  vomitEnd:{src:'assets/belial-s2-vomit-end.png',frames:4,fps:16,once:true,...BL2_LEFT},
+  // Climb: 256x256 strips (the base padded to 256 tall, so BL2_NATIVE lines up), clinging gecko-style with the body vertical, head up
+  // and the long tail hanging to the bottom row, the gripping claws on the wall line at frame x=171 (the hitbox edge 24 world units
+  // out). The grab rears and leaps from the base and eases 81px onto the wall line; the loop is hand over hand; the punch draws the
+  // upper claw back off the wall and slams it in with an acid-green flash on impact frame 4; the mantle starts 26px further back (the
+  // game's roof slide), swings up over the edge and ends on the base. Timing matches the other forms.
+  climbGrab:{src:'assets/belial-s2-climb-grab.png',frames:5,fps:20,once:true,...BL2_NATIVE},climb:{src:'assets/belial-s2-climb.png',frames:8,fps:12,...BL2_NATIVE},
+  climbMantle:{src:'assets/belial-s2-climb-mantle.png',frames:9,fps:20,once:true,...BL2_NATIVE},climbPunch:{src:'assets/belial-s2-climb-punch.png',frames:8,fps:24,once:true,impact:4,...BL2_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
