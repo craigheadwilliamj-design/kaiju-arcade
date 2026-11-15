@@ -53,6 +53,10 @@ const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
 // Tlézcatl Stage 2 attack strips: generated from the same base shifted 40px left (sprite at x=9) so the reaching rakes and the lunge stay in the frame.
 const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
+// Belial Stage 2 strips: the belial-s2 base still, a 216x79 long-tailed quadruped sprite at x=20 in a 256x192 frame, keyed with tools/key_render.py.
+const BL2_NATIVE={scale:216/256,anchor:20+128*216/256};
+// Belial Stage 2 attack strips: the same base shifted flush left (sprite at x=0) for 40px of reach in front of the snout.
+const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
@@ -531,6 +535,29 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carryWalk:{src:'assets/tlezcatl-s1-carry-walk.png',frames:8,fps:10,...TZ1_NATIVE,hold:[[125,84],[125,86],[125,87],[125,88],[125,87],[125,87],[125,86],[125,86]]},
   throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
   stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
+ // Belial (low-slung striped reptile, red blade spines, green acid gland and drool): only the Stage 2 form exists, so as with Mogurodon
+ // it is the base form and every stage draws it; Stage 1/3 art will go in `stages`. Keys to 216x79 at x=20 (BL2_NATIVE).
+ Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE},
+  // Light combo: forward claw swipe (the near claw cocks up by the head and rakes down in front of the chest, slash on frames 4-5),
+  // backhand rake (the far claw shoots out past the snout and hooks back down, crescent on frames 4-5), lunging bite (head thrust
+  // forward with the jaws gaping, snapping shut in a puff of acid on frame 4). Shared frame counts and fps; each strip starts on the
+  // left-shifted base pose and returns to it.
+  light1:{src:'assets/belial-s2-light1.png',frames:8,fps:24,once:true,...BL2_LEFT},light2:{src:'assets/belial-s2-light2.png',frames:8,fps:21,once:true,...BL2_LEFT},
+  light3:{src:'assets/belial-s2-light3.png',frames:8,fps:20,once:true,...BL2_LEFT},
+  // Heavy, a scorpion tail strike (256 tall so the coiled tail and the slash clear the frame; strips draw bottom-anchored): plants
+  // and lifts the bladed tail up into a high curl over the back, tip poised above the head (rear), the curl quivers while K is held
+  // (hold), then on release the tail snaps straight up, sweeps a huge arc over the head and slashes down in front of the snout into
+  // a dust burst (frame 2), dragging back behind him as he settles (slam). Stage timing.
+  heavyRear:{src:'assets/belial-s2-heavy-rear.png',frames:5,fps:20,once:true,...BL2_LEFT},heavyHold:{src:'assets/belial-s2-heavy-hold.png',frames:4,fps:10,...BL2_LEFT},
+  heavySlam:{src:'assets/belial-s2-heavy-slam.png',frames:8,fps:16,once:true,...BL2_LEFT},
+  // Acid Vomit (the game draws the arcing stream from `mouth`; mechanic not wired yet): vomitStart swells the neck gland, heaves, pulls
+  // the head back and lurches forward with the jaws thrown wide; vomitAim holds that gape with the head at each of `angles` (down-tucked
+  // to neck raised; set from the head-and-neck pose, since the mouth opening itself stays near level as the neck rises), `mouth` at
+  // the midpoint of the jaw tips per frame; vomitEnd gags, snaps the jaws shut on a drooling gob and settles onto the shifted base.
+  vomitStart:{src:'assets/belial-s2-vomit-start.png',frames:5,fps:20,once:true,...BL2_LEFT,mouth:[235,151]},
+  vomitAim:{src:'assets/belial-s2-vomit-aim.png',frames:7,fps:10,once:true,...BL2_LEFT,angles:[-25,-12,0,8,18,32,45],
+   mouth:[[230,170],[235,160],[235,151],[236,146],[234,138],[229,122],[221,111]]},
+  vomitEnd:{src:'assets/belial-s2-vomit-end.png',frames:4,fps:16,once:true,...BL2_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -654,6 +681,13 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'L+W/S',name:'Aim the jet',desc:'While breathing, hold W to tilt the flame up at aircraft or S to sweep it down across the street. He can creep and turn while he breathes.'},
   {keys:'U',name:'Eruption',desc:'Full meter. He balls up as the pressure builds, then rears up and explodes, blasting everything in a huge circle around him. Molten rock thrown out by the blast rains down all around, leaving burning pools. Invulnerable while it lasts.'},
   {...slam,name:'Magma Dive',desc:'Dive head-first. The crash splashes molten globs out both ways and leaves burning lava pools on the street that scorch anything standing in them, on top of the slam itself.'},
+  {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
+ :kaiju==='Belial'?[
+  {keys:'L',name:'Acid Vomit',desc:'On the ground: hold to spew an arcing stream of acid. It flies over troops and low cover and lands where it lands: on a wall, a rooftop or the street, where it leaves a puddle that eats anything standing in it. The gland drains as you spew, and the arc sags and lands nearer as it does. Run it dry and he gags until it refills.'},
+  {keys:'L+W/S',name:'Aim the arc',desc:'While spewing, hold W to lob the arc higher (further, onto roofs, up at aircraft) or S to flatten it into a short, fast spray. He can walk at half speed while he spews, to hold the stream on one target.'},
+  {keys:'L',name:'Corrosion',desc:'Anything the acid touches corrodes: it keeps taking damage and takes more from every hit. Keep the stream on it to stack it up to three times. A fully corroded building gives way long before it should, and corroded tanks and APCs lose their armour.'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  slam,
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
   {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
