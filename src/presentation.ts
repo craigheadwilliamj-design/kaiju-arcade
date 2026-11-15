@@ -53,6 +53,8 @@ const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
 // Tlézcatl Stage 2 attack strips: generated from the same base shifted 40px left (sprite at x=9) so the reaching rakes and the lunge stay in the frame.
 const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
+// Belial Stage 2 strips: the belial-s2 base still, a 216x79 long-tailed quadruped sprite at x=20 in a 256x192 frame, keyed with tools/key_render.py.
+const BL2_NATIVE={scale:216/256,anchor:20+128*216/256};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
@@ -504,6 +506,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carryWalk:{src:'assets/tlezcatl-s1-carry-walk.png',frames:8,fps:10,...TZ1_NATIVE,hold:[[125,84],[125,86],[125,87],[125,88],[125,87],[125,87],[125,86],[125,86]]},
   throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
   stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
+ // Belial (low-slung striped reptile, red blade spines, green acid gland and drool): only the Stage 2 form exists, so as with Mogurodon
+ // it is the base form and every stage draws it; Stage 1/3 art will go in `stages`. Keys to 216x79 at x=20 (BL2_NATIVE).
+ Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:9,fps:11,...BL2_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
