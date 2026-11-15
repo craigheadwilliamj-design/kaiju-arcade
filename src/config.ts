@@ -248,6 +248,9 @@ export const MOVE = {
  // Tlézcatl: Magma Dive splashes lavaGlobs molten globs out both ways on landing (angles lavaAngle, speeds lavaSpeed x sqrt(stage
  // scale) x drop power, lavaDamage each on the first thing hit). A street landing leaves a lava pool under him, and every glob that
  // reaches the street leaves a small one: pools burn whatever stands in them for lavaPoolDamage every lavaPoolTick until they cool.
+ // Belial: Acid Pounce corrodes everything the landing strikes to pounceStacks (one more from a pounceFullPower drop) and, on the
+ // street, lays acid puddles across pouncePoolWidth x his body width (x power, capped at 1.5) under the impact.
+ pounceStacks:2,pounceFullPower:1.8,pouncePoolWidth:1.4,
  lavaGlobs:8,lavaSpeed:[220,420],lavaAngle:[30,70],lavaDamage:10,lavaPoolSeconds:2.2,lavaPoolTick:.25,lavaPoolDamage:6,lavaPoolWidth:1.3,lavaGlobPool:46,
  // His grounded heavy splashes heavyLavaGlobs (+2 near full charge) from the impact point, at drop power heavyLavaPower[0..1] by
  // charge, and on the street leaves a pool heavyLavaPoolWidth x body width there.

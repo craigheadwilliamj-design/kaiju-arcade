@@ -572,6 +572,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   vomitAim:{src:'assets/belial-s2-vomit-aim.png',frames:7,fps:10,once:true,...BL2_LEFT,angles:[-25,-12,0,8,18,32,45],
    mouth:[[230,170],[235,160],[235,151],[236,146],[234,138],[229,122],[221,111]]},
   vomitEnd:{src:'assets/belial-s2-vomit-end.png',frames:4,fps:16,once:true,...BL2_LEFT},
+  // Acid Pounce (256x256, the base padded 64px on top): dive gathers from the air loop and tips into a steep nose-down pounce, claws
+  // splayed for the street, jaws open, tail whipped up (frames 0,3,4,6 of a generation from the air pose, bottom-aligned, held on the
+  // last); slamLand = frames 1-7 of a generation from that plunge to the base plus the base: claws and chest hit in an acid splash both
+  // ways, belly-flop with spatter, push back up onto all fours.
+  dive:{src:'assets/belial-s2-dive.png',frames:4,fps:24,once:true,...BL2_NATIVE},slamLand:{src:'assets/belial-s2-slam-land.png',frames:8,fps:16,once:true,...BL2_NATIVE},
   // Climb: 256x256 strips (the base padded to 256 tall, so BL2_NATIVE lines up), clinging gecko-style with the body vertical, head up
   // and the long tail hanging to the bottom row, the gripping claws on the wall line at frame x=171 (the hitbox edge 24 world units
   // out). The grab rears and leaps from the base and eases 81px onto the wall line; the loop is hand over hand; the punch draws the
@@ -721,7 +726,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'L+W/S',name:'Aim the arc',desc:'While spewing, hold W to lob the arc higher (further, onto roofs, up at aircraft) or S to flatten it into a short, fast spray. He can walk at half speed while he spews, to hold the stream on one target.'},
   {keys:'L',name:'Corrosion',desc:'Anything the acid touches corrodes: it keeps taking damage and takes more from every hit. Keep the stream on it to stack it up to three times. A fully corroded building gives way long before it should, and corroded tanks and APCs lose their armour.'},
   {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
-  slam,
+  {...slam,name:'Acid Pounce',desc:'Dive claws-first. The impact bursts his gland: everything the slam hits is corroded twice over (three times from a big drop), and a street landing leaves a row of acid puddles, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
   {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
