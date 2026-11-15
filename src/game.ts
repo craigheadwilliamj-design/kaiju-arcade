@@ -5,7 +5,7 @@ import {NEW_YORK_BLOCK_ONE,DRILL_BLOCK,CITIES,LEVELS,levelWidth} from './levels.
 import {createBuildings,damageBuilding,destruction,exitUnlocked,perfectBonus,solid,overlaps,canExitBlock,damageObjective,separateHorizontal,canTopple,toppleSpan,crushDamage,liftable} from './rules.ts';
 import {createCombat,canAct,scale,damageMultiplier,collectCrystal,creditDamage,tickCombat,light,beginHeavy,releaseHeavy,ranged,activateUltimate,activateSuper,cancelCharge,receiveHit} from './combat.ts';
 import type {Strike} from './combat.ts';
-import {createMilitary,tickMilitary,spawnUnit,hitUnit,intercept,segmentHits,captureUnit,GRABBABLE_UNITS,UNITS,WEAPONS,roadLane,ROAD_UNITS,smallArmsScale,blast} from './military.ts';
+import {createMilitary,tickMilitary,spawnUnit,hitUnit as hitUnitBase,intercept,segmentHits,captureUnit,GRABBABLE_UNITS,UNITS,WEAPONS,roadLane,ROAD_UNITS,smallArmsScale,blast} from './military.ts';
 import type {MilitaryEvent} from './military.ts';
 import type {Rect,Unit} from './military.ts';
 import {createPopulation,releaseOccupants,tickPopulation} from './population.ts';
@@ -65,7 +65,7 @@ let rocks:Rock[]=[];
 // Eruption globs and pools carry `ult`: their hits are Ultimate damage (no meter gain, no hitstop) and an Eruption glob only collides
 // once it is falling.
 type Glob={x:number,y:number,vx:number,vy:number,life:number,damage:number,size:number,ult?:boolean,grav?:number};
-type Pool={x:number,w:number,life:number,max:number,damage:number,hits:Map<object,number>,ult?:boolean,fire?:boolean,tick?:number,size?:number};
+type Pool={x:number,w:number,life:number,max:number,damage:number,hits:Map<object,number>,ult?:boolean,fire?:boolean,acid?:boolean,tick?:number,size?:number};
 let globs:Glob[]=[],pools:Pool[]=[];
 // Flame Jet afterburn: a track of fire spots up the wall where the flame touched (x = wall face, y = height above the street, snapped
 // to jetWallCell rows), each burning `t` more seconds. Damage ticks once per building however many spots it has (`burnHits`).
@@ -77,6 +77,22 @@ let burns:Burn[]=[],burnHits=new Map<object,number>();
 // `bend` is the distance where the flame meets the street and washes along it (Infinity if it never does).
 type Jet={phase:'start'|'on'|'end',t:number,on:number,angle:number,hits:Map<object,number>,ox:number,oy:number,dx:number,dy:number,len:number,stop:boolean,bend:number,bx:number,face:number};
 let jet:Jet|null=null,jetFuel=1,jetLocked=false;
+// Belial's Acid Vomit rides the same state machine (start / on / end, `angle`, `on`, `hits`; jetFuel is his gland pressure). While it is
+// on, `pts` is the stream's arc (world points from the jaws to where it stops) and `land`/`landOn` where it came down this frame.
+type Spew={pts:number[][],land:number[]|null,landOn:'street'|'building'|'roof'|null};
+let spewState:Spew={pts:[],land:null,landOn:null};
+const isBelial=()=>activeKaiju==='Belial';
+// Corrosion per target (building, unit or the rival): stacks, seconds of stream contact so far, seconds left, last damage tick.
+type Corr={stacks:number,expo:number,t:number,tick:number};
+let corr=new Map<object,Corr>();
+function corrode(o:object,dt:number){let c=corr.get(o);if(!c){c={stacks:0,expo:0,t:0,tick:time};corr.set(o,c);}
+ c.expo+=dt;c.stacks=Math.min(B.corrodeMax,Math.max(1,Math.ceil(c.expo/B.corrodePerStack-1e-9)));c.t=B.corrodeSeconds;}
+function vuln(o:object){const c=corr.get(o);return c?1+B.corrodeVuln*c.stacks:1;}
+const ARMORED=new Set(['tank','apc']);
+// Every player hit on a unit goes through here, so corrosion's extra damage (and the armour it eats) applies to all of it.
+function hitUnit(m:typeof military,u:Unit,damage:number,source:'player'|'military'|'boss'='player',knockback=0,direction=1,ultimate=false,cause:Parameters<typeof hitUnitBase>[7]='melee'){
+ const c=source==='player'?corr.get(u):undefined;if(c)damage*=vuln(u)*(ARMORED.has(u.type)?1+B.corrodeArmor:1);
+ return hitUnitBase(m,u,damage,source,knockback,direction,ultimate,cause);}
 // Kaiban's Stampede: bellow (blast on the roar's impact frame), then the charge. `hits` resets when he turns, so each pass hits once.
 // Tlézcatl's Eruption: `blasted` once the explosion has gone off, `boom` seconds since, `spat` globs thrown, `flash` the white-out left.
 // Where each Eruption glob came down (roof, wall, unit or street), for the debug view; cleared when the next Eruption starts.
@@ -257,7 +273,7 @@ function scoresScreen(){mode='scores';panel(`<div class="eyebrow">LOCAL CAMPAIGN
 function drills(){loadKaijuArt('Mogurodon');mode='setup';panel(`<div class="eyebrow">PRACTICE / NO CAMPAIGN SCORE</div><h1>COMBAT<br><span>DRILLS.</span></h1><label class="drill-label" for="tier">REINFORCEMENTS</label><select id="tier"><option value="1">Block 1 — Police patrol</option><option value="2">Drill — National Guard</option><option value="3">Drill — Stronghold forces</option><option value="4">Drill — Full military assault</option><option value="5">Drill — Limited arena support</option></select><button class="primary" id="start">ENTER DRILL →</button><button id="back">MAIN MENU</button><p class="note">Uses the original New York Block 1 map.<br>No checkpoint, unlock or Top 10 changes.</p>`);const select=document.querySelector<HTMLSelectElement>('#tier')!;select.value=String(selectedTier);select.addEventListener('change',()=>selectedTier=Number(select.value));document.querySelector('#start')!.addEventListener('click',start);document.querySelector('#back')!.addEventListener('click',title);}
 function start(){session='drill';run=null;activeKaiju='Mogurodon';cityIndex=0;blockIndex=0;citySettled=false;score=0;combat=createCombat();loadBlock(true);}
 function loadBlock(drill=false){
- block=drill?DRILL_BLOCK:LEVELS[cityIndex][blockIndex];worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:blockIndex+1,cityIndex);resetMilitaryFeel();population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];chunks=[];hitstop=0;echo=false;lastFreeze=-9;vehicles=[...createParked(block.cars),...createLamps(worldWidth,500)];held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];stampede=null;eruption=null;ambientTimer=0;growthTimer=0;ultimateTimer=0;
+ block=drill?DRILL_BLOCK:LEVELS[cityIndex][blockIndex];worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:blockIndex+1,cityIndex);resetMilitaryFeel();population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];chunks=[];hitstop=0;echo=false;lastFreeze=-9;vehicles=[...createParked(block.cars),...createLamps(worldWidth,500)];held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;ambientTimer=0;growthTimer=0;ultimateTimer=0;
  cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
  clingTo=null;grabLock=false;isClimbing=false;climbDir=0;runLatch=false;dashT=0;airRun=false;running=false;bargeT=0;grabWait=0;dive=null;roll=null;runUp=0;runDir=0;bargeHits.clear();oldWidth=bodyWidth();oldHeight=C.playerHeight*scale(combat);player={x:block.start===undefined?110:block.start-oldWidth/2,y:C.ground-oldHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
  camera=Math.max(0,Math.min(worldWidth-viewW(),player.x+oldWidth/2-viewW()*.34));
@@ -303,7 +319,9 @@ function dropShards(x:number,count:number){
 }
 // dir: direction of the blow (away from the attacker); at: world point struck, for the hole and debris.
 // `quiet`: a rapid damage tick (the Flame Jet), so no hole, hitstop or shake per tick unless it brings the building down.
-function hit(b:typeof buildings[number],damage:number,fromUltimate=false,dir=player.face,at?:{x:number,y:number},quiet=false){const r=damageBuilding(b,damage);if(!r.damage)return;releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);score+=r.points;creditDamage(combat,r.damage,'player',fromUltimate);if(r.destroyed)dropShards(b.x+b.w/2,B.buildingShards);if(!quiet||r.destroyed)burst(b.x+b.w/2,C.ground-Math.min(b.h,60),'#e8d8ab',r.destroyed?23:7);if(!quiet||r.destroyed)shake=r.destroyed?5:2;action=r.destroyed?'STRUCTURE COLLAPSED':quiet?'FLAME JET':`IMPACT −${Math.round(r.damage)}`;actionTime=1.2;
+function hit(b:typeof buildings[number],damage:number,fromUltimate=false,dir=player.face,at?:{x:number,y:number},quiet=false){const r=damageBuilding(b,damage*vuln(b));if(!r.damage)return;releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);score+=r.points;creditDamage(combat,r.damage,'player',fromUltimate);if(r.destroyed)dropShards(b.x+b.w/2,B.buildingShards);if(!quiet||r.destroyed)burst(b.x+b.w/2,C.ground-Math.min(b.h,60),'#e8d8ab',r.destroyed?23:7);if(!quiet||r.destroyed)shake=r.destroyed?5:2;action=r.destroyed?'STRUCTURE COLLAPSED':quiet?(isBelial()?'ACID':'FLAME JET'):`IMPACT −${Math.round(r.damage)}`;actionTime=1.2;
+ // Fully corroded, it gives way well before its HP runs out.
+ if(!r.destroyed&&b.hpNow>0&&b.hpNow<=b.hp*B.corrodeBreak&&(corr.get(b)?.stacks??0)>=B.corrodeMax){corr.delete(b);hit(b,b.hpNow,fromUltimate,dir,at);action='DISSOLVED';actionTime=1.4;return;}
  if(quiet&&!r.destroyed){b.jolt=F.joltSeconds*.5;b.joltDir=dir;return;}
  impactFeel(b,r.damage,r.destroyed,fromUltimate,dir,at);
  if(r.destroyed)exploreReward(b,fromUltimate);}
@@ -346,25 +364,29 @@ function exploreReward(b:typeof buildings[number],fromUltimate:boolean){if(!b.la
  else{burst(b.x+b.w/2,C.ground-80,'#f1dc96',34);shake=9;action=`LANDMARK TOPPLED · ${b.label}`;}actionTime=2;}
 function hitGrowth(g:typeof growths[number],damage:number){if(g.hp<=0)return;g.hp=Math.max(0,g.hp-damage);burst(g.x,C.ground-30,'#f291ca',8);if(g.hp===0){dropShards(g.x,B.growthShards);action='CRYSTAL GROWTH SHATTERED';actionTime=1.5;}}
 function hitObjective(damage:number){if(!objective||objective.shattered)return;const shards=damageObjective(objective,damage,P.strongholdShards);burst(objective.x,C.ground-60,'#f4a1d0',8);if(shards){dropShards(objective.x,shards);shake=9;action='STRONGHOLD CRYSTAL SHATTERED';actionTime=2;}}
-function strikeRival(damage:number,strength=0,direction=1,ultimate=false){if(!rival||combat.dead)return;const actual=hitRival(rival,damage,'player',strength,direction);if(actual){score+=actual*P.bossDamagePoints;creditDamage(combat,actual,'player',ultimate);burst(rival.x+rival.w/2,rival.y+40,'#f3a9d0',8);} }
-function startJet(){if(jet||jetLocked||jetFuel<B.jetMinStart)return;running=false;player.crouched=false;
- jet={phase:'start',t:0,on:0,angle:keys.has('KeyW')?B.jetUp*.4:keys.has('KeyS')?-B.jetDown*.4:0,hits:new Map(),ox:0,oy:0,dx:1,dy:0,len:0,stop:false,bend:Infinity,bx:0,face:1};}
+function strikeRival(damage:number,strength=0,direction=1,ultimate=false){if(!rival||combat.dead)return;const actual=hitRival(rival,damage*vuln(rival),'player',strength,direction);if(actual){score+=actual*P.bossDamagePoints;creditDamage(combat,actual,'player',ultimate);burst(rival.x+rival.w/2,rival.y+40,'#f3a9d0',8);} }
+function startJet(){const bel=isBelial(),up=bel?B.vomitUp:B.jetUp,down=bel?B.vomitDown:B.jetDown;
+ if(jet||jetLocked||jetFuel<(bel?B.vomitMinStart:B.jetMinStart))return;running=false;player.crouched=false;spewState={pts:[],land:null,landOn:null};
+ jet={phase:'start',t:0,on:0,angle:keys.has('KeyW')?up*.4:keys.has('KeyS')?-down*.4:bel?B.vomitRest:0,hits:new Map(),ox:0,oy:0,dx:1,dy:0,len:0,stop:false,bend:Infinity,bx:0,face:1};}
 function jetDuration(anim:string){return animDuration(activeKaiju,anim,combat.stage)||.15;}
-function jetPose(j:Jet):[string,number]{if(j.phase==='start')return ['jetStart',j.t];if(j.phase==='end')return ['jetEnd',j.t];
- return hasAnim(activeKaiju,'jetAim',combat.stage)?['jetAim',aimTime(activeKaiju,'jetAim',j.angle,combat.stage)]:['jetStart',99];}
+function jetPose(j:Jet):[string,number]{const [S,A,E]=isBelial()?['vomitStart','vomitAim','vomitEnd']:['jetStart','jetAim','jetEnd'];
+ if(j.phase==='start')return [S,j.t];if(j.phase==='end')return [E,j.t];
+ return hasAnim(activeKaiju,A,combat.stage)?[A,aimTime(activeKaiju,A,j.angle,combat.stage)]:[S,99];}
 function circleRect(cx:number,cy:number,r:number,b:{x:number,y:number,w:number,h:number}){const nx=Math.max(b.x,Math.min(cx,b.x+b.w)),ny=Math.max(b.y,Math.min(cy,b.y+b.h));return (cx-nx)**2+(cy-ny)**2<=r*r;}
 // Wind-up, then breathe while L is held (at least jetMinBurst) and fuel lasts, then the wind-down. Being hit, leaving the ground, grabbing
 // or the Ultimate snuffs it.
-function tickJet(dt:number){const j=jet!;
- if(!canAct(combat)||!player.grounded||clingTo||held||combat.ultimateTime>0){jet=null;return;}
+function tickJet(dt:number){const j=jet!,bel=isBelial();
+ if(!canAct(combat)||!player.grounded||clingTo||held||combat.ultimateTime>0){jet=null;spewState.pts=[];return;}
  j.t+=dt;
- if(j.phase==='start'){if(j.t>=jetDuration('jetStart')){j.phase='on';j.t=0;}return;}
- if(j.phase==='end'){if(j.t>=jetDuration('jetEnd'))jet=null;return;}
- j.on+=dt;jetFuel=Math.max(0,jetFuel-dt/B.jetSeconds);
- const target=keys.has('KeyW')?B.jetUp:keys.has('KeyS')?-B.jetDown:0,turn=B.jetTurn*dt;j.angle+=Math.max(-turn,Math.min(turn,target-j.angle));
- breathe(j);
+ if(j.phase==='start'){if(j.t>=jetDuration(bel?'vomitStart':'jetStart')){j.phase='on';j.t=0;}return;}
+ if(j.phase==='end'){if(j.t>=jetDuration(bel?'vomitEnd':'jetEnd'))jet=null;return;}
+ j.on+=dt;jetFuel=Math.max(0,jetFuel-dt/(bel?B.vomitSeconds:B.jetSeconds));
+ const up=bel?B.vomitUp:B.jetUp,down=bel?B.vomitDown:B.jetDown;
+ const target=keys.has('KeyW')?up:keys.has('KeyS')?-down:bel?B.vomitRest:0,turn=(bel?B.vomitTurn:B.jetTurn)*dt;j.angle+=Math.max(-turn,Math.min(turn,target-j.angle));
+ if(bel)spew(j,dt);else breathe(j);
  if(jetFuel<=0)jetLocked=true;
- if(jetFuel<=0||(!keys.has('KeyL')&&j.on>=B.jetMinBurst)){j.phase='end';j.t=0;j.len=0;combat.rangedCooldown=Math.max(combat.rangedCooldown,B.jetCooldown);}}
+ if(jetFuel<=0||(!keys.has('KeyL')&&j.on>=(bel?B.vomitMinBurst:B.jetMinBurst))){j.phase='end';j.t=0;j.len=0;spewState.pts=[];spewState.land=null;spewState.landOn=null;
+  combat.rangedCooldown=Math.max(combat.rangedCooldown,bel?B.vomitCooldown:B.jetCooldown);}}
 // A point `d` along the flame: straight out of the jaws until it meets the street, then washing along the street, hugging it.
 function jetPoint(j:Jet,d:number,r:number):[number,number]{return d<j.bend?[j.ox+j.dx*d,j.oy+j.dy*d]:[j.bx+j.face*(d-j.bend),C.ground-r*.45];}
 const JET_WASH=.6;
@@ -396,6 +418,55 @@ function breathe(j:Jet){const s=scale(combat),g=Math.sqrt(s),w=bodyWidth(),h=bod
  // Embers off the flame and a splash where it hits a wall or the street.
  const [tx,ty]=jetPoint(j,j.len,w1*g);
  for(let n=0;n<(j.stop||j.bend<j.len?3:1)&&particles.length<C.particleCap;n++)particles.push({x:tx+(Math.random()-.5)*12*g,y:ty+(Math.random()-.5)*10*g,vx:-j.dx*(30+Math.random()*90)+(Math.random()-.5)*80,vy:-(40+Math.random()*120)*g,life:.25+Math.random()*.35,color:['#ffd34d','#ff8a1f','#e8401a','#4a3a3a'][Math.floor(Math.random()*4)],size:2+Math.floor(Math.random()*3)});}
+// Acid Vomit: the stream is traced as a ballistic arc out of the jaws (mouth point from the strip) at a launch speed set by the gland's
+// pressure, so it lands nearer as the gland drains. The front grows out over the first moments of a spew. It passes through troops and
+// aircraft (each takes a tick and gets corroded) and stops on the first building it meets (wall or roof: that building takes the tick
+// and corrodes) or the street, where it splashes everything near the landing and leaves an acid puddle.
+function spew(j:Jet,dt:number){const s=scale(combat),g=Math.sqrt(s),w=bodyWidth(),h=bodyHeight(),[anim,t]=currentAnim();
+ const m=holdPoint(activeKaiju,anim,t,combat.stage,'mouth')??[58,-26],a=j.angle*Math.PI/180,[v0,v1]=B.vomitSpeed,v=(v0+(v1-v0)*jetFuel)*g,G=B.vomitGravity*g;
+ j.ox=player.x+w/2+player.face*m[0]*s;j.oy=player.y+h+C.spriteDrop+m[1]*s;j.face=player.face;
+ const vx=player.face*v*Math.cos(a),vy0=-v*Math.sin(a),flight=Math.min(4,j.on*2.2+.08),step=1/90,pts:number[][]=[[j.ox,j.oy]];
+ const dmg=B.vomitDamage*damageMultiplier(combat),dir=player.face,through:object[]=[];
+ const tick=(o:object,f:()=>void)=>{if(time-(j.hits.get(o)??-9)<B.vomitTick)return;j.hits.set(o,time);f();};
+ let land:number[]|null=null,landOn:Spew['landOn']=null,wall:typeof buildings[number]|null=null;
+ for(let tt=step;tt<=flight;tt+=step){const x=j.ox+vx*tt,y=j.oy+vy0*tt+.5*G*tt*tt;
+  if(x<0||x>worldWidth)break;
+  if(y>=C.ground-2){land=[x,C.ground];landOn='street';pts.push([x,C.ground-2]);break;}
+  wall=buildings.find(b=>solid(b)&&b.hpNow>0&&x>=b.x&&x<=b.x+b.w&&y>=C.ground-b.h)??null;
+  if(wall){land=[x,y];landOn=y<=C.ground-wall.h+6?'roof':'building';pts.push([x,y]);break;}
+  pts.push([x,y]);
+  const p={x:x-5*g,y:y-5*g,w:10*g,h:10*g};
+  for(const u of military.units)if(u.hp>0&&!through.includes(u)&&overlaps(p,u))through.push(u);
+  if(rival&&!rival.dead&&!through.includes(rival)&&overlaps(p,rival))through.push(rival);
+  for(const pr of military.projectiles)if(!pr.dead&&WEAPONS[pr.weapon].interceptable&&overlaps(p,{x:pr.x-8,y:pr.y-8,w:16,h:16}))intercept(military,pr);}
+ j.len=pts.length;spewState={pts,land,landOn};
+ for(const o of through){if(o===rival){corrode(o,dt);tick(o,()=>strikeRival(dmg,20,dir));continue;}
+  const u=o as Unit;corrode(u,dt);tick(u,()=>hitUnit(military,u,UNITS[u.type].air?dmg*B.vomitAirMult:dmg,'player',20,dir,false,'ranged'));}
+ if(wall&&land){const b=wall,at={x:land[0],y:land[1]};corrode(b,dt);tick(b,()=>hit(b,dmg,false,dir,at,true));}
+ if(landOn==='street'&&land){const r=B.vomitSplash*g,zone={x:land[0]-r,y:C.ground-r,w:r*2,h:r+2};
+  for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&!through.includes(u)&&overlaps(zone,u)){corrode(u,dt);tick(u,()=>hitUnit(military,u,dmg,'player',20,dir,false,'ranged'));}
+  for(const v of vehicles)if(loose(v)&&overlaps(zone,vehicleBox(v)))tick(v,()=>puntVehicle(v,dmg*.3,dir));
+  for(const b of buildings)if(b.kind==='tiny'&&b.hpNow>0&&overlaps(zone,{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){corrode(b,dt);tick(b,()=>hit(b,dmg,false,dir,undefined,true));}
+  for(const gr of growths)if(gr.hp>0&&overlaps(zone,{x:gr.x-20,y:C.ground-55,w:40,h:55}))tick(gr,()=>hitGrowth(gr,dmg));
+  if(objective&&!objective.shattered&&overlaps(zone,{x:objective.x-30,y:C.ground-100,w:60,h:100}))tick(objective,()=>hitObjective(dmg));
+  if(rival&&!rival.dead&&!through.includes(rival)&&overlaps(zone,rival)){corrode(rival,dt);tick(rival,()=>strikeRival(dmg,20,dir));}
+  acidPuddle(land[0]);}
+ // Spatter where it lands.
+ if(land)for(let n=0;n<2&&particles.length<C.particleCap;n++)particles.push({x:land[0]+(Math.random()-.5)*8*g,y:land[1]-2,vx:-dir*(20+Math.random()*70)+(Math.random()-.5)*60,vy:-(50+Math.random()*120)*g,life:.25+Math.random()*.3,color:['#c8f03a','#9ccc2a','#e6ff8a','#5f7f16'][Math.floor(Math.random()*4)],size:2+Math.floor(Math.random()*3)});}
+// The patch of street under the landing becomes (or stays) an acid puddle; past the cap the most dried-up one goes.
+function acidPuddle(x0:number){const g=Math.sqrt(scale(combat)),cell=Math.round(B.vomitPuddleCell*g),x=Math.floor(x0/cell)*cell,p=pools.find(p=>p.acid&&p.x===x);
+ if(p){p.life=p.max;return;}
+ pools.push({x,w:cell,life:B.vomitPuddleSeconds,max:B.vomitPuddleSeconds,damage:B.vomitPuddleDamage*damageMultiplier(combat),hits:new Map(),acid:true,tick:B.vomitPuddleTick,size:g});
+ const mine=pools.filter(p=>p.acid);if(mine.length>B.vomitPuddleCap)pools.splice(pools.indexOf(mine.sort((p,q)=>p.life-q.life)[0]),1);}
+// Corrosion runs down on its own: corrodeDamage x stacks every corrodeTick until it wears off (each contact refreshes it). Units fizz.
+function tickCorrosion(dt:number){for(const [o,c] of corr){c.t-=dt;
+  const b=buildings.includes(o as typeof buildings[number])?o as typeof buildings[number]:null,u=b||o===rival?null:o as Unit;
+  const dead=b?b.hpNow<=0||!!b.topple||b.lifted:o===rival?!rival||rival.dead:u!.hp<=0;
+  if(c.t<=0||dead){corr.delete(o);continue;}
+  if(time-c.tick>=B.corrodeTick){c.tick=time;const d=B.corrodeDamage*c.stacks*damageMultiplier(combat);
+   if(b)hit(b,d,false,player.face,undefined,true);else if(o===rival)strikeRival(d);else hitUnitBase(military,u!,d,'player',0,1,false,'ranged');}
+  if(particles.length<C.particleCap&&Math.random()<.12*c.stacks){const r=b?{x:b.x,y:C.ground-b.h,w:b.w,h:b.h}:o===rival?rival!:u!;
+   particles.push({x:r.x+Math.random()*r.w,y:r.y+Math.random()*r.h,vx:(Math.random()-.5)*16,vy:-(15+Math.random()*35),life:.35+Math.random()*.3,color:Math.random()<.5?'#c8f03a':'#7fa61e',size:2});}}}
 // Fire patches along the stretch of street the flame is washing over: new cells catch, cells already burning are topped back up.
 function scorchStreet(j:Jet){const g=Math.sqrt(scale(combat)),cell=Math.round(B.jetFireCell*g),a=j.bx,b=j.bx+j.face*(j.len-j.bend),dm=damageMultiplier(combat);
  for(let c=Math.floor(Math.min(a,b)/cell);c<=Math.floor(Math.max(a,b)/cell);c++){const x=c*cell,p=pools.find(p=>p.fire&&p.x===x);
@@ -514,7 +585,8 @@ function splashLava(x0:number,feet:number,spread:number,power:number,n:number,po
 function addPool(cx:number,w:number,damage:number,ult=false,life=MV.lavaPoolSeconds){pools.push({x:cx-w/2,w,life,max:life,damage,hits:new Map(),ult});
  const mine=pools.filter(p=>!p.fire&&!!p.ult===ult);if(mine.length>(ult?24:12))pools.splice(pools.indexOf(mine[0]),1);}
 // Lava pools burn everything standing in them on the street (troops, cars, newsstands, growths, the rival, the objective).
-function tickPools(dt:number){for(const p of pools){p.life-=dt;const zh=16*(p.size??1),zone={x:p.x,y:C.ground-zh,w:p.w,h:zh+2},kb=p.fire?8:20,every=p.tick??MV.lavaPoolTick;
+function tickPools(dt:number){for(const p of pools){p.life-=dt;const zh=16*(p.size??1),zone={x:p.x,y:C.ground-zh,w:p.w,h:zh+2},kb=p.fire||p.acid?8:20,every=p.tick??MV.lavaPoolTick;
+  if(p.acid){for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&overlaps(zone,u))corrode(u,dt);if(rival&&!rival.dead&&overlaps(zone,rival))corrode(rival,dt);}
   const tick=(o:object,f:()=>void)=>{if(time-(p.hits.get(o)??-9)<every)return;p.hits.set(o,time);f();};
   for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&overlaps(zone,u))tick(u,()=>hitUnit(military,u,p.damage,'player',kb,Math.sign(u.x+u.w/2-(p.x+p.w/2))||1,p.ult,p.ult?'ultimate':'ranged'));
   for(const v of vehicles)if(loose(v)&&overlaps(zone,vehicleBox(v)))tick(v,()=>puntVehicle(v,p.damage*.3,Math.sign(v.x+v.w/2-(p.x+p.w/2))||1,p.ult));
@@ -522,7 +594,7 @@ function tickPools(dt:number){for(const p of pools){p.life-=dt;const zh=16*(p.si
   for(const g of growths)if(g.hp>0&&overlaps(zone,{x:g.x-20,y:C.ground-55,w:40,h:55}))tick(g,()=>hitGrowth(g,p.damage));
   if(objective&&!objective.shattered&&overlaps(zone,{x:objective.x-30,y:C.ground-100,w:60,h:100}))tick(objective,()=>hitObjective(p.damage));
   if(rival&&!rival.dead&&overlaps(zone,rival))tick(rival,()=>strikeRival(p.damage,kb,Math.sign(rival!.x+rival!.w/2-(p.x+p.w/2))||1,p.ult));
-  if(particles.length<C.particleCap&&Math.random()<(p.fire?.35:.5)*p.life/p.max)particles.push({x:p.x+Math.random()*p.w,y:C.ground-3,vx:(Math.random()-.5)*30,vy:-(30+Math.random()*70),life:.25+Math.random()*.3,color:Math.random()<.5?'#ffb13b':'#e8401a',size:2+Math.floor(Math.random()*2)});}
+  if(particles.length<C.particleCap&&Math.random()<(p.fire?.35:p.acid?.2:.5)*p.life/p.max)particles.push({x:p.x+Math.random()*p.w,y:C.ground-3,vx:(Math.random()-.5)*(p.acid?10:30),vy:-(p.acid?10+Math.random()*25:30+Math.random()*70),life:.25+Math.random()*.3,color:p.acid?(Math.random()<.5?'#c8f03a':'#e6ff8a'):Math.random()<.5?'#ffb13b':'#e8401a',size:2+Math.floor(Math.random()*2)});}
  pools=pools.filter(p=>p.life>0);}
 function canRoll(){return spinFrom(activeKaiju,'dive',combat.stage)!=null;}
 // Run + S: curl up on the spot and roll the way you are running (no slam, so base power).
@@ -559,6 +631,8 @@ function performStrike(strike:Strike|null){
   tremor={t:animImpact(activeKaiju,'rangedSlam',combat.stage),dir:player.face};if(tremor.t<=0)launchTremor();return;}
  // Tlézcatl on the ground: Flame Jet (held). Airborne or clinging he fires the shared single shot.
  if(kind==='ranged'&&activeKaiju==='Tlézcatl'&&player.grounded&&!clingTo){attack=null;startJet();return;}
+ // Belial on the ground: Acid Vomit (held), on the same machinery. Airborne or clinging he fires the shared single shot.
+ if(kind==='ranged'&&activeKaiju==='Belial'&&player.grounded&&!clingTo){attack=null;startJet();return;}
  // Kaiban on the ground: Debris Shotgun. The rocks leave on the scoop's impact frame (the tusks wrenching up out of the street).
  // Airborne or clinging there is no street to scoop, so he fires the shared single shot like everyone else.
  if(kind==='ranged'&&activeKaiju==='Kaiban'&&player.grounded&&!clingTo){combat.rangedCooldown=B.debrisCooldown;
@@ -799,7 +873,7 @@ function update(dt:number){
  if(tremor){tremor.t-=dt;if(tremor.t<=0)launchTremor();}
  if(debris){debris.t-=dt;if(debris.t<=0)launchDebris();}
  if(jet)tickJet(dt);
- if(!jet||jet.phase!=='on'){jetFuel=Math.min(1,jetFuel+B.jetRegen*dt);if(jetLocked&&jetFuel>=B.jetRelight)jetLocked=false;}
+ if(!jet||jet.phase!=='on'){const bel=isBelial();jetFuel=Math.min(1,jetFuel+(bel?B.vomitRegen:B.jetRegen)*dt);if(jetLocked&&jetFuel>=(bel?B.vomitRelight:B.jetRelight))jetLocked=false;}
  heavyT=combat.charging?heavyT+dt:0;
  {const next=isClimbing?'climb':!player.grounded?'jumpAir':player.crouched?'crouch':walking?(held&&hasAnim(activeKaiju,'carryWalk',combat.stage)?'carryWalk':running&&!held&&hasAnim(activeKaiju,'run',combat.stage)?'run':'walk'):held&&hasAnim(activeKaiju,'carry',combat.stage)?'carry':'idle';
   if(attack||combat.charging||combat.ultimateTime>0||jet){loopAnim=next;loopT=0;loopIntro=null;}
@@ -817,7 +891,7 @@ function update(dt:number){
  if(roll&&player.grounded&&steer===-roll.dir)endRoll(false);
  running=!roll&&!jet&&!!steer&&canAct(combat)&&!player.crouched&&!clingTo&&!combat.charging&&!dive&&(player.grounded?keys.has('ShiftLeft')||keys.has('ShiftRight')||runLatch:airRun);
  const gait=dive?MV.diveSteer:running?(dashT>0&&player.grounded?MV.dashSpeed:MV.runSpeed):1;
- let dx=roll?roll.dir*C.moveSpeed*MV.rollSpeed*Math.sqrt(scale(combat))*dt:!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*(jet?B.jetSlow:1)*dt;
+ let dx=roll?roll.dir*C.moveSpeed*MV.rollSpeed*Math.sqrt(scale(combat))*dt:!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*(jet?(isBelial()?B.vomitSlow:B.jetSlow):1)*dt;
  if(dx)player.face=dx>0?1:-1;
  const inputDx=dx;
  const kb=combat.transform>0||combat.ultimateTime>0?0:combat.knockback*dt;
@@ -891,7 +965,7 @@ function update(dt:number){
  if(g.life>0&&g.y>=C.ground-2){g.life=0;const grow=Math.sqrt(scale(combat)),dm=damageMultiplier(combat);
   if(g.ult){eruptLandings.push(g.x);addPool(g.x,B.eruptPool*grow,B.eruptPoolDamage*dm,true,B.eruptPoolSeconds);burst(g.x,C.ground-3,'#ffb13b',8);shake=Math.max(shake,3);}
   else{addPool(g.x,MV.lavaGlobPool*grow,MV.lavaPoolDamage*dm);burst(g.x,C.ground-3,'#ff8a1f',4);}}}
- globs=globs.filter(g=>g.life>0&&g.x>0&&g.x<worldWidth);tickPools(dt);tickBurns(dt);echo=false;
+ globs=globs.filter(g=>g.life>0&&g.x>0&&g.x<worldWidth);tickPools(dt);tickBurns(dt);tickCorrosion(dt);echo=false;
 
  shots=shots.filter(s=>s.life>0&&s.x>0&&s.x<worldWidth);
  if(combat.ultimateTime<=0){stampede=null;eruption=null;}
@@ -959,7 +1033,7 @@ function drawBuilding(b:typeof buildings[number]){
  if(b.topple===1){const px=(b.tiltDir>0?b.x+b.w:b.x)-camera;if(px+b.h<-60||px-b.h>viewW()+60)return;ctx.save();ctx.translate(px,C.ground);ctx.rotate(b.tiltDir*b.tilt);ctx.translate(-px,-C.ground);drawStructure(b,b.x-camera,b.h);ctx.restore();return;}
  const x=b.x-camera+(b.jolt>0?b.joltDir*F.joltPixels*b.jolt/F.joltSeconds:0);if(x>viewW()+40||x+b.w<-40)return;
  if(b.hpNow<=0&&b.collapse<=0){rect(x,C.ground-7,b.w,7,'#62625b');for(let j=0;j<b.w;j+=13)rect(x+j,C.ground-8-(j%7),10,8+j%7,'#898879');return;}
- const squash=b.hpNow<=0?b.collapse/C.collapseDuration:1;drawStructure(b,x,b.h*squash);
+ const squash=b.hpNow<=0?b.collapse/C.collapseDuration:1;drawStructure(b,x,b.h*squash);if(b.hpNow>0)drawCorrosion(b,x,b.h);
  if(b.collapse>0){rect(x-5,C.ground-14,b.w+10,14,'#b1ac91');}
 }
 function drawStructure(b:typeof buildings[number],x:number,h:number){
@@ -1036,7 +1110,7 @@ function meters(){
  bar(280,190,combat.ultimate,B.ultimateMax,`[U] ${ultimateLabel()}${combat.ultimate>=B.ultimateMax?' · READY':''}`,'#c9ef83');
  bar(520,190,combat.superTime>0?combat.superTime:combat.superCharge,combat.superTime>0?B.superDuration:B.superMax,combat.superTime>0?`SUPER · ${Math.ceil(combat.superTime)}s`:combat.superCharge>=B.superMax?'[I] SUPER · READY':'[I] SUPER · OVERFLOW CRYSTALS','#b4c8fb');
  text(`DAMAGE PENALTY  −${Math.round(combat.penalty)}`,934,459,9,'#c5cabb','right');
- if(activeKaiju==='Tlézcatl'&&(jet||jetFuel<1)&&!combat.charging){const x=screenX(player.x+bodyWidth()/2),y=Math.max(84,screenY(player.y)-20);rect(x-28,y,56,5,'#293e3c');rect(x-28,y,56*jetFuel,5,jetLocked?'#8a5a4a':'#ff9a3c');text(jetLocked?'COOLING':'FLAME',x,y-6,8,jetLocked?'#d9b4a8':'#ffe2bf','center');}
+ if((activeKaiju==='Tlézcatl'||isBelial())&&(jet||jetFuel<1)&&!combat.charging){const bel=isBelial(),x=screenX(player.x+bodyWidth()/2),y=Math.max(84,screenY(player.y)-20);rect(x-28,y,56,5,'#293e3c');rect(x-28,y,56*jetFuel,5,jetLocked?(bel?'#5d6a3a':'#8a5a4a'):(bel?'#b8e63a':'#ff9a3c'));text(jetLocked?(bel?'GAGGING':'COOLING'):(bel?'ACID':'FLAME'),x,y-6,8,jetLocked?(bel?'#c3cc9c':'#d9b4a8'):(bel?'#ecffc0':'#ffe2bf'),'center');}
  if(combat.charging){const x=screenX(player.x+bodyWidth()/2),y=Math.max(84,screenY(player.y)-20);rect(x-28,y,56,5,'#293e3c');rect(x-28,y,56*combat.charge/B.maxCharge,5,'#f8a0cc');text(combat.charge>=B.maxCharge?'MAX':'CHARGING',x,y-6,8,'#ffe6f1','center');}
 }
 // Layer 0: grounded vehicles in the far lane (behind the kaiju's feet). Layer 1: near lane, airborne and carried vehicles.
@@ -1177,12 +1251,25 @@ function drawBurns(){for(const f of burns){const z=f.size,x=f.x-camera+f.side*5*
   poly([[cx-ww,y+6],[cx-ww*.3,y-hh*.5],[cx,y-hh],[cx+ww*.4,y-hh*.45],[cx+ww,y+6]],'#e8401a');
   poly([[cx-ww*.5,y+6],[cx,y-hh*.55],[cx+ww*.5,y+6]],'#ffb13b');}}}
 // Flame Jet: flickering octagons marched along the cone, dark red outside to a white-hot core, ragged at the tip.
-function drawJet(){const j=jet;if(!j||j.phase!=='on'||j.len<=0)return;
+function drawJet(){const j=jet;if(!j||j.phase!=='on'||j.len<=0||isBelial())return;
  const g=Math.sqrt(scale(combat)),[w0,w1]=B.jetWidth,R=B.jetRange*g,nx=-j.dy,ny=j.dx;
  for(const [k,col] of [[1,'#a8281a'],[.78,'#ec5a17'],[.52,'#ffae2e'],[.26,'#fff2c0']] as [number,string][])
   for(let d=0;d<=j.len;d+=5){const f=Math.min(1,d/R),tip=Math.min(1,(j.len-d)/(14*g)+.35),wob=Math.sin(time*47+d*.37+k*9),full=(w0+(w1-w0)*f)*g,r=full*k*tip*(.82+.18*Math.sin(time*61+d*.23));
    if(r<1)continue;const [px,py]=jetPoint(j,d,full),bent=d>=j.bend,x=px+(bent?0:nx*wob*r*.3)-camera,y=py+(bent?-Math.abs(wob)*r*.25:ny*wob*r*.3),q=r*.41;
    poly([[x-q,y-r],[x+q,y-r],[x+r,y-q],[x+r,y+q],[x+q,y+r],[x-q,y+r],[x-r,y+q],[x-r,y-q]],col);}}
+// Acid Vomit: a ropey stream of round blobs along the arc, dark rim to a pale core, thicker the higher the pressure, wobbling, with
+// a few stray drops peeling off it.
+function drawSpew(){const j=jet,pts=spewState.pts;if(!j||j.phase!=='on'||!isBelial()||pts.length<2)return;
+ const g=Math.sqrt(scale(combat)),full=(2.6+2.6*jetFuel)*g;
+ for(const [k,col] of [[1,'#3f5a12'],[.72,'#8fbf22'],[.42,'#c8f03a'],[.18,'#efffb0']] as [number,string][])
+  for(let i=0;i<pts.length;i++){const [px,py]=pts[i],f=i/(pts.length-1),wob=Math.sin(time*38+i*.9+k*4),r=full*k*(.85+.25*wob)*(i<3?.7+i*.1:1)*(1-.25*f);
+   if(r<.8)continue;disc(px-camera,py,r,col,8);}
+ for(let i=4;i<pts.length;i+=9){const [px,py]=pts[i],o=(time*90+i*13)%14;disc(px-camera+Math.sin(i)*3*g,py+o*g,1.4*g,'#9ccc2a',6);}}
+// Corroded buildings: green streaks running down from the top and pitting on the facade, more of both with more stacks, fizzing.
+function drawCorrosion(b:typeof buildings[number],x:number,h:number){const c=corr.get(b);if(!c||h<10)return;const y=C.ground-h,n=c.stacks*3,fade=Math.min(1,c.t/1.5);
+ for(let i=0;i<n;i++){const sx=x+6+((i*37+Math.round(b.x))%Math.max(8,b.w-18)),len=(h*(.18+.12*c.stacks))*(.6+.4*Math.abs(Math.sin(i*2.7)))*fade,wid=2+(i%3);
+  rect(sx,y+4,wid,len,'#7fa61e');rect(sx,y+4,Math.max(1,wid-1),len*.7,'#b8e63a');rect(sx-1,y+4+len,wid+2,3,'#c8f03a');}
+ for(let i=0;i<c.stacks*4;i++){const px=x+8+((i*53+Math.round(b.x)*3)%Math.max(8,b.w-20)),py=y+12+((i*71)%Math.max(8,h-30));rect(px,py,4,3,'#5f7f16');rect(px+1,py,2,1,'#c8f03a');}}
 // Eruption: while charging, a pulsing glow round him that swells and flickers faster as the pressure builds; then the explosion, a
 // fireball filling the blast circle (layered polygons, white core to dark rim) with a shock ring racing just ahead of it, then fading.
 function disc(x:number,y:number,r:number,col:string,n=20){const pts:number[][]=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2;pts.push([x+Math.cos(a)*r,y+Math.sin(a)*r]);}poly(pts,col);}
@@ -1219,7 +1306,11 @@ function render(){
   for(let k=0;k<3;k++){const cx=x+p.w*(k+.5)/3,hh=(10+8*Math.abs(Math.sin(time*11+p.x*.37+k*2.1)))*f*z,ww=p.w/6;
    poly([[cx-ww,C.ground],[cx-ww*.4,C.ground-hh*.6],[cx,C.ground-hh],[cx+ww*.5,C.ground-hh*.55],[cx+ww,C.ground]],f>.5?'#e8401a':'#a8341c');
    if(f>.3)poly([[cx-ww*.5,C.ground],[cx,C.ground-hh*.6],[cx+ww*.5,C.ground]],'#ffb13b');}}
- for(const p of pools){if(p.fire)continue;const f=Math.min(1,p.life/p.max*2.2),w=p.w*(.6+.4*f),x=p.x+(p.w-w)/2-camera,fl=Math.sin(time*18+p.x)>0;
+ // Acid puddles: a flat green slick that bubbles, shrinking toward the middle and darkening as it dries.
+ for(const p of pools){if(!p.acid)continue;const f=Math.min(1,p.life/p.max*2),w=p.w*(.55+.45*f),x=p.x+(p.w-w)/2-camera;if(x>viewW()+40||x+w<-40)continue;
+  rect(x-2,C.ground-2,w+4,4,'#33410f');rect(x,C.ground-3,w,3,f>.5?'#8fbf22':'#6b8c1a');rect(x+w*.2,C.ground-3,w*.5,1,'#c8f03a');
+  for(let k=0;k<2;k++){const bx=x+w*((k*.47+time*.13+p.x*.01)%1),ph=(time*3+k*1.7+p.x*.05)%1;if(f>.25&&ph<.6)rect(bx,C.ground-4-ph*4,2,2,'#e6ff8a');}}
+ for(const p of pools){if(p.fire||p.acid)continue;const f=Math.min(1,p.life/p.max*2.2),w=p.w*(.6+.4*f),x=p.x+(p.w-w)/2-camera,fl=Math.sin(time*18+p.x)>0;
   rect(x-3,C.ground-3,w+6,5,'#3a1a14');rect(x,C.ground-4,w,4,f>.5?'#e8401a':'#a8341c');rect(x+w*.15,C.ground-4,w*.7,2,fl?'#ffb13b':'#ff8a1f');
   if(f>.4)rect(x+w*.35,C.ground-5,w*.3,2,'#ffe08a');}
  for(const wave of waves){const x=wave.x-camera;
@@ -1234,7 +1325,7 @@ function render(){
   rect(x+d*6*z-3*z,C.ground-(62*z+j*2),6*z,6*z,'#c9a77c');rect(x-d*8*z-2*z,C.ground-(48*z-j*2),4*z,4*z,'#8d7a66');
   rect(Math.min(x,x+d*40*z),C.ground,40*z,3,'#ffe0a8');}
  if(combat.superTime>0){const x=player.x-camera;rect(x-7,player.y-7,bodyWidth()+14,bodyHeight()+10,Math.sin(time*10)>0?'#c47cab':'#8d799e');}
- drawEruptionGlow();if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawEruption();drawVehicles(1);drawMilitary(1);drawTelegraphs();
+ drawEruptionGlow();if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawEruption();drawVehicles(1);drawMilitary(1);drawTelegraphs();
  if(combat.transform>0){const x=player.x-camera+bodyWidth()/2,y=player.y+bodyHeight()/2;const radius=bodyHeight()*.75;poly([[x,y-radius],[x+radius*.6,y],[x,y+radius],[x-radius*.6,y]],'#f4b0d8');poly([[x,y-radius*.85],[x+radius*.35,y],[x,y+radius*.8],[x-radius*.35,y]],'#ffe0f1');}
  if(combat.ultimateTime>0)text(ultimateLabel(),player.x-camera+bodyWidth()/2,player.y-24,10,'#fff1d8','center');
  // Launched tail quill: bone-white spike pointing along its flight, dark base, faint motion streak.
@@ -1252,4 +1343,4 @@ function render(){
 let last=-1;function frame(now:number){if(last<0)last=now;const dt=Math.max(0,Math.min((now-last)/1000,C.maxDelta));last=now;update(dt);render();requestAnimationFrame(frame);}title();requestAnimationFrame(frame);
 // Read-only inspection hook for smoke tests; no gameplay mutations.
 loadPresentationArt();window.addEventListener('resize',applyDisplay);applyDisplay();
-Object.defineProperty(window,'kaijuDebug',{get:()=>({barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({x:b.x,y:C.ground-b.h,w:b.w,h:b.h,hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length})});
+Object.defineProperty(window,'kaijuDebug',{get:()=>({barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({x:b.x,y:C.ground-b.h,w:b.w,h:b.h,hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire&&!p.acid).length,acidPools:pools.filter(p=>p.acid).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,spewLand:spewState.land,spewLandOn:spewState.landOn,spewPts:spewState.pts.length,corrosion:buildings.map(b=>corr.get(b)?.stacks??0),unitCorrosion:military.units.map(u=>corr.get(u)?.stacks??0),jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length})});

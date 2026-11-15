@@ -53,6 +53,10 @@ const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
 // Tlézcatl Stage 2 attack strips: generated from the same base shifted 40px left (sprite at x=9) so the reaching rakes and the lunge stay in the frame.
 const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
+// Belial Stage 2 strips: the belial-s2 base still, a 216x79 long-tailed quadruped sprite at x=20 in a 256x192 frame, keyed with tools/key_render.py.
+const BL2_NATIVE={scale:216/256,anchor:20+128*216/256};
+// Belial Stage 2 attack strips: the same base shifted flush left (sprite at x=0) for 40px of reach in front of the snout.
+const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
@@ -125,10 +129,10 @@ const TZ3_RUN={scale:181/256,anchor:65+128*181/256};
 // The hook rake's body came out about 2.5px left of that (sprite at x=4.5).
 const TZ3_LEFT={scale:181/256,anchor:7+128*181/256};
 const TZ3_LEFT2={scale:181/256,anchor:4.5+128*181/256};
-// Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
+// Tlézcatl Stage 3 form (complete; hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
 // theropod stalk on the hind legs only, skeleton-posed so both feet run a full stride and pass each other, the body sinking into each
 // stomp, the head dipping a beat late, shoulders rolling and raised claws swinging, the tail swinging out as a counterweight; the
-// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch and the jump so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch, the jump, the climb, grab/carry/throw, the Magma Dive and the Eruption: every move has its own strip. `borrow` stays as a safety net, as on Stage 2 (any strip added to Stage 1 later plays there until Stage 3 gets one). Same
 // 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
 const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
   walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK},
@@ -165,7 +169,34 @@ const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
   // legs down, squashes low and straightens onto the base pose. The tail is the lowest point in the air, so the rise's last frames and
   // every air frame are shifted down the same 14px (no bounce). Shared jump timing.
   jumpRise:{src:'assets/tlezcatl-s3-jump-rise.png',frames:9,fps:24,once:true,...TZ3_NATIVE},jumpAir:{src:'assets/tlezcatl-s3-jump-air.png',frames:4,fps:8,...TZ3_NATIVE},
-  jumpLand:{src:'assets/tlezcatl-s3-jump-land.png',frames:5,fps:20,once:true,...TZ3_NATIVE}}};
+  jumpLand:{src:'assets/tlezcatl-s3-jump-land.png',frames:5,fps:20,once:true,...TZ3_NATIVE},
+  // Climb: 256x256 strips (the base padded to 256 tall, feet on the bottom row, so TZ3_NATIVE lines up), clinging gecko-style with the
+  // body upright against the wall, head up and tail hanging, the gripping claws on the wall line at frame x=164 (the hitbox edge 24
+  // world units out). The grab leaps from the base and eases 62px onto the wall line; the loop is hand over hand; the punch draws the
+  // upper claw back off the wall and slams it in with a starburst on impact frame 5; the mantle starts 22px further back (the game's
+  // roof slide), hauls up over the edge and ends on the base.
+  climbGrab:{src:'assets/tlezcatl-s3-climb-grab.png',frames:5,fps:20,once:true,...TZ3_NATIVE},climb:{src:'assets/tlezcatl-s3-climb.png',frames:8,fps:12,...TZ3_NATIVE},
+  climbMantle:{src:'assets/tlezcatl-s3-climb-mantle.png',frames:9,fps:20,once:true,...TZ3_NATIVE},climbPunch:{src:'assets/tlezcatl-s3-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ3_NATIVE},
+  // Grab/carry/throw (256x256, the base padded to 256 tall so TZ3_NATIVE lines up; generated without any object, the game draws the
+  // prop): the grab dips and scoops both claws along the street, then rears upright and raises them past the chest and face until both
+  // arms are straight up overhead with the claws together; the carry strains under it and the carry-walk stomps forward with the claws held together overhead (both loops
+  // closed on the grab's last frame); the throw whips both arms forward and down with swooshes on frame 1 and settles onto the base.
+  // `hold`: frames 0-2 keep the prop on the street at the front claw, 3-6 follow the rising hands, then it sits on the joined claw tips.
+  grab:{src:'assets/tlezcatl-s3-grab.png',frames:9,fps:22,once:true,...TZ3_NATIVE,hold:[[204,255],[228,255],[223,255],[196,186],[195,132],[153,76],[128,44],[126,14],[126,14]]},
+  carry:{src:'assets/tlezcatl-s3-carry.png',frames:4,fps:6,...TZ3_NATIVE,hold:[[126,14],[123,13],[120,12],[123,13]]},
+  carryWalk:{src:'assets/tlezcatl-s3-carry-walk.png',frames:8,fps:10,...TZ3_NATIVE,hold:[[126,14],[127,13],[123,11],[118,9],[114,7],[114,7],[116,9],[120,12]]},
+  throw:{src:'assets/tlezcatl-s3-throw.png',frames:8,fps:18,once:true,...TZ3_NATIVE},
+  // Magma Dive (256x256, the padded base): dive pitches forward into a vertical head-first plunge, claws reaching for the street and
+  // tail straight up (frames 0,3,5,8 of a generation, bottom-aligned, held on the last); slamLand = frames 1-7 of a generation from that
+  // plunge, then the base: he crashes in with a lava splash both ways on the first frame, belly-flops and pushes back up.
+  dive:{src:'assets/tlezcatl-s3-dive.png',frames:4,fps:24,once:true,...TZ3_NATIVE},slamLand:{src:'assets/tlezcatl-s3-slam-land.png',frames:8,fps:16,once:true,...TZ3_NATIVE},
+  // Eruption (256x256, the padded base, the Stage 1/2 timing): the charge curls into a spiked ball whose crystal and flame corona heats
+  // from orange to white (bottom-aligned: PixelLab floated the ball 21px up); the roar whites out on its first frame (the blast), a fire
+  // ring reveals him white-hot, reared up with the arms flung wide, cooling to his own colours with the spines blazing; the loop is the
+  // blazing reared pose; the settle lowers onto the base as the flames die to embers.
+  ultCharge:{src:'assets/tlezcatl-s3-ult-charge.png',frames:16,fps:16,once:true,...TZ3_NATIVE},
+  ultRoar:{src:'assets/tlezcatl-s3-ult-roar.png',frames:8,fps:16,once:true,...TZ3_NATIVE},ultPound:{src:'assets/tlezcatl-s3-ult-pound.png',frames:4,fps:10,...TZ3_NATIVE},
+  ultSettle:{src:'assets/tlezcatl-s3-ult-settle.png',frames:8,fps:16,once:true,...TZ3_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
@@ -504,6 +535,29 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carryWalk:{src:'assets/tlezcatl-s1-carry-walk.png',frames:8,fps:10,...TZ1_NATIVE,hold:[[125,84],[125,86],[125,87],[125,88],[125,87],[125,87],[125,86],[125,86]]},
   throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
   stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
+ // Belial (low-slung striped reptile, red blade spines, green acid gland and drool): only the Stage 2 form exists, so as with Mogurodon
+ // it is the base form and every stage draws it; Stage 1/3 art will go in `stages`. Keys to 216x79 at x=20 (BL2_NATIVE).
+ Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE},
+  // Light combo: forward claw swipe (the near claw cocks up by the head and rakes down in front of the chest, slash on frames 4-5),
+  // backhand rake (the far claw shoots out past the snout and hooks back down, crescent on frames 4-5), lunging bite (head thrust
+  // forward with the jaws gaping, snapping shut in a puff of acid on frame 4). Shared frame counts and fps; each strip starts on the
+  // left-shifted base pose and returns to it.
+  light1:{src:'assets/belial-s2-light1.png',frames:8,fps:24,once:true,...BL2_LEFT},light2:{src:'assets/belial-s2-light2.png',frames:8,fps:21,once:true,...BL2_LEFT},
+  light3:{src:'assets/belial-s2-light3.png',frames:8,fps:20,once:true,...BL2_LEFT},
+  // Heavy, a scorpion tail strike (256 tall so the coiled tail and the slash clear the frame; strips draw bottom-anchored): plants
+  // and lifts the bladed tail up into a high curl over the back, tip poised above the head (rear), the curl quivers while K is held
+  // (hold), then on release the tail snaps straight up, sweeps a huge arc over the head and slashes down in front of the snout into
+  // a dust burst (frame 2), dragging back behind him as he settles (slam). Stage timing.
+  heavyRear:{src:'assets/belial-s2-heavy-rear.png',frames:5,fps:20,once:true,...BL2_LEFT},heavyHold:{src:'assets/belial-s2-heavy-hold.png',frames:4,fps:10,...BL2_LEFT},
+  heavySlam:{src:'assets/belial-s2-heavy-slam.png',frames:8,fps:16,once:true,...BL2_LEFT},
+  // Acid Vomit (the game draws the arcing stream from `mouth`; mechanic not wired yet): vomitStart swells the neck gland, heaves, pulls
+  // the head back and lurches forward with the jaws thrown wide; vomitAim holds that gape with the head at each of `angles` (down-tucked
+  // to neck raised; set from the head-and-neck pose, since the mouth opening itself stays near level as the neck rises), `mouth` at
+  // the midpoint of the jaw tips per frame; vomitEnd gags, snaps the jaws shut on a drooling gob and settles onto the shifted base.
+  vomitStart:{src:'assets/belial-s2-vomit-start.png',frames:5,fps:20,once:true,...BL2_LEFT,mouth:[235,151]},
+  vomitAim:{src:'assets/belial-s2-vomit-aim.png',frames:7,fps:10,once:true,...BL2_LEFT,angles:[-25,-12,0,8,18,32,45],
+   mouth:[[230,170],[235,160],[235,151],[236,146],[234,138],[229,122],[221,111]]},
+  vomitEnd:{src:'assets/belial-s2-vomit-end.png',frames:4,fps:16,once:true,...BL2_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -627,6 +681,13 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'L+W/S',name:'Aim the jet',desc:'While breathing, hold W to tilt the flame up at aircraft or S to sweep it down across the street. He can creep and turn while he breathes.'},
   {keys:'U',name:'Eruption',desc:'Full meter. He balls up as the pressure builds, then rears up and explodes, blasting everything in a huge circle around him. Molten rock thrown out by the blast rains down all around, leaving burning pools. Invulnerable while it lasts.'},
   {...slam,name:'Magma Dive',desc:'Dive head-first. The crash splashes molten globs out both ways and leaves burning lava pools on the street that scorch anything standing in them, on top of the slam itself.'},
+  {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
+ :kaiju==='Belial'?[
+  {keys:'L',name:'Acid Vomit',desc:'On the ground: hold to spew an arcing stream of acid. It flies over troops and low cover and lands where it lands: on a wall, a rooftop or the street, where it leaves a puddle that eats anything standing in it. The gland drains as you spew, and the arc sags and lands nearer as it does. Run it dry and he gags until it refills.'},
+  {keys:'L+W/S',name:'Aim the arc',desc:'While spewing, hold W to lob the arc higher (further, onto roofs, up at aircraft) or S to flatten it into a short, fast spray. He can walk at half speed while he spews, to hold the stream on one target.'},
+  {keys:'L',name:'Corrosion',desc:'Anything the acid touches corrodes: it keeps taking damage and takes more from every hit. Keep the stream on it to stack it up to three times. A fully corroded building gives way long before it should, and corroded tanks and APCs lose their armour.'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  slam,
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
   {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
