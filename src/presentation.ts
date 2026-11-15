@@ -128,7 +128,7 @@ const TZ3_LEFT2={scale:181/256,anchor:4.5+128*181/256};
 // Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
 // theropod stalk on the hind legs only, skeleton-posed so both feet run a full stride and pass each other, the body sinking into each
 // stomp, the head dipping a beat late, shoulders rolling and raised claws swinging, the tail swinging out as a counterweight; the
-// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch and the jump so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch, the jump and the climb so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
 // 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
 const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
   walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK},
@@ -164,7 +164,13 @@ const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
   // legs down, squashes low and straightens onto the base pose. The tail is the lowest point in the air, so the rise's last frames and
   // every air frame are shifted down the same 14px (no bounce). Shared jump timing.
   jumpRise:{src:'assets/tlezcatl-s3-jump-rise.png',frames:9,fps:24,once:true,...TZ3_NATIVE},jumpAir:{src:'assets/tlezcatl-s3-jump-air.png',frames:4,fps:8,...TZ3_NATIVE},
-  jumpLand:{src:'assets/tlezcatl-s3-jump-land.png',frames:5,fps:20,once:true,...TZ3_NATIVE}}};
+  jumpLand:{src:'assets/tlezcatl-s3-jump-land.png',frames:5,fps:20,once:true,...TZ3_NATIVE},
+  // Climb (256x256 frames, posed directly in final coordinates by tools/tlezcatl_s3_climb_poses.py, so TZ3_NATIVE lines up): the grab
+  // leaps onto the wall and ends upright on the cling pose, claws gripping the wall line 36px right of the anchor (the hitbox edge); the
+  // climb is a hand-over-hand loop closed on the cling; the punch draws the near claw back off the wall and drives it in (impact frame
+  // 5); the mantle hauls over the edge and stands up on the base pose (it starts 22px back: the game slides him 0.3 body widths onto the roof).
+  climbGrab:{src:'assets/tlezcatl-s3-climb-grab.png',frames:5,fps:20,once:true,...TZ3_NATIVE},climb:{src:'assets/tlezcatl-s3-climb.png',frames:8,fps:12,...TZ3_NATIVE},
+  climbMantle:{src:'assets/tlezcatl-s3-climb-mantle.png',frames:9,fps:20,once:true,...TZ3_NATIVE},climbPunch:{src:'assets/tlezcatl-s3-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ3_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
