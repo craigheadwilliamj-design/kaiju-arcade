@@ -516,7 +516,13 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // forward with the jaws gaping, snapping shut in a puff of acid on frame 4). Shared frame counts and fps; each strip starts on the
   // left-shifted base pose and returns to it.
   light1:{src:'assets/belial-s2-light1.png',frames:8,fps:24,once:true,...BL2_LEFT},light2:{src:'assets/belial-s2-light2.png',frames:8,fps:21,once:true,...BL2_LEFT},
-  light3:{src:'assets/belial-s2-light3.png',frames:8,fps:20,once:true,...BL2_LEFT}}},
+  light3:{src:'assets/belial-s2-light3.png',frames:8,fps:20,once:true,...BL2_LEFT},
+  // Heavy, a scorpion tail strike (256 tall so the coiled tail and the slash clear the frame; strips draw bottom-anchored): plants
+  // and lifts the bladed tail up into a high curl over the back, tip poised above the head (rear), the curl quivers while K is held
+  // (hold), then on release the tail snaps straight up, sweeps a huge arc over the head and slashes down in front of the snout into
+  // a dust burst (frame 2), dragging back behind him as he settles (slam). Stage timing.
+  heavyRear:{src:'assets/belial-s2-heavy-rear.png',frames:5,fps:20,once:true,...BL2_LEFT},heavyHold:{src:'assets/belial-s2-heavy-hold.png',frames:4,fps:10,...BL2_LEFT},
+  heavySlam:{src:'assets/belial-s2-heavy-slam.png',frames:8,fps:16,once:true,...BL2_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
