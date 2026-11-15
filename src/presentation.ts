@@ -114,6 +114,57 @@ const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
  ultCharge:{src:'assets/tlezcatl-s2-ult-charge.png',frames:16,fps:16,once:true,...TZ2_NATIVE},
  ultRoar:{src:'assets/tlezcatl-s2-ult-roar.png',frames:8,fps:16,once:true,...TZ2_NATIVE},ultPound:{src:'assets/tlezcatl-s2-ult-pound.png',frames:4,fps:10,...TZ2_NATIVE},
  ultSettle:{src:'assets/tlezcatl-s2-ult-settle.png',frames:8,fps:16,once:true,...TZ2_NATIVE}}};
+// Tlézcatl Stage 3 strips: the tlezcatl-s3 base still, a 181x126 hunched sprite at x=37 in a 256x192 frame, keyed with tools/key_render.py.
+const TZ3_NATIVE={scale:181/256,anchor:37+128*181/256};
+// Tlézcatl Stage 3 walk: generated from the base shifted 30px right (room behind him for the swinging tail); the generation drew the
+// body about 4px left of that, so the sprite sits at x=63.
+const TZ3_WALK={scale:181/256,anchor:63+128*181/256};
+// Tlézcatl Stage 3 run: also from the base shifted 30px right; the body came out 2px left of that (sprite at x=65).
+const TZ3_RUN={scale:181/256,anchor:65+128*181/256};
+// Tlézcatl Stage 3 light combo, heavy and Flame Jet: generated from the base shifted 30px left (sprite at x=7) so the rakes and the lunge stay in the frame.
+// The hook rake's body came out about 2.5px left of that (sprite at x=4.5).
+const TZ3_LEFT={scale:181/256,anchor:7+128*181/256};
+const TZ3_LEFT2={scale:181/256,anchor:4.5+128*181/256};
+// Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
+// theropod stalk on the hind legs only, skeleton-posed so both feet run a full stride and pass each other, the body sinking into each
+// stomp, the head dipping a beat late, shoulders rolling and raised claws swinging, the tail swinging out as a counterweight; the
+// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch and the jump so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
+const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
+  walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK},
+  // Run (Shift / double-tap): a charging theropod sprint, body pitched forward and low, claws tucked high and pumping, tail streaming
+  // straight back; 8 frames at 15 fps like the Stage 1 run.
+  run:{src:'assets/tlezcatl-s3-run.png',frames:8,fps:15,...TZ3_RUN},
+  // Light combo, skeleton-posed (tools/tlezcatl_s3_light_poses.py): near-claw overhead rake (the claw rises above the head in front of
+  // the horns and rakes down past the snout, a lava trail on frame 4), far-claw hook rake (wound back, shot out past the snout and hooked
+  // down), lunging bite (rears back, then drives head and shoulders forward and low, jaws gaping on frames 2-4). Each ends on the base
+  // pose; frame counts and fps match the other forms' combos.
+  light1:{src:'assets/tlezcatl-s3-light1.png',frames:8,fps:24,once:true,...TZ3_LEFT},light2:{src:'assets/tlezcatl-s3-light2.png',frames:8,fps:21,once:true,...TZ3_LEFT2},
+  light3:{src:'assets/tlezcatl-s3-light3.png',frames:8,fps:20,once:true,...TZ3_LEFT},
+  // Heavy, a two-claw overhead smash (skeleton-posed by the same script): rears tall on the hind legs, head up and both claws thrown
+  // overhead (rear); the hold shudders that peak pose 1px above the feet (tools/shudder_hold.py); the slam starts on the crash, chest
+  // and both claws driven into the street (the game draws the lava splash), held a frame, then rises back to the base pose. Stage timing.
+  heavyRear:{src:'assets/tlezcatl-s3-heavy-rear.png',frames:5,fps:20,once:true,...TZ3_LEFT},heavyHold:{src:'assets/tlezcatl-s3-heavy-hold.png',frames:4,fps:10,...TZ3_LEFT},
+  heavySlam:{src:'assets/tlezcatl-s3-heavy-slam.png',frames:8,fps:16,once:true,...TZ3_LEFT},
+  // Pound reuses the slam, as on Stages 1 and 2.
+  pound:{src:'assets/tlezcatl-s3-heavy-slam.png',frames:8,fps:16,once:true,...TZ3_LEFT},
+  // Flame Jet (the game draws the fire from `mouth`), skeleton-posed by the same script: jetStart inhales with the head reared back, then
+  // drops forward into the breath pose with the jaws wide; jetAim is that pose with the head turned about the neck, `angles` measured by
+  // rotation-matching the breath head into each frame and `mouth` at the front of the open jaws; jetEnd shuts the jaws and settles.
+  jetStart:{src:'assets/tlezcatl-s3-jet-start.png',frames:5,fps:22,once:true,...TZ3_LEFT,mouth:[190,128]},
+  jetAim:{src:'assets/tlezcatl-s3-jet-aim.png',frames:5,fps:10,once:true,...TZ3_LEFT,angles:[-15,0,18,39,57],mouth:[[186,136],[190,128],[188,104],[180,84],[166,68]]},
+  jetEnd:{src:'assets/tlezcatl-s3-jet-end.png',frames:4,fps:16,once:true,...TZ3_LEFT},
+  // Crouch (the unshifted base, skeleton-posed by the same script): drops off the hind legs onto all fours, both claws planted on the
+  // street, belly and chest low and the head thrust forward (126px tall to 92px), a slow breathing loop on that pose, and the drop
+  // reversed to stand back up. Stage timing.
+  crouchDown:{src:'assets/tlezcatl-s3-crouch-down.png',frames:5,fps:22,once:true,...TZ3_NATIVE},crouch:{src:'assets/tlezcatl-s3-crouch.png',frames:4,fps:6,...TZ3_NATIVE},
+  crouchUp:{src:'assets/tlezcatl-s3-crouch-up.png',frames:5,fps:22,once:true,...TZ3_NATIVE},
+  // Jump (the unshifted base, skeleton-posed by the same script): sinks deep on the hind legs, arms swung back, and springs straight up
+  // with the legs tucked and the tail streaming down (rise); the air loop sways the tail out behind and back; the landing reaches the hind
+  // legs down, squashes low and straightens onto the base pose. The tail is the lowest point in the air, so the rise's last frames and
+  // every air frame are shifted down the same 14px (no bounce). Shared jump timing.
+  jumpRise:{src:'assets/tlezcatl-s3-jump-rise.png',frames:9,fps:24,once:true,...TZ3_NATIVE},jumpAir:{src:'assets/tlezcatl-s3-jump-air.png',frames:4,fps:8,...TZ3_NATIVE},
+  jumpLand:{src:'assets/tlezcatl-s3-jump-land.png',frames:5,fps:20,once:true,...TZ3_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
@@ -384,8 +435,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   crouch:{src:'assets/kaiban-s1-crouch.png',frames:4,fps:6,...KB1_NATIVE},crouchDown:{src:'assets/kaiban-s1-crouch-down.png',frames:5,fps:22,once:true,...KB1_NATIVE},
   crouchUp:{src:'assets/kaiban-s1-crouch-up.png',frames:5,fps:22,once:true,...KB1_NATIVE}},
   stages:{2:KAIBAN_S2,3:KAIBAN_S3}},
- // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): the Stage 1 form is the base form (Stages 1 and
- // 3 draw it); Stage 2 has its own complete set in TLEZCATL_S2. The render keys to a 128x59 sprite at x=64 (TZ1_NATIVE); same 120-unit width as the others.
+ // Tlézcatl (low-slung volcanic salamander, lava-striped hide and a flame-spine crest): the Stage 1 form is the base form;
+ // Stage 2 has its own complete set in TLEZCATL_S2 and Stage 3 is TLEZCATL_S3. The render keys to a 128x59 sprite at x=64
+ // (TZ1_NATIVE); same 120-unit width as the others.
  'Tlézcatl':{width:120,anims:{idle:{src:'assets/tlezcatl-s1-idle.png',frames:8,fps:8,...TZ1_NATIVE},walk:{src:'assets/tlezcatl-s1-walk.png',frames:8,fps:10,...TZ1_NATIVE},
   // Run (Shift / double-tap): a low bounding sprint loop closed on the base, body stretched long, lifting clear on frame 4, dust off the claws.
   run:{src:'assets/tlezcatl-s1-run.png',frames:8,fps:15,...TZ1_NATIVE},
@@ -450,7 +502,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carry:{src:'assets/tlezcatl-s1-carry.png',frames:4,fps:6,...TZ1_NATIVE,hold:[[125,84],[126,86],[127,87],[126,86]]},
   carryWalk:{src:'assets/tlezcatl-s1-carry-walk.png',frames:8,fps:10,...TZ1_NATIVE,hold:[[125,84],[125,86],[125,87],[125,88],[125,87],[125,87],[125,86],[125,86]]},
   throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
-  stages:{2:TLEZCATL_S2}},
+  stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
