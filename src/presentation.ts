@@ -125,10 +125,10 @@ const TZ3_RUN={scale:181/256,anchor:65+128*181/256};
 // The hook rake's body came out about 2.5px left of that (sprite at x=4.5).
 const TZ3_LEFT={scale:181/256,anchor:7+128*181/256};
 const TZ3_LEFT2={scale:181/256,anchor:4.5+128*181/256};
-// Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
+// Tlézcatl Stage 3 form (complete; hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
 // theropod stalk on the hind legs only, skeleton-posed so both feet run a full stride and pass each other, the body sinking into each
 // stomp, the head dipping a beat late, shoulders rolling and raised claws swinging, the tail swinging out as a counterweight; the
-// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch, the jump, the climb, grab/carry/throw, the Magma Dive and the Eruption so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch, the jump, the climb, grab/carry/throw, the Magma Dive and the Eruption: every move has its own strip. `borrow` stays as a safety net, as on Stage 2 (any strip added to Stage 1 later plays there until Stage 3 gets one). Same
 // 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
 const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
   walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK},
