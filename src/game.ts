@@ -13,7 +13,7 @@ import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,res
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
 import {createRival,hitRival,tickRival} from './rival.ts';
 import type {Rival} from './rival.ts';
-import {moveList,hudScore,ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,loadKaijuArt,hasSprite,hasAnim,holdPoint,aimTime,spinFrom,animDuration,animImpact,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
+import {moveList,hudScore,ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,loadKaijuArt,hasSprite,hasAnim,holdPoint,holdBite,aimTime,spinFrom,animDuration,animImpact,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
 import type {FreePlayChoice} from './presentation.ts';
 const canvas=document.querySelector<HTMLCanvasElement>('#game')!;
 const ctx=canvas.getContext('2d')!;ctx.imageSmoothingEnabled=false;
@@ -739,7 +739,10 @@ function tickVehicles(dt:number){
   vehicles.push(spawnTraffic(nextVehicle++,camera,Math.random()<.5?1:-1,Math.random,viewW()));}}
  for(const v of vehicles){
   if(v===held){const [anim,at]=currentAnim(),hp=holdPoint(activeKaiju,anim,at,combat.stage);
-   if(hp){const k=scale(combat);v.x=cx+player.face*hp[0]*k-v.w/2;v.y=player.y+bodyHeight()+C.spriteDrop+hp[1]*k-v.h;}else{v.x=cx-v.w/2;v.y=player.y-v.h+C.spriteDrop*.5;}if(v.kind==='lamp')v.angle=player.face>0?0:Math.PI;continue;}
+   if(hp){const k=scale(combat),feet=player.y+bodyHeight()+C.spriteDrop,bite=holdBite(activeKaiju,anim,combat.stage);
+    // In the jaws (`bite`) the point is where the teeth close: the prop is gripped by its near end (its centre 0.3 of its width
+    // ahead) at mid-height, and never sinks below the feet line while the head is down at the street.
+    v.x=cx+player.face*(hp[0]*k+(bite?v.w*.3:0))-v.w/2;v.y=bite?Math.min(feet+hp[1]*k-v.h/2,feet-v.h):feet+hp[1]*k-v.h;}else{v.x=cx-v.w/2;v.y=player.y-v.h+C.spriteDrop*.5;}if(v.kind==='lamp')v.angle=player.face>0?0:Math.PI;continue;}
   tickDriving(v,dt,cx);
   const wasFlying=v.state==='flying',settled=tickFlying(v,dt,worldWidth);if(wasFlying)vehicleImpacts(v);if(settled)detonate(v);
   // A thrown building breaks apart where it lands instead of lying around as a wreck.
