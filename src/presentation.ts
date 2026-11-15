@@ -538,6 +538,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  // Belial (low-slung striped reptile, red blade spines, green acid gland and drool): only the Stage 2 form exists, so as with Mogurodon
  // it is the base form and every stage draws it; Stage 1/3 art will go in `stages`. Keys to 216x79 at x=20 (BL2_NATIVE).
  Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE},
+  // Run (Shift / double-tap): a low bounding gallop, the body gathering and stretching with a short flight phase on frames 4-5 and dust
+  // kicked back, tail streaming straight behind. Starts on the base and loops back to it.
+  run:{src:'assets/belial-s2-run.png',frames:8,fps:15,...BL2_NATIVE},
   // Light combo: forward claw swipe (the near claw cocks up by the head and rakes down in front of the chest, slash on frames 4-5),
   // backhand rake (the far claw shoots out past the snout and hooks back down, crescent on frames 4-5), lunging bite (head thrust
   // forward with the jaws gaping, snapping shut in a puff of acid on frame 4). Shared frame counts and fps; each strip starts on the
