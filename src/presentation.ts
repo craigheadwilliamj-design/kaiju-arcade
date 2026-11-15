@@ -175,13 +175,12 @@ const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
   climbMantle:{src:'assets/tlezcatl-s3-climb-mantle.png',frames:9,fps:20,once:true,...TZ3_NATIVE},climbPunch:{src:'assets/tlezcatl-s3-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ3_NATIVE},
   // Grab/carry/throw (256x256, the base padded to 256 tall so TZ3_NATIVE lines up; generated without any object, the game draws the
   // prop): the grab dips and scoops both claws along the street, then rears upright and raises them past the chest and face until both
-  // arms lock straight up overhead; the carry strains under it and the carry-walk stomps forward with the arms locked up (both loops
+  // arms are straight up overhead with the claws together; the carry strains under it and the carry-walk stomps forward with the claws held together overhead (both loops
   // closed on the grab's last frame); the throw whips both arms forward and down with swooshes on frame 1 and settles onto the base.
-  // `hold`: frames 0-4 keep the prop on the street at the front claw, 5-7 follow the rising hands, then it sits on the midpoint of the
-  // two raised claws.
-  grab:{src:'assets/tlezcatl-s3-grab.png',frames:9,fps:22,once:true,...TZ3_NATIVE,hold:[[204,255],[242,255],[237,255],[223,255],[198,255],[172,192],[195,148],[138,98],[125,53]]},
-  carry:{src:'assets/tlezcatl-s3-carry.png',frames:4,fps:6,...TZ3_NATIVE,hold:[[125,53],[128,56],[132,58],[130,56]]},
-  carryWalk:{src:'assets/tlezcatl-s3-carry-walk.png',frames:8,fps:10,...TZ3_NATIVE,hold:[[125,52],[124,51],[123,49],[122,49],[121,51],[122,50],[124,49],[125,52]]},
+  // `hold`: frames 0-2 keep the prop on the street at the front claw, 3-6 follow the rising hands, then it sits on the joined claw tips.
+  grab:{src:'assets/tlezcatl-s3-grab.png',frames:9,fps:22,once:true,...TZ3_NATIVE,hold:[[204,255],[228,255],[223,255],[196,186],[195,132],[153,76],[128,44],[126,14],[126,14]]},
+  carry:{src:'assets/tlezcatl-s3-carry.png',frames:4,fps:6,...TZ3_NATIVE,hold:[[126,14],[123,13],[120,12],[123,13]]},
+  carryWalk:{src:'assets/tlezcatl-s3-carry-walk.png',frames:8,fps:10,...TZ3_NATIVE,hold:[[126,14],[127,13],[123,11],[118,9],[114,7],[114,7],[116,9],[120,12]]},
   throw:{src:'assets/tlezcatl-s3-throw.png',frames:8,fps:18,once:true,...TZ3_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
