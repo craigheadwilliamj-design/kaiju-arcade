@@ -80,6 +80,17 @@ export const COMBAT = {
  // Puddles: every patch of street the stream lands on becomes an acid puddle (one per vomitPuddleCell px, at most vomitPuddleCap) for
  // vomitPuddleSeconds that eats whatever stands in it for vomitPuddleDamage every vomitPuddleTick and corrodes it.
  vomitPuddleSeconds:4,vomitPuddleCell:30,vomitPuddleCap:14,vomitPuddleTick:.3,vomitPuddleDamage:3,
+ // Belial's Ultimate (Acid Deluge): planted. He heaves for delugeCharge seconds while the gland swells, rears up, and on the roar's
+ // impact frame retches a geyser of acid straight up out of sight. It spouts until the settle strip starts; delugeDelay after it
+ // starts, the acid comes back down as rain: delugeDrops drops spread evenly over the spout's length, each landing at a random spot
+ // out to delugeRange (x sqrt(stage scale)) either side of him and falling from the top of the view at delugeFall px/s under
+ // delugeGravity. A drop hits the first thing it falls onto (aircraft, troops, vehicles, the rival, a roof, the street) for
+ // delugeDamage and soaks it with delugeSoak corrosion stacks at once (up to corrodeMax), so a building caught in the downpour is
+ // fully corroded within a few drops and gives way at corrodeBreak. On the street it splashes delugeSplash round the landing and
+ // leaves an acid puddle (its own cap, delugePuddleCap). All of it, the corrosion it leaves behind included, is Ultimate damage, so
+ // none of it refills the meter.
+ delugeCharge:.65,delugeDelay:.3,delugeDrops:110,delugeRange:640,delugeFall:520,delugeGravity:1300,delugeDamage:16,delugeSoak:1,
+ delugeSplash:18,delugeDropSize:3,delugePuddleCap:30,
  superMax:40,superDuration:20,superDamage:1.5,superSpeed:1.18,superResistance:.55,superKnockback:1.5,
  rangedMax:12,staggerSeconds:.32,staggerProtection:.9,knockbackFriction:9,
  scorePenaltyPerHP:10,ambientInterval:5,ambientCount:3,growthInterval:30,growthHP:240,
@@ -208,6 +219,10 @@ export const FEEL = {
 export const VEHICLES = {
  gravity:900,restitution:.35,friction:.6,bounceMin:220,
  kickSpeed:230,kickLift:210,kickDamage:.6,shotPush:.4,
+ // After any punt a vehicle shrugs off further ranged pushes (shots, waves) for this long, so a stream of fire can't juggle it.
+ puntShield:.6,
+ // Sustained sources (acid splash, flame cone, pools) nudge a vehicle once, then leave it alone for this long (it still corrodes/burns).
+ sustainedCalm:3,
  throwSpeed:780,throwLift:230,throwMassExp:.25,upSpeed:150,upLift:660,throwDamage:42,holdSlow:.85,grabReach:46,
  impactKeep:.45,unitKeep:.7,chainPush:.6,
  trafficInterval:1.1,trafficCap:12,trafficPerScreen:10,trafficSpeed:[90,150],trafficPoints:.5,spawnMargin:60,despawn:1500,

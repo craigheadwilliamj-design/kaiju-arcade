@@ -577,6 +577,23 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   vomitAim:{src:'assets/belial-s2-vomit-aim.png',frames:7,fps:10,once:true,...BL2_LEFT,angles:[-25,-12,0,8,18,32,45],
    mouth:[[230,170],[235,160],[235,151],[236,146],[234,138],[229,122],[221,111]]},
   vomitEnd:{src:'assets/belial-s2-vomit-end.png',frames:4,fps:16,once:true,...BL2_LEFT},
+  // Acid Deluge (U), 256x256 frames (the base padded to 256 tall, so BL2_NATIVE lines up) for the rear-up. Charge:
+  // `belial-s2-ult-charge`, 13 frames at 20 fps = the 0.65s delugeCharge, played once: the neck gland balloons up huge, he plants
+  // all four legs and heaves, acid dribbling from the jaws (the game shudders him). Roar: `belial-s2-ult-roar`, 9 frames at 18 fps
+  // from the last charge frame (seed 7): he rears straight up onto his hind legs and tail and throws his jaws open at the sky, the
+  // gland starting to squeeze; the geyser fires on impact frame 4, the first frame fully reared. Loop: `belial-s2-ult-pound`, a
+  // 4-frame hold closed on the roar's last frame, throat and gland pumping. `mouth` is the gape (the centre of the red mouth
+  // interior, nudged up to the jaw line), the same on every reared frame; frames 0-3 are rough snout positions, unused since the
+  // geyser isn't up yet. Settle: `belial-s2-ult-settle`, frames 2-7 of a roll from
+  // the reared pose to the base (the first two held still) plus the exact base, 7 frames at 14 fps over the Ultimate's last 0.5s:
+  // he snaps the jaws shut and drops forward onto all fours with the gland spent.
+  ultCharge:{src:'assets/belial-s2-ult-charge.png',frames:13,fps:20,once:true,...BL2_NATIVE},
+  ultRoar:{src:'assets/belial-s2-ult-roar.png',frames:9,fps:18,once:true,impact:4,...BL2_NATIVE,
+   mouth:[[236,152],[238,150],[214,128],[196,100],[137,100],[135,100],[135,100],[135,100],[135,100]]},
+  ultPound:{src:'assets/belial-s2-ult-pound.png',frames:4,fps:10,...BL2_NATIVE,mouth:[135,100]},
+  ultSettle:{src:'assets/belial-s2-ult-settle.png',frames:7,fps:14,once:true,...BL2_NATIVE},
+  // Pound keeps the heavy slam it fell back to before ultPound existed (otherwise S+J would play the reared geyser loop).
+  pound:{src:'assets/belial-s2-heavy-slam.png',frames:8,fps:16,once:true,...BL2_LEFT},
   // Acid Pounce (256x256, the base padded 64px on top): dive gathers from the air loop and tips into a steep nose-down pounce, claws
   // splayed for the street, jaws open, tail whipped up (frames 0,3,4,6 of a generation from the air pose, bottom-aligned, held on the
   // last); slamLand = frames 1-7 of a generation from that plunge to the base plus the base: claws and chest hit in an acid splash both
@@ -731,7 +748,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'L',name:'Acid Vomit',desc:'On the ground: hold to spew an arcing stream of acid. It flies over troops and low cover and lands where it lands: on a wall, a rooftop or the street, where it leaves a puddle that eats anything standing in it. The gland drains as you spew, and the arc sags and lands nearer as it does. Run it dry and he gags until it refills.'},
   {keys:'L+W/S',name:'Aim the arc',desc:'While spewing, hold W to lob the arc higher (further, onto roofs, up at aircraft) or S to flatten it into a short, fast spray. He can walk at half speed while he spews, to hold the stream on one target.'},
   {keys:'L',name:'Corrosion',desc:'Anything the acid touches corrodes: it keeps taking damage and takes more from every hit. Keep the stream on it to stack it up to three times. A fully corroded building gives way long before it should, and corroded tanks and APCs lose their armour.'},
-  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  {keys:'U',name:'Acid Deluge',desc:'Full meter. His gland swells as he heaves, then he rears up and retches a geyser of acid into the sky. It comes back down as a downpour far out on both sides, soaking everything it lands on in full corrosion: buildings give way, troops and aircraft dissolve, and the street is left pooled with acid. Invulnerable while it lasts.'},
   {...slam,name:'Acid Pounce',desc:'Dive claws-first. The impact bursts his gland: everything the slam hits is corroded twice over (three times from a big drop), and a street landing leaves a row of acid puddles, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
