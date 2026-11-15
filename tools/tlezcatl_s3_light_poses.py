@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Script the skeleton poses for Tlézcatl Stage 3's light combo and heavy (PixelLab /animate-with-skeleton-v3).
+"""Script the skeleton poses for Tlézcatl Stage 3's light combo, heavy and Flame Jet (PixelLab /animate-with-skeleton-v3).
 
 Usage: python3 tools/tlezcatl_s3_light_poses.py OUTDIR [DX] [STRIPS]   (shipped: OUTDIR -30)
 
@@ -16,6 +16,10 @@ degrees from straight down, + swinging forward. LEFT is the far arm and front fo
   light3: lunging bite: rears the head back, then drives head and shoulders forward and low, jaws snapping (impact frame 3).
   heavy: 13 frames, cut into heavyRear (1-5: rears tall, head up, both claws thrown overhead) and heavySlam (6-13: starts on the
          crash, both claws and the chest driven down into the street in a deep crouch, then recovers to the base pose).
+  jet: 15 frames for the Flame Jet, cut into jetStart (1-5: inhales with the head reared back, then drops forward into the breath
+       pose, jaws wide), jetAim (the breath pose with the head tilted to the scripted angles: frames 7,6,5,8,9,10,11 at
+       -24,-12,0,15,30,45,58 degrees, the aim range is -25 to +58) and jetEnd (12-15: jaws shut, settles onto the base pose).
+       `tilt` (degrees, + raises the snout) turns the head about the neck.
 Run from the repo root.
 """
 import json, math, sys
@@ -41,7 +45,7 @@ def leg(hip, ft):
     kx, ky = ux * math.cos(a) + uy * math.sin(a), -ux * math.sin(a) + uy * math.cos(a)   # knee bends forward
     return [hip[0] + L1 * kx, hip[1] + L1 * ky], [hip[0] + D * ux, hip[1] + D * uy]
 
-def pose(lean=0, drop=0, step=0, surge=0, head=0, L=None, R=None):
+def pose(lean=0, drop=0, step=0, surge=0, head=0, tilt=0, L=None, R=None):
     q = {k: v[:] for k, v in B.items()}
     for k in q:
         if 'KNEE' not in k and 'LEG' not in k: q[k][0] += surge; q[k][1] += drop
@@ -50,6 +54,9 @@ def pose(lean=0, drop=0, step=0, surge=0, head=0, L=None, R=None):
         dx, dy = q[k][0] - hx, q[k][1] - hy; q[k] = [hx + dx * math.cos(t) - dy * math.sin(t), hy + dx * math.sin(t) + dy * math.cos(t)]
     nk = q['NECK']; ux, uy = q['NOSE'][0] - nk[0], q['NOSE'][1] - nk[1]; n = math.hypot(ux, uy)
     for k in HEAD: q[k] = [q[k][0] + head * ux / n, q[k][1] + head * uy / n]
+    if tilt:
+        c, t2 = q['NECK'], math.radians(tilt)
+        for k in HEAD: dx, dy = q[k][0] - c[0], q[k][1] - c[1]; q[k] = [c[0] + dx * math.cos(t2) + dy * math.sin(t2), c[1] - dx * math.sin(t2) + dy * math.cos(t2)]
     for s, a in (('LEFT', L or REST['LEFT']), ('RIGHT', R or REST['RIGHT'])):
         sh = q[f'{s} SHOULDER']; l1, l2 = LEN[s]; u, f = map(math.radians, a)
         el = [sh[0] + l1 * math.sin(u), sh[1] + l1 * math.cos(u)]; q[f'{s} ELBOW'] = el; q[f'{s} ARM'] = [el[0] + l2 * math.sin(f), el[1] + l2 * math.cos(f)]
@@ -83,8 +90,12 @@ STRIPS = {
            9: dict(lean=22, drop=11, step=12, surge=6, head=2, L=(65, 50), R=(58, 50)),
            10: dict(lean=14, drop=7, step=8, surge=4, L=(45, 50), R=(35, 50)), 11: dict(lean=8, drop=6, step=5, surge=3),
            12: dict(lean=3, drop=2, step=2, surge=1), 13: {}},
+ 'jet': {0: {}, 1: dict(lean=-3, tilt=10, L=TUCK_L, R=TUCK_R), 2: dict(lean=-7, drop=-2, tilt=25, head=-3, L=TUCK_L, R=TUCK_R),
+         3: dict(lean=-9, drop=-3, tilt=35, head=-5, L=TUCK_L, R=TUCK_R), 4: dict(lean=10, drop=3, step=4, surge=3, tilt=-6, head=6),
+         **{i: dict(lean=8 - 0.2 * a, drop=2, step=4, surge=2, tilt=a, head=5) for i, a in ((5, 0), (6, -12), (7, -24), (8, 15), (9, 30), (10, 45), (11, 58))},
+         12: dict(lean=5, drop=1, step=3, surge=1, tilt=25, head=2), 13: dict(lean=3, step=2, surge=1, tilt=8), 14: dict(lean=1, step=1, tilt=2), 15: {}},
 }
-def full(kw): d = dict(lean=0, drop=0, step=0, surge=0, head=0, L=RL, R=RR); d.update(kw); return d
+def full(kw): d = dict(lean=0, drop=0, step=0, surge=0, head=0, tilt=0, L=RL, R=RR); d.update(kw); return d
 def j(q): return [{'x': min(max(q[k][0] / 256, 0), 1), 'y': min(max(q[k][1] / 256, 0), 1), 'label': k, 'z_index': Z[k]} for k in q]
 bones = [('NECK', 'LEFT SHOULDER'), ('NECK', 'RIGHT SHOULDER'), ('LEFT SHOULDER', 'LEFT ELBOW'), ('LEFT ELBOW', 'LEFT ARM'),
          ('RIGHT SHOULDER', 'RIGHT ELBOW'), ('RIGHT ELBOW', 'RIGHT ARM'), ('NECK', 'LEFT HIP'), ('NECK', 'RIGHT HIP'),

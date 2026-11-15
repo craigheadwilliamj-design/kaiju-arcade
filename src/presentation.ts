@@ -121,14 +121,14 @@ const TZ3_NATIVE={scale:181/256,anchor:37+128*181/256};
 const TZ3_WALK={scale:181/256,anchor:63+128*181/256};
 // Tlézcatl Stage 3 run: also from the base shifted 30px right; the body came out 2px left of that (sprite at x=65).
 const TZ3_RUN={scale:181/256,anchor:65+128*181/256};
-// Tlézcatl Stage 3 light combo and heavy: generated from the base shifted 30px left (sprite at x=7) so the rakes and the lunge stay in the frame.
+// Tlézcatl Stage 3 light combo, heavy and Flame Jet: generated from the base shifted 30px left (sprite at x=7) so the rakes and the lunge stay in the frame.
 // The hook rake's body came out about 2.5px left of that (sprite at x=4.5).
 const TZ3_LEFT={scale:181/256,anchor:7+128*181/256};
 const TZ3_LEFT2={scale:181/256,anchor:4.5+128*181/256};
 // Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
 // theropod stalk on the hind legs only, skeleton-posed so both feet run a full stride and pass each other, the body sinking into each
 // stomp, the head dipping a beat late, shoulders rolling and raised claws swinging, the tail swinging out as a counterweight; the
-// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo and the heavy so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy and the Flame Jet so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
 // 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
 const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
   walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK},
@@ -147,7 +147,13 @@ const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
   heavyRear:{src:'assets/tlezcatl-s3-heavy-rear.png',frames:5,fps:20,once:true,...TZ3_LEFT},heavyHold:{src:'assets/tlezcatl-s3-heavy-hold.png',frames:4,fps:10,...TZ3_LEFT},
   heavySlam:{src:'assets/tlezcatl-s3-heavy-slam.png',frames:8,fps:16,once:true,...TZ3_LEFT},
   // Pound reuses the slam, as on Stages 1 and 2.
-  pound:{src:'assets/tlezcatl-s3-heavy-slam.png',frames:8,fps:16,once:true,...TZ3_LEFT}}};
+  pound:{src:'assets/tlezcatl-s3-heavy-slam.png',frames:8,fps:16,once:true,...TZ3_LEFT},
+  // Flame Jet (the game draws the fire from `mouth`), skeleton-posed by the same script: jetStart inhales with the head reared back, then
+  // drops forward into the breath pose with the jaws wide; jetAim is that pose with the head turned about the neck, `angles` measured by
+  // rotation-matching the breath head into each frame and `mouth` at the front of the open jaws; jetEnd shuts the jaws and settles.
+  jetStart:{src:'assets/tlezcatl-s3-jet-start.png',frames:5,fps:22,once:true,...TZ3_LEFT,mouth:[190,128]},
+  jetAim:{src:'assets/tlezcatl-s3-jet-aim.png',frames:5,fps:10,once:true,...TZ3_LEFT,angles:[-15,0,18,39,57],mouth:[[186,136],[190,128],[188,104],[180,84],[166,68]]},
+  jetEnd:{src:'assets/tlezcatl-s3-jet-end.png',frames:4,fps:16,once:true,...TZ3_LEFT}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
