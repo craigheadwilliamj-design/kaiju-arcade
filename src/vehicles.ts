@@ -8,7 +8,7 @@ export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'sta
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number};
+ damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number};
 export const VEHICLE_SPECS={
  // Sized to sit with the military's road vehicles (patrol car 48x23, APC 52x26, tank 59x31).
  car:{w:48,h:23,mass:1,points:80},

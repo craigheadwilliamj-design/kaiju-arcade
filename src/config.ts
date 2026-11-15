@@ -210,6 +210,8 @@ export const VEHICLES = {
  kickSpeed:230,kickLift:210,kickDamage:.6,shotPush:.4,
  // After any punt a vehicle shrugs off further ranged pushes (shots, waves) for this long, so a stream of fire can't juggle it.
  puntShield:.6,
+ // Sustained sources (acid splash, flame cone, pools) nudge a vehicle once, then leave it alone for this long (it still corrodes/burns).
+ sustainedCalm:3,
  throwSpeed:780,throwLift:230,throwMassExp:.25,upSpeed:150,upLift:660,throwDamage:42,holdSlow:.85,grabReach:46,
  impactKeep:.45,unitKeep:.7,chainPush:.6,
  trafficInterval:1.1,trafficCap:12,trafficPerScreen:10,trafficSpeed:[90,150],trafficPoints:.5,spawnMargin:60,despawn:1500,
