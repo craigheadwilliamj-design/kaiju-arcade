@@ -101,8 +101,32 @@ test('Belial Acid Vomit: walks at half speed while spewing; airborne falls back 
  }finally{h.release();h.cleanup();}
 });
 
+test('Belial Acid Pounce: a street landing leaves a row of acid puddles on the street and nothing lava',async()=>{
+ const h=await belialCity();
+ try{h.step(30);faceWest(h);
+  h.tap('Space');h.step(15);h.tap('KeyS');h.step();assert.equal(h.state().diving,true);
+  for(let n=0;n<60&&h.state().diving;n++)h.step();
+  assert.equal(h.state().diving,false);assert.equal(h.state().rolling,false,'Belial does not roll');
+  const n=h.state().entityCounts.acidPools;assert.ok(n>=2&&n<=B.vomitPuddleCap,`a row of puddles under the landing (${n})`);
+  assert.equal(h.state().entityCounts.lavaPools,0);assert.equal(h.state().entityCounts.lavaGlobs,0);
+  assert.ok(until(h,()=>h.state().entityCounts.acidPools===0,Math.ceil(B.vomitPuddleSeconds*60)+60),'they dry up');
+ }finally{h.release();h.cleanup();}
+});
+
+test('Belial Acid Pounce: a building caught in the slam is corroded straight to pounceStacks',async()=>{
+ const h=await belialCity();const {MOVE:MV}=await import('../src/config.ts');
+ try{h.step(30);
+  const s0=h.state(),cx=s0.x+s0.width/2;
+  const ahead=s0.buildings.filter((b:any)=>b.hp>0&&b.x>cx).sort((a:any,b:any)=>a.x-b.x)[0];
+  h.down('KeyD');until(h,()=>h.state().x+h.state().width>ahead.x-30,600);h.up('KeyD');h.step(5);
+  const i=h.state().buildings.findIndex((b:any)=>b.x===ahead.x);assert.equal(h.state().corrosion[i],0);
+  h.tap('Space');h.step(15);h.tap('KeyS');for(let n=0;n<60&&h.state().diving;n++)h.step();
+  assert.equal(h.state().corrosion[i],MV.pounceStacks,`soaked to ${MV.pounceStacks} stacks in one hit (${h.state().corrosion[i]})`);
+ }finally{h.release();h.cleanup();}
+});
+
 test('Belial moves list: Acid Vomit, aiming and corrosion replace the preview spine',()=>{
  const names=moveList('Belial').moves.flatMap(s=>s.moves).map(m=>m.name);
- for(const n of ['Acid Vomit','Aim the arc','Corrosion'])assert.ok(names.includes(n),n);
+ for(const n of ['Acid Vomit','Aim the arc','Corrosion','Acid Pounce'])assert.ok(names.includes(n),n);
  assert.ok(!names.includes('Spine'));
 });

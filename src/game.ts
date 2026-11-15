@@ -543,18 +543,18 @@ function pound(strike:Strike){
 function slamLand(){
  if(!dive)return false;const w=bodyWidth(),h=bodyHeight(),s=scale(combat),feet=player.y+h,cx=player.x+w/2,fall=Math.max(0,feet-dive.startY);
  const power=1+Math.min(MV.diveFallMax,fall/MV.diveFallBonus),damage=MV.diveDamage*damageMultiplier(combat)*power,radius=MV.diveRadius*s*(1+(power-1)*.4);
- const street=feet>=C.ground-1,kb=MV.diveKnockback*(combat.superTime>0?B.superKnockback:1);let broke=false;
+ const street=feet>=C.ground-1,kb=MV.diveKnockback*(combat.superTime>0?B.superKnockback:1),struck:object[]=[];let broke=false;
  for(const b of buildings){if(b.hpNow<=0)continue;
   const under=b.x<player.x+w&&b.x+b.w>player.x&&Math.abs(C.ground-b.h-feet)<6,near=street&&b.x<cx+radius&&b.x+b.w>cx-radius;
   if(!under&&!near&&!(b.kind==='tiny'&&b.x<cx+radius&&b.x+b.w>cx-radius))continue;
-  hit(b,damage*(under?MV.diveRoofMult:.5),false,Math.sign(b.x+b.w/2-cx)||player.face,{x:Math.max(b.x+8,Math.min(b.x+b.w-8,cx)),y:under?C.ground-b.h+10:C.ground-20});
+  struck.push(b);hit(b,damage*(under?MV.diveRoofMult:.5),false,Math.sign(b.x+b.w/2-cx)||player.face,{x:Math.max(b.x+8,Math.min(b.x+b.w-8,cx)),y:under?C.ground-b.h+10:C.ground-20});
   if(under){spawnChunks(cx,C.ground-b.h,0,b.color,6,1.6);if(b.hpNow<=0)broke=true;}}
  const zone={x:cx-radius,y:feet-radius,w:radius*2,h:radius+8};
- for(const u of military.units)if(u.hp>0&&overlaps(zone,u))hitUnit(military,u,damage,'player',kb,Math.sign(u.x+u.w/2-cx)||player.face,false,'crush');
+ for(const u of military.units)if(u.hp>0&&overlaps(zone,u)){struck.push(u);hitUnit(military,u,damage,'player',kb,Math.sign(u.x+u.w/2-cx)||player.face,false,'crush');}
  for(const v of vehicles)if(loose(v)&&overlaps(zone,vehicleBox(v))){if(Math.abs(v.x+v.w/2-cx)<w*.4)flattenVehicle(v,true);else puntVehicle(v,damage*.5,Math.sign(v.x+v.w/2-cx)||player.face,false,1.8);}
  for(const g of growths)if(g.hp>0&&overlaps(zone,{x:g.x-20,y:C.ground-55,w:40,h:55}))hitGrowth(g,damage);
  if(objective&&!objective.shattered&&overlaps(zone,{x:objective.x-30,y:C.ground-100,w:60,h:100}))hitObjective(damage);
- if(rival&&!rival.dead&&overlaps(zone,rival))strikeRival(damage,kb,Math.sign(rival.x+rival.w/2-cx)||player.face);
+ if(rival&&!rival.dead&&overlaps(zone,rival)){struck.push(rival);strikeRival(damage,kb,Math.sign(rival.x+rival.w/2-cx)||player.face);}
  // On the street the impact rolls out as a short shockwave both ways.
  if(street){const grow=Math.sqrt(s),life=MV.diveWaveRange*grow*power/B.tremorSpeed;
   for(const dir of [-1,1])waves.push({x:cx+dir*w*.3,vx:dir*B.tremorSpeed,life,max:life,damage:damage*MV.diveWaveDamage,hits:new Set(),ult:false,size:MV.diveWaveSize*grow,knockback:B.tremorKnockback});}
@@ -564,15 +564,23 @@ function slamLand(){
    rocks.push({x:cx+dir*w*.25,y:feet-6*s,vx:dir*Math.cos(a)*sp,vy:-Math.sin(a)*sp,life:B.debrisLife*grow*1.3,damage:MV.meteorDamage*damageMultiplier(combat)*power,knockback:B.debrisKnockback,spin:Math.random()*6,size:(6+Math.random()*5)*grow});}}
  // Tlézcatl's Magma Dive: the crash splashes molten globs both ways and, on the street, leaves a lava pool under him.
  if(activeKaiju==='Tlézcatl')splashLava(cx,feet,w*.3,power,MV.lavaGlobs,street?w*MV.lavaPoolWidth:0,14);
+ // Belial's Acid Pounce: the impact bursts his gland. Everything the slam struck is soaked to pounceStacks of corrosion (one more on
+ // a pounceFullPower drop), applied after the hit so the slam itself isn't boosted; on the street it leaves a row of acid puddles.
+ if(isBelial())acidPounce(struck,cx,feet,w,power,street);
  burst(cx,feet-3,'#c9a77c',18+Math.round(power*6));spawnChunks(cx,feet-6,1,'#8d7a66',3);spawnChunks(cx,feet-6,-1,'#8d7a66',3);
  shake=Math.max(shake,6+power*4);freeze(.05+power*.02);
  // A form's own slamLand starts at impact; otherwise borrow heavySlam from its crash frames.
  attack=hasAnim(activeKaiju,'slamLand',combat.stage)?{anim:'slamLand',t:0}:{anim:hasAnim(activeKaiju,'heavySlam',combat.stage)?'heavySlam':'jumpLand',t:hasAnim(activeKaiju,'heavySlam',combat.stage)?animDuration(activeKaiju,'heavySlam',combat.stage)*.35:0};
- combat.cooldown=Math.max(combat.cooldown,MV.diveCooldown);action=broke?'SLAM · CRASHED THROUGH':(activeKaiju==='Kaiban'?'METEOR DROP':activeKaiju==='Tlézcatl'?'MAGMA DIVE':power>1.8?'MEGA SLAM':'SLAM');actionTime=.9;
+ combat.cooldown=Math.max(combat.cooldown,MV.diveCooldown);action=broke?'SLAM · CRASHED THROUGH':(activeKaiju==='Kaiban'?'METEOR DROP':activeKaiju==='Tlézcatl'?'MAGMA DIVE':isBelial()?'ACID POUNCE':power>1.8?'MEGA SLAM':'SLAM');actionTime=.9;
  // A cannonball form keeps rolling if a direction was touched at any point in the dive (street or rooftop).
  const steer=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0)||dive.dir;
  if(!broke&&steer&&canRoll()){roll={dir:steer,t:MV.rollSeconds,t0:dive.t0,power,bounced:false,hits:new Set()};player.face=steer;attack=null;action='CANNONBALL';actionTime=1;}
  return broke;}
+function acidPounce(struck:object[],cx:number,feet:number,w:number,power:number,street:boolean){
+ const st=Math.min(B.corrodeMax,MV.pounceStacks+(power>=MV.pounceFullPower?1:0));
+ for(const o of struck){const d=o as {hpNow?:number,hp?:number};if((d.hpNow??1)<=0||(d.hp??1)<=0)continue;corrode(o,0);const c=corr.get(o)!;c.expo=Math.max(c.expo,st*B.corrodePerStack);c.stacks=Math.max(c.stacks,st);}
+ if(street){const pw=w*MV.pouncePoolWidth*Math.min(1.5,power),cell=Math.round(B.vomitPuddleCell*Math.sqrt(scale(combat)));for(let x=cx-pw/2;x<cx+pw/2;x+=cell)acidPuddle(x);}
+ burst(cx,feet-6,'#b8e63a',14+Math.round(power*5));}
 // Tlézcatl's lava splash (Magma Dive landing, heavy slam): n molten globs out both ways from x0±spread at the feet, plus an
 // optional pool of width poolW under the impact (street only) and a spray of molten sparks.
 function splashLava(x0:number,feet:number,spread:number,power:number,n:number,poolW:number,sparks:number){
