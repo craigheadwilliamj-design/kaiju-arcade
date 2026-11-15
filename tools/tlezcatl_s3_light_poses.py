@@ -45,7 +45,7 @@ def leg(hip, ft):
     kx, ky = ux * math.cos(a) + uy * math.sin(a), -ux * math.sin(a) + uy * math.cos(a)   # knee bends forward
     return [hip[0] + L1 * kx, hip[1] + L1 * ky], [hip[0] + D * ux, hip[1] + D * uy]
 
-def pose(lean=0, drop=0, step=0, surge=0, head=0, tilt=0, L=None, R=None):
+def pose(lean=0, drop=0, step=0, surge=0, head=0, tilt=0, L=None, R=None, hands=None, foot=0):
     q = {k: v[:] for k, v in B.items()}
     for k in q:
         if 'KNEE' not in k and 'LEG' not in k: q[k][0] += surge; q[k][1] += drop
@@ -60,8 +60,12 @@ def pose(lean=0, drop=0, step=0, surge=0, head=0, tilt=0, L=None, R=None):
     for s, a in (('LEFT', L or REST['LEFT']), ('RIGHT', R or REST['RIGHT'])):
         sh = q[f'{s} SHOULDER']; l1, l2 = LEN[s]; u, f = map(math.radians, a)
         el = [sh[0] + l1 * math.sin(u), sh[1] + l1 * math.cos(u)]; q[f'{s} ELBOW'] = el; q[f'{s} ARM'] = [el[0] + l2 * math.sin(f), el[1] + l2 * math.cos(f)]
-    q['LEFT KNEE'], q['LEFT LEG'] = leg(q['LEFT HIP'], [CX + STANCE + step, GROUND])
-    q['RIGHT KNEE'], q['RIGHT LEG'] = leg(q['RIGHT HIP'], [CX - STANCE, GROUND])
+        if hands:   # crouch: claw planted on the street hands[s] px in front of the shoulder, elbow bent up and back (two-bone IK)
+            tx, ty = sh[0] + hands[s], GROUND - 2; D = min(math.hypot(tx - sh[0], ty - sh[1]), l1 + l2 - 0.5); ux, uy = (tx - sh[0]) / math.hypot(tx - sh[0], ty - sh[1]), (ty - sh[1]) / math.hypot(tx - sh[0], ty - sh[1])
+            a2 = math.acos(max(-1, min(1, (l1 * l1 + D * D - l2 * l2) / (2 * l1 * D)))); kx, ky = ux * math.cos(a2) - uy * math.sin(a2), ux * math.sin(a2) + uy * math.cos(a2)
+            q[f'{s} ELBOW'] = [sh[0] + l1 * kx, sh[1] + l1 * ky]; q[f'{s} ARM'] = [sh[0] + D * ux, sh[1] + D * uy]
+    q['LEFT KNEE'], q['LEFT LEG'] = leg(q['LEFT HIP'], [CX + STANCE + step, GROUND - foot])
+    q['RIGHT KNEE'], q['RIGHT LEG'] = leg(q['RIGHT HIP'], [CX - STANCE, GROUND - foot - foot * .25])
     return q
 
 RL, RR = REST['LEFT'], REST['RIGHT']
@@ -90,12 +94,38 @@ STRIPS = {
            9: dict(lean=22, drop=11, step=12, surge=6, head=2, L=(65, 50), R=(58, 50)),
            10: dict(lean=14, drop=7, step=8, surge=4, L=(45, 50), R=(35, 50)), 11: dict(lean=8, drop=6, step=5, surge=3),
            12: dict(lean=3, drop=2, step=2, surge=1), 13: {}},
+ # crouch: 5 frames dropping off the hind legs onto all fours (hips and chest sink, upper body pitched forward over the planted feet,
+ # head thrust low and forward, both claws planted on the street ahead of the shoulders); crouchLoop: 4 breathing frames on that pose
+ # (frame 4 = it). Generate crouch from the unshifted base (DX 0), then crouchLoop from crouch's last frame (first = that pose).
+ 'crouch': {0: {}, 1: dict(lean=7, drop=9, step=2, surge=2, tilt=1, L=(RL[0] + 15, RL[1] + 10), R=(RR[0] + 15, RR[1] + 10)),
+            2: dict(lean=14, drop=20, step=4, surge=5, tilt=3, L=(RL[0] + 25, RL[1] + 25), R=(RR[0] + 22, RR[1] + 25)),
+            3: dict(lean=19, drop=30, step=6, surge=10, head=2, tilt=5, hands={'LEFT': 26, 'RIGHT': 30}),
+            4: dict(lean=21, drop=36, step=6, surge=10, head=2, tilt=6, hands={'LEFT': 28, 'RIGHT': 32}),
+            5: dict(lean=22, drop=38, step=6, surge=10, head=2, tilt=6, hands={'LEFT': 28, 'RIGHT': 32})},
+ 'crouchLoop': {0: dict(lean=22, drop=38, step=6, surge=10, head=2, tilt=6, hands={'LEFT': 28, 'RIGHT': 32}),
+                1: dict(lean=21, drop=37, step=6, surge=10, head=2, tilt=7, hands={'LEFT': 28, 'RIGHT': 32}),
+                2: dict(lean=20, drop=36, step=6, surge=10, head=2, tilt=8, hands={'LEFT': 28, 'RIGHT': 32}),
+                3: dict(lean=21, drop=37, step=6, surge=10, head=2, tilt=7, hands={'LEFT': 28, 'RIGHT': 32}),
+                4: dict(lean=22, drop=38, step=6, surge=10, head=2, tilt=6, hands={'LEFT': 28, 'RIGHT': 32})},
+ # jump (unshifted base, DX 0): jumpRise = 9 frames sinking deep on the hind legs with the arms swung back, then springing straight up
+ # (`foot` lifts both feet off the street, tucked under the body); jumpAir = 4 breathing frames on the last rise pose; jumpLand = 5 frames
+ # from that pose down to the base (feet reach the street, a deep squash, straighten). Negative `drop` raises the body.
+ 'jumpRise': {0: {}, 1: dict(lean=5, drop=9, L=(-5, 10), R=(-5, 10)), 2: dict(lean=10, drop=18, L=(-20, 0), R=(-20, 0)),
+              3: dict(lean=14, drop=26, step=3, surge=3, L=(-30, -10), R=(-30, -10)), 4: dict(lean=5, drop=10, surge=1, L=(20, 40), R=(20, 40)),
+              5: dict(lean=-3, drop=-8, foot=6, L=(50, 70), R=(45, 70)), 6: dict(lean=-5, drop=-22, foot=20, L=(75, 100), R=(70, 100)),
+              7: dict(lean=-5, drop=-34, foot=32, L=(75, 100), R=(70, 100)), 8: dict(lean=-4, drop=-40, foot=38, L=(75, 100), R=(70, 100)), 9: dict(lean=-4, drop=-42, foot=40, L=(75, 100), R=(70, 100))},
+ 'jumpAir': {0: dict(lean=-4, drop=-42, foot=40, L=(75, 100), R=(70, 100)), 1: dict(lean=-4, drop=-43, foot=41, L=(80, 105), R=(75, 105)),
+             2: dict(lean=-3, drop=-44, foot=42, L=(85, 110), R=(80, 110)), 3: dict(lean=-4, drop=-43, foot=41, L=(80, 105), R=(75, 105)),
+             4: dict(lean=-4, drop=-42, foot=40, L=(75, 100), R=(70, 100))},
+ 'jumpLand': {0: dict(lean=-4, drop=-42, foot=40, L=(75, 100), R=(70, 100)), 1: dict(lean=0, drop=-30, foot=28, L=(60, 80), R=(55, 80)),
+              2: dict(lean=6, drop=-8, foot=6, L=(35, 55), R=(30, 55)), 3: dict(lean=14, drop=24, step=3, surge=3, L=(30, 50), R=(25, 50)),
+              4: dict(lean=7, drop=11, surge=1), 5: {}},
  'jet': {0: {}, 1: dict(lean=-3, tilt=10, L=TUCK_L, R=TUCK_R), 2: dict(lean=-7, drop=-2, tilt=25, head=-3, L=TUCK_L, R=TUCK_R),
          3: dict(lean=-9, drop=-3, tilt=35, head=-5, L=TUCK_L, R=TUCK_R), 4: dict(lean=10, drop=3, step=4, surge=3, tilt=-6, head=6),
          **{i: dict(lean=8 - 0.2 * a, drop=2, step=4, surge=2, tilt=a, head=5) for i, a in ((5, 0), (6, -12), (7, -24), (8, 15), (9, 30), (10, 45), (11, 58))},
          12: dict(lean=5, drop=1, step=3, surge=1, tilt=25, head=2), 13: dict(lean=3, step=2, surge=1, tilt=8), 14: dict(lean=1, step=1, tilt=2), 15: {}},
 }
-def full(kw): d = dict(lean=0, drop=0, step=0, surge=0, head=0, tilt=0, L=RL, R=RR); d.update(kw); return d
+def full(kw): d = dict(lean=0, drop=0, step=0, surge=0, head=0, tilt=0, L=RL, R=RR, hands=None, foot=0); d.update(kw); return d
 def j(q): return [{'x': min(max(q[k][0] / 256, 0), 1), 'y': min(max(q[k][1] / 256, 0), 1), 'label': k, 'z_index': Z[k]} for k in q]
 bones = [('NECK', 'LEFT SHOULDER'), ('NECK', 'RIGHT SHOULDER'), ('LEFT SHOULDER', 'LEFT ELBOW'), ('LEFT ELBOW', 'LEFT ARM'),
          ('RIGHT SHOULDER', 'RIGHT ELBOW'), ('RIGHT ELBOW', 'RIGHT ARM'), ('NECK', 'LEFT HIP'), ('NECK', 'RIGHT HIP'),
@@ -103,13 +133,13 @@ bones = [('NECK', 'LEFT SHOULDER'), ('NECK', 'RIGHT SHOULDER'), ('LEFT SHOULDER'
 for name, keys in STRIPS.items():
     if ONLY and name not in ONLY: continue
     frames = [pose(**full(keys[i])) for i in range(1, len(keys))]
-    json.dump({'first': j(pose()), 'frames': [j(q) for q in frames]}, open(f'{OUT}/{name}.json', 'w'))
-    sheet = Image.new('RGBA', (200 * (len(frames) + 1), 200), (40, 40, 60, 255))
-    for i, q in enumerate([pose()] + frames):
+    first = pose(**full(keys[0])); json.dump({'first': j(first), 'frames': [j(q) for q in frames]}, open(f'{OUT}/{name}.json', 'w'))
+    sheet = Image.new('RGBA', (256 * (len(frames) + 1), 200), (40, 40, 60, 255))
+    for i, q in enumerate([first] + frames):
         c = Image.new('RGBA', (256, 256), (40, 40, 60, 255)); g = pad.copy(); g.putalpha(g.getchannel('A').point(lambda a: a * .3)); c.alpha_composite(g)
         d = ImageDraw.Draw(c); d.line([(0, GROUND), (255, GROUND)], fill=(90, 90, 110))
         for a, b in bones: d.line([tuple(q[a]), tuple(q[b])], fill=(0, 255, 255) if 'LEFT' in a + b else (255, 255, 0), width=2)
-        sheet.paste(c.crop((0, 56, 200, 256)), (i * 200, 0))
+        sheet.paste(c.crop((0, 56, 256, 256)), (i * 256, 0))
     sheet.save(f'{OUT}/{name}_sheet.png')
     xs = [q[k][0] for q in frames for k in q]; ys = [q[k][1] for q in frames for k in q]
     print(name, 'x', round(min(xs)), round(max(xs)), 'min y', round(min(ys)))
