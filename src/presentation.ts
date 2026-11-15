@@ -546,6 +546,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // squashes low and closes on the base. Bottom-aligned: physics moves him, the art only changes pose. Timing matches the other forms.
   jumpRise:{src:'assets/belial-s2-jump-rise.png',frames:9,fps:24,once:true,...BL2_NATIVE},jumpAir:{src:'assets/belial-s2-jump-air.png',frames:4,fps:8,...BL2_NATIVE},
   jumpLand:{src:'assets/belial-s2-jump-land.png',frames:5,fps:20,once:true,...BL2_NATIVE},
+  // Crouch: splays the legs and presses belly and chin flat to the street with the spines laid back and the tail flat (79px tall to
+  // about 54), a slow breathing loop lying flat, and crouchUp = crouchDown reversed. Timing matches the other forms.
+  crouchDown:{src:'assets/belial-s2-crouch-down.png',frames:5,fps:22,once:true,...BL2_NATIVE},crouch:{src:'assets/belial-s2-crouch.png',frames:4,fps:6,...BL2_NATIVE},
+  crouchUp:{src:'assets/belial-s2-crouch-up.png',frames:5,fps:22,once:true,...BL2_NATIVE},
   // Light combo: forward claw swipe (the near claw cocks up by the head and rakes down in front of the chest, slash on frames 4-5),
   // backhand rake (the far claw shoots out past the snout and hooks back down, crescent on frames 4-5), lunging bite (head thrust
   // forward with the jaws gaping, snapping shut in a puff of acid on frame 4). Shared frame counts and fps; each strip starts on the
