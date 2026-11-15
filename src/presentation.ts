@@ -128,7 +128,7 @@ const TZ3_LEFT2={scale:181/256,anchor:4.5+128*181/256};
 // Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
 // theropod stalk on the hind legs only, skeleton-posed so both feet run a full stride and pass each other, the body sinking into each
 // stomp, the head dipping a beat late, shoulders rolling and raised claws swinging, the tail swinging out as a counterweight; the
-// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch, the jump, the climb and grab/carry/throw so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch, the jump, the climb, grab/carry/throw and the Magma Dive so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
 // 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
 const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
   walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK},
@@ -181,7 +181,11 @@ const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
   grab:{src:'assets/tlezcatl-s3-grab.png',frames:9,fps:22,once:true,...TZ3_NATIVE,hold:[[204,255],[228,255],[223,255],[196,186],[195,132],[153,76],[128,44],[126,14],[126,14]]},
   carry:{src:'assets/tlezcatl-s3-carry.png',frames:4,fps:6,...TZ3_NATIVE,hold:[[126,14],[123,13],[120,12],[123,13]]},
   carryWalk:{src:'assets/tlezcatl-s3-carry-walk.png',frames:8,fps:10,...TZ3_NATIVE,hold:[[126,14],[127,13],[123,11],[118,9],[114,7],[114,7],[116,9],[120,12]]},
-  throw:{src:'assets/tlezcatl-s3-throw.png',frames:8,fps:18,once:true,...TZ3_NATIVE}}};
+  throw:{src:'assets/tlezcatl-s3-throw.png',frames:8,fps:18,once:true,...TZ3_NATIVE},
+  // Magma Dive (256x256, the padded base): dive pitches forward into a vertical head-first plunge, claws reaching for the street and
+  // tail straight up (frames 0,3,5,8 of a generation, bottom-aligned, held on the last); slamLand = frames 1-7 of a generation from that
+  // plunge, then the base: he crashes in with a lava splash both ways on the first frame, belly-flops and pushes back up.
+  dive:{src:'assets/tlezcatl-s3-dive.png',frames:4,fps:24,once:true,...TZ3_NATIVE},slamLand:{src:'assets/tlezcatl-s3-slam-land.png',frames:8,fps:16,once:true,...TZ3_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
