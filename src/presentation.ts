@@ -129,10 +129,10 @@ const TZ3_RUN={scale:181/256,anchor:65+128*181/256};
 // The hook rake's body came out about 2.5px left of that (sprite at x=4.5).
 const TZ3_LEFT={scale:181/256,anchor:7+128*181/256};
 const TZ3_LEFT2={scale:181/256,anchor:4.5+128*181/256};
-// Tlézcatl Stage 3 form (hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
+// Tlézcatl Stage 3 form (complete; hunched volcanic dragon, crystal-spiked back, horned frilled head): idle (breathing loop) and walk (a bipedal
 // theropod stalk on the hind legs only, skeleton-posed so both feet run a full stride and pass each other, the body sinking into each
 // stomp, the head dipping a beat late, shoulders rolling and raised claws swinging, the tail swinging out as a counterweight; the
-// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch and the jump so far. `borrow`: every other move plays the Stage 1 strip until Stage 3 art exists. Same
+// hands never touch the street; 12 frames at 15 fps, the 0.8s cycle of the other walks), run, the light combo, the heavy, the Flame Jet, the crouch, the jump, the climb, grab/carry/throw, the Magma Dive and the Eruption: every move has its own strip. `borrow` stays as a safety net, as on Stage 2 (any strip added to Stage 1 later plays there until Stage 3 gets one). Same
 // 120-unit width as Mogurodon's Stage 3, which makes him about 84 units tall, much bulkier than the flat Stage 1 salamander.
 const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s3-idle.png',frames:8,fps:8,...TZ3_NATIVE},
   walk:{src:'assets/tlezcatl-s3-walk.png',frames:12,fps:15,...TZ3_WALK},
@@ -169,7 +169,34 @@ const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
   // legs down, squashes low and straightens onto the base pose. The tail is the lowest point in the air, so the rise's last frames and
   // every air frame are shifted down the same 14px (no bounce). Shared jump timing.
   jumpRise:{src:'assets/tlezcatl-s3-jump-rise.png',frames:9,fps:24,once:true,...TZ3_NATIVE},jumpAir:{src:'assets/tlezcatl-s3-jump-air.png',frames:4,fps:8,...TZ3_NATIVE},
-  jumpLand:{src:'assets/tlezcatl-s3-jump-land.png',frames:5,fps:20,once:true,...TZ3_NATIVE}}};
+  jumpLand:{src:'assets/tlezcatl-s3-jump-land.png',frames:5,fps:20,once:true,...TZ3_NATIVE},
+  // Climb: 256x256 strips (the base padded to 256 tall, feet on the bottom row, so TZ3_NATIVE lines up), clinging gecko-style with the
+  // body upright against the wall, head up and tail hanging, the gripping claws on the wall line at frame x=164 (the hitbox edge 24
+  // world units out). The grab leaps from the base and eases 62px onto the wall line; the loop is hand over hand; the punch draws the
+  // upper claw back off the wall and slams it in with a starburst on impact frame 5; the mantle starts 22px further back (the game's
+  // roof slide), hauls up over the edge and ends on the base.
+  climbGrab:{src:'assets/tlezcatl-s3-climb-grab.png',frames:5,fps:20,once:true,...TZ3_NATIVE},climb:{src:'assets/tlezcatl-s3-climb.png',frames:8,fps:12,...TZ3_NATIVE},
+  climbMantle:{src:'assets/tlezcatl-s3-climb-mantle.png',frames:9,fps:20,once:true,...TZ3_NATIVE},climbPunch:{src:'assets/tlezcatl-s3-climb-punch.png',frames:8,fps:24,once:true,impact:5,...TZ3_NATIVE},
+  // Grab/carry/throw (256x256, the base padded to 256 tall so TZ3_NATIVE lines up; generated without any object, the game draws the
+  // prop): the grab dips and scoops both claws along the street, then rears upright and raises them past the chest and face until both
+  // arms are straight up overhead with the claws together; the carry strains under it and the carry-walk stomps forward with the claws held together overhead (both loops
+  // closed on the grab's last frame); the throw whips both arms forward and down with swooshes on frame 1 and settles onto the base.
+  // `hold`: frames 0-2 keep the prop on the street at the front claw, 3-6 follow the rising hands, then it sits on the joined claw tips.
+  grab:{src:'assets/tlezcatl-s3-grab.png',frames:9,fps:22,once:true,...TZ3_NATIVE,hold:[[204,255],[228,255],[223,255],[196,186],[195,132],[153,76],[128,44],[126,14],[126,14]]},
+  carry:{src:'assets/tlezcatl-s3-carry.png',frames:4,fps:6,...TZ3_NATIVE,hold:[[126,14],[123,13],[120,12],[123,13]]},
+  carryWalk:{src:'assets/tlezcatl-s3-carry-walk.png',frames:8,fps:10,...TZ3_NATIVE,hold:[[126,14],[127,13],[123,11],[118,9],[114,7],[114,7],[116,9],[120,12]]},
+  throw:{src:'assets/tlezcatl-s3-throw.png',frames:8,fps:18,once:true,...TZ3_NATIVE},
+  // Magma Dive (256x256, the padded base): dive pitches forward into a vertical head-first plunge, claws reaching for the street and
+  // tail straight up (frames 0,3,5,8 of a generation, bottom-aligned, held on the last); slamLand = frames 1-7 of a generation from that
+  // plunge, then the base: he crashes in with a lava splash both ways on the first frame, belly-flops and pushes back up.
+  dive:{src:'assets/tlezcatl-s3-dive.png',frames:4,fps:24,once:true,...TZ3_NATIVE},slamLand:{src:'assets/tlezcatl-s3-slam-land.png',frames:8,fps:16,once:true,...TZ3_NATIVE},
+  // Eruption (256x256, the padded base, the Stage 1/2 timing): the charge curls into a spiked ball whose crystal and flame corona heats
+  // from orange to white (bottom-aligned: PixelLab floated the ball 21px up); the roar whites out on its first frame (the blast), a fire
+  // ring reveals him white-hot, reared up with the arms flung wide, cooling to his own colours with the spines blazing; the loop is the
+  // blazing reared pose; the settle lowers onto the base as the flames die to embers.
+  ultCharge:{src:'assets/tlezcatl-s3-ult-charge.png',frames:16,fps:16,once:true,...TZ3_NATIVE},
+  ultRoar:{src:'assets/tlezcatl-s3-ult-roar.png',frames:8,fps:16,once:true,...TZ3_NATIVE},ultPound:{src:'assets/tlezcatl-s3-ult-pound.png',frames:4,fps:10,...TZ3_NATIVE},
+  ultSettle:{src:'assets/tlezcatl-s3-ult-settle.png',frames:8,fps:16,once:true,...TZ3_NATIVE}}};
 // Kaiban Stage 1 strips: the kaiban-s1 base still, a 139px-wide sprite at x=58 keyed from the transparent render with tools/key_render.py.
 const KB1_NATIVE={scale:139/256,anchor:58+128*139/256};
 // Kaiban Stage 1 lunging strips: generated from the same base shifted 40px left (sprite at x=18) so lunges stay inside the frame.
