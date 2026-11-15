@@ -30,9 +30,11 @@ const images=new Map<string,HTMLImageElement>();
 // `scale`/`anchor` are for padded strips generated from a shrunken base (room for lunges): `scale` is the art's size relative to a
 // full-frame 256px-wide strip (default 1) and `anchor` the frame x that lines up with the kaiju's origin (default: frame centre).
 // `hold` (grab/carry strips): frame px where a carried prop's bottom-centre sits, one [x,y] per frame or a single pair for every frame.
+// `bite` (grab/carry strips): the prop is held in the jaws, so `hold` is where the teeth close; the game grips the prop by its near end at
+// mid-height (its centre 0.3 of its width ahead) and keeps it above the feet line.
 // `mouth` (Flame Jet strips): frame px of the jaws, where the flame starts, one [x,y] per frame or a single pair.
 // `angles` (an aim strip): the degrees above level each frame's head points; the game shows the frame nearest the aim instead of playing it.
-type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][],pivot?:number[],spinFrom?:number,mouth?:number[]|number[][],angles?:number[]};
+type Strip={src:string,frames:number,fps:number,once?:boolean,impact?:number,scale?:number,anchor?:number,hold?:number[]|number[][],pivot?:number[],spinFrom?:number,mouth?:number[]|number[][],angles?:number[],bite?:boolean};
 // Each kaiju has a base form (`width`/`anims`) plus optional per-stage overrides in `stages`. A stage without an entry uses the base form.
 // Mogurodon: the base art is its Stage 2 form; `stages[1]` (animated incrementally) and `stages[3]` (every strip) override Stages 1 and 3.
 // Within a stage form a missing animation falls back to that form's own `idle`, so a new form can ship with only a few strips. With
@@ -569,7 +571,25 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   vomitStart:{src:'assets/belial-s2-vomit-start.png',frames:5,fps:20,once:true,...BL2_LEFT,mouth:[235,151]},
   vomitAim:{src:'assets/belial-s2-vomit-aim.png',frames:7,fps:10,once:true,...BL2_LEFT,angles:[-25,-12,0,8,18,32,45],
    mouth:[[230,170],[235,160],[235,151],[236,146],[234,138],[229,122],[221,111]]},
-  vomitEnd:{src:'assets/belial-s2-vomit-end.png',frames:4,fps:16,once:true,...BL2_LEFT}}},
+  vomitEnd:{src:'assets/belial-s2-vomit-end.png',frames:4,fps:16,once:true,...BL2_LEFT},
+  // Climb: 256x256 strips (the base padded to 256 tall, so BL2_NATIVE lines up), clinging gecko-style with the body vertical, head up
+  // and the long tail hanging to the bottom row, the gripping claws on the wall line at frame x=171 (the hitbox edge 24 world units
+  // out). The grab rears and leaps from the base and eases 81px onto the wall line; the loop is hand over hand; the punch draws the
+  // upper claw back off the wall and slams it in with an acid-green flash on impact frame 4; the mantle starts 26px further back (the
+  // game's roof slide), swings up over the edge and ends on the base. Timing matches the other forms.
+  climbGrab:{src:'assets/belial-s2-climb-grab.png',frames:5,fps:20,once:true,...BL2_NATIVE},climb:{src:'assets/belial-s2-climb.png',frames:8,fps:12,...BL2_NATIVE},
+  climbMantle:{src:'assets/belial-s2-climb-mantle.png',frames:9,fps:20,once:true,...BL2_NATIVE},climbPunch:{src:'assets/belial-s2-climb-punch.png',frames:8,fps:24,once:true,impact:4,...BL2_NATIVE},
+  // Grab/carry/throw in the jaws (256x256, the left-shifted base so the head has room): the grab gapes, drops the head to the street
+  // and bites down, then hauls the neck up high with the jaws clamped; carry strains under the weight and carry-walk stalks forward on
+  // all fours with the head held up. `bite`: each `hold` is where the jaws close, and the game grips the prop by its near end there
+  // (kept above the feet line while the head is at the street). Throw starts at the release: the jaws spring open and the head whips forward and down with an acid-green swing arc
+  // on frames 2-3, settling onto the shifted base.
+  grab:{src:'assets/belial-s2-grab.png',frames:9,fps:22,once:true,bite:true,...BL2_LEFT,
+   hold:[[228,240],[226,240],[218,240],[218,240],[218,240],[218,240],[218,232],[204,196],[198,184]]},
+  carry:{src:'assets/belial-s2-carry.png',frames:4,fps:6,bite:true,...BL2_LEFT,hold:[[198,184],[197,181],[195,179],[197,181]]},
+  carryWalk:{src:'assets/belial-s2-carry-walk.png',frames:8,fps:10,bite:true,...BL2_LEFT,
+   hold:[[198,184],[199,184],[200,186],[200,186],[200,186],[200,184],[199,183],[198,183]]},
+  throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -613,6 +633,8 @@ export function animDuration(name:string,anim:string,stage?:number){const a=timi
 // Time into an aim strip that shows the frame whose head angle is nearest `angle` (degrees above level); 0 when it has no angles.
 export function aimTime(name:string,anim:string,angle:number,stage?:number){const a=pick(name,anim,stage)?.a;if(!a?.angles)return 0;
  let best=0;a.angles.forEach((v,i)=>{if(Math.abs(v-angle)<Math.abs(a.angles![best]-angle))best=i;});return (best+.5)/a.fps;}
+// True when the strip carries its prop in the jaws (`bite`): the hold point is where the teeth close, not the prop's bottom-centre.
+export function holdBite(name:string,anim:string,stage?:number){return !!pick(name,anim,stage)?.a.bite;}
 export function holdPoint(name:string,anim:string,t:number,stage?:number,key:'hold'|'pivot'|'mouth'='hold'):[number,number]|null{
  const p0=pick(name,anim,stage),s=p0?.f,a=p0?.a;if(!s||!a?.[key]||a!==s.anims[anim])return null;
  const img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),f=spriteFrame(name,t,anim,stage);
