@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Script the skeleton poses for Tlézcatl Stage 3's light combo (PixelLab /animate-with-skeleton-v3).
+"""Script the skeleton poses for Tlézcatl Stage 3's light combo and heavy (PixelLab /animate-with-skeleton-v3).
 
 Usage: python3 tools/tlezcatl_s3_light_poses.py OUTDIR [DX] [STRIPS]   (shipped: OUTDIR -30)
 
@@ -14,6 +14,8 @@ degrees from straight down, + swinging forward. LEFT is the far arm and front fo
   light1: near-claw overhead rake: cocked up beside the horns, raked down in front of the snout (impact frame 4).
   light2: far-claw hook rake: wound back, shot out past the snout at jaw height, hooked down (impact frame 3).
   light3: lunging bite: rears the head back, then drives head and shoulders forward and low, jaws snapping (impact frame 3).
+  heavy: 13 frames, cut into heavyRear (1-5: rears tall, head up, both claws thrown overhead) and heavySlam (6-13: starts on the
+         crash, both claws and the chest driven down into the street in a deep crouch, then recovers to the base pose).
 Run from the repo root.
 """
 import json, math, sys
@@ -72,6 +74,15 @@ STRIPS = {
             4: dict(lean=22, drop=9, step=14, surge=12, head=16, L=TUCK_L, R=TUCK_R),
             5: dict(lean=16, drop=6, step=12, surge=9, head=8, L=TUCK_L, R=TUCK_R), 6: dict(lean=9, drop=3, step=7, surge=5, head=3),
             7: dict(lean=3, drop=1, step=2, surge=1), 8: {}},
+ 'heavy': {0: {}, 1: dict(lean=-5, drop=-2, L=(60, 100), R=(55, 100)), 2: dict(lean=-12, drop=-4, L=(120, 150), R=(115, 150)),
+           3: dict(lean=-18, drop=-6, L=(150, 175), R=(145, 175)), 4: dict(lean=-22, drop=-7, L=(160, 185), R=(155, 185)),
+           5: dict(lean=-23, drop=-7, L=(162, 188), R=(157, 188)),
+           6: dict(lean=24, drop=12, step=12, surge=6, head=4, L=(80, 60), R=(75, 60)),
+           7: dict(lean=28, drop=15, step=14, surge=7, head=4, L=(78, 55), R=(73, 55)),
+           8: dict(lean=27, drop=14, step=14, surge=7, head=3, L=(78, 55), R=(73, 55)),
+           9: dict(lean=22, drop=11, step=12, surge=6, head=2, L=(65, 50), R=(58, 50)),
+           10: dict(lean=14, drop=7, step=8, surge=4, L=(45, 50), R=(35, 50)), 11: dict(lean=8, drop=6, step=5, surge=3),
+           12: dict(lean=3, drop=2, step=2, surge=1), 13: {}},
 }
 def full(kw): d = dict(lean=0, drop=0, step=0, surge=0, head=0, L=RL, R=RR); d.update(kw); return d
 def j(q): return [{'x': min(max(q[k][0] / 256, 0), 1), 'y': min(max(q[k][1] / 256, 0), 1), 'label': k, 'z_index': Z[k]} for k in q]
@@ -82,12 +93,12 @@ for name, keys in STRIPS.items():
     if ONLY and name not in ONLY: continue
     frames = [pose(**full(keys[i])) for i in range(1, len(keys))]
     json.dump({'first': j(pose()), 'frames': [j(q) for q in frames]}, open(f'{OUT}/{name}.json', 'w'))
-    sheet = Image.new('RGBA', (200 * (len(frames) + 1), 150), (40, 40, 60, 255))
+    sheet = Image.new('RGBA', (200 * (len(frames) + 1), 200), (40, 40, 60, 255))
     for i, q in enumerate([pose()] + frames):
         c = Image.new('RGBA', (256, 256), (40, 40, 60, 255)); g = pad.copy(); g.putalpha(g.getchannel('A').point(lambda a: a * .3)); c.alpha_composite(g)
         d = ImageDraw.Draw(c); d.line([(0, GROUND), (255, GROUND)], fill=(90, 90, 110))
         for a, b in bones: d.line([tuple(q[a]), tuple(q[b])], fill=(0, 255, 255) if 'LEFT' in a + b else (255, 255, 0), width=2)
-        sheet.paste(c.crop((0, 106, 200, 256)), (i * 200, 0))
+        sheet.paste(c.crop((0, 56, 200, 256)), (i * 200, 0))
     sheet.save(f'{OUT}/{name}_sheet.png')
     xs = [q[k][0] for q in frames for k in q]; ys = [q[k][1] for q in frames for k in q]
     print(name, 'x', round(min(xs)), round(max(xs)), 'min y', round(min(ys)))
