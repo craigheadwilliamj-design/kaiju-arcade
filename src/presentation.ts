@@ -150,9 +150,10 @@ const TLEZCATL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-
   pound:{src:'assets/tlezcatl-s3-heavy-slam.png',frames:8,fps:16,once:true,...TZ3_LEFT},
   // Flame Jet (the game draws the fire from `mouth`), skeleton-posed by the same script: jetStart inhales with the head reared back, then
   // drops forward into the breath pose with the jaws wide; jetAim is that pose with the head turned about the neck, `angles` measured by
-  // rotation-matching the breath head into each frame and `mouth` at the front of the open jaws; jetEnd shuts the jaws and settles.
+  // rotation-matching the breath head into each frame and `mouth` at the front of the open jaws (the down frame is the level frame's
+  // open-jawed head rotated 20 degrees snout-down about the jaw hinge, since the generated one melted the jaws shut); jetEnd shuts the jaws and settles.
   jetStart:{src:'assets/tlezcatl-s3-jet-start.png',frames:5,fps:22,once:true,...TZ3_LEFT,mouth:[190,128]},
-  jetAim:{src:'assets/tlezcatl-s3-jet-aim.png',frames:5,fps:10,once:true,...TZ3_LEFT,angles:[-15,0,18,39,57],mouth:[[186,136],[190,128],[188,104],[180,84],[166,68]]},
+  jetAim:{src:'assets/tlezcatl-s3-jet-aim.png',frames:5,fps:10,once:true,...TZ3_LEFT,angles:[-20,0,18,39,57],mouth:[[182,140],[190,128],[188,104],[180,84],[166,68]]},
   jetEnd:{src:'assets/tlezcatl-s3-jet-end.png',frames:4,fps:16,once:true,...TZ3_LEFT},
   // Crouch (the unshifted base, skeleton-posed by the same script): drops off the hind legs onto all fours, both claws planted on the
   // street, belly and chest low and the head thrust forward (126px tall to 92px), a slow breathing loop on that pose, and the drop
