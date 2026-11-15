@@ -62,6 +62,24 @@ export const COMBAT = {
  // can't collapse a building: it smolders at 1 HP.
  jetFireSeconds:1.4,jetFireTick:.3,jetFireDamage:3,jetFireCell:36,jetFireCap:10,jetBurnSeconds:2.5,jetBurnTick:.3,jetBurnDamage:3,jetBurnCap:4,
  jetWallCell:18,jetWallCap:16,
+ // Belial's grounded ranged (Acid Vomit): hold L to spew an arcing stream of acid from the jaws. The gland's pressure (0-1) drains over
+ // vomitSeconds of spewing and refills at vomitRegen per second; running it dry gags him (the wind-down plays) and locks it until it is
+ // back to vomitRelight. Pressure sets the launch speed, vomitSpeed[0] (empty) to [1] (full), so as the gland drains the arc sags and
+ // where it lands walks back toward him; low pressure only loses range, it is still acid. The stream flies under vomitGravity, pierces
+ // troops and aircraft it passes through and stops on the first building or the street (vomitDamage every vomitTick to whatever it
+ // touches, plus a vomitSplash-radius splash where it lands). Untouched it lobs at vomitRest above level; W/S tilt it up to vomitUp or
+ // down to vomitDown below level, at vomitTurn deg/s. Speeds, gravity and splash grow with sqrt(stage scale). He walks at vomitSlow while spewing.
+ vomitSeconds:2.4,vomitRegen:.45,vomitRelight:.3,vomitMinBurst:.25,vomitMinStart:.08,vomitCooldown:.2,
+ vomitSpeed:[170,520],vomitGravity:700,vomitRest:15,vomitUp:55,vomitDown:25,vomitTurn:140,vomitSlow:.5,
+ vomitTick:.12,vomitDamage:4,vomitSplash:24,vomitAirMult:1,
+ // Corrosion: a building, unit or the rival touched by the stream (or standing in a puddle) is corroded. Every corrodePerStack seconds
+ // of contact adds a stack (the first contact gives one), up to corrodeMax; each new contact refreshes it to corrodeSeconds. A corroded
+ // target takes corrodeDamage x stacks every corrodeTick and corrodeVuln x stacks more damage from everything; tanks and APCs also lose
+ // armour (corrodeArmor more). At full stacks a building gives way once it is down to corrodeBreak of its HP.
+ corrodePerStack:.4,corrodeMax:3,corrodeSeconds:6,corrodeTick:.3,corrodeDamage:1.5,corrodeVuln:.15,corrodeArmor:.25,corrodeBreak:.25,
+ // Puddles: every patch of street the stream lands on becomes an acid puddle (one per vomitPuddleCell px, at most vomitPuddleCap) for
+ // vomitPuddleSeconds that eats whatever stands in it for vomitPuddleDamage every vomitPuddleTick and corrodes it.
+ vomitPuddleSeconds:4,vomitPuddleCell:30,vomitPuddleCap:14,vomitPuddleTick:.3,vomitPuddleDamage:3,
  superMax:40,superDuration:20,superDamage:1.5,superSpeed:1.18,superResistance:.55,superKnockback:1.5,
  rangedMax:12,staggerSeconds:.32,staggerProtection:.9,knockbackFriction:9,
  scorePenaltyPerHP:10,ambientInterval:5,ambientCount:3,growthInterval:30,growthHP:240,

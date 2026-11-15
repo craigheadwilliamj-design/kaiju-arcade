@@ -682,6 +682,13 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'U',name:'Eruption',desc:'Full meter. He balls up as the pressure builds, then rears up and explodes, blasting everything in a huge circle around him. Molten rock thrown out by the blast rains down all around, leaving burning pools. Invulnerable while it lasts.'},
   {...slam,name:'Magma Dive',desc:'Dive head-first. The crash splashes molten globs out both ways and leaves burning lava pools on the street that scorch anything standing in them, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
+ :kaiju==='Belial'?[
+  {keys:'L',name:'Acid Vomit',desc:'On the ground: hold to spew an arcing stream of acid. It flies over troops and low cover and lands where it lands: on a wall, a rooftop or the street, where it leaves a puddle that eats anything standing in it. The gland drains as you spew, and the arc sags and lands nearer as it does. Run it dry and he gags until it refills.'},
+  {keys:'L+W/S',name:'Aim the arc',desc:'While spewing, hold W to lob the arc higher (further, onto roofs, up at aircraft) or S to flatten it into a short, fast spray. He can walk at half speed while he spews, to hold the stream on one target.'},
+  {keys:'L',name:'Corrosion',desc:'Anything the acid touches corrodes: it keeps taking damage and takes more from every hit. Keep the stream on it to stack it up to three times. A fully corroded building gives way long before it should, and corroded tanks and APCs lose their armour.'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  slam,
+  {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
   {keys:'L',name:'Debris Shotgun',desc:'On the ground: scoop the street and fling a fan of rock chunks. Devastating point-blank, spreads out at range.'},
   {keys:'U',name:'Stampede',desc:'Full meter. A bellow blasts back anything close, then a head-down charge out and back flattens every building it touches.'},
