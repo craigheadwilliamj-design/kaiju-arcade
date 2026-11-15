@@ -55,6 +55,8 @@ const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
 const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
 // Belial Stage 2 strips: the belial-s2 base still, a 216x79 long-tailed quadruped sprite at x=20 in a 256x192 frame, keyed with tools/key_render.py.
 const BL2_NATIVE={scale:216/256,anchor:20+128*216/256};
+// Belial Stage 2 attack strips: the same base shifted flush left (sprite at x=0) for 40px of reach in front of the snout.
+const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
@@ -508,7 +510,13 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
  // Belial (low-slung striped reptile, red blade spines, green acid gland and drool): only the Stage 2 form exists, so as with Mogurodon
  // it is the base form and every stage draws it; Stage 1/3 art will go in `stages`. Keys to 216x79 at x=20 (BL2_NATIVE).
- Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE}}},
+ Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE},
+  // Light combo: forward claw swipe (the near claw cocks up by the head and rakes down in front of the chest, slash on frames 4-5),
+  // backhand rake (the far claw shoots out past the snout and hooks back down, crescent on frames 4-5), lunging bite (head thrust
+  // forward with the jaws gaping, snapping shut in a puff of acid on frame 4). Shared frame counts and fps; each strip starts on the
+  // left-shifted base pose and returns to it.
+  light1:{src:'assets/belial-s2-light1.png',frames:8,fps:24,once:true,...BL2_LEFT},light2:{src:'assets/belial-s2-light2.png',frames:8,fps:21,once:true,...BL2_LEFT},
+  light3:{src:'assets/belial-s2-light3.png',frames:8,fps:20,once:true,...BL2_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
