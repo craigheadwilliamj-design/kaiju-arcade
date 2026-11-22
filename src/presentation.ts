@@ -71,8 +71,8 @@ const BL3_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Belial Stage 3 form (in progress): idle, walk, run, jump and crouch; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
 const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-idle.png',frames:8,fps:8,...BL3_NATIVE},
  walk:{src:'assets/belial-s3-walk.png',frames:16,fps:15,...BL3_NATIVE},
- // Run: a forward-leaning charge on the hind legs, long strides with a short flight phase, arms tucked, tail streaming out, dust kicked
- // back; closes on the base.
+ // Run: skeleton-posed (tools/belial_s3_run_poses.py), both feet on one stride cycle half a beat apart so they pass each other, a
+ // short flight phase at full extension, the body pitched forward and sinking over the planted leg, the arms pumping opposite the legs.
  run:{src:'assets/belial-s3-run.png',frames:8,fps:15,...BL3_NATIVE},
  // Jump: sinks onto bent legs with the arms swung back and springs off both feet into a level, legs-tucked leap (rise); the air loop is
  // frames 0,1,2,1 of a roll from the rise's last pose (the tail sways); the landing reaches the legs down, hits with the tail flung up,
