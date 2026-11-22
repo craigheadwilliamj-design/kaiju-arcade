@@ -70,7 +70,7 @@ const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 const BL3_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Belial Stage 3 attack strips: the same base shifted flush left (sprite at x=0) for 28px more reach in front of the snout.
 const BL3_LEFT={scale:200/256,anchor:0+128*200/256};
-// Belial Stage 3 form (in progress): idle, walk, run, jump, crouch, light combo and heavy; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
+// Belial Stage 3 form (in progress): idle, walk, run, jump, crouch, light combo, heavy and Acid Vomit; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
 const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-idle.png',frames:8,fps:8,...BL3_NATIVE},
  walk:{src:'assets/belial-s3-walk.png',frames:16,fps:15,...BL3_NATIVE},
  // Run: skeleton-posed (tools/belial_s3_run_poses.py), both feet on one stride cycle half a beat apart so they pass each other, a
@@ -95,7 +95,14 @@ const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-i
  // hooked blade poised above the head (rear), quivers while K is held (hold), then on release snaps over the head and slashes down in
  // front of the snout with a lime arc (frames 0-4, grazing the right edge), swings back down behind and settles on the shifted base.
  heavyRear:{src:'assets/belial-s3-heavy-rear.png',frames:5,fps:20,once:true,...BL3_LEFT},heavyHold:{src:'assets/belial-s3-heavy-hold.png',frames:4,fps:10,...BL3_LEFT},
- heavySlam:{src:'assets/belial-s3-heavy-slam.png',frames:8,fps:16,once:true,...BL3_LEFT}}};
+ heavySlam:{src:'assets/belial-s3-heavy-slam.png',frames:8,fps:16,once:true,...BL3_LEFT},
+ // Acid Vomit (BL3_LEFT; the game draws the stream from `mouth`): vomitStart swells and glows the neck gland, heaves, pulls the head back and
+ // lurches into a wide gape; vomitAim holds the gape with the head at each of `angles` (two chin-tuck frames, the gape, four frames of the
+ // neck rising), `mouth` the midpoint of the jaw tips; vomitEnd lashes the tongue out in a gag, snaps shut and settles onto the shifted base.
+ vomitStart:{src:'assets/belial-s3-vomit-start.png',frames:5,fps:20,once:true,...BL3_LEFT,mouth:[208,118]},
+ vomitAim:{src:'assets/belial-s3-vomit-aim.png',frames:7,fps:10,once:true,...BL3_LEFT,angles:[-25,-12,0,8,18,32,45],
+  mouth:[[212,139],[210,128],[208,118],[207,113],[205,104],[201,98],[196,89]]},
+ vomitEnd:{src:'assets/belial-s3-vomit-end.png',frames:4,fps:16,once:true,...BL3_LEFT}}};
 // Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
