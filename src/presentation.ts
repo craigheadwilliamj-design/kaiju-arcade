@@ -70,7 +70,7 @@ const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 const BL3_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Belial Stage 3 attack strips: the same base shifted flush left (sprite at x=0) for 28px more reach in front of the snout.
 const BL3_LEFT={scale:200/256,anchor:0+128*200/256};
-// Belial Stage 3 form (in progress): idle, walk, run, jump, crouch, light combo, heavy, Acid Vomit, Acid Pounce and climb; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
+// Belial Stage 3 form (in progress): idle, walk, run, jump, crouch, light combo, heavy, Acid Vomit, Acid Pounce, climb and grab/carry/throw; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
 const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-idle.png',frames:8,fps:8,...BL3_NATIVE},
  walk:{src:'assets/belial-s3-walk.png',frames:16,fps:15,...BL3_NATIVE},
  // Run: skeleton-posed (tools/belial_s3_run_poses.py), both feet on one stride cycle half a beat apart so they pass each other, a
@@ -113,7 +113,16 @@ const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-i
  // the base and eases 87px left and 42px down onto the wall line; the loop is hand over hand; the punch draws the upper arm back and slams
  // it in with a lime flash from impact frame 4; the mantle starts 24px further back (the game's roof slide), pulls up and lands on the base.
  climbGrab:{src:'assets/belial-s3-climb-grab.png',frames:5,fps:20,once:true,...BL3_NATIVE},climb:{src:'assets/belial-s3-climb.png',frames:8,fps:12,...BL3_NATIVE},
- climbMantle:{src:'assets/belial-s3-climb-mantle.png',frames:9,fps:20,once:true,...BL3_NATIVE},climbPunch:{src:'assets/belial-s3-climb-punch.png',frames:8,fps:24,once:true,impact:4,...BL3_NATIVE}}};
+ climbMantle:{src:'assets/belial-s3-climb-mantle.png',frames:9,fps:20,once:true,...BL3_NATIVE},climbPunch:{src:'assets/belial-s3-climb-punch.png',frames:8,fps:24,once:true,impact:4,...BL3_NATIVE},
+ // Grab/carry/throw in both claws, not the jaws (256x256, the base padded to 256 tall; the game draws the prop): the grab bends over and
+ // scoops both claws along the street, rears upright and raises both arms straight up with the claws together overhead; the carry
+ // strains under it and the carry-walk stomps forward with the claws held overhead (skeleton-posed so both legs stride; both loops
+ // closed on the grab's last pose); the throw whips both arms forward and down with lime swooshes on frames 1-2 and settles on the base.
+ // `hold` (the prop's bottom centre): frames 0-4 on the street under the front claws, 5-7 following the rising hands, then the claw tips.
+ grab:{src:'assets/belial-s3-grab.png',frames:9,fps:22,once:true,...BL3_NATIVE,hold:[[205,255],[222,255],[224,255],[224,255],[222,255],[200,228],[203,190],[205,138],[171,97]]},
+ carry:{src:'assets/belial-s3-carry.png',frames:4,fps:6,...BL3_NATIVE,hold:[[171,97],[172,98],[173,99],[172,98]]},
+ carryWalk:{src:'assets/belial-s3-carry-walk.png',frames:8,fps:10,...BL3_NATIVE,hold:[[170,96],[170,95],[169,96],[169,97],[169,96],[169,95],[169,97],[169,97]]},
+ throw:{src:'assets/belial-s3-throw.png',frames:8,fps:18,once:true,...BL3_NATIVE}}};
 // Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
