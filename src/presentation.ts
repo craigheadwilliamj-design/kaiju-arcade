@@ -62,7 +62,9 @@ const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 // Belial Stage 1 strips: the belial-s1 base still, a 145x54 lean juvenile sprite at x=57 in a 256x192 frame (PixelLab Pixen edit of the
 // Stage 2 base, shrunk to 62% and re-drawn younger: slimmer, short nub spines, thin tail, the gland reduced to a drool).
 const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
-// Belial Stage 1 form (being filled in): idle, walk, run, jump and crouch so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
+const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
+// Belial Stage 1 form (being filled in): idle, walk, run, jump, crouch, the light combo and the heavy so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
  // Run: a low bounding gallop, the body stretching long with a flight phase on frame 4 and dust kicked back; closes on the base.
@@ -74,7 +76,16 @@ const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-i
  // Crouch: splays the legs and presses belly and chin flat (54px tall to about 32), a 5-frame breathing loop lying flat; crouchUp is
  // crouchDown reversed.
  crouchDown:{src:'assets/belial-s1-crouch-down.png',frames:5,fps:22,once:true,...BL1_NATIVE},crouch:{src:'assets/belial-s1-crouch.png',frames:5,fps:6,...BL1_NATIVE},
- crouchUp:{src:'assets/belial-s1-crouch-up.png',frames:5,fps:22,once:true,...BL1_NATIVE}}};
+ crouchUp:{src:'assets/belial-s1-crouch-up.png',frames:5,fps:22,once:true,...BL1_NATIVE},
+ // Light combo (BL1_LEFT): a forward claw swipe with an acid-green arc, a backhand rake, and a gaping lunge that snaps shut in a puff of
+ // acid. Each starts and ends on the shifted base. Light3's tail tip grazes the left edge on frame 2 and its spray the right on 5-6.
+ light1:{src:'assets/belial-s1-light1.png',frames:8,fps:24,once:true,...BL1_LEFT},light2:{src:'assets/belial-s1-light2.png',frames:8,fps:21,once:true,...BL1_LEFT},
+ light3:{src:'assets/belial-s1-light3.png',frames:8,fps:20,once:true,...BL1_LEFT},
+ // Heavy, the scorpion tail strike (256x256 frames, shifted base padded 64px on top): the tail curls up over his back, quivers while K
+ // is held, then whips over his head and slashes down in front of the snout in an acid splash, ending on the base. The slam's first
+ // frame (the hold pose) is dropped so the strike starts the moment K is released. Bottom-aligned.
+ heavyRear:{src:'assets/belial-s1-heavy-rear.png',frames:5,fps:20,once:true,...BL1_LEFT},heavyHold:{src:'assets/belial-s1-heavy-hold.png',frames:4,fps:10,...BL1_LEFT},
+ heavySlam:{src:'assets/belial-s1-heavy-slam.png',frames:8,fps:16,once:true,...BL1_LEFT}}};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
