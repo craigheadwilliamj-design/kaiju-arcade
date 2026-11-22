@@ -65,7 +65,8 @@ const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
-// tools/key_render.py --period 8.04): the adult stands hunched on his hind legs, claws forward, pink crystals between the back spines.
+// tools/key_render.py --period 8.04, then tools/belial_s3_restyle.py onto the Stage 2 palette): the adult stands hunched on his hind legs,
+// claws forward, pink crystals between the back spines.
 const BL3_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Belial Stage 3 form (just started): idle and walk only; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
 const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-idle.png',frames:8,fps:8,...BL3_NATIVE},
