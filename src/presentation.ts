@@ -70,7 +70,7 @@ const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 const BL3_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Belial Stage 3 attack strips: the same base shifted flush left (sprite at x=0) for 28px more reach in front of the snout.
 const BL3_LEFT={scale:200/256,anchor:0+128*200/256};
-// Belial Stage 3 form (in progress): idle, walk, run, jump, crouch, light combo, heavy and Acid Vomit; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
+// Belial Stage 3 form (in progress): idle, walk, run, jump, crouch, light combo, heavy, Acid Vomit and Acid Pounce; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
 const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-idle.png',frames:8,fps:8,...BL3_NATIVE},
  walk:{src:'assets/belial-s3-walk.png',frames:16,fps:15,...BL3_NATIVE},
  // Run: skeleton-posed (tools/belial_s3_run_poses.py), both feet on one stride cycle half a beat apart so they pass each other, a
@@ -102,7 +102,12 @@ const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-i
  vomitStart:{src:'assets/belial-s3-vomit-start.png',frames:5,fps:20,once:true,...BL3_LEFT,mouth:[208,118]},
  vomitAim:{src:'assets/belial-s3-vomit-aim.png',frames:7,fps:10,once:true,...BL3_LEFT,angles:[-25,-12,0,8,18,32,45],
   mouth:[[212,139],[210,128],[208,118],[207,113],[205,104],[201,98],[196,89]]},
- vomitEnd:{src:'assets/belial-s3-vomit-end.png',frames:4,fps:16,once:true,...BL3_LEFT}}};
+ vomitEnd:{src:'assets/belial-s3-vomit-end.png',frames:4,fps:16,once:true,...BL3_LEFT},
+ // Acid Pounce (256x256, the base padded 64px on top): dive gathers from the air loop and tips into a steep nose-down plunge, claws
+ // reaching for the street, tail whipped up (frames 0,3,5,7 of a roll from the air pose, bottom-aligned, held on the last); slamLand =
+ // frames 1-7 of a roll from that plunge to the base plus the base: claws and chest hit in a huge acid splash both ways (frame 2 nearly
+ // hides him), splash rings and spatter, a belly-flop, and he pushes back up into the hunch.
+ dive:{src:'assets/belial-s3-dive.png',frames:4,fps:24,once:true,...BL3_NATIVE},slamLand:{src:'assets/belial-s3-slam-land.png',frames:8,fps:16,once:true,...BL3_NATIVE}}};
 // Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
