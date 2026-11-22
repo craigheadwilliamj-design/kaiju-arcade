@@ -59,6 +59,71 @@ const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
 const BL2_NATIVE={scale:216/256,anchor:20+128*216/256};
 // Belial Stage 2 attack strips: the same base shifted flush left (sprite at x=0) for 40px of reach in front of the snout.
 const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
+// Belial Stage 1 strips: the belial-s1 base still, a 145x54 lean juvenile sprite at x=57 in a 256x192 frame (PixelLab Pixen edit of the
+// Stage 2 base, shrunk to 62% and re-drawn younger: slimmer, short nub spines, thin tail, the gland reduced to a drool).
+const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
+// Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
+const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
+// Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
+const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
+ walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
+ // Run: a low bounding gallop, the body stretching long with a flight phase on frame 4 and dust kicked back; closes on the base.
+ run:{src:'assets/belial-s1-run.png',frames:8,fps:15,...BL1_NATIVE},
+ // Jump: squats, coils the tail up over his back and springs into a level, legs-tucked leap (rise); the air loop is frames 0,1,2,1 of a
+ // roll from the rise's last pose; the landing reaches the legs down, flings the tail up, squashes and closes on the base. Bottom-aligned.
+ jumpRise:{src:'assets/belial-s1-jump-rise.png',frames:9,fps:24,once:true,...BL1_NATIVE},jumpAir:{src:'assets/belial-s1-jump-air.png',frames:4,fps:8,...BL1_NATIVE},
+ jumpLand:{src:'assets/belial-s1-jump-land.png',frames:5,fps:20,once:true,...BL1_NATIVE},
+ // Crouch: splays the legs and presses belly and chin flat (54px tall to about 32), a 5-frame breathing loop lying flat; crouchUp is
+ // crouchDown reversed.
+ crouchDown:{src:'assets/belial-s1-crouch-down.png',frames:5,fps:22,once:true,...BL1_NATIVE},crouch:{src:'assets/belial-s1-crouch.png',frames:5,fps:6,...BL1_NATIVE},
+ crouchUp:{src:'assets/belial-s1-crouch-up.png',frames:5,fps:22,once:true,...BL1_NATIVE},
+ // Light combo (BL1_LEFT): a forward claw swipe with an acid-green arc, a backhand rake, and a gaping lunge that snaps shut in a puff of
+ // acid. Each starts and ends on the shifted base. Light3's tail tip grazes the left edge on frame 2 and its spray the right on 5-6.
+ light1:{src:'assets/belial-s1-light1.png',frames:8,fps:24,once:true,...BL1_LEFT},light2:{src:'assets/belial-s1-light2.png',frames:8,fps:21,once:true,...BL1_LEFT},
+ light3:{src:'assets/belial-s1-light3.png',frames:8,fps:20,once:true,...BL1_LEFT},
+ // Heavy, the scorpion tail strike (256x256 frames, shifted base padded 64px on top): the tail curls up over his back, quivers while K
+ // is held, then whips over his head and slashes down in front of the snout in an acid splash, ending on the base. The slam's first
+ // frame (the hold pose) is dropped so the strike starts the moment K is released. Bottom-aligned.
+ heavyRear:{src:'assets/belial-s1-heavy-rear.png',frames:5,fps:20,once:true,...BL1_LEFT},heavyHold:{src:'assets/belial-s1-heavy-hold.png',frames:4,fps:10,...BL1_LEFT},
+ heavySlam:{src:'assets/belial-s1-heavy-slam.png',frames:8,fps:16,once:true,...BL1_LEFT},
+ // Acid Vomit (BL1_LEFT; the game draws the stream from `mouth`): vomitStart swells the throat, rears the head back and lurches forward
+ // into a wide gape; vomitAim holds the gape with the head at each of `angles` (two chin-tuck frames, the level gape, four frames of the
+ // neck rising), `mouth` the midpoint of the jaw tips; vomitEnd gags, snaps shut on a dribble and settles onto the shifted base.
+ vomitStart:{src:'assets/belial-s1-vomit-start.png',frames:5,fps:20,once:true,...BL1_LEFT,mouth:[161,157]},
+ vomitAim:{src:'assets/belial-s1-vomit-aim.png',frames:7,fps:10,once:true,...BL1_LEFT,angles:[-25,-12,0,8,18,32,45],
+  mouth:[[162,167],[162,159],[161,157],[159,150],[154,143],[150,137],[145,132]]},
+ vomitEnd:{src:'assets/belial-s1-vomit-end.png',frames:4,fps:16,once:true,...BL1_LEFT},
+ // Acid Pounce (256x256, the base padded 64px on top so BL1_NATIVE lines up): dive gathers in the air and tips into a steep nose-down
+ // plunge, claws splayed and tail whipped up (bottom-aligned, held on the last frame); slamLand hits in an acid splash both ways,
+ // belly-flops in the spatter and pushes back up onto the base. The splash grazes the right edge on frames 1-4.
+ dive:{src:'assets/belial-s1-dive.png',frames:4,fps:24,once:true,...BL1_NATIVE},slamLand:{src:'assets/belial-s1-slam-land.png',frames:8,fps:16,once:true,...BL1_NATIVE},
+ // Climb (256x256, the base padded to 256 tall): a vertical gecko cling, head up, tail hanging to the bottom row, the gripping claws
+ // on the wall line at frame x=158 (the hitbox edge 24 world units out). The grab rears and leaps from the base and eases 46px left and
+ // 99px down onto the wall line; the loop is hand over hand; the punch draws the upper claw back and slams it in with an acid-green
+ // flash on impact frame 5; the mantle starts 17px further back (the game's roof slide), hops up over the edge and ends on the base.
+ climbGrab:{src:'assets/belial-s1-climb-grab.png',frames:5,fps:20,once:true,...BL1_NATIVE},climb:{src:'assets/belial-s1-climb.png',frames:8,fps:12,...BL1_NATIVE},
+ climbMantle:{src:'assets/belial-s1-climb-mantle.png',frames:9,fps:20,once:true,...BL1_NATIVE},climbPunch:{src:'assets/belial-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...BL1_NATIVE},
+ // Grab/carry/throw in the jaws (256x256, the left-shifted base padded 64px on top): the grab gapes, drops the head to the street and
+ // bites down, then hauls the neck up with the jaws clamped; carry strains under the weight, carry-walk stalks a full stride with the
+ // head held up. `bite`: each `hold` is where the jaws close (the bite spot on the street for frames 0-5). Throw starts at the release:
+ // the jaws spring open in an acid burst and he settles onto the shifted base.
+ grab:{src:'assets/belial-s1-grab.png',frames:9,fps:22,once:true,bite:true,...BL1_LEFT,
+  hold:[[163,248],[163,248],[163,248],[160,248],[160,248],[157,249],[157,246],[151,222],[141,204]]},
+ carry:{src:'assets/belial-s1-carry.png',frames:4,fps:6,bite:true,...BL1_LEFT,hold:[[141,204],[146,206],[151,209],[146,206]]},
+ carryWalk:{src:'assets/belial-s1-carry-walk.png',frames:8,fps:10,bite:true,...BL1_LEFT,
+  hold:[[141,204],[141,203],[141,202],[141,202],[141,204],[141,203],[141,202],[141,202]]},
+ throw:{src:'assets/belial-s1-throw.png',frames:7,fps:18,once:true,...BL1_LEFT},
+ // Ultimate, Acid Deluge (256x256, the base padded to 256 tall): ultCharge (13 frames at 20 fps = delugeCharge) swells the throat into a
+ // huge glowing sac as he plants and heaves; ultRoar rears straight up onto his hind legs and tail with the jaws open at the sky, fully
+ // reared (and the geyser up) on impact frame 2; ultPound holds the rear with the sac pumping; ultSettle (frames 2-7 of a roll back to
+ // the base, plus the exact base) snaps shut and drops onto all fours. `mouth` is the midpoint of the jaw tips on the reared frames
+ // (frames 0-1 are rough snout positions, unused before the geyser). Pound (S+J) is his heavy slam, as on Stage 2.
+ ultCharge:{src:'assets/belial-s1-ult-charge.png',frames:13,fps:20,once:true,...BL1_NATIVE},
+ ultRoar:{src:'assets/belial-s1-ult-roar.png',frames:9,fps:18,once:true,impact:2,...BL1_NATIVE,
+  mouth:[[186,214],[156,183],[112,148],[112,148],[112,148],[112,148],[112,148],[112,148],[112,148]]},
+ ultPound:{src:'assets/belial-s1-ult-pound.png',frames:4,fps:10,...BL1_NATIVE,mouth:[112,148]},
+ ultSettle:{src:'assets/belial-s1-ult-settle.png',frames:7,fps:14,once:true,...BL1_NATIVE},
+ pound:{src:'assets/belial-s1-heavy-slam.png',frames:8,fps:16,once:true,...BL1_LEFT}}};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
@@ -537,8 +602,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carryWalk:{src:'assets/tlezcatl-s1-carry-walk.png',frames:8,fps:10,...TZ1_NATIVE,hold:[[125,84],[125,86],[125,87],[125,88],[125,87],[125,87],[125,86],[125,86]]},
   throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
   stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
- // Belial (low-slung striped reptile, red blade spines, green acid gland and drool): only the Stage 2 form exists, so as with Mogurodon
- // it is the base form and every stage draws it; Stage 1/3 art will go in `stages`. Keys to 216x79 at x=20 (BL2_NATIVE).
+ // Belial (low-slung striped reptile, umber blade spines, green acid gland and drool): as with Mogurodon the Stage 2 form is the base
+ // form; Stage 1 has its own complete set (BELIAL_S1), and Stage 3 still draws this. Keys to 216x79 at x=20 (BL2_NATIVE).
  Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE},
   // Run (Shift / double-tap): a low bounding gallop, the body gathering and stretching with a short flight phase on frames 4-5 and dust
   // kicked back, tail streaming straight behind. Starts on the base and loops back to it.
@@ -572,6 +637,23 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   vomitAim:{src:'assets/belial-s2-vomit-aim.png',frames:7,fps:10,once:true,...BL2_LEFT,angles:[-25,-12,0,8,18,32,45],
    mouth:[[230,170],[235,160],[235,151],[236,146],[234,138],[229,122],[221,111]]},
   vomitEnd:{src:'assets/belial-s2-vomit-end.png',frames:4,fps:16,once:true,...BL2_LEFT},
+  // Acid Deluge (U), 256x256 frames (the base padded to 256 tall, so BL2_NATIVE lines up) for the rear-up. Charge:
+  // `belial-s2-ult-charge`, 13 frames at 20 fps = the 0.65s delugeCharge, played once: the neck gland balloons up huge, he plants
+  // all four legs and heaves, acid dribbling from the jaws (the game shudders him). Roar: `belial-s2-ult-roar`, 9 frames at 18 fps
+  // from the last charge frame (seed 7): he rears straight up onto his hind legs and tail and throws his jaws open at the sky, the
+  // gland starting to squeeze; the geyser fires on impact frame 4, the first frame fully reared. Loop: `belial-s2-ult-pound`, a
+  // 4-frame hold closed on the roar's last frame, throat and gland pumping. `mouth` is the gape (the centre of the red mouth
+  // interior, nudged up to the jaw line), the same on every reared frame; frames 0-3 are rough snout positions, unused since the
+  // geyser isn't up yet. Settle: `belial-s2-ult-settle`, frames 2-7 of a roll from
+  // the reared pose to the base (the first two held still) plus the exact base, 7 frames at 14 fps over the Ultimate's last 0.5s:
+  // he snaps the jaws shut and drops forward onto all fours with the gland spent.
+  ultCharge:{src:'assets/belial-s2-ult-charge.png',frames:13,fps:20,once:true,...BL2_NATIVE},
+  ultRoar:{src:'assets/belial-s2-ult-roar.png',frames:9,fps:18,once:true,impact:4,...BL2_NATIVE,
+   mouth:[[236,152],[238,150],[214,128],[196,100],[137,100],[135,100],[135,100],[135,100],[135,100]]},
+  ultPound:{src:'assets/belial-s2-ult-pound.png',frames:4,fps:10,...BL2_NATIVE,mouth:[135,100]},
+  ultSettle:{src:'assets/belial-s2-ult-settle.png',frames:7,fps:14,once:true,...BL2_NATIVE},
+  // Pound keeps the heavy slam it fell back to before ultPound existed (otherwise S+J would play the reared geyser loop).
+  pound:{src:'assets/belial-s2-heavy-slam.png',frames:8,fps:16,once:true,...BL2_LEFT},
   // Acid Pounce (256x256, the base padded 64px on top): dive gathers from the air loop and tips into a steep nose-down pounce, claws
   // splayed for the street, jaws open, tail whipped up (frames 0,3,4,6 of a generation from the air pose, bottom-aligned, held on the
   // last); slamLand = frames 1-7 of a generation from that plunge to the base plus the base: claws and chest hit in an acid splash both
@@ -594,7 +676,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carry:{src:'assets/belial-s2-carry.png',frames:4,fps:6,bite:true,...BL2_LEFT,hold:[[198,184],[197,181],[195,179],[197,181]]},
   carryWalk:{src:'assets/belial-s2-carry-walk.png',frames:8,fps:10,bite:true,...BL2_LEFT,
    hold:[[198,184],[199,184],[200,186],[200,186],[200,186],[200,184],[199,183],[198,183]]},
-  throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}}},
+  throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
+  stages:{1:BELIAL_S1}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -725,7 +808,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'L',name:'Acid Vomit',desc:'On the ground: hold to spew an arcing stream of acid. It flies over troops and low cover and lands where it lands: on a wall, a rooftop or the street, where it leaves a puddle that eats anything standing in it. The gland drains as you spew, and the arc sags and lands nearer as it does. Run it dry and he gags until it refills.'},
   {keys:'L+W/S',name:'Aim the arc',desc:'While spewing, hold W to lob the arc higher (further, onto roofs, up at aircraft) or S to flatten it into a short, fast spray. He can walk at half speed while he spews, to hold the stream on one target.'},
   {keys:'L',name:'Corrosion',desc:'Anything the acid touches corrodes: it keeps taking damage and takes more from every hit. Keep the stream on it to stack it up to three times. A fully corroded building gives way long before it should, and corroded tanks and APCs lose their armour.'},
-  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  {keys:'U',name:'Acid Deluge',desc:'Full meter. His gland swells as he heaves, then he rears up and retches a geyser of acid into the sky. It comes back down as a downpour far out on both sides, soaking everything it lands on in full corrosion: buildings give way, troops and aircraft dissolve, and the street is left pooled with acid. Invulnerable while it lasts.'},
   {...slam,name:'Acid Pounce',desc:'Dive claws-first. The impact bursts his gland: everything the slam hits is corroded twice over (three times from a big drop), and a street landing leaves a row of acid puddles, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging: fire one shot.'}]
  :kaiju==='Kaiban'?[
