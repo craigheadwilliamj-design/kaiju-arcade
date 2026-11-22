@@ -64,7 +64,7 @@ const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
-// Belial Stage 1 form (being filled in): idle, walk, run, jump, crouch, the light combo, the heavy, the vomit, the pounce and the climb so far; grab/carry/throw still borrow. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
  // Run: a low bounding gallop, the body stretching long with a flight phase on frame 4 and dust kicked back; closes on the base.
@@ -102,7 +102,17 @@ const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-i
  // 99px down onto the wall line; the loop is hand over hand; the punch draws the upper claw back and slams it in with an acid-green
  // flash on impact frame 5; the mantle starts 17px further back (the game's roof slide), hops up over the edge and ends on the base.
  climbGrab:{src:'assets/belial-s1-climb-grab.png',frames:5,fps:20,once:true,...BL1_NATIVE},climb:{src:'assets/belial-s1-climb.png',frames:8,fps:12,...BL1_NATIVE},
- climbMantle:{src:'assets/belial-s1-climb-mantle.png',frames:9,fps:20,once:true,...BL1_NATIVE},climbPunch:{src:'assets/belial-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...BL1_NATIVE}}};
+ climbMantle:{src:'assets/belial-s1-climb-mantle.png',frames:9,fps:20,once:true,...BL1_NATIVE},climbPunch:{src:'assets/belial-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...BL1_NATIVE},
+ // Grab/carry/throw in the jaws (256x256, the left-shifted base padded 64px on top): the grab gapes, drops the head to the street and
+ // bites down, then hauls the neck up with the jaws clamped; carry strains under the weight, carry-walk stalks a full stride with the
+ // head held up. `bite`: each `hold` is where the jaws close (the bite spot on the street for frames 0-5). Throw starts at the release:
+ // the jaws spring open in an acid burst and he settles onto the shifted base.
+ grab:{src:'assets/belial-s1-grab.png',frames:9,fps:22,once:true,bite:true,...BL1_LEFT,
+  hold:[[163,248],[163,248],[163,248],[160,248],[160,248],[157,249],[157,246],[151,222],[141,204]]},
+ carry:{src:'assets/belial-s1-carry.png',frames:4,fps:6,bite:true,...BL1_LEFT,hold:[[141,204],[146,206],[151,209],[146,206]]},
+ carryWalk:{src:'assets/belial-s1-carry-walk.png',frames:8,fps:10,bite:true,...BL1_LEFT,
+  hold:[[141,204],[141,203],[141,202],[141,202],[141,204],[141,203],[141,202],[141,202]]},
+ throw:{src:'assets/belial-s1-throw.png',frames:7,fps:18,once:true,...BL1_LEFT}}};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
@@ -582,7 +592,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
   stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
  // Belial (low-slung striped reptile, umber blade spines, green acid gland and drool): as with Mogurodon the Stage 2 form is the base
- // form; Stage 1 (BELIAL_S1) is being filled in and borrows these strips meanwhile, and Stage 3 still draws this. Keys to 216x79 at x=20 (BL2_NATIVE).
+ // form; Stage 1 has its own complete set (BELIAL_S1), and Stage 3 still draws this. Keys to 216x79 at x=20 (BL2_NATIVE).
  Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE},
   // Run (Shift / double-tap): a low bounding gallop, the body gathering and stretching with a short flight phase on frames 4-5 and dust
   // kicked back, tail streaming straight behind. Starts on the base and loops back to it.
