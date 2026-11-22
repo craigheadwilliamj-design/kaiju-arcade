@@ -64,7 +64,7 @@ const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
-// Belial Stage 1 form (being filled in): idle, walk, run, jump, crouch, the light combo, the heavy, the vomit and the pounce so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Belial Stage 1 form (being filled in): idle, walk, run, jump, crouch, the light combo, the heavy, the vomit, the pounce and the climb so far; grab/carry/throw still borrow. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
  // Run: a low bounding gallop, the body stretching long with a flight phase on frame 4 and dust kicked back; closes on the base.
@@ -96,7 +96,13 @@ const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-i
  // Acid Pounce (256x256, the base padded 64px on top so BL1_NATIVE lines up): dive gathers in the air and tips into a steep nose-down
  // plunge, claws splayed and tail whipped up (bottom-aligned, held on the last frame); slamLand hits in an acid splash both ways,
  // belly-flops in the spatter and pushes back up onto the base. The splash grazes the right edge on frames 1-4.
- dive:{src:'assets/belial-s1-dive.png',frames:4,fps:24,once:true,...BL1_NATIVE},slamLand:{src:'assets/belial-s1-slam-land.png',frames:8,fps:16,once:true,...BL1_NATIVE}}};
+ dive:{src:'assets/belial-s1-dive.png',frames:4,fps:24,once:true,...BL1_NATIVE},slamLand:{src:'assets/belial-s1-slam-land.png',frames:8,fps:16,once:true,...BL1_NATIVE},
+ // Climb (256x256, the base padded to 256 tall): a vertical gecko cling, head up, tail hanging to the bottom row, the gripping claws
+ // on the wall line at frame x=158 (the hitbox edge 24 world units out). The grab rears and leaps from the base and eases 46px left and
+ // 99px down onto the wall line; the loop is hand over hand; the punch draws the upper claw back and slams it in with an acid-green
+ // flash on impact frame 5; the mantle starts 17px further back (the game's roof slide), hops up over the edge and ends on the base.
+ climbGrab:{src:'assets/belial-s1-climb-grab.png',frames:5,fps:20,once:true,...BL1_NATIVE},climb:{src:'assets/belial-s1-climb.png',frames:8,fps:12,...BL1_NATIVE},
+ climbMantle:{src:'assets/belial-s1-climb-mantle.png',frames:9,fps:20,once:true,...BL1_NATIVE},climbPunch:{src:'assets/belial-s1-climb-punch.png',frames:8,fps:24,once:true,impact:5,...BL1_NATIVE}}};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
