@@ -68,9 +68,21 @@ const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // tools/key_render.py --period 8.04, then tools/belial_s3_restyle.py onto the Stage 2 palette): the adult stands hunched on his hind legs,
 // claws forward, pink crystals between the back spines.
 const BL3_NATIVE={scale:200/256,anchor:28+128*200/256};
-// Belial Stage 3 form (just started): idle and walk only; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
+// Belial Stage 3 form (in progress): idle, walk, run, jump and crouch; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
 const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-idle.png',frames:8,fps:8,...BL3_NATIVE},
- walk:{src:'assets/belial-s3-walk.png',frames:16,fps:15,...BL3_NATIVE}}};
+ walk:{src:'assets/belial-s3-walk.png',frames:16,fps:15,...BL3_NATIVE},
+ // Run: a forward-leaning charge on the hind legs, long strides with a short flight phase, arms tucked, tail streaming out, dust kicked
+ // back; closes on the base.
+ run:{src:'assets/belial-s3-run.png',frames:8,fps:15,...BL3_NATIVE},
+ // Jump: sinks onto bent legs with the arms swung back and springs off both feet into a level, legs-tucked leap (rise); the air loop is
+ // frames 0,1,2,1 of a roll from the rise's last pose (the tail sways); the landing reaches the legs down, hits with the tail flung up,
+ // squashes and closes on the base. Bottom-aligned: physics moves him, the art only changes pose. Timing matches the other forms.
+ jumpRise:{src:'assets/belial-s3-jump-rise.png',frames:9,fps:24,once:true,...BL3_NATIVE},jumpAir:{src:'assets/belial-s3-jump-air.png',frames:4,fps:8,...BL3_NATIVE},
+ jumpLand:{src:'assets/belial-s3-jump-land.png',frames:5,fps:20,once:true,...BL3_NATIVE},
+ // Crouch: drops from the hunch onto all fours, belly and chin low, the spine crest still up (113px tall to about 92), a 4-frame breathing loop
+ // lying low; crouchUp is crouchDown reversed.
+ crouchDown:{src:'assets/belial-s3-crouch-down.png',frames:5,fps:22,once:true,...BL3_NATIVE},crouch:{src:'assets/belial-s3-crouch.png',frames:4,fps:6,...BL3_NATIVE},
+ crouchUp:{src:'assets/belial-s3-crouch-up.png',frames:5,fps:22,once:true,...BL3_NATIVE}}};
 // Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
