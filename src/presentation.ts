@@ -64,7 +64,7 @@ const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
-// Belial Stage 1 form (being filled in): idle, walk, run, jump, crouch, the light combo, the heavy and the vomit so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Belial Stage 1 form (being filled in): idle, walk, run, jump, crouch, the light combo, the heavy, the vomit and the pounce so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
  // Run: a low bounding gallop, the body stretching long with a flight phase on frame 4 and dust kicked back; closes on the base.
@@ -92,7 +92,11 @@ const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-i
  vomitStart:{src:'assets/belial-s1-vomit-start.png',frames:5,fps:20,once:true,...BL1_LEFT,mouth:[161,157]},
  vomitAim:{src:'assets/belial-s1-vomit-aim.png',frames:7,fps:10,once:true,...BL1_LEFT,angles:[-25,-12,0,8,18,32,45],
   mouth:[[162,167],[162,159],[161,157],[159,150],[154,143],[150,137],[145,132]]},
- vomitEnd:{src:'assets/belial-s1-vomit-end.png',frames:4,fps:16,once:true,...BL1_LEFT}}};
+ vomitEnd:{src:'assets/belial-s1-vomit-end.png',frames:4,fps:16,once:true,...BL1_LEFT},
+ // Acid Pounce (256x256, the base padded 64px on top so BL1_NATIVE lines up): dive gathers in the air and tips into a steep nose-down
+ // plunge, claws splayed and tail whipped up (bottom-aligned, held on the last frame); slamLand hits in an acid splash both ways,
+ // belly-flops in the spatter and pushes back up onto the base. The splash grazes the right edge on frames 1-4.
+ dive:{src:'assets/belial-s1-dive.png',frames:4,fps:24,once:true,...BL1_NATIVE},slamLand:{src:'assets/belial-s1-slam-land.png',frames:8,fps:16,once:true,...BL1_NATIVE}}};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
