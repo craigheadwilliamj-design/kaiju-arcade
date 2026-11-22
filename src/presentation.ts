@@ -68,7 +68,9 @@ const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // tools/key_render.py --period 8.04, then tools/belial_s3_restyle.py onto the Stage 2 palette): the adult stands hunched on his hind legs,
 // claws forward, pink crystals between the back spines.
 const BL3_NATIVE={scale:200/256,anchor:28+128*200/256};
-// Belial Stage 3 form (in progress): idle, walk, run, jump and crouch; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
+// Belial Stage 3 attack strips: the same base shifted flush left (sprite at x=0) for 28px more reach in front of the snout.
+const BL3_LEFT={scale:200/256,anchor:0+128*200/256};
+// Belial Stage 3 form (in progress): idle, walk, run, jump, crouch, light combo and heavy; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
 const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-idle.png',frames:8,fps:8,...BL3_NATIVE},
  walk:{src:'assets/belial-s3-walk.png',frames:16,fps:15,...BL3_NATIVE},
  // Run: skeleton-posed (tools/belial_s3_run_poses.py), both feet on one stride cycle half a beat apart so they pass each other, a
@@ -82,7 +84,17 @@ const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-i
  // Crouch: drops from the hunch onto all fours, belly and chin low, the spine crest still up (113px tall to about 92), a 4-frame breathing loop
  // lying low; crouchUp is crouchDown reversed.
  crouchDown:{src:'assets/belial-s3-crouch-down.png',frames:5,fps:22,once:true,...BL3_NATIVE},crouch:{src:'assets/belial-s3-crouch.png',frames:4,fps:6,...BL3_NATIVE},
- crouchUp:{src:'assets/belial-s3-crouch-up.png',frames:5,fps:22,once:true,...BL3_NATIVE}}};
+ crouchUp:{src:'assets/belial-s3-crouch-up.png',frames:5,fps:22,once:true,...BL3_NATIVE},
+ // Light combo (BL3_LEFT): a forward claw swipe (the near claw cocks up by the head and rakes down, lime streak on frames 4-5), a backhand
+ // rake (the far arm shoots past the snout and hooks down, lime crescent on frames 3-4), and a lunging bite that snaps shut in a puff of
+ // acid on frame 3. Each starts and ends on the shifted base. Light2's crescent and light3's puff graze the right edge for a frame or two.
+ light1:{src:'assets/belial-s3-light1.png',frames:8,fps:24,once:true,...BL3_LEFT},light2:{src:'assets/belial-s3-light2.png',frames:8,fps:21,once:true,...BL3_LEFT},
+ light3:{src:'assets/belial-s3-light3.png',frames:8,fps:20,once:true,...BL3_LEFT},
+ // Heavy, the scorpion tail strike (256x256 from the shifted base): the bladed tail swings up into a tall curl over the back with the
+ // hooked blade poised above the head (rear), quivers while K is held (hold), then on release snaps over the head and slashes down in
+ // front of the snout with a lime arc (frames 0-4, grazing the right edge), swings back down behind and settles on the shifted base.
+ heavyRear:{src:'assets/belial-s3-heavy-rear.png',frames:5,fps:20,once:true,...BL3_LEFT},heavyHold:{src:'assets/belial-s3-heavy-hold.png',frames:4,fps:10,...BL3_LEFT},
+ heavySlam:{src:'assets/belial-s3-heavy-slam.png',frames:8,fps:16,once:true,...BL3_LEFT}}};
 // Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
