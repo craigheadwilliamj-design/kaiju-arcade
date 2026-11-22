@@ -112,7 +112,18 @@ const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-i
  carry:{src:'assets/belial-s1-carry.png',frames:4,fps:6,bite:true,...BL1_LEFT,hold:[[141,204],[146,206],[151,209],[146,206]]},
  carryWalk:{src:'assets/belial-s1-carry-walk.png',frames:8,fps:10,bite:true,...BL1_LEFT,
   hold:[[141,204],[141,203],[141,202],[141,202],[141,204],[141,203],[141,202],[141,202]]},
- throw:{src:'assets/belial-s1-throw.png',frames:7,fps:18,once:true,...BL1_LEFT}}};
+ throw:{src:'assets/belial-s1-throw.png',frames:7,fps:18,once:true,...BL1_LEFT},
+ // Ultimate, Acid Deluge (256x256, the base padded to 256 tall): ultCharge (13 frames at 20 fps = delugeCharge) swells the throat into a
+ // huge glowing sac as he plants and heaves; ultRoar rears straight up onto his hind legs and tail with the jaws open at the sky, fully
+ // reared (and the geyser up) on impact frame 2; ultPound holds the rear with the sac pumping; ultSettle (frames 2-7 of a roll back to
+ // the base, plus the exact base) snaps shut and drops onto all fours. `mouth` is the midpoint of the jaw tips on the reared frames
+ // (frames 0-1 are rough snout positions, unused before the geyser). Pound (S+J) is his heavy slam, as on Stage 2.
+ ultCharge:{src:'assets/belial-s1-ult-charge.png',frames:13,fps:20,once:true,...BL1_NATIVE},
+ ultRoar:{src:'assets/belial-s1-ult-roar.png',frames:9,fps:18,once:true,impact:2,...BL1_NATIVE,
+  mouth:[[186,214],[156,183],[112,148],[112,148],[112,148],[112,148],[112,148],[112,148],[112,148]]},
+ ultPound:{src:'assets/belial-s1-ult-pound.png',frames:4,fps:10,...BL1_NATIVE,mouth:[112,148]},
+ ultSettle:{src:'assets/belial-s1-ult-settle.png',frames:7,fps:14,once:true,...BL1_NATIVE},
+ pound:{src:'assets/belial-s1-heavy-slam.png',frames:8,fps:16,once:true,...BL1_LEFT}}};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
