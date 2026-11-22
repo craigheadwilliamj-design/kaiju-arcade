@@ -59,6 +59,12 @@ const TZ2_LEFT={scale:157/256,anchor:9+128*157/256};
 const BL2_NATIVE={scale:216/256,anchor:20+128*216/256};
 // Belial Stage 2 attack strips: the same base shifted flush left (sprite at x=0) for 40px of reach in front of the snout.
 const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
+// Belial Stage 1 strips: the belial-s1 base still, a 145x54 lean juvenile sprite at x=57 in a 256x192 frame (PixelLab Pixen edit of the
+// Stage 2 base, shrunk to 62% and re-drawn younger: slimmer, short nub spines, thin tail, the gland reduced to a drool).
+const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
+// Belial Stage 1 form (just started): idle and walk only. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
+ walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE}}};
 // Tlézcatl Stage 2 form (complete): every move has its own strip. `borrow` stays as a safety net (any strip added to Stage 1 later plays there until Stage 2 gets one).
 const TLEZCATL_S2:Form={width:120,borrow:true,anims:{idle:{src:'assets/tlezcatl-s2-idle.png',frames:8,fps:8,...TZ2_NATIVE},walk:{src:'assets/tlezcatl-s2-walk.png',frames:8,fps:10,...TZ2_NATIVE},
  // Light combo: overhead claw rake (the near claw cocks up by the crest and rakes down in front of the snout, streak on frame 4), reaching
@@ -537,8 +543,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carryWalk:{src:'assets/tlezcatl-s1-carry-walk.png',frames:8,fps:10,...TZ1_NATIVE,hold:[[125,84],[125,86],[125,87],[125,88],[125,87],[125,87],[125,86],[125,86]]},
   throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
   stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
- // Belial (low-slung striped reptile, red blade spines, green acid gland and drool): only the Stage 2 form exists, so as with Mogurodon
- // it is the base form and every stage draws it; Stage 1/3 art will go in `stages`. Keys to 216x79 at x=20 (BL2_NATIVE).
+ // Belial (low-slung striped reptile, umber blade spines, green acid gland and drool): as with Mogurodon the Stage 2 form is the base
+ // form; Stage 1 (BELIAL_S1) is being filled in and borrows these strips meanwhile, and Stage 3 still draws this. Keys to 216x79 at x=20 (BL2_NATIVE).
  Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE},
   // Run (Shift / double-tap): a low bounding gallop, the body gathering and stretching with a short flight phase on frames 4-5 and dust
   // kicked back, tail streaming straight behind. Starts on the base and loops back to it.
@@ -594,7 +600,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carry:{src:'assets/belial-s2-carry.png',frames:4,fps:6,bite:true,...BL2_LEFT,hold:[[198,184],[197,181],[195,179],[197,181]]},
   carryWalk:{src:'assets/belial-s2-carry-walk.png',frames:8,fps:10,bite:true,...BL2_LEFT,
    hold:[[198,184],[199,184],[200,186],[200,186],[200,186],[200,184],[199,183],[198,183]]},
-  throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}}},
+  throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
+  stages:{1:BELIAL_S1}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
