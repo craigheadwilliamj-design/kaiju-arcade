@@ -85,9 +85,10 @@ const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-i
  // lying low; crouchUp is crouchDown reversed.
  crouchDown:{src:'assets/belial-s3-crouch-down.png',frames:5,fps:22,once:true,...BL3_NATIVE},crouch:{src:'assets/belial-s3-crouch.png',frames:4,fps:6,...BL3_NATIVE},
  crouchUp:{src:'assets/belial-s3-crouch-up.png',frames:5,fps:22,once:true,...BL3_NATIVE},
- // Light combo (BL3_LEFT): a forward claw swipe (the near claw cocks up by the head and rakes down, lime streak on frames 4-5), a backhand
- // rake (the far arm shoots past the snout and hooks down, lime crescent on frames 3-4), and a lunging bite that snaps shut in a puff of
- // acid on frame 3. Each starts and ends on the shifted base. Light2's crescent and light3's puff graze the right edge for a frame or two.
+ // Light combo (BL3_LEFT), one hand each: light1 swings the near arm (raised over the head, raked down and across, lime streak on frames
+ // 4-7), light2 the far arm (shot out past the snout from behind the jaw, hooked down, lime crescent on frames 3-4), both skeleton-posed
+ // (tools/belial_s3_light_poses.py); light3 is a lunging bite that snaps shut in a puff of acid on frame 3. Each starts on the shifted
+ // base; light1 ends with its streak fading. Light3's puff grazes the right edge for a frame or two.
  light1:{src:'assets/belial-s3-light1.png',frames:8,fps:24,once:true,...BL3_LEFT},light2:{src:'assets/belial-s3-light2.png',frames:8,fps:21,once:true,...BL3_LEFT},
  light3:{src:'assets/belial-s3-light3.png',frames:8,fps:20,once:true,...BL3_LEFT},
  // Heavy, the scorpion tail strike (256x256 from the shifted base): the bladed tail swings up into a tall curl over the back with the
