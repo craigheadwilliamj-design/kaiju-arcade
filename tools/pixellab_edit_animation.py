@@ -38,8 +38,10 @@ def save():
     strip = Image.new('RGBA', (FW * n, H))
     for i, f in enumerate(out): strip.paste(f, (i * FW, 0))
     strip.save(a.out, optimize=True)
-for s in range(0, len(idx), a.batch):
-    chunk = idx[s:s + a.batch]
+# Even batches (5 frames go 3+2, not 4+1): the endpoint needs at least 2 frames a request.
+nb = -(-len(idx) // a.batch); chunks = [list(c) for c in np.array_split(idx, nb)]
+for chunk in chunks:
+    chunk = [int(i) for i in chunk]
     body = {'description': a.description, 'image_size': {'width': bw, 'height': bh}, 'no_background': True,
             'frames': [{'image': {'type': 'base64', 'format': 'png', 'base64': b64(frames[i].crop(box))}, 'size': {'width': bw, 'height': bh}} for i in chunk]}
     if pal: body['target_palette'] = pal
