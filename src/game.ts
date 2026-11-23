@@ -924,6 +924,9 @@ function slamLand(){
    rocks.push({x:cx+dir*w*.25,y:feet-6*s,vx:dir*Math.cos(a)*sp,vy:-Math.sin(a)*sp,life:B.debrisLife*grow*1.3,damage:MV.meteorDamage*damageMultiplier(combat)*power,knockback:B.debrisKnockback,spin:Math.random()*6,size:(6+Math.random()*5)*grow});}}
  // Tlézcatl's Magma Dive: the crash splashes molten globs both ways and, on the street, leaves a lava pool under him.
  if(activeKaiju==='Tlézcatl')splashLava(cx,feet,w*.3,power,MV.lavaGlobs,street?w*MV.lavaPoolWidth:0,14);
+ // Myrmex's Sting Dive: the stinger stabs in and the impact bursts into a poison cloud, bigger the further he fell (and, on the
+ // street, a venom puddle).
+ if(isMyrmex())burstVenom(cx,feet-10,Math.min(1,(power-1)/MV.diveFallMax),player.face);
  // Belial's Acid Pounce: the impact bursts his gland. Everything the slam struck is soaked to pounceStacks of corrosion (one more on
  // a pounceFullPower drop), applied after the hit so the slam itself isn't boosted; on the street it leaves a row of acid puddles.
  if(isBelial())acidPounce(struck,cx,feet,w,power,street);
@@ -931,7 +934,7 @@ function slamLand(){
  shake=Math.max(shake,6+power*4);freeze(.05+power*.02);
  // A form's own slamLand starts at impact; otherwise borrow heavySlam from its crash frames.
  attack=hasAnim(activeKaiju,'slamLand',combat.stage)?{anim:'slamLand',t:0}:{anim:hasAnim(activeKaiju,'heavySlam',combat.stage)?'heavySlam':'jumpLand',t:hasAnim(activeKaiju,'heavySlam',combat.stage)?animDuration(activeKaiju,'heavySlam',combat.stage)*.35:0};
- combat.cooldown=Math.max(combat.cooldown,MV.diveCooldown);action=broke?'SLAM · CRASHED THROUGH':(activeKaiju==='Kaiban'?'METEOR DROP':activeKaiju==='Tlézcatl'?'MAGMA DIVE':isBelial()?'ACID POUNCE':power>1.8?'MEGA SLAM':'SLAM');actionTime=.9;
+ combat.cooldown=Math.max(combat.cooldown,MV.diveCooldown);action=broke?'SLAM · CRASHED THROUGH':(activeKaiju==='Kaiban'?'METEOR DROP':activeKaiju==='Tlézcatl'?'MAGMA DIVE':isBelial()?'ACID POUNCE':isMyrmex()?'STING DIVE':power>1.8?'MEGA SLAM':'SLAM');actionTime=.9;
  // A cannonball form keeps rolling if a direction was touched at any point in the dive (street or rooftop).
  const steer=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0)||dive.dir;
  if(!broke&&steer&&canRoll()){roll={dir:steer,t:MV.rollSeconds,t0:dive.t0,power,bounced:false,hits:new Set()};player.face=steer;attack=null;action='CANNONBALL';actionTime=1;}

@@ -57,3 +57,15 @@ test('Myrmex Venom Bomb: troops in the cloud are poisoned and keep losing health
   assert.ok(hp()<h0||h.state().militaryUnits.length<n0,'poison keeps hurting them with no more hits');
  }finally{h.cleanup();}
 });
+
+test('Myrmex Sting Dive: the slam bursts into a poison cloud, bigger from a higher drop',async()=>{
+ const h=await city();
+ try{
+  faceWest(h);
+  const dive=(beats:number)=>{const n0=E(h).clouds.length;h.tap('Space');h.step(16);for(let b=0;b<beats;b++){h.tap('Space');h.step(16);}
+   h.tap('KeyS');h.step();assert.equal(h.state().diving,true);assert.ok(until(h,()=>E(h).clouds.length>n0,300),'the dive bursts into a cloud');
+   const c=E(h).clouds.at(-1);until(h,()=>h.state().grounded&&!h.state().diving,120);h.step(40);return c;};
+  const low=dive(0),high=dive(2);
+  assert.ok(high.r>low.r,`higher drop, bigger cloud: ${high.r} vs ${low.r}`);
+ }finally{h.cleanup();}
+});

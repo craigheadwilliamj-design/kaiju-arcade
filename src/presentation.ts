@@ -786,6 +786,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // Venom Bomb (L, PixelLab rolls, MX2_LEFT, 256x256): spitBrew raises the tail forward over his back as a big glossy bubble of venom
   // swells on the stinger; spitHold wobbles and drips it while L is held; spitThrow whips the tail forward (the bubble is erased
   // from the release on, since the game draws the bomb: it leaves on impact frame 1 from `mouth`, the stinger tip) and settles.
+  // Sting Dive (his Slam; PixelLab rolls, 256x256, the air pose and the base padded 64px on top so MX2_NATIVE lines up): dive folds the
+  // wings back and tips into a steep head-first plunge with the tail curled (frames 0, 3, 5 and 8 of a roll, bottom-aligned, held on
+  // the last); slamLand crashes in, whips the stinger into the street in a burst of purple venom and pushes back up to standing.
+  dive:{src:'assets/myrmex-s2-dive.png',frames:4,fps:24,once:true,...MX2_NATIVE},slamLand:{src:'assets/myrmex-s2-slam-land.png',frames:8,fps:16,once:true,...MX2_NATIVE},
   spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
   spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}}},
 };
@@ -930,10 +934,10 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
  :kaiju==='Myrmex'?[
   {keys:'SPACE › SPACE › SPACE',name:'Wing Beat',desc:'He can\'t fly, but his jump is huge, and in the air he can beat his wings for two more jumps before he has to touch down. They come back as soon as he lands or grabs a wall.'},
   {keys:'SPACE (hold)',name:'Glide',desc:'He floats down far more gently than anyone else; hold Space on the way down to glide even slower and cover more ground.'},
+  {...slam,name:'Sting Dive',desc:'Dive head-first out of the air and stab the stinger into whatever you land on. The impact bursts into a poison cloud (bigger the further you fell) and, on the street, a venom puddle, on top of the slam itself.'},
   {keys:'L (hold)',name:'Venom Bomb',desc:'Hold to brew a bubble of venom on the stinger (it swells the longer you hold, and you can still creep or float), release to fling it. It bursts on the first thing it hits into a big poison cloud that hangs and drifts for several seconds: every trooper, aircraft or rival inside is poisoned and keeps taking damage. A fuller bomb flies further and makes a bigger cloud. Works on the ground, in the air and on a wall.'},
   {keys:'L+W',name:'Lob',desc:'Hold W as you release to lob the bomb higher and further, over cover and onto rooftops.'},
-  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
-  slam]
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'}]
  :[
   {keys:'L',name:'Spine',desc:'A horizontal ranged spine.'},
   {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
