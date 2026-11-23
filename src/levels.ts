@@ -1,10 +1,12 @@
+import type {Part} from './hitbox.ts';
 // `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 // `role`: a structure with a job in the city (src/city.ts). `roof`: a rooftop fixture on an ordinary building.
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant',roof?:'radar'|'tank',shape?:string,prop?:string};
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant',roof?:'radar'|'tank',shape?:string,prop?:string,parts?:Part[]};
+// `parts`: the hitbox silhouette (src/hitbox.ts); omitted means one box, the whole footprint.
 // `prop`: street junk (a walk-through breakable: hot dog cart, trash can, taco stand, advertising column, café table, market stall,
 // vending machine), drawn per kind.
-// `shape`: a landmark's silhouette ('tower' default, 'lattice', 'dome', 'twin', 'arch', 'needle', 'pagoda'); the hitbox is always its box.
+// `shape`: a landmark's silhouette ('tower' default, 'lattice', 'dome', 'twin', 'arch', 'needle', 'pagoda'); its hitbox parts follow the drawing (shapeParts).
 // Fixed New York Block 1: four screen widths, authored positions, never generated.
 const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:295,w:64,h:82,hp:60,value:70,kind:'medium',label:'DELI',color:'#577b84'},
@@ -28,6 +30,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
 ];
 
 import {CONFIG,BUILDING_PRESETS,MAINS} from './config.ts';
+import {shapeParts} from './hitbox.ts';
 import {profileFrom,profileY} from './terrain.ts';
 // Each city's look (phase 4): `mood` is its sky and light (lights 0 = broad day .. 1 = night: lit windows, neon), `style` picks the
 // facade drawing, `material` how its buildings break, `taxi`/`cars` its street colours, `ink` the HUD text colour over its sky.
@@ -64,14 +67,36 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // Third entry element: a landmark's name (key 'L'), 'cache', or a rooftop fixture ('radar' / 'tank').
 type Entry=[number,keyof typeof BUILDING_PRESETS]|[number,keyof typeof BUILDING_PRESETS,string];
 const LANDMARK_COLORS=['#c3b48d','#b7a37c','#a9a9a0'];
+// Named NYC landmarks: authored tier silhouettes on the 190-wide 'L' footprint, drawn tier by tier from these parts, authored scale, bottom tier first. Every tier is a roof you can stand on
+// and a wall you can climb; a spire can be hit but not stood on. The highest part sets the landmark's height.
+// Ledges narrower than about a third of the body are too small to stand on, so the climb carries on up the next tier.
+const LANDMARK_SHAPES:Record<string,Part[]>={
+ 'WOOLWORTH':[{x:0,w:190,top:340},{x:40,w:110,top:480},{x:62,w:66,top:540},{x:92,w:6,top:590,spire:true}],
+ 'STOCK EXCHANGE':[{x:0,w:190,top:300},{x:12,w:166,top:330},{x:50,w:90,top:360}],
+ 'RADIO CITY':[{x:0,w:190,top:210},{x:70,w:110,top:500},{x:90,w:70,top:540}],
+ 'EMPIRE STATE':[{x:0,w:190,top:150},{x:20,w:150,top:400},{x:45,w:100,top:490},{x:70,w:50,top:530},{x:85,w:20,top:565},{x:93,w:4,top:620,spire:true}],
+ 'CHRYSLER':[{x:0,w:190,top:300},{x:30,w:130,top:430},{x:55,w:80,top:500},{x:70,w:50,top:530},{x:82,w:26,top:555},{x:93,w:4,top:610,spire:true}],
+ 'UN HQ':[{x:0,w:190,top:70},{x:55,w:80,top:540}],
+ // Raised on a central column: Stages 1 and 2 can walk under the cantilevered body; Stage 3 is too tall.
+ 'CITICORP':[{x:80,w:30,top:120},{x:0,w:190,top:520,base:120},{x:95,w:95,top:570,base:520}],
+ 'MET LIFE':[{x:0,w:190,top:470},{x:10,w:170,top:500}],
+ // Low market halls with a ship's mast at the pier end.
+ 'SEAPORT':[{x:0,w:190,top:200},{x:0,w:120,top:260},{x:20,w:70,top:300},{x:170,w:4,top:380,spire:true}],
+};
+export function landmarkShape(label:string):Part[]|undefined{return LANDMARK_SHAPES[label];}
 // Every coordinate below is authored data at the original scale. Runtime expands the presets and multiplies positions and sizes
 // by CONFIG.cityScale. A building's width is scaled through its right edge, so wall-to-wall rows stay flush after rounding.
 const sc=(n:number)=>Math.round(n*CONFIG.cityScale);
-function scaled<T extends {x:number,w:number,h:number}>(b:T):T{return {...b,x:sc(b.x),w:sc(b.x+b.w)-sc(b.x),h:sc(b.h)};}
+// Parts scale the same way, through their own right edges, so tiers that line up in the authored data still line up.
+function scaled<T extends {x:number,w:number,h:number,parts?:Part[]}>(b:T):T{const x=sc(b.x);
+ return {...b,x,w:sc(b.x+b.w)-x,h:sc(b.h),...(b.parts?{parts:b.parts.map(p=>({...p,x:sc(b.x+p.x)-x,w:sc(b.x+p.x+p.w)-sc(b.x+p.x),top:sc(p.top),...(p.base?{base:sc(p.base)}:{})}))}:{})};}
 export const NEW_YORK_BLOCK_ONE:BuildingSpec[]=NEW_YORK_BLOCK_ONE_AUTHORED.map(scaled);
 function district(city:number,name:string,screens:number,entries:Entry[],street:number[],cars:number[],kind:BlockDef['kind']='district',start?:number):BlockDef{
  const theme=CITIES[city];let landmarks=0;const built=entries.map(([x,key,tag],i)=>{
-  if(key==='L'){const [label,shape]=(tag??'').split('|');return scaled({...BUILDING_PRESETS[key],x,label,color:LANDMARK_COLORS[landmarks++%LANDMARK_COLORS.length],landmark:true,...(shape?{shape}:{})});}
+  // Landmarks: a named NYC tower uses its authored tiers; every other landmark gets parts matching its drawn shape.
+  if(key==='L'){const [label,shape]=(tag??'').split('|'),color=LANDMARK_COLORS[landmarks++%LANDMARK_COLORS.length],tiers=shape?undefined:landmarkShape(label);
+   if(tiers)return scaled({...BUILDING_PRESETS[key],x,h:Math.max(...tiers.map(p=>p.top)),parts:tiers,label,color,landmark:true});
+   const b=scaled({...BUILDING_PRESETS[key],x,label,color,landmark:true,...(shape?{shape}:{})});return {...b,shape:shape||'tower',parts:shapeParts(shape||'tower',theme.style,b.w,b.h)};}
   if(key==='S'||key==='F'||key==='K')return scaled({...BUILDING_PRESETS[key],x,label:key==='K'?'ARMORY':'',color:key==='S'?'#7f8c88':key==='F'?'#c4bea6':'#8a5444',role:key==='S'?'substation':key==='F'?'depot':'armory'});
   return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='radar'||tag==='tank'?{roof:tag}:{})});
  });

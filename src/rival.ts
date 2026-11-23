@@ -2,6 +2,7 @@
 // M5 replaces this with individual kaiju attacks, stages and Ultimate behavior.
 import {groundAt} from './terrain.ts';
 import {CAMPAIGN as P,CONFIG as C} from './config.ts';
+import {partHit} from './hitbox.ts';
 import {overlaps,solid,damageBuilding} from './rules.ts';import type {Building} from './rules.ts';
 import {segmentHits} from './military.ts';import type {Rect} from './military.ts';
 export type Rival=Rect&{hp:number,maxHP:number,dead:boolean,face:number,turn:number,cooldown:number,windup:number,attack:'melee'|'ranged',stagger:number,kb:number,shots:{x:number,y:number,vx:number,life:number}[]};
@@ -20,8 +21,8 @@ export function tickRival(r:Rival,dt:number,player:Rect,worldWidth:number,buildi
  }}else{
  const distance=Math.abs(player.x+player.w/2-r.x-r.w/2);
  let nx=r.x+(distance>P.bossRange+r.w*.5?r.face*P.bossSpeed*dt:0)+r.kb*dt;
- for(const b of buildings)if(solid(b)&&overlaps({x:nx,y:r.y,w:r.w,h:r.h},{x:b.x,y:b.base-b.h,w:b.w,h:b.h})){
- nx=r.face>0?b.x-r.w:b.x+b.w;if(r.cooldown===0){damageBuilding(b,95,'impact');r.cooldown=1;}break;
+ for(const b of buildings){const p=solid(b)?partHit(b,{x:nx,y:r.y,w:r.w,h:r.h},true):null;if(!p)continue;
+ nx=r.face>0?p.x-r.w:p.x+p.w;if(r.cooldown===0){damageBuilding(b,95,'impact');r.cooldown=1;}break;
  }
  if(overlaps({x:nx,y:r.y,w:r.w,h:r.h},player))nx=r.face>0?player.x-r.w:player.x+player.w;
  r.x=Math.max(0,Math.min(worldWidth-r.w,nx));r.y=groundAt(r.x+r.w/2)-r.h;
