@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Cutout rig for Myrmex Stage 2: poses the keyed sprite's own pixels, so frames never get redrawn (no shimmer).
 
-Usage: python3 tools/myrmex_s2_rig.py OUT_DIR [--stride 24] [--lift 18] [--frames 16] [--duty 0.6]
-Writes OUT_DIR/myrmex-s2.png (the rest pose in a 256x192 frame at x=55, feet on the bottom row), OUT_DIR/myrmex-s2-walk.png
-and OUT_DIR/myrmex-s2-idle.png.
+Usage: python3 tools/myrmex_s2_rig.py OUT_DIR [--frames 16] [--idle-frames 8] [--run-frames 12]   (gaits: MODES below)
+Writes OUT_DIR/myrmex-s2.png (the rest pose in a 256x192 frame at x=55, feet on the bottom row) and OUT_DIR/myrmex-s2-walk.png,
+-idle.png, -run.png, the jump strips (-jump-rise, -jump-air, -jump-flap, -jump-land) the crouch (-crouch-down, -crouch, -crouch-up), the light combo (-light1..3) and the heavy (-heavy-rear, -heavy-hold,
+-heavy-slam).
 
 Source: tools/myrmex-s2-native.png, the 146x122 sprite keyed from the render (key_render.py --square). Its far foreleg is
 bent up in the air and its far hind leg is half hidden behind the near thigh, so both far legs are dropped and rebuilt as
@@ -21,9 +22,11 @@ The body bobs 2px twice a cycle. The rest pose (all feet planted at home) is the
 import argparse, math, os, numpy as np
 from PIL import Image
 ap = argparse.ArgumentParser(); ap.add_argument('out')
-ap.add_argument('--stride', type=float, default=24); ap.add_argument('--lift', type=float, default=18)
-ap.add_argument('--frames', type=int, default=16); ap.add_argument('--duty', type=float, default=0.6)
-ap.add_argument('--idle-frames', type=int, default=8)
+ap.add_argument('--frames', type=int, default=16); ap.add_argument('--idle-frames', type=int, default=8)
+ap.add_argument('--run-frames', type=int, default=12)
+ap.add_argument('--wings-only', action='store_true', help='render only the wings (a per-frame map of where they land, to keep a recolour off them)')
+ap.add_argument('--glow-only', action='store_true', help='render only the stinger-tip glow pixels (a per-frame map of where the glow lands, for recolouring finished strips)')
+ap.add_argument('--only', help='render only the strips whose name starts with this (e.g. crouch); skips the rest')
 A = ap.parse_args()
 src = np.asarray(Image.open(os.path.join(os.path.dirname(__file__), 'myrmex-s2-native.png')).convert('RGBA')).astype(np.uint8)
 H, W = src.shape[:2]; op = src[..., 3] > 0; yy, xx = np.mgrid[0:H, 0:W]
@@ -69,18 +72,37 @@ memb = reg & (G >= 90)
 wing_m |= memb | (reg & (R + G < 200) & near(memb) & ~near(red & ~wing_m))
 tail_m = body & ~wing_m & ((xx <= 29) | ((xx <= 37) & (yy >= 20) & (yy <= 45)))
 head_m = body & ~wing_m & (((xx >= 100) & (yy <= 58) & (yy <= 56 + (xx - 100) * -0.1 + 6)) | ((xx >= 86) & (yy <= 34)))
-core_m = body & ~wing_m & ~tail_m & ~head_m
+# The lower mandible (the curved mauve piece under the snout) hinges on its own so the jaw can open and snap; the upper fang
+# stays with the head.
+JAW_P = (128, 46)
+jaw_m = head_m & (xx >= 127) & (xx <= 139) & (yy >= 45)
+head_m &= ~jaw_m
+core_m = body & ~wing_m & ~tail_m & ~head_m & ~jaw_m
+# Waist: the abdomen (the big segmented rear, which carries the tail and the hind-leg roots) hinges on the thorax at the
+# petiole, so he can flex his rear down and arch the tail up (the sting).
+WAIST = (70, 64)
+abd_m = core_m & (xx <= 69)
+thx_m = core_m & ~abd_m
 # Tail chain: joints on the seams between the plates down the middle of the curl, base to stinger. Each tail pixel goes
-# to its nearest stretch of the centreline; the last stretch (the bulb) runs on into the stinger flame.
+# to its nearest stretch of the centreline; the last stretch (the bulb) runs on into the glowing stinger tip.
 TAIL_J = [(31, 67), (20, 65), (10, 58), (5, 52), (4, 42), (6, 34), (10, 28), (21, 24), (31, 31)]
 td = [dist(TAIL_J[i], TAIL_J[i + 1]) for i in range(len(TAIL_J) - 1)]
 td[-1] = np.minimum(td[-1], dist(TAIL_J[-1], (35, 42)))
 tseg = np.argmin(np.stack(td), 0)
+# The stinger-tip glow (bright, saturated orange to white at the tip of the tail): its colours match the wing membrane, so it is
+# found by place, not colour. --glow-only keeps just these pixels in every piece.
+_rgb = src[..., :3].astype(float) / 255; _mx, _mn = _rgb.max(-1), _rgb.min(-1); _l = (_mx + _mn) / 2
+_s = np.where(_mx == _mn, 0, (_mx - _mn) / np.maximum(1e-6, 1 - np.abs(2 * _l - 1)))
+_r, _g, _b = _rgb[..., 0], _rgb[..., 1], _rgb[..., 2]
+_h = np.where(_mx == _r, (60 * (_g - _b) / np.maximum(1e-6, _mx - _mn)) % 360, 0)
+GLOW = op & (xx >= 20) & (xx <= 38) & (yy >= 30) & (yy <= 44) & (_h >= 8) & (_h <= 60) & (_s >= .8) & (_l >= .38)
 def layer(mask, dark=1.0):
     im = src.copy(); im[~mask] = 0
+    if A.glow_only: im[~GLOW] = 0
+    if A.wings_only: im[~(mask & wing_m)] = 0
     if dark != 1: im[..., :3] = (im[..., :3] * dark).astype(np.uint8)
     return im
-BODY = layer(core_m); WINGS, HEAD = layer(wing_m), layer(head_m); MIDN, MIDF = layer(mid_n), layer(mid_f); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
+ABD, THX = layer(abd_m), layer(thx_m); WINGS, HEAD, JAW = layer(wing_m), layer(head_m), layer(jaw_m); MIDN, MIDF = layer(mid_n), layer(mid_f); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
 TAIL_SEGS = [layer(tail_m & (tseg == i)) for i in range(len(TAIL_J) - 1)]
 
 def scale2x(im):
@@ -114,11 +136,11 @@ def ik(root, foot, j_rest, r_rest, f_rest):
     D = min(math.dist(root, foot), L1 + L2 - 0.01); ux, uy = (foot[0] - root[0]) / math.dist(root, foot), (foot[1] - root[1]) / math.dist(root, foot)
     a = math.acos(max(-1, min(1, (L1 * L1 + D * D - L2 * L2) / (2 * L1 * D))))
     side = math.copysign(1, (f_rest[0] - r_rest[0]) * (j_rest[1] - r_rest[1]) - (f_rest[1] - r_rest[1]) * (j_rest[0] - r_rest[0]))
-    best = None
+    best = None   # a fully stretched limb has its joint on the root-foot line: neither side matches, so keep the first
     for sg in (1, -1):
         jx, jy = ux * math.cos(sg * a) - uy * math.sin(sg * a), ux * math.sin(sg * a) + uy * math.cos(sg * a)
         J = (root[0] + L1 * jx, root[1] + L1 * jy)
-        if math.copysign(1, (foot[0] - root[0]) * (J[1] - root[1]) - (foot[1] - root[1]) * (J[0] - root[0])) == side: best = J
+        if best is None or math.copysign(1, (foot[0] - root[0]) * (J[1] - root[1]) - (foot[1] - root[1]) * (J[0] - root[0])) == side: best = J
     return best
 ang = lambda p, q: math.atan2(q[1] - p[1], q[0] - p[0])
 def leg(canvas, P, joints, root, foot, foot_tilt):
@@ -133,62 +155,203 @@ def leg(canvas, P, joints, root, foot, foot_tilt):
 F = lambda p, dx=0, dy=0: (p[0] + OX + dx, p[1] + OY + dy)   # source -> frame coords
 # Far legs: the near legs' pieces, hip/shoulder a little further back on the body, feet spread like the source's hind pair.
 # The forelegs are almost straight in the art (shoulder to claws 50.0px of 50.7px of bone), so their feet are planted
-# FORE_BACK px further back to give the elbows room to bend, and step FORE_STRIDE of the hind stride.
-# FORE_BACK px further back, so a forward step ends at the art's (fully reached) claw position and the back of the sweep
-# folds the elbow. Forelegs step FORE_STRIDE of the hind stride and lift FORE_LIFT of the hind lift.
+# FORE_BACK px further back: a forward step ends at the art's (fully reached) claw position and the back of the sweep folds
+# the elbow. Forelegs step FORE_STRIDE of the hind stride and lift FORE_LIFT of the hind lift.
 FORE_BACK, FORE_STRIDE, FORE_LIFT = 16, 0.67, 0.8
-MID_SWING = 16   # middle legs' swing either way, degrees
-TAIL_BEND, TAIL_LAG = 3, 0.55   # each tail joint's bend either way (degrees, once a cycle) and its delay behind the one before (rad)
-HEAD_NOD, WING_FLUTTER = 4, 3   # degrees either way: twice and four times a cycle
-LIMBS = {'RH': (False, (HIP, KNEE, ANKLE), 0, 0, 0.00, 1, 1), 'RF': (False, (SHO, ELB, WRI), 0, -FORE_BACK, 0.25, FORE_STRIDE, FORE_LIFT),
-         'LH': (True, (HIP, KNEE, ANKLE), 7, 16, 0.50, 1, 1), 'LF': (True, (SHO, ELB, WRI), 4, 14 - FORE_BACK, 0.75, FORE_STRIDE, FORE_LIFT)}
-# far?, joints, root dx, foot dx (home), phase, stride scale, lift scale
-def step(p, k=1, kl=1):
-    """Foot x offset from home, lift and toe tilt at cycle phase p: planted for DUTY sliding back, then a high sweeping arc forward."""
-    p %= 1; S = A.stride * k; D = A.duty
+TAIL_LAG = 0.55   # each tail joint's delay behind the one before (rad)
+LIMBS = {'RH': (False, (HIP, KNEE, ANKLE), 0, 0, 1, 1), 'RF': (False, (SHO, ELB, WRI), 0, -FORE_BACK, FORE_STRIDE, FORE_LIFT),
+         'LH': (True, (HIP, KNEE, ANKLE), 7, 16, 1, 1), 'LF': (True, (SHO, ELB, WRI), 4, 14 - FORE_BACK, FORE_STRIDE, FORE_LIFT)}
+# far?, joints, root dx, foot dx (home), stride scale, lift scale
+# Gaits. phases: each foot's offset in the cycle. stride/lift px, duty = planted share of the cycle. bob: (px, f) dips 2f times a cycle;
+# low: px the body sits lower (legs work bent). tail/head/wings: (degrees either way, times per cycle); tail_off/head_off:
+# held bend (tail: per joint, negative uncurls; head: positive dips). mid: middle legs' swing, (degrees, times per cycle).
+MODES = {
+    # Idle: feet planted, the body breathes 1px (knees and elbows flex), slow tail curl, head bob, wing twitch, leg sway.
+    'idle': dict(phases=None, bob=(1, 1), low=0, tail=(2, 1), tail_off=0, head=(2, 1), head_off=0, wings=(2, 2), mid=(5, 1)),
+    # Walk: big sweeping bug steps in a lateral sequence (near hind, near fore, far hind, far fore).
+    'walk': dict(phases={'RH': 0, 'RF': .25, 'LH': .5, 'LF': .75}, stride=24, lift=18, duty=.6, bob=(2, 2), low=0,
+                 tail=(3, 1), tail_off=0, head=(4, 2), head_off=0, wings=(3, 4), mid=(16, 1)),
+    # Run: a low scuttling trot, diagonal pairs together (near hind + far fore, near fore + far hind), long strides with the
+    # feet in the air more than half the time, the body dropped and bobbing hard, the tail partly uncurled to stream back,
+    # the head thrust forward and down, the wings buzzing and the middle legs paddling fast.
+    'run': dict(phases={'RH': 0, 'LF': 0, 'RF': .5, 'LH': .5}, stride=30, lift=14, duty=.42, bob=(3, 1), low=6,
+                tail=(4, 2), tail_off=-3, head=(3, 2), head_off=7, wings=(7, 3), mid=(22, 2)),
+}
+def step(p, M, k=1, kl=1):
+    """Foot x offset from home, lift and toe tilt at cycle phase p: planted for the duty sliding back, then a high arc forward."""
+    p %= 1; S = M['stride'] * k; D = M['duty']
     if p < D: return S - 2 * S * p / D, 0.0, 0.0
     s = (p - D) / (1 - D); e = 0.5 - 0.5 * math.cos(math.pi * s)   # eased so the leg whips through mid-swing
-    return -S + 2 * S * e, A.lift * kl * math.sin(math.pi * s) ** 0.8, math.radians(30) * math.sin(math.pi * s)
-# Idle: feet planted, the body breathes 1px up and down (knees and elbows flex), the tail curls slowly, the head bobs,
-# the wings twitch and the middle legs sway, all once or twice a cycle and smaller than the walk's.
-IDLE = {'tail': (2, 1), 'head': (2, 1), 'wings': (2, 2), 'mid': 5}
-WALK = {'tail': (TAIL_BEND, 1), 'head': (HEAD_NOD, 2), 'wings': (WING_FLUTTER, 4), 'mid': MID_SWING}
-def frame(t, rest=False, idle=False):
-    M = IDLE if idle else WALK
-    cv = np.zeros((FH, FW, 4), np.uint8)
-    bob = 0 if rest else round(0.5 - 0.5 * math.cos(2 * math.pi * t)) if idle else round(2 * math.sin(4 * math.pi * t) ** 2)
-    pose = {}
-    for k, (far, jt, rdx, fdx, ph, sk, kl) in LIMBS.items():
-        dx, lift, tilt = (0, 0, 0) if rest or idle else step(ph + t, sk, kl)
-        pose[k] = (far, jt, F(jt[0], rdx, -bob), F(jt[2], fdx + dx, -lift), tilt)
-    # Middle legs swing like pendulums with the stride, out of phase with each other, with a quick flick at the end of
-    # each swing (a sharpened sine), so they paddle along instead of hanging dead.
-    mid = lambda ph: 0.0 if rest else math.radians(M['mid']) * math.copysign(abs(math.sin(2 * math.pi * (t + ph))) ** 0.6, math.sin(2 * math.pi * (t + ph)))
-    for k in ('LH', 'LF'): far, jt, r, f, tl = pose[k]; leg(cv, FAR, jt, r, f, tl)
-    blit(cv, MIDF, (MID_F[0] + .5, MID_F[1] + .5), F((MID_F[0] + .5, MID_F[1] + .5), 0, -bob), mid(0.55))
-    # Secondary motion: the head nods with each footfall, a beat late;
-    # the wings flutter. Tail and head go under the core so it hides their seams; the wings go on top.
-    w = lambda deg, f, lag: 0.0 if rest else math.radians(deg) * math.sin(2 * math.pi * f * t - lag)
+    return -S + 2 * S * e, M['lift'] * kl * math.sin(math.pi * s) ** 0.8, math.radians(30) * math.sin(math.pi * s)
+PITCH_P = (62, 70)   # the body tips about the middle of the belly
+def rotp(p, c, a):   # rotate point p about c by a (clockwise on screen)
+    dx, dy = p[0] - c[0], p[1] - c[1]; return (c[0] + dx * math.cos(a) - dy * math.sin(a), c[1] + dx * math.sin(a) + dy * math.cos(a))
+def render(P):
+    """Draw one pose. P: bob (px up), feet {limb: (dx from home, lift px, toe tilt rad)}, mid (near, far) rad, tail [per-joint rad],
+    head rad, wings rad (positive raises them toward upright); optional pitch (rad, clockwise tips the nose down, about
+    PITCH_P), lean (px forward: the body moves, the feet stay planted), jaw (rad, opens the lower mandible), abd (rad, bends the
+    abdomen at the waist; positive lifts the rear) and tail_front (draw the tail over the body and wings)."""
+    cv = np.zeros((FH, FW, 4), np.uint8); bob = P['bob']; pitch = P.get('pitch', 0.0); lean = P.get('lean', 0)
     piv = lambda p: (p[0] + .5, p[1] + .5)
-    # The tail curls segment by segment: a wave runs from the base to the stinger, each joint bending TAIL_BEND degrees a
-    # beat after the one before, so the curl ripples out and the stinger whips. Drawn tip first so each plate overlaps
-    # the next one out, as in the art.
-    js, phi, segs = [F(piv(TAIL_J[0]), 0, -bob)], [], []
+    T = lambda p: F(rotp(p, PITCH_P, pitch), lean, -bob)   # source point on the body -> frame
+    abd = P.get('abd', 0.0); TA = lambda p: T(rotp(p, WAIST, abd))   # ... on the abdomen, which also bends at the waist
+    pose = {}
+    for k, (far, jt, rdx, fdx, sk, kl) in LIMBS.items():
+        dx, lift, tilt = P['feet'][k]
+        pose[k] = (jt, (TA if k in ('RH', 'LH') else T)((jt[0][0] + rdx, jt[0][1])), F(jt[2], fdx + dx, -lift), tilt)
+    for k in ('LH', 'LF'): jt, r, f, tl = pose[k]; leg(cv, FAR, jt, r, f, tl)
+    blit(cv, MIDF, piv(MID_F), T(piv(MID_F)), P['mid'][1] + pitch)
+    # The tail curls segment by segment, drawn tip first so each plate overlaps the next one out.
+    js, phi = [TA(piv(TAIL_J[0]))], []
     for i in range(len(TAIL_J) - 1):
-        a = (phi[-1] if phi else 0) + w(M['tail'][0], M['tail'][1], 1.2 + TAIL_LAG * i); phi.append(a)
+        a = (phi[-1] if phi else pitch + abd) + P['tail'][i]; phi.append(a)
         vx, vy = TAIL_J[i + 1][0] - TAIL_J[i][0], TAIL_J[i + 1][1] - TAIL_J[i][1]
         js.append((js[-1][0] + vx * math.cos(a) - vy * math.sin(a), js[-1][1] + vx * math.sin(a) + vy * math.cos(a)))
-    for i in reversed(range(len(TAIL_J) - 1)): blit(cv, TAIL_SEGS[i], piv(TAIL_J[i]), js[i], phi[i])
-    blit(cv, HEAD, piv(HEAD_P), F(piv(HEAD_P), 0, -bob), w(*M['head'], 0.9))
-    blit(cv, BODY, (0, 0), (OX, OY - bob))
-    blit(cv, WINGS, piv(WING_P), F(piv(WING_P), 0, -bob), w(*M['wings'], 0))
-    blit(cv, MIDN, (MID_N[0] + .5, MID_N[1] + .5), F((MID_N[0] + .5, MID_N[1] + .5), 0, -bob), mid(0.05))
-    for k in ('RH', 'RF'): far, jt, r, f, tl = pose[k]; leg(cv, NEAR, jt, r, f, tl)
+    draw_tail = lambda: [blit(cv, TAIL_SEGS[i], piv(TAIL_J[i]), js[i], phi[i]) for i in reversed(range(len(TAIL_J) - 1))]
+    if not P.get('tail_front'): draw_tail()
+    # Tail, head and jaw go under the core so it hides their seams; the wings go on top.
+    hd = P['head']
+    blit(cv, JAW, piv(JAW_P), T(rotp(piv(JAW_P), piv(HEAD_P), hd)), pitch + hd + P.get('jaw', 0.0))
+    blit(cv, HEAD, piv(HEAD_P), T(piv(HEAD_P)), pitch + hd)
+    blit(cv, ABD, piv(WAIST), T(piv(WAIST)), pitch + abd)
+    blit(cv, THX, piv(PITCH_P), T(piv(PITCH_P)), pitch)   # thorax over the abdomen hides the waist seam
+    blit(cv, WINGS, piv(WING_P), T(piv(WING_P)), P['wings'] + pitch)
+    blit(cv, MIDN, piv(MID_N), T(piv(MID_N)), P['mid'][0] + pitch)
+    if P.get('tail_front'): draw_tail()   # a sting whips the tail over his back, in front of the body and wings
+    for k in ('RH', 'RF'): jt, r, f, tl = pose[k]; leg(cv, NEAR, jt, r, f, tl)
     return cv
+NJ = len(TAIL_J) - 1
+REST = dict(bob=0, feet={k: (0, 0, 0) for k in LIMBS}, mid=(0.0, 0.0), tail=[0.0] * NJ, head=0.0, wings=0.0)
+def cycle_pose(t, M, mode):
+    """The pose at cycle position t for a looping gait."""
+    if mode == 'idle': bob = round(0.5 - 0.5 * math.cos(2 * math.pi * t))
+    else: bob = round(M['bob'][0] * math.sin(2 * math.pi * M['bob'][1] * t) ** 2)   # sin^2: 2*f dips a cycle
+    bob -= M['low']   # negative sinks the body
+    feet = {k: step(M['phases'][k] + t, M, sk, kl) if M['phases'] else (0, 0, 0) for k, (_, _, _, _, sk, kl) in LIMBS.items()}
+    # Middle legs swing like pendulums, out of phase, with a flick at the end of each swing (a sharpened sine).
+    def mid(ph):
+        x = math.sin(2 * math.pi * (M['mid'][1] * t + ph)); return math.radians(M['mid'][0]) * math.copysign(abs(x) ** 0.6, x)
+    w = lambda d, lag: math.radians(d[0]) * math.sin(2 * math.pi * d[1] * t - lag)
+    # A wave runs down the tail, each joint a beat after the one before, so the curl ripples and the stinger whips.
+    tail = [math.radians(M['tail_off']) + w(M['tail'], 1.2 + TAIL_LAG * i) for i in range(NJ)]
+    return dict(bob=bob, feet=feet, mid=(mid(0.05), mid(0.55)), tail=tail, head=math.radians(M['head_off']) + w(M['head'], 0.9), wings=w(M['wings'], 0))
+def frame(t, mode=None): return render(cycle_pose(t, MODES[mode], mode) if mode else REST)
+
+# Jump strips, posed by hand (degrees and px; feet lift toward the body, which stays put: physics moves the sprite).
+# Wings: positive raises them toward upright, negative sweeps them back; alternating frames read as a buzz.
+def jpose(bob=0, lift=0, hdx=0, fdx=0, tilt=0, wings=0, head=0, tail=0, wave=0, mid=0, t=0.0, midfold=0):
+    """A jump pose: hind feet trail hdx px and forefeet fdx px from home, all lifted `lift` px with toes tipped `tilt` deg;
+    the far pair follows a touch lower. tail: per-joint hold (negative uncurls); wave: tail ripple (deg) at phase t; midfold
+    swings both middle legs back (deg) to tuck them under the belly."""
+    r = math.radians
+    feet = {'RH': (hdx, lift, r(tilt)), 'LH': (hdx + 2, max(0, lift - 3), r(tilt)), 'RF': (fdx, lift * FORE_LIFT, r(tilt)), 'LF': (fdx + 2, max(0, lift * FORE_LIFT - 3), r(tilt))}
+    tl = [r(tail) + r(wave) * math.sin(2 * math.pi * t - 1.2 - TAIL_LAG * i) for i in range(NJ)]
+    return dict(bob=bob, feet=feet, mid=(r(mid + midfold), r(-mid * .7 + midfold)), tail=tl, head=r(head), wings=r(wings))
+AIR = dict(lift=28, hdx=-12, fdx=-6, tilt=30, tail=-1.5)   # tucked in the air, tail streaming a little
+JUMP = {
+    # Rise (8 frames, played once): crouch with the wings cocked up, spring off all fours on a downstroke, legs tuck as the
+    # wings start buzzing; the last frame is the air loop's first.
+    'jump-rise': [jpose(),
+                  jpose(bob=-4, wings=8, head=3, tail=1),
+                  jpose(bob=-7, wings=16, head=5, tail=2, mid=6),
+                  jpose(bob=1, wings=-16, head=-4, tail=-1, mid=-10),
+                  jpose(lift=10, hdx=-5, fdx=-2, tilt=15, wings=14, tail=-1.5, mid=-6),
+                  jpose(lift=22, hdx=-10, fdx=-5, tilt=26, wings=-12, tail=-1.5, mid=4),
+                  jpose(**AIR, wings=14, mid=8),
+                  jpose(**AIR, wings=-12, mid=4)],
+    # Air (6-frame loop): wings buzz three times a loop, legs dangle and sway, the tail ripples, the body bobs 1px.
+    'jump-air': [jpose(**{**AIR, 'hdx': AIR['hdx'] + 3 * math.sin(2 * math.pi * i / 6), 'lift': AIR['lift'] - 2 * math.sin(2 * math.pi * i / 6)},
+                       bob=round(math.sin(2 * math.pi * i / 6)), wings=14 if i % 2 else -12, wave=4, t=i / 6,
+                       mid=8 * math.sin(2 * math.pi * i / 6), head=-2 * math.sin(2 * math.pi * i / 6)) for i in range(6)],
+    # Flap (6 frames, played once on an air jump): wings thrown up high, then a hard downstroke as the legs kick down and back,
+    # tucking again into the air pose.
+    'jump-flap': [jpose(**AIR, wings=24, head=3, mid=10),
+                  jpose(lift=10, hdx=-14, fdx=-10, tilt=35, tail=-3, wings=-22, head=-4, bob=1, mid=-14),
+                  jpose(lift=13, hdx=-13, fdx=-8, tilt=30, tail=-2.5, wings=-14, head=-2, bob=1, mid=-8),
+                  jpose(lift=22, hdx=-13, fdx=-7, tilt=30, tail=-2, wings=10, mid=4),
+                  jpose(**AIR, wings=-10, mid=6),
+                  jpose(**AIR, wings=14, mid=8)],
+    # Land (5 frames, played once): feet down, the body sinks to soak it up with the wings flicking down, then settles.
+    'jump-land': [jpose(bob=-3, wings=12, tail=-1, head=2, mid=6),
+                  jpose(bob=-6, wings=-8, tail=1.5, head=4, mid=-6),
+                  jpose(bob=-5, wings=4, tail=1, head=3, mid=3),
+                  jpose(bob=-2, wings=-2, head=1, mid=-1),
+                  jpose()],
+}
+# Crouch: the body sinks low with the hind feet splayed back and the forefeet forward (the legs fold out like a crouching
+# spider), the middle legs fold back flat under the belly, the wings sweep back (not so far that they hide the stinger) and the
+# head drops.
+# Down eases into it over 5 frames (played once; up is the same frames reversed); the loop breathes 1px with a slow tail
+# ripple and a wing twitch.
+CROUCH = dict(bob=-24, hdx=-12, fdx=10, wings=-14, head=9, tail=0, midfold=55)
+ease = lambda x: 0.5 - 0.5 * math.cos(math.pi * x)
+def crouch_at(k, **extra):
+    c = {key: v * k for key, v in CROUCH.items()}; c['bob'] = round(c['bob'])
+    return jpose(**{**c, **extra})
+JUMP['crouch-down'] = [crouch_at(ease(i / 4)) for i in range(5)]
+JUMP['crouch'] = [crouch_at(1, bob=CROUCH['bob'] + (1 if i in (1, 2) else 0), wave=2, t=i / 4, wings=CROUCH['wings'] + (3 if i == 2 else 0)) for i in range(4)]
+JUMP['crouch-up'] = JUMP['crouch-down'][::-1]
+# Light combo (bite, bite, sting; 8 frames each at the shared 24/21/20 fps, feet planted). atk() is jpose plus pitch (deg,
+# positive tips the nose down), lean (px forward), jaw (deg open), abd (deg at the waist; positive lifts the rear) and tails
+# (per-joint bends in deg, base first).
+def atk(pitch=0, lean=0, jaw=0, tails=None, front=False, abd=0, **kw):
+    p = jpose(**kw); p['pitch'] = math.radians(pitch); p['lean'] = lean; p['jaw'] = math.radians(jaw); p['tail_front'] = front
+    p['abd'] = math.radians(abd)
+    if tails: p['tail'] = [math.radians(x) for x in tails]
+    return p
+# The sting: like a hissing cat he tips nose-down and bends the abdomen up at the waist (rear up, face down, back arched),
+# arching the tail up over his back (drawn in front of the body and wings), then whips the stinger forward over his head.
+STRIKE = [95, -8, -15, -19, -12, 3, 22, 48]
+JUMP['light1'] = [atk(),   # quick bite: rear back with the jaw opening, lunge and snap shut, settle
+                  atk(lean=-3, head=-6, jaw=20, mid=4),
+                  atk(lean=-5, head=-10, jaw=35, pitch=-3, mid=6),
+                  atk(lean=10, head=10, jaw=35, pitch=4, mid=-6),
+                  atk(lean=16, head=14, jaw=-4, pitch=5, wings=-6, mid=-8),
+                  atk(lean=14, head=12, pitch=4, wings=4, mid=-4),
+                  atk(lean=7, head=6, pitch=2),
+                  atk()]
+JUMP['light2'] = [atk(),   # harder bite: lower and further, jaws gaping wider, snap, then wrench the head up
+                  atk(lean=-4, head=-4, jaw=25, pitch=-2, mid=5),
+                  atk(lean=-6, jaw=45, pitch=2, bob=-2, mid=8, wings=6),
+                  atk(lean=12, head=18, jaw=45, pitch=8, bob=-4, mid=-8),
+                  atk(lean=18, head=24, jaw=-4, pitch=10, bob=-4, wings=-8, mid=-12),
+                  atk(lean=14, head=-4, jaw=-2, pitch=4, bob=-2, wings=6, mid=-6),
+                  atk(lean=6, head=-2, mid=-2),
+                  atk()]
+JUMP['light3'] = [atk(),   # sting: rear up, face down, back arched like a hissing cat, then the stinger whips forward over his head
+                  atk(pitch=10, abd=10, tails=[15, 0, -2, -2, -2, -1, 0, 4], head=12, bob=-2),
+                  atk(pitch=20, abd=22, tails=[40, 0, -6, -6, -6, -3, 0, 10], head=24, bob=-6, lean=4, wings=10, front=True),
+                  atk(pitch=24, abd=28, tails=[55, 0, -8, -10, -8, -4, 2, 15], head=30, bob=-8, lean=4, wings=14, jaw=15, front=True),
+                  atk(pitch=28, abd=30, tails=STRIKE, head=34, bob=-9, lean=13, wings=-10, front=True),
+                  atk(pitch=27, abd=29, tails=[x * .95 for x in STRIKE], head=32, bob=-9, lean=12, wings=-6, front=True),
+                  atk(pitch=10, abd=10, tails=[30, 0, -4, -5, -4, -1, 4, 10], head=12, bob=-3, lean=4, front=True),
+                  atk()]
+# Heavy: a charged sting. Rear (5 frames, once) rises into a high cocked arch, rear hoisted further than the light sting and
+# the tail tall; hold (4-frame loop while K is held) quivers the tail tip and buzzes the wings; slam (8 frames, once) whips
+# the stinger forward and drives it down hard over his lowered face with a lunge, holds the hit a beat and rocks back up.
+COCK = dict(pitch=22, abd=34, tails=[70, 0, -6, -8, -6, -2, 4, 15], head=28, bob=-7, lean=2, wings=16, jaw=20)
+def cock_at(k):
+    c = {key: ([x * k for x in v] if isinstance(v, list) else v * k) for key, v in COCK.items()}; c['bob'] = round(c['bob'])
+    return atk(front=k > .3, **c)
+JUMP['heavy-rear'] = [cock_at(ease(i / 4)) for i in range(5)]
+QUIVER = [(3, -6), (-3, 6), (2, -4), (-2, 4)]   # (tail-tip bend, wing) offsets per hold frame
+JUMP['heavy-hold'] = [atk(front=True, **{**COCK, 'tails': COCK['tails'][:4] + [x + q for x in COCK['tails'][4:]], 'wings': COCK['wings'] + w})
+                      for q, w in QUIVER]
+SLAM = [100, -8, -14, -18, -10, 8, 28, 60]
+JUMP['heavy-slam'] = [atk(pitch=26, abd=32, tails=[85, -4, -10, -14, -8, 4, 18, 40], head=32, bob=-9, lean=8, wings=-4, front=True),
+                      atk(pitch=28, abd=32, tails=SLAM, head=36, bob=-11, lean=16, wings=-14, front=True),
+                      atk(pitch=28, abd=31, tails=[x * .98 for x in SLAM], head=36, bob=-11, lean=16, wings=-10, front=True),
+                      atk(pitch=27, abd=30, tails=[x * .96 for x in SLAM], head=35, bob=-10, lean=15, wings=-6, front=True),
+                      atk(pitch=20, abd=22, tails=[x * .75 for x in SLAM], head=26, bob=-7, lean=11, front=True),
+                      atk(pitch=12, abd=12, tails=[x * .45 for x in SLAM], head=15, bob=-4, lean=6, front=True),
+                      atk(pitch=4, abd=4, tails=[x * .15 for x in SLAM], head=5, bob=-1, lean=2),
+                      atk()]
 os.makedirs(A.out, exist_ok=True)
-Image.fromarray(frame(0, True)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
-strip = np.concatenate([frame(i / A.frames) for i in range(A.frames)], 1)
-Image.fromarray(strip).save(os.path.join(A.out, 'myrmex-s2-walk.png'), optimize=True)
-strip = np.concatenate([frame(i / A.idle_frames, idle=True) for i in range(A.idle_frames)], 1)
-Image.fromarray(strip).save(os.path.join(A.out, 'myrmex-s2-idle.png'), optimize=True)
-print(f'rest pose, {A.frames}-frame walk and {A.idle_frames}-frame idle written to {A.out}')
+Image.fromarray(frame(0)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
+for mode, n in (('walk', A.frames), ('idle', A.idle_frames), ('run', A.run_frames)):
+    if A.only and not mode.startswith(A.only): continue
+    Image.fromarray(np.concatenate([frame(i / n, mode) for i in range(n)], 1)).save(os.path.join(A.out, f'myrmex-s2-{mode}.png'), optimize=True)
+for name, poses in JUMP.items():
+    if A.only and not name.startswith(A.only): continue
+    Image.fromarray(np.concatenate([render(P) for P in poses], 1)).save(os.path.join(A.out, f'myrmex-s2-{name}.png'), optimize=True)
+print(f'rest pose, walk, idle, run and the jump strips written to {A.out}')
