@@ -772,8 +772,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   crouchDown:{src:'assets/myrmex-s2-crouch-down.png',frames:5,fps:22,once:true,...MX2_NATIVE},crouch:{src:'assets/myrmex-s2-crouch.png',frames:4,fps:6,...MX2_NATIVE},
   crouchUp:{src:'assets/myrmex-s2-crouch-up.png',frames:5,fps:22,once:true,...MX2_NATIVE},
   // Light combo (shared 24/21/20 fps): bite, harder bite, sting. light1 rears back with the jaw opening, lunges and snaps; light2
-  // bites lower and further with the jaws gaping wider, then wrenches the head up; light3 (a PixelLab roll, MX2_LEFT) is a hissing-cat sting: the
-  // rear lifts, the tail rises over his back and lashes far forward with a slash streak, then he settles back to standing.
+  // bites lower and further with the jaws gaping wider, then wrenches the head up; light3 (a PixelLab roll, MX2_LEFT, 256x256 so the raised tail
+  // clears the top) is a hissing-cat sting: the rear lifts, the tail rises over his back and lashes far forward in a purple venom
+  // arc, then he settles back to standing.
   light1:{src:'assets/myrmex-s2-light1.png',frames:8,fps:24,once:true,...MX2_NATIVE},light2:{src:'assets/myrmex-s2-light2.png',frames:8,fps:21,once:true,...MX2_NATIVE},
   light3:{src:'assets/myrmex-s2-light3.png',frames:9,fps:20,once:true,...MX2_LEFT},
   // Heavy, a charged poison sting (PixelLab rolls, MX2_LEFT, 256x256 frames: the shifted base padded 64px on top for the raised
@@ -781,7 +782,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // the stinger; hold quivers it as the venom swells and drips; slam whips it over his head into the street ahead in a magenta arc
   // and a splash of purple venom, then he settles. Pound (S+J) reuses the slam, as on the other forms. No fire: he uses poison.
   heavyRear:{src:'assets/myrmex-s2-heavy-rear.png',frames:5,fps:20,once:true,...MX2_LEFT},heavyHold:{src:'assets/myrmex-s2-heavy-hold.png',frames:4,fps:10,...MX2_LEFT},
-  heavySlam:{src:'assets/myrmex-s2-heavy-slam.png',frames:7,fps:16,once:true,...MX2_LEFT},pound:{src:'assets/myrmex-s2-heavy-slam.png',frames:7,fps:16,once:true,...MX2_LEFT}}},
+  heavySlam:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT},pound:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
