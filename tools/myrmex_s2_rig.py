@@ -82,7 +82,7 @@ WAIST = (70, 64)
 abd_m = core_m & (xx <= 69)
 thx_m = core_m & ~abd_m
 # Tail chain: joints on the seams between the plates down the middle of the curl, base to stinger. Each tail pixel goes
-# to its nearest stretch of the centreline; the last stretch (the bulb) runs on into the stinger flame.
+# to its nearest stretch of the centreline; the last stretch (the bulb) runs on into the glowing stinger tip.
 TAIL_J = [(31, 67), (20, 65), (10, 58), (5, 52), (4, 42), (6, 34), (10, 28), (21, 24), (31, 31)]
 td = [dist(TAIL_J[i], TAIL_J[i + 1]) for i in range(len(TAIL_J) - 1)]
 td[-1] = np.minimum(td[-1], dist(TAIL_J[-1], (35, 42)))

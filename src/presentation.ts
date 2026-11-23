@@ -754,7 +754,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    hold:[[198,184],[199,184],[200,186],[200,186],[200,186],[200,184],[199,183],[198,183]]},
   throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
   stages:{1:BELIAL_S1,3:BELIAL_S3}},
- // Myrmex (red winged scorpion-ant: curled tail with a flaming stinger, orange wasp wings, long neck, two long hind legs, small
+ // Myrmex (red winged scorpion-ant: curled tail with a glowing venom stinger (poison, not fire), orange wasp wings, long neck, two long hind legs, small
  // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form until Stage 1 and 3 art exist, so every stage draws
  // it. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
  Myrmex:{width:120,anims:{idle:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,...MX2_NATIVE},
@@ -776,12 +776,12 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // rear lifts, the tail rises over his back and lashes far forward with a slash streak, then he settles back to standing.
   light1:{src:'assets/myrmex-s2-light1.png',frames:8,fps:24,once:true,...MX2_NATIVE},light2:{src:'assets/myrmex-s2-light2.png',frames:8,fps:21,once:true,...MX2_NATIVE},
   light3:{src:'assets/myrmex-s2-light3.png',frames:9,fps:20,once:true,...MX2_LEFT},
-  // Heavy, a charged sting (PixelLab rolls, MX2_LEFT, 256x256 frames: the shifted base padded 64px on top for the raised tail; strips
-  // draw bottom-anchored): rear lifts the rear end and cocks the flaming tail high over his back; hold quivers it while the stinger
-  // flame flares; slam lashes the tail over his head in a flaming arc into the street ahead (fire burst), then he settles. Pound
-  // (S+J) reuses the slam, as on the other forms.
+  // Heavy, a charged poison sting (PixelLab rolls, MX2_LEFT, 256x256 frames: the shifted base padded 64px on top for the raised
+  // tail; strips draw bottom-anchored): rear lifts the rear end and cocks the tail high over his back with purple venom beading on
+  // the stinger; hold quivers it as the venom swells and drips; slam whips it over his head into the street ahead in a magenta arc
+  // and a splash of purple venom, then he settles. Pound (S+J) reuses the slam, as on the other forms. No fire: he uses poison.
   heavyRear:{src:'assets/myrmex-s2-heavy-rear.png',frames:5,fps:20,once:true,...MX2_LEFT},heavyHold:{src:'assets/myrmex-s2-heavy-hold.png',frames:4,fps:10,...MX2_LEFT},
-  heavySlam:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT},pound:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT}}},
+  heavySlam:{src:'assets/myrmex-s2-heavy-slam.png',frames:7,fps:16,once:true,...MX2_LEFT},pound:{src:'assets/myrmex-s2-heavy-slam.png',frames:7,fps:16,once:true,...MX2_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
