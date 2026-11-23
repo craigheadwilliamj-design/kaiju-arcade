@@ -343,3 +343,28 @@ export const RIVER = {
  // Armory: destroying one stops squads arriving from its side of the block for armorySeconds.
  armorySeconds:40,armoryPoints:3000,armoryHeat:12,
 };
+
+// Phase 5: fire, rubble and the per-city twists (wired up in src/game.ts).
+export const FIRE = {
+ // A burning building takes dps x heat (heat climbs to 1 at grow/s); every spreadEvery seconds each neighbour within reach builds
+ // exposure (spreadChance x heat) and catches when it reaches 1. Scorched walls and pools beside a wall build exposure at poolChance/s. At most cap buildings burn at once. Rain (Tokyo) halves growth and spread; a water tower douses.
+ // Fire damage pays points but never charges the Ultimate. Sources: depot blasts, burning wrecks smashing into walls (wreckChance), fuel and flame
+ // pools on the pavement within poolReach of a wall (poolChance per second).
+ dps:7,grow:.12,spreadEvery:1.2,spreadChance:.35,reach:Math.round(36*CITY_SCALE),cap:6,poolChance:.35,start:.25,wreckChance:.35,poolReach:Math.round(24*CITY_SCALE),
+};
+export const RUBBLE = {
+ // Destroyed buildings leave rubble mounds you can climb: a collapse heaps heightK x height (min..max) over its footprint, a toppled
+ // tower leaves a ridge `ridge` high along where it fell. Mound sides slope over `side` of their width.
+ heightK:.12,min:Math.round(8*CITY_SCALE),max:Math.round(30*CITY_SCALE),ridge:Math.round(16*CITY_SCALE),side:.3,
+};
+export const TWISTS = {
+ // Mexico City: soft lake-bed ground. Slams, topple landings and blasts within sinkRadius sink nearby buildings sinkStep px (and
+ // sinkDamage); a building sunk past sinkMax of its height gives way.
+ sinkRadius:Math.round(170*CITY_SCALE),sinkStep:Math.round(9*CITY_SCALE),sinkDamage:30,sinkMax:.3,
+ // Paris: catacombs under every street. Slams cave in anywhere (no trains), catacombDepth deep.
+ catacombDepth:Math.round(46*CITY_SCALE),
+ // Hong Kong: towers packed shoulder to shoulder go down like dominoes: crush falloff and chain strength are higher.
+ dominoFalloff:.65,dominoChain:.7,
+ // Tokyo: quake-proof towers (quakeHeight and taller) shrug off half of any blow under quakeBreak and sway instead.
+ quakeHeight:Math.round(200*CITY_SCALE),quakeBreak:60,quakeKeep:.5,swaySeconds:.8,
+};

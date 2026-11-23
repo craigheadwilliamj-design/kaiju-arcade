@@ -10,10 +10,12 @@ import {CONFIG as C} from './config.ts';
 //  - pits: holes torn in the street at runtime (subway cave-ins); their floor is lower ground.
 export type Deck={x0:number,x1:number,y:number,alive:boolean};
 export type Pit={x0:number,x1:number,floor:number};
-let points:[number,number][]|null=null,water:[number,number,number][]=[],decks:Deck[]=[],pits:Pit[]=[];
+export type Mound={x0:number,x1:number,h:number,side:number};
+// mounds: rubble heaps on top of the street (they raise groundAt but not bedAt, so the street is still drawn under them).
+let points:[number,number][]|null=null,water:[number,number,number][]=[],decks:Deck[]=[],pits:Pit[]=[],mounds:Mound[]=[];
 export function setTerrain(p:[number,number][]|null,w:[number,number,number][]=[],d:Deck[]=[]){
- points=p&&p.length?[...p].sort((a,b)=>a[0]-b[0]):null;water=w;decks=d;pits=[];}
-export function hasTerrain(){return !!points||water.length>0||decks.length>0||pits.length>0;}
+ points=p&&p.length?[...p].sort((a,b)=>a[0]-b[0]):null;water=w;decks=d;pits=[];mounds=[];}
+export function hasTerrain(){return !!points||water.length>0||decks.length>0||pits.length>0||mounds.length>0;}
 function profileAt(x:number){
  if(!points)return C.ground;
  if(x<=points[0][0])return points[0][1];
@@ -23,10 +25,14 @@ function profileAt(x:number){
 export function deckAt(x:number){for(const d of decks)if(d.alive&&x>=d.x0&&x<d.x1)return d;return null;}
 export function pitAt(x:number){for(const p of pits)if(x>=p.x0&&x<p.x1)return p;return null;}
 export function groundAt(x:number){
- if(!points&&!decks.length&&!pits.length)return C.ground;
+ if(!points&&!decks.length&&!pits.length&&!mounds.length)return C.ground;
  const d=deckAt(x);if(d)return d.y;
- const g=profileAt(x),p=pitAt(x);return p?Math.max(g,p.floor):g;
+ const g=profileAt(x),p=pitAt(x);return (p?Math.max(g,p.floor):g)-moundAt(x);
 }
+// How high the rubble stands at x (0 off any mound): a flat top with sloped sides.
+export function moundAt(x:number){let h=0;for(const m of mounds){if(x<=m.x0||x>=m.x1)continue;const t=Math.min(1,Math.min(x-m.x0,m.x1-x)/m.side);h=Math.max(h,m.h*t);}return h;}
+export function addMound(x0:number,x1:number,h:number,side=.3){if(x1-x0<8||h<=0)return null;const m={x0,x1,h,side:Math.max(6,(x1-x0)*side)};mounds.push(m);return m;}
+export function moundList(){return mounds;}
 // The ground ignoring bridge decks: the street, the riverbed under a bridge, pit floors. For drawing what is under a deck.
 export function bedAt(x:number){if(!points&&!pits.length)return C.ground;const g=profileAt(x),p=pitAt(x);return p?Math.max(g,p.floor):g;}
 // Water surface at x, if x is over a river (whatever is under it).

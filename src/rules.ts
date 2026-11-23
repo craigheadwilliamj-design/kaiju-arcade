@@ -4,11 +4,12 @@ import type {BuildingSpec} from './levels.ts';
 // Hole positions are relative to the building: x from its left edge, y as height above the street.
 export type Hole={x:number,y:number,r:number,seed:number};
 // topple: 0 standing/squash, 1 falling (rigid rotation about the base corner on the tiltDir side), 2 lying as rubble.
-export type Building=BuildingSpec & {hpNow:number,collapse:number,rewarded:boolean,jolt:number,joltDir:number,holes:Hole[],topple:0|1|2,tilt:number,tiltV:number,tiltDir:number,toppleUlt:boolean,toppleGen:number,lifted:boolean,creak:number,base:number,floors:number[],floorMax:number};
+export type Building=BuildingSpec & {hpNow:number,collapse:number,rewarded:boolean,jolt:number,joltDir:number,holes:Hole[],topple:0|1|2,tilt:number,tiltV:number,tiltDir:number,toppleUlt:boolean,toppleGen:number,lifted:boolean,creak:number,base:number,floors:number[],floorMax:number,sink:number,sway:number};
+// sink: px the building has sunk into soft ground (base already includes it); sway: seconds left of a quake-proof sway.
 // floors: integrity left per floor, bottom first (empty for tiny structures and utility yards); floorMax is a fresh floor's integrity.
 // base: street height under the building (its foot; the roof is at base - h).
 // creak: seconds left of a destroyed tower shuddering before it falls (it stays solid until then).
-export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.map(b=>({...b,hpNow:b.hp,collapse:0,rewarded:false,jolt:0,joltDir:1,holes:[],topple:0,tilt:0,tiltV:0,tiltDir:1,toppleUlt:false,toppleGen:0,lifted:false,creak:0,base:groundUnder(b.x,b.w),...floorStack(b)}));}
+export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.map(b=>({...b,hpNow:b.hp,collapse:0,rewarded:false,jolt:0,joltDir:1,holes:[],topple:0,tilt:0,tiltV:0,tiltDir:1,toppleUlt:false,toppleGen:0,lifted:false,creak:0,base:groundUnder(b.x,b.w),sink:0,sway:0,...floorStack(b)}));}
 function floorStack(b:BuildingSpec){const n=Math.round(b.h/FLOORS.floorHeight);if(b.kind==='tiny'||b.role||n<FLOORS.minFloors)return {floors:[] as number[],floorMax:0};
  const max=b.hp/n*FLOORS.integrity;return {floors:Array(n).fill(max),floorMax:max};}
 // Small enough for the kaiju to pick up whole (newsstands, stronghold barricades); Stage 3 can lift small buildings too.
