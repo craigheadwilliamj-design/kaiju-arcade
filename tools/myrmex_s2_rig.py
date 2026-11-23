@@ -3,7 +3,7 @@
 
 Usage: python3 tools/myrmex_s2_rig.py OUT_DIR [--frames 16] [--idle-frames 8] [--run-frames 12]   (gaits: MODES below)
 Writes OUT_DIR/myrmex-s2.png (the rest pose in a 256x192 frame at x=55, feet on the bottom row) and OUT_DIR/myrmex-s2-walk.png,
--idle.png, -run.png, the jump strips (-jump-rise, -jump-air, -jump-flap, -jump-land) and the crouch (-crouch-down, -crouch, -crouch-up).
+-idle.png, -run.png, the jump strips (-jump-rise, -jump-air, -jump-flap, -jump-land) the crouch (-crouch-down, -crouch, -crouch-up) and the light combo (-light1..3).
 
 Source: tools/myrmex-s2-native.png, the 146x122 sprite keyed from the render (key_render.py --square). Its far foreleg is
 bent up in the air and its far hind leg is half hidden behind the near thigh, so both far legs are dropped and rebuilt as
@@ -69,7 +69,12 @@ memb = reg & (G >= 90)
 wing_m |= memb | (reg & (R + G < 200) & near(memb) & ~near(red & ~wing_m))
 tail_m = body & ~wing_m & ((xx <= 29) | ((xx <= 37) & (yy >= 20) & (yy <= 45)))
 head_m = body & ~wing_m & (((xx >= 100) & (yy <= 58) & (yy <= 56 + (xx - 100) * -0.1 + 6)) | ((xx >= 86) & (yy <= 34)))
-core_m = body & ~wing_m & ~tail_m & ~head_m
+# The lower mandible (the curved mauve piece under the snout) hinges on its own so the jaw can open and snap; the upper fang
+# stays with the head.
+JAW_P = (128, 46)
+jaw_m = head_m & (xx >= 127) & (xx <= 139) & (yy >= 45)
+head_m &= ~jaw_m
+core_m = body & ~wing_m & ~tail_m & ~head_m & ~jaw_m
 # Tail chain: joints on the seams between the plates down the middle of the curl, base to stinger. Each tail pixel goes
 # to its nearest stretch of the centreline; the last stretch (the bulb) runs on into the stinger flame.
 TAIL_J = [(31, 67), (20, 65), (10, 58), (5, 52), (4, 42), (6, 34), (10, 28), (21, 24), (31, 31)]
@@ -80,7 +85,7 @@ def layer(mask, dark=1.0):
     im = src.copy(); im[~mask] = 0
     if dark != 1: im[..., :3] = (im[..., :3] * dark).astype(np.uint8)
     return im
-BODY = layer(core_m); WINGS, HEAD = layer(wing_m), layer(head_m); MIDN, MIDF = layer(mid_n), layer(mid_f); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
+BODY = layer(core_m); WINGS, HEAD, JAW = layer(wing_m), layer(head_m), layer(jaw_m); MIDN, MIDF = layer(mid_n), layer(mid_f); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
 TAIL_SEGS = [layer(tail_m & (tseg == i)) for i in range(len(TAIL_J) - 1)]
 
 def scale2x(im):
@@ -161,28 +166,39 @@ def step(p, M, k=1, kl=1):
     if p < D: return S - 2 * S * p / D, 0.0, 0.0
     s = (p - D) / (1 - D); e = 0.5 - 0.5 * math.cos(math.pi * s)   # eased so the leg whips through mid-swing
     return -S + 2 * S * e, M['lift'] * kl * math.sin(math.pi * s) ** 0.8, math.radians(30) * math.sin(math.pi * s)
+PITCH_P = (62, 70)   # the body tips about the middle of the belly
+def rotp(p, c, a):   # rotate point p about c by a (clockwise on screen)
+    dx, dy = p[0] - c[0], p[1] - c[1]; return (c[0] + dx * math.cos(a) - dy * math.sin(a), c[1] + dx * math.sin(a) + dy * math.cos(a))
 def render(P):
     """Draw one pose. P: bob (px up), feet {limb: (dx from home, lift px, toe tilt rad)}, mid (near, far) rad, tail [per-joint rad],
-    head rad, wings rad (positive raises them toward upright)."""
-    cv = np.zeros((FH, FW, 4), np.uint8); bob = P['bob']; piv = lambda p: (p[0] + .5, p[1] + .5)
+    head rad, wings rad (positive raises them toward upright); optional pitch (rad, clockwise tips the nose down, about
+    PITCH_P), lean (px forward: the body moves, the feet stay planted), jaw (rad, opens the lower mandible) and tail_front (draw
+    the tail over the body and wings)."""
+    cv = np.zeros((FH, FW, 4), np.uint8); bob = P['bob']; pitch = P.get('pitch', 0.0); lean = P.get('lean', 0)
+    piv = lambda p: (p[0] + .5, p[1] + .5)
+    T = lambda p: F(rotp(p, PITCH_P, pitch), lean, -bob)   # source point on the body -> frame
     pose = {}
     for k, (far, jt, rdx, fdx, sk, kl) in LIMBS.items():
         dx, lift, tilt = P['feet'][k]
-        pose[k] = (jt, F(jt[0], rdx, -bob), F(jt[2], fdx + dx, -lift), tilt)
+        pose[k] = (jt, T((jt[0][0] + rdx, jt[0][1])), F(jt[2], fdx + dx, -lift), tilt)
     for k in ('LH', 'LF'): jt, r, f, tl = pose[k]; leg(cv, FAR, jt, r, f, tl)
-    blit(cv, MIDF, piv(MID_F), F(piv(MID_F), 0, -bob), P['mid'][1])
+    blit(cv, MIDF, piv(MID_F), T(piv(MID_F)), P['mid'][1] + pitch)
     # The tail curls segment by segment, drawn tip first so each plate overlaps the next one out.
-    js, phi = [F(piv(TAIL_J[0]), 0, -bob)], []
+    js, phi = [T(piv(TAIL_J[0]))], []
     for i in range(len(TAIL_J) - 1):
-        a = (phi[-1] if phi else 0) + P['tail'][i]; phi.append(a)
+        a = (phi[-1] if phi else pitch) + P['tail'][i]; phi.append(a)
         vx, vy = TAIL_J[i + 1][0] - TAIL_J[i][0], TAIL_J[i + 1][1] - TAIL_J[i][1]
         js.append((js[-1][0] + vx * math.cos(a) - vy * math.sin(a), js[-1][1] + vx * math.sin(a) + vy * math.cos(a)))
-    for i in reversed(range(len(TAIL_J) - 1)): blit(cv, TAIL_SEGS[i], piv(TAIL_J[i]), js[i], phi[i])
-    # Tail and head go under the core so it hides their seams; the wings go on top.
-    blit(cv, HEAD, piv(HEAD_P), F(piv(HEAD_P), 0, -bob), P['head'])
-    blit(cv, BODY, (0, 0), (OX, OY - bob))
-    blit(cv, WINGS, piv(WING_P), F(piv(WING_P), 0, -bob), P['wings'])
-    blit(cv, MIDN, piv(MID_N), F(piv(MID_N), 0, -bob), P['mid'][0])
+    draw_tail = lambda: [blit(cv, TAIL_SEGS[i], piv(TAIL_J[i]), js[i], phi[i]) for i in reversed(range(len(TAIL_J) - 1))]
+    if not P.get('tail_front'): draw_tail()
+    # Tail, head and jaw go under the core so it hides their seams; the wings go on top.
+    hd = P['head']
+    blit(cv, JAW, piv(JAW_P), T(rotp(piv(JAW_P), piv(HEAD_P), hd)), pitch + hd + P.get('jaw', 0.0))
+    blit(cv, HEAD, piv(HEAD_P), T(piv(HEAD_P)), pitch + hd)
+    blit(cv, BODY, piv(PITCH_P), T(piv(PITCH_P)), pitch)
+    blit(cv, WINGS, piv(WING_P), T(piv(WING_P)), P['wings'] + pitch)
+    blit(cv, MIDN, piv(MID_N), T(piv(MID_N)), P['mid'][0] + pitch)
+    if P.get('tail_front'): draw_tail()   # a sting whips the tail over his back, in front of the body and wings
     for k in ('RH', 'RF'): jt, r, f, tl = pose[k]; leg(cv, NEAR, jt, r, f, tl)
     return cv
 NJ = len(TAIL_J) - 1
@@ -256,6 +272,40 @@ def crouch_at(k, **extra):
 JUMP['crouch-down'] = [crouch_at(ease(i / 4)) for i in range(5)]
 JUMP['crouch'] = [crouch_at(1, bob=CROUCH['bob'] + (1 if i in (1, 2) else 0), wave=2, t=i / 4, wings=CROUCH['wings'] + (3 if i == 2 else 0)) for i in range(4)]
 JUMP['crouch-up'] = JUMP['crouch-down'][::-1]
+# Light combo (bite, bite, sting; 8 frames each at the shared 24/21/20 fps, feet planted). atk() is jpose plus pitch (deg,
+# positive tips the nose down), lean (px forward), jaw (deg open) and tails (per-joint bends in deg, base first).
+def atk(pitch=0, lean=0, jaw=0, tails=None, front=False, **kw):
+    p = jpose(**kw); p['pitch'] = math.radians(pitch); p['lean'] = lean; p['jaw'] = math.radians(jaw); p['tail_front'] = front
+    if tails: p['tail'] = [math.radians(x) for x in tails]
+    return p
+# The tail is too short to sting out past his head, so the sting is a scorpion strike over the shoulders: he coils back, tips
+# forward with the head ducked, and the tail whips over his back (drawn in front of the body and wings) to stab down above
+# his shoulders.
+STRIKE = [75, 5, -20, -25, -20, -5, 20, 45]
+JUMP['light1'] = [atk(),   # quick bite: rear back with the jaw opening, lunge and snap shut, settle
+                  atk(lean=-3, head=-6, jaw=20, mid=4),
+                  atk(lean=-5, head=-10, jaw=35, pitch=-3, mid=6),
+                  atk(lean=10, head=10, jaw=35, pitch=4, mid=-6),
+                  atk(lean=16, head=14, jaw=-4, pitch=5, wings=-6, mid=-8),
+                  atk(lean=14, head=12, pitch=4, wings=4, mid=-4),
+                  atk(lean=7, head=6, pitch=2),
+                  atk()]
+JUMP['light2'] = [atk(),   # harder bite: lower and further, jaws gaping wider, snap, then wrench the head up
+                  atk(lean=-4, head=-4, jaw=25, pitch=-2, mid=5),
+                  atk(lean=-6, jaw=45, pitch=2, bob=-2, mid=8, wings=6),
+                  atk(lean=12, head=18, jaw=45, pitch=8, bob=-4, mid=-8),
+                  atk(lean=18, head=24, jaw=-4, pitch=10, bob=-4, wings=-8, mid=-12),
+                  atk(lean=14, head=-4, jaw=-2, pitch=4, bob=-2, wings=6, mid=-6),
+                  atk(lean=6, head=-2, mid=-2),
+                  atk()]
+JUMP['light3'] = [atk(),   # sting over the shoulders
+                  atk(pitch=-6, lean=-4, tails=[5] * 8, head=-4, wings=4),
+                  atk(pitch=-10, lean=-6, tails=[8] * 8, head=-6, wings=8),
+                  atk(pitch=6, lean=4, tails=[45, 5, -15, -15, -10, 0, 10, 25], head=12, front=True),
+                  atk(pitch=14, lean=12, tails=STRIKE, head=30, bob=-4, wings=-10, front=True),
+                  atk(pitch=12, lean=10, tails=[x * .93 for x in STRIKE], head=26, bob=-3, wings=-4, front=True),
+                  atk(pitch=4, lean=4, tails=[30, 0, -8, -10, -8, 0, 8, 15], head=10, front=True),
+                  atk()]
 os.makedirs(A.out, exist_ok=True)
 Image.fromarray(frame(0)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
 for mode, n in (('walk', A.frames), ('idle', A.idle_frames), ('run', A.run_frames)):
