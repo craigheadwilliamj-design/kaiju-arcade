@@ -13,7 +13,7 @@ export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.ma
 function floorStack(b:BuildingSpec){const n=Math.round(b.h/FLOORS.floorHeight);if(b.kind==='tiny'||b.role||n<FLOORS.minFloors)return {floors:[] as number[],floorMax:0};
  const max=b.hp/n*FLOORS.integrity;return {floors:Array(n).fill(max),floorMax:max};}
 // Small enough for the kaiju to pick up whole (newsstands, stronghold barricades); Stage 3 can lift small buildings too.
-export function liftable(b:Building,stage=1){if(b.hpNow<=0||b.lifted)return false;if(b.h<=FEEL.liftHeight)return true;
+export function liftable(b:Building,stage=1){if(b.hpNow<=0||b.lifted||b.role==='hydrant')return false;if(b.h<=FEEL.liftHeight)return true;
  return stage>=3&&!b.landmark&&b.h<=FEEL.liftHeightStage3&&b.w<=FEEL.liftWidthStage3;}
 export function canTopple(b:Building){return b.kind!=='tiny'&&b.h>=FEEL.toppleMinHeight;}
 // Ground span [from,to] a fallen building covers: its pivot edge out to its full height in the fall direction.

@@ -368,3 +368,25 @@ export const TWISTS = {
  // Tokyo: quake-proof towers (quakeHeight and taller) shrug off half of any blow under quakeBreak and sway instead.
  quakeHeight:Math.round(200*CITY_SCALE),quakeBreak:60,quakeKeep:.5,swaySeconds:.8,
 };
+
+// City response (phase 5b): the city escalates as the block's destruction climbs past each threshold. Evacuation: every civilian
+// flees and roadblocks (barriers, `roadblocks` each side) go up ahead of the kaiju. Martial law: the military response steps up a tier
+// and the buildings still standing are reinforced (`reinforce` x HP). Air strike: a bombing run walks marked strikes across the kaiju
+// (`bombs` of them, `bombGap` px apart, `bombStep` s apart), again every `bombEvery` s.
+export const RESPONSE = {
+ thresholds:[.2,.45,.65],labels:['EVACUATION','MARTIAL LAW','AIR STRIKE'],roadblocks:2,roadblockOffset:Math.round(380*CITY_SCALE),
+ // The air-strike stage only comes in a city's blocks from airStrikeFrom on (block 1 tops out at martial law).
+ airStrikeFrom:1,reinforce:1.2,bombs:5,bombGap:Math.round(110*CITY_SCALE),bombStep:.4,bombEvery:20,
+};
+// Water mains (phase 5b): hydrants along district streets. Knock one over and the main bursts into a geyser for `seconds`: troops in
+// `radius` are shoved away and stunned every `tick`, cars pushed, fires doused.
+export const MAINS = {every:3,seconds:4,radius:Math.round(110*CITY_SCALE),tick:.5,damage:6,knockback:300,stun:.8,points:250,heat:6};
+// Tunnelling (phase 5b): at Stage 3 a shoulder barge at street level bursts a walk-through tunnel in a building
+// at least `minHeight` x the kaiju's height tall.
+export const TUNNEL = {minHeight:1.25,points:800,heat:8};
+
+// Elevated railway (phase 5b, Tokyo): a guideway `height` above the street on pillars every `pillar` px, in breakable spans
+// (`spanHP`). The kaiju can stand on it. Trains run along it every `trainEvery` s; one that reaches the kaiju on (or level with) the
+// track smashes into it and is thrown off, falling to the street to explode; one that reaches a broken span falls through.
+export const ELEVATED = {height:Math.round(72*CITY_SCALE),pillar:Math.round(260*CITY_SCALE),thick:Math.round(13*CITY_SCALE),spanHP:300,
+ trainEvery:6,trainSpeed:620,trainLength:Math.round(200*CITY_SCALE),points:2500,heat:14,trainPoints:3000,hitDamage:4,knock:280};

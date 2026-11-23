@@ -1,7 +1,7 @@
 // `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 // `role`: a structure with a job in the city (src/city.ts). `roof`: a rooftop fixture on an ordinary building.
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory',roof?:'radar'|'tank',shape?:string};
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant',roof?:'radar'|'tank',shape?:string};
 // `shape`: a landmark's silhouette ('tower' default, 'lattice', 'dome', 'twin', 'arch', 'needle', 'pagoda'); the hitbox is always its box.
 // Fixed New York Block 1: four screen widths, authored positions, never generated.
 const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
@@ -25,8 +25,8 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS} from './config.ts';
-import {profileFrom} from './terrain.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS} from './config.ts';
+import {profileFrom,profileY} from './terrain.ts';
 // Each city's look (phase 4): `mood` is its sky and light (lights 0 = broad day .. 1 = night: lit windows, neon), `style` picks the
 // facade drawing, `material` how its buildings break, `taxi`/`cars` its street colours, `ink` the HUD text colour over its sky.
 export type Mood={top:string,bottom:string,far:string,mid:string,near:string,win:string,lights:number,sun:string,rain?:boolean,smog?:boolean};
@@ -54,7 +54,8 @@ export const CITIES:City[]=[
 // Blocks without it keep the classic west spawn and single eastern exit.
 // `grids`: power grids as [from,to] x ranges; each is fed by the substation standing inside it. `poles`: power-pole x positions
 // (street lamps standing on the same spot are left out). Both optional; blocks without them have no city systems.
-export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number},subway?:[number,number][]};
+export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number},subway?:[number,number][],elevated?:[number,number]};
+// `elevated`: an elevated railway over [x0, x1] (Tokyo); world units.
 // `water`: river spans [from, to, surfaceY]; `bridge`: a deck at street level over [x0, x1] in `spans` breakable spans; `subway`: x ranges
 // with a subway line under the street (slams cave it in). All world units.
 // `ground`: the street profile as world [x, y] points (src/terrain.ts); absent = flat.
@@ -67,14 +68,23 @@ const sc=(n:number)=>Math.round(n*CONFIG.cityScale);
 function scaled<T extends {x:number,w:number,h:number}>(b:T):T{return {...b,x:sc(b.x),w:sc(b.x+b.w)-sc(b.x),h:sc(b.h)};}
 export const NEW_YORK_BLOCK_ONE:BuildingSpec[]=NEW_YORK_BLOCK_ONE_AUTHORED.map(scaled);
 function district(city:number,name:string,screens:number,entries:Entry[],street:number[],cars:number[],kind:BlockDef['kind']='district',start?:number):BlockDef{
- const theme=CITIES[city];let landmarks=0;return {name,screens,kind,street:street.map(sc),cars:cars.map(sc),...(start===undefined?{}:{start:sc(start)}),buildings:entries.map(([x,key,tag],i)=>{
+ const theme=CITIES[city];let landmarks=0;const built=entries.map(([x,key,tag],i)=>{
   if(key==='L'){const [label,shape]=(tag??'').split('|');return scaled({...BUILDING_PRESETS[key],x,label,color:LANDMARK_COLORS[landmarks++%LANDMARK_COLORS.length],landmark:true,...(shape?{shape}:{})});}
   if(key==='S'||key==='F'||key==='K')return scaled({...BUILDING_PRESETS[key],x,label:key==='K'?'ARMORY':'',color:key==='S'?'#7f8c88':key==='F'?'#c4bea6':'#8a5444',role:key==='S'?'substation':key==='F'?'depot':'armory'});
   return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='radar'||tag==='tank'?{roof:tag}:{})});
- })};
+ });
+ // Water mains: a fire hydrant on the pavement beside every MAINS.every-th street spot (never inside a building), in district and
+ // stronghold blocks. Appended after the authored buildings so their order is untouched.
+ const solids=built.filter(b=>b.kind!=='tiny'),w=Math.round(10*CONFIG.cityScale),h=Math.round(16*CONFIG.cityScale);
+ const hydrants:BuildingSpec[]=kind==='boss'?[]:street.filter((_,k)=>k%MAINS.every===1).map(x=>sc(x+40)).filter(x=>!solids.some(b=>x+w>b.x-6&&x<b.x+b.w+6)).map(x=>({x,w,h,hp:1,value:5,kind:'tiny',label:'',color:'#c0392b',role:'hydrant'}));
+ return {name,screens,kind,street:street.map(sc),cars:cars.map(sc),...(start===undefined?{}:{start:sc(start)}),buildings:[...built,...hydrants]};
 }
 // Terrain from authored [x, rise] pairs (rise above the default street, negative dips). Keep slopes in gaps: buildings need flat ground.
-function terrain(b:BlockDef,rises:[number,number][]):BlockDef{return {...b,ground:profileFrom(rises,CONFIG.cityScale)};}
+function terrain(b:BlockDef,rises:[number,number][]):BlockDef{const ground=profileFrom(rises,CONFIG.cityScale);
+ // Hydrants only stand on flat pavement.
+ return {...b,ground,buildings:b.buildings.filter(x=>x.role!=='hydrant'||profileY(ground,x.x)===profileY(ground,x.x+x.w))};}
+// Tokyo's open blocks carry an elevated railway along most of their length.
+function railway(b:BlockDef,from:number,to:number):BlockDef{return {...b,elevated:[sc(from),sc(to)]};}
 function riverworks(b:BlockDef,o:{ground:[number,number][],water:[number,number,number],bridge:[number,number,number],subway:[number,number]}):BlockDef{
  const [wa,wz,wr]=o.water,[ba,bz,n]=o.bridge;
  return {...terrain(b,o.ground),water:[[sc(wa),sc(wz),Math.round(CONFIG.ground-wr*CONFIG.cityScale)]],bridge:{x0:sc(ba),x1:sc(bz),spans:n},subway:[[sc(o.subway[0]),sc(o.subway[1])]]};}
@@ -121,10 +131,10 @@ export const LEVELS:BlockDef[][]=[
  district(3,'Myrmex Arena',4,[[520,'l'],[980,'m'],[1400,'h'],[1840,'t'],[2220,'s'],[2620,'l'],[3080,'m'],[3490,'s']],[350,850,1280,2100,2950,3370],[380,1260,2070,2940],'boss'),
  ],
  [
- district(4,'Shinjuku District',4,[[400,'m','cache'],[515,'h'],[650,'L','METROPOLITAN GOVT|twin'],[1161,'x'],[1274,'n'],[1345,'x'],[1456,'m','cache'],[2024,'x'],[2137,'L','KABUKICHO TOWER|tower'],[2410,'x'],[2774,'l'],[2927,'m'],[3047,'m'],[3166,'L','HANAZONO SHRINE|pagoda'],[3474,'m'],[3592,'m']],[190,840,1490,2130,2830,3470],[470,1180,1860,2460,3150],'district',1920),
- district(4,'Chuo Corridor',6,[[400,'m','cache'],[519,'x'],[634,'m'],[751,'s'],[1106,'L','TOKYO STATION|dome'],[1307,'l'],[1460,'m','cache'],[1833,'l'],[1989,'n'],[2058,'h'],[2192,'x'],[2575,'l'],[3003,'m'],[3121,'L','GINZA WAKO|tower'],[3549,'m'],[3669,'l'],[3823,'n'],[3891,'x'],[4256,'n'],[4326,'m'],[4444,'l'],[4602,'l'],[4986,'L','KABUKI-ZA|pagoda'],[5228,'m'],[5348,'s']],[220,960,1690,2370,3070,3790,4510,5250],[620,1300,2010,2760,3390,4150,4880,5570],'district',2880),
+ railway(district(4,'Shinjuku District',4,[[400,'m','cache'],[515,'h'],[650,'L','METROPOLITAN GOVT|twin'],[1161,'x'],[1274,'n'],[1345,'x'],[1456,'m','cache'],[2024,'x'],[2137,'L','KABUKICHO TOWER|tower'],[2410,'x'],[2774,'l'],[2927,'m'],[3047,'m'],[3166,'L','HANAZONO SHRINE|pagoda'],[3474,'m'],[3592,'m']],[190,840,1490,2130,2830,3470],[470,1180,1860,2460,3150],'district',1920),300,3500),
+ railway(district(4,'Chuo Corridor',6,[[400,'m','cache'],[519,'x'],[634,'m'],[751,'s'],[1106,'L','TOKYO STATION|dome'],[1307,'l'],[1460,'m','cache'],[1833,'l'],[1989,'n'],[2058,'h'],[2192,'x'],[2575,'l'],[3003,'m'],[3121,'L','GINZA WAKO|tower'],[3549,'m'],[3669,'l'],[3823,'n'],[3891,'x'],[4256,'n'],[4326,'m'],[4444,'l'],[4602,'l'],[4986,'L','KABUKI-ZA|pagoda'],[5228,'m'],[5348,'s']],[220,960,1690,2370,3070,3790,4510,5250],[620,1300,2010,2760,3390,4150,4880,5570],'district',2880),300,5400),
  district(4,'Crystal Heart',8,[[400,'h'],[534,'s'],[619,'h'],[753,'m'],[869,'h'],[1006,'l'],[1159,'m'],[1274,'l'],[1431,'m'],[1551,'m'],[1670,'s'],[1756,'l'],[1910,'x'],[2026,'l'],[2182,'l'],[2335,'x'],[2450,'l'],[2607,'m'],[2723,'h'],[2861,'l'],[3015,'s'],[3102,'x'],[3360,'b'],[3600,'b'],[3760,'b'],[4020,'b'],[4290,'b'],[4420,'h'],[4553,'l'],[4708,'h'],[4842,'s'],[4928,'n'],[4999,'l'],[5157,'l'],[5313,'m'],[5433,'l'],[5589,'m'],[5709,'x'],[5823,'n'],[5893,'h'],[6027,'n'],[6095,'h'],[6232,'m'],[6349,'s'],[6434,'l'],[6590,'h'],[6727,'s'],[6815,'h'],[6950,'n'],[7021,'s'],[7107,'n'],[7175,'m'],[7294,'s'],[7382,'m'],[7499,'n']],[200,1100,1960,2850,4540,5440,6350,7210],[650,1530,2390,3210,4510,5410,6290,7160],'stronghold'),
- district(4,'Tokyo Final Offensive',8,[[400,'h','cache'],[538,'l'],[693,'n'],[761,'m','cache'],[1103,'L','TOKYO TOWER|lattice'],[1306,'s'],[1389,'l'],[1817,'m'],[1935,'h'],[2072,'h'],[2209,'x'],[2538,'m'],[2656,'l'],[2811,'m'],[2929,'L','SKYTREE|needle'],[3357,'m'],[3474,'h'],[3970,'l'],[4127,'l'],[4535,'n'],[4602,'x'],[4717,'l'],[4870,'L','SENSŌ-JI|pagoda'],[5283,'x'],[5395,'l'],[5551,'m'],[5667,'l'],[6048,'h'],[6186,'l'],[6341,'s'],[6427,'h'],[6791,'L','SHIBUYA 109|tower'],[7038,'l'],[7192,'x'],[7493,'m']],[200,960,1690,2410,3170,3910,4620,5390,6150,6900],[580,1300,2040,2780,3520,4270,5020,5760,6510,7290],'district',3840),
+ railway(district(4,'Tokyo Final Offensive',8,[[400,'h','cache'],[538,'l'],[693,'n'],[761,'m','cache'],[1103,'L','TOKYO TOWER|lattice'],[1306,'s'],[1389,'l'],[1817,'m'],[1935,'h'],[2072,'h'],[2209,'x'],[2538,'m'],[2656,'l'],[2811,'m'],[2929,'L','SKYTREE|needle'],[3357,'m'],[3474,'h'],[3970,'l'],[4127,'l'],[4535,'n'],[4602,'x'],[4717,'l'],[4870,'L','SENSŌ-JI|pagoda'],[5283,'x'],[5395,'l'],[5551,'m'],[5667,'l'],[6048,'h'],[6186,'l'],[6341,'s'],[6427,'h'],[6791,'L','SHIBUYA 109|tower'],[7038,'l'],[7192,'x'],[7493,'m']],[200,960,1690,2410,3170,3910,4620,5390,6150,6900],[580,1300,2040,2780,3520,4270,5020,5760,6510,7290],'district',3840),300,7300),
  district(4,'Sargathoth Arena',4,[[530,'h'],[980,'l'],[1440,'m'],[1850,'s'],[2250,'t'],[2630,'h'],[3070,'l'],[3510,'s']],[360,860,1320,2130,2940,3390],[390,1280,2090,2920],'boss'),
  ],
 ];

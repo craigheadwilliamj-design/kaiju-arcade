@@ -45,6 +45,8 @@ export function groundUnder(x:number,w:number){let y=Math.min(groundAt(x),ground
 export function slopeAt(x:number){return (groundAt(x-4)-groundAt(x+4))/8;}
 // Authored profiles are [x, rise] pairs at authored scale: rise is how far above the default street the ground is (negative dips).
 export function profileFrom(rises:[number,number][],scale:number):[number,number][]{return rises.map(([x,r])=>[Math.round(x*scale),Math.round(C.ground-r*scale)]);}
+// Street height on a given profile (pure; for checking authored data before a block is loaded).
+export function profileY(pts:[number,number][],x:number){const p=[...pts].sort((a,b)=>a[0]-b[0]);if(x<=p[0][0])return p[0][1];for(let i=1;i<p.length;i++)if(x<=p[i][0]){const [x0,y0]=p[i-1],[x1,y1]=p[i];return x1===x0?y1:y0+(y1-y0)*(x-x0)/(x1-x0);}return p[p.length-1][1];}
 // The profile's points, for drawing the street.
 export function terrainPoints(){return points;}
 export function waterSpans(){return water;}
