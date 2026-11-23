@@ -3,7 +3,8 @@
 
 Usage: python3 tools/myrmex_s2_rig.py OUT_DIR [--frames 16] [--idle-frames 8] [--run-frames 12]   (gaits: MODES below)
 Writes OUT_DIR/myrmex-s2.png (the rest pose in a 256x192 frame at x=55, feet on the bottom row) and OUT_DIR/myrmex-s2-walk.png,
--idle.png, -run.png, the jump strips (-jump-rise, -jump-air, -jump-flap, -jump-land) the crouch (-crouch-down, -crouch, -crouch-up) and the light combo (-light1..3).
+-idle.png, -run.png, the jump strips (-jump-rise, -jump-air, -jump-flap, -jump-land) the crouch (-crouch-down, -crouch, -crouch-up), the light combo (-light1..3) and the heavy (-heavy-rear, -heavy-hold,
+-heavy-slam).
 
 Source: tools/myrmex-s2-native.png, the 146x122 sprite keyed from the render (key_render.py --square). Its far foreleg is
 bent up in the air and its far hind leg is half hidden behind the near thigh, so both far legs are dropped and rebuilt as
@@ -124,11 +125,11 @@ def ik(root, foot, j_rest, r_rest, f_rest):
     D = min(math.dist(root, foot), L1 + L2 - 0.01); ux, uy = (foot[0] - root[0]) / math.dist(root, foot), (foot[1] - root[1]) / math.dist(root, foot)
     a = math.acos(max(-1, min(1, (L1 * L1 + D * D - L2 * L2) / (2 * L1 * D))))
     side = math.copysign(1, (f_rest[0] - r_rest[0]) * (j_rest[1] - r_rest[1]) - (f_rest[1] - r_rest[1]) * (j_rest[0] - r_rest[0]))
-    best = None
+    best = None   # a fully stretched limb has its joint on the root-foot line: neither side matches, so keep the first
     for sg in (1, -1):
         jx, jy = ux * math.cos(sg * a) - uy * math.sin(sg * a), ux * math.sin(sg * a) + uy * math.cos(sg * a)
         J = (root[0] + L1 * jx, root[1] + L1 * jy)
-        if math.copysign(1, (foot[0] - root[0]) * (J[1] - root[1]) - (foot[1] - root[1]) * (J[0] - root[0])) == side: best = J
+        if best is None or math.copysign(1, (foot[0] - root[0]) * (J[1] - root[1]) - (foot[1] - root[1]) * (J[0] - root[0])) == side: best = J
     return best
 ang = lambda p, q: math.atan2(q[1] - p[1], q[0] - p[0])
 def leg(canvas, P, joints, root, foot, foot_tilt):
@@ -314,6 +315,26 @@ JUMP['light3'] = [atk(),   # sting: rear up, face down, back arched like a hissi
                   atk(pitch=27, abd=29, tails=[x * .95 for x in STRIKE], head=32, bob=-9, lean=12, wings=-6, front=True),
                   atk(pitch=10, abd=10, tails=[30, 0, -4, -5, -4, -1, 4, 10], head=12, bob=-3, lean=4, front=True),
                   atk()]
+# Heavy: a charged sting. Rear (5 frames, once) rises into a high cocked arch, rear hoisted further than the light sting and
+# the tail tall; hold (4-frame loop while K is held) quivers the tail tip and buzzes the wings; slam (8 frames, once) whips
+# the stinger forward and drives it down hard over his lowered face with a lunge, holds the hit a beat and rocks back up.
+COCK = dict(pitch=22, abd=34, tails=[70, 0, -6, -8, -6, -2, 4, 15], head=28, bob=-7, lean=2, wings=16, jaw=20)
+def cock_at(k):
+    c = {key: ([x * k for x in v] if isinstance(v, list) else v * k) for key, v in COCK.items()}; c['bob'] = round(c['bob'])
+    return atk(front=k > .3, **c)
+JUMP['heavy-rear'] = [cock_at(ease(i / 4)) for i in range(5)]
+QUIVER = [(3, -6), (-3, 6), (2, -4), (-2, 4)]   # (tail-tip bend, wing) offsets per hold frame
+JUMP['heavy-hold'] = [atk(front=True, **{**COCK, 'tails': COCK['tails'][:4] + [x + q for x in COCK['tails'][4:]], 'wings': COCK['wings'] + w})
+                      for q, w in QUIVER]
+SLAM = [100, -8, -14, -18, -10, 8, 28, 60]
+JUMP['heavy-slam'] = [atk(pitch=26, abd=32, tails=[85, -4, -10, -14, -8, 4, 18, 40], head=32, bob=-9, lean=8, wings=-4, front=True),
+                      atk(pitch=28, abd=32, tails=SLAM, head=36, bob=-11, lean=16, wings=-14, front=True),
+                      atk(pitch=28, abd=31, tails=[x * .98 for x in SLAM], head=36, bob=-11, lean=16, wings=-10, front=True),
+                      atk(pitch=27, abd=30, tails=[x * .96 for x in SLAM], head=35, bob=-10, lean=15, wings=-6, front=True),
+                      atk(pitch=20, abd=22, tails=[x * .75 for x in SLAM], head=26, bob=-7, lean=11, front=True),
+                      atk(pitch=12, abd=12, tails=[x * .45 for x in SLAM], head=15, bob=-4, lean=6, front=True),
+                      atk(pitch=4, abd=4, tails=[x * .15 for x in SLAM], head=5, bob=-1, lean=2),
+                      atk()]
 os.makedirs(A.out, exist_ok=True)
 Image.fromarray(frame(0)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
 for mode, n in (('walk', A.frames), ('idle', A.idle_frames), ('run', A.run_frames)):
