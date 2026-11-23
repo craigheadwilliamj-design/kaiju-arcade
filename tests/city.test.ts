@@ -33,8 +33,9 @@ test('Lower Manhattan is the city-systems pilot: two powered grids, depots, rada
  for(const x of b.buildings.filter(x=>x.role))assert.equal(x.kind,'tiny','utility yards never wall off the street');
  assert.ok(b.poles!.length>=10);for(const g of [0,1])assert.ok(b.poles!.filter(x=>gridOf(x,b.grids)===g).length>=5,`grid ${g} has a pole line`);
  for(const x of b.buildings.filter(x=>x.roof))assert.ok(x.kind!=='tiny'&&!x.landmark);
- // Only the pilot block carries the systems for now.
- assert.ok(LEVELS.flat().filter(x=>x.grids).length===1);
+ // Every city's open blocks carry the kit too (East River has its own river works instead).
+ assert.deepEqual(LEVELS.map(c=>c.map(x=>!!x.grids)),Array(5).fill(0).map((_,i)=>i===0?[true,true,false,false,false]:[true,true,false,true,false]));
+ assert.ok(LEVELS[2].every(x=>!x.poles?.length),'Paris has no overhead lines');
 });
 
 async function manhattan(){const h=await bootGame(.75);

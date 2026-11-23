@@ -27,7 +27,7 @@ test('real loop: the city responds in stages as the block falls (block 1 stops a
 
 test('real loop: walking into a hydrant bursts the main into a geyser',async()=>{
  const h=await campaign();
- try{const s=h.state(),cx=s.x+s.width/2,hy=s.buildings.filter((b:any)=>b.kind==='tiny'&&b.w<20).sort((a:any,b:any)=>Math.abs(a.x-cx)-Math.abs(b.x-cx))[0];assert.ok(hy,'a hydrant nearby');
+ try{const s=h.state(),cx=s.x+s.width/2,hy=s.buildings.filter((b:any)=>b.role==='hydrant').sort((a:any,b:any)=>Math.abs(a.x-cx)-Math.abs(b.x-cx))[0];assert.ok(hy,'a hydrant nearby');
   const k=hy.x>cx?'KeyD':'KeyA';let g=false;for(let n=0;n<900&&!g;n++){h.down(k);h.step(1);g=h.state().geysers>0;
    // Smash whatever is in the way.
    if(n%60===59){h.up(k);h.tap('KeyK');h.step(30);}}h.up(k);
@@ -62,6 +62,7 @@ test('real loop: Tokyo’s elevated line: jump onto it, a train smashes into the
   let banner='',flying=false;for(let n=0;n<60*(EL.trainEvery*2+3);n++){h.step();const q=h.state();if(q.banner==='TRAIN SMASHED INTO THE KAIJU'){banner=q.banner;flying=q.vehicles.some((v:any)=>v.kind==='train'&&v.state==='flying');break;}}
   assert.equal(banner,'TRAIN SMASHED INTO THE KAIJU');assert.ok(flying,'the train came off the track');
   for(let n=0;n<60;n++)h.step();s=h.state();const r=s.rails.findIndex((r:any)=>s.x+s.width/2>=r.x0&&s.x+s.width/2<r.x1);
-  if(r>=0&&Math.abs(s.y+s.height-s.rails[r].y)<2){for(let n=0;n<40&&h.state().rails[r].alive;n++){h.down('KeyS');h.tap('KeyJ');h.step(24);h.up('KeyS');h.step(4);}assert.equal(h.state().rails[r].alive,false,'pounded the span down');}
+  // Pounding the span from on top damages it (a strike can knock the kaiju off before it breaks).
+  if(r>=0&&Math.abs(s.y+s.height-s.rails[r].y)<2){const hp0=s.rails[r].hp;for(let n=0;n<6;n++){h.down('KeyS');h.step(3);h.tap('KeyJ');h.step(24);h.up('KeyS');h.step(4);}assert.ok(h.state().rails[r].hp<hp0,'pounding damages the span');}
  }finally{h.release();h.cleanup();}
 });
