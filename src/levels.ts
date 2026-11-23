@@ -82,17 +82,21 @@ function district(city:number,name:string,screens:number,entries:Entry[],street:
  // Street junk: each city's own clutter beside the other street spots (the first kind of the pair where k%3 is 0, the second at 2).
  const JUNK:Record<string,[string,string]>={nyc:['hotdog','trash'],mex:['taco','trash'],par:['morris','cafe'],hkg:['stall','trash'],tyo:['vending','trash']};
  const DIMS:Record<string,[number,number,number]>={hotdog:[26,28,40],trash:[12,18,10],taco:[30,30,40],morris:[16,46,40],cafe:[24,20,20],stall:[34,32,40],vending:[16,36,30]};
- const junk:BuildingSpec[]=kind==='boss'||name==='Combat Drills'?[]:street.map((x,k)=>{if(k%3===1)return null;const prop=JUNK[theme.style][k%3===0?0:1],[dw,dh,value]=DIMS[prop];
-  const w=Math.round(dw*CONFIG.cityScale),h=Math.round(dh*CONFIG.cityScale),px=sc(x-36);
-  // Never inside a building, past the block's edges, in the start plaza or crowding a newsstand.
-  if(solids.some(b=>px+w>b.x-6&&px<b.x+b.w+6)||px<200||px+w>sc(screens*960)-70||start!==undefined&&Math.abs(x-start)<200||built.some(b=>b.kind==='tiny'&&px+w>b.x-50&&px<b.x+b.w+50))return null;
-  return {x:px,w,h,hp:10,value,kind:'tiny' as const,label:'',color:'#888',prop};}).filter(Boolean) as BuildingSpec[];
+ // Placed in the real gaps between solid buildings: up to three per gap, spaced along it, alternating the city's two kinds.
+ const junk:BuildingSpec[]=[];if(kind!=='boss'&&name!=='Combat Drills'){
+  const edges=[...solids].sort((p,q)=>p.x-q.x),lo=200,hi=sc(screens*960)-70,keep=[...built.filter(b=>b.kind==='tiny'),...hydrants];let n=0;
+  const gaps:[number,number][]=[];let from=lo;for(const b of edges){if(b.x>from)gaps.push([from,b.x]);from=Math.max(from,b.x+b.w);}if(hi>from)gaps.push([from,hi]);
+  for(const [g0,g1] of gaps){const room=g1-g0-24;if(room<40)continue;const slots=Math.min(3,Math.max(1,Math.floor(room/110)));
+   for(let k=0;k<slots;k++){const prop=JUNK[theme.style][n%2],[dw,dh,value]=DIMS[prop];const w=Math.round(dw*1.3*CONFIG.cityScale),h=Math.round(dh*1.3*CONFIG.cityScale);
+    const px=Math.round(g0+12+(room-w)*(slots===1?.5:k/(slots-1)));
+    if(px<lo||px+w>hi||px+w>g1-8||start!==undefined&&Math.abs(px+w/2-sc(start))<sc(200)||keep.some(b=>px+w>b.x-24&&px<b.x+b.w+24)||junk.some(b=>px<b.x+b.w+12&&px+w>b.x-12))continue;
+    junk.push({x:px,w,h,hp:10,value,kind:'tiny',label:'',color:'#888',prop});n++;}}}
  return {name,screens,kind,street:street.map(sc),cars:cars.map(sc),...(start===undefined?{}:{start:sc(start)}),buildings:[...built,...hydrants,...junk]};
 }
 // Terrain from authored [x, rise] pairs (rise above the default street, negative dips). Keep slopes in gaps: buildings need flat ground.
 function terrain(b:BlockDef,rises:[number,number][]):BlockDef{const ground=profileFrom(rises,CONFIG.cityScale);
- // Hydrants and street junk only stand on flat pavement.
- return {...b,ground,buildings:b.buildings.filter(x=>(x.role!=='hydrant'&&!x.prop)||profileY(ground,x.x)===profileY(ground,x.x+x.w))};}
+ // Hydrants only stand on flat pavement; street junk tolerates a gentle slope (it stands on the high side).
+ return {...b,ground,buildings:b.buildings.filter(x=>(x.role!=='hydrant'&&!x.prop)||Math.abs(profileY(ground,x.x)-profileY(ground,x.x+x.w))<=(x.prop?6:0))};}
 // Tokyo's open blocks carry an elevated railway along most of their length.
 function railway(b:BlockDef,from:number,to:number):BlockDef{return {...b,elevated:[sc(from),sc(to)]};}
 function riverworks(b:BlockDef,o:{ground:[number,number][],water:[number,number,number],bridge:[number,number,number],subway:[number,number]}):BlockDef{
