@@ -281,6 +281,13 @@ export const MOVE = {
  // myrmexAirJump of a ground jump's launch; they refill on landing or grabbing a wall), and floats: gravity is x myrmexRiseGravity
  // going up and x myrmexFallGravity coming down, and he falls no faster than myrmexFallMax (myrmexGlideMax while Space is held),
  // both x sqrt(stage scale). A slam dive ignores all of it.
+ // Myrmex's Venom Spit (L, ground, air or wall): a glob of venom leaves the stinger (the strip's `mouth`) on the flick's impact
+ // frame at spitSpeed x sqrt(stage scale), spitAngle above level (spitLob more with W held), falling at spitGravity. It hits the
+ // first thing in its path for spitDamage; troops and the rival within spitRadius of the splash are poisoned: poisonDamage every
+ // poisonTick for poisonSeconds (a fresh dose resets the timer). On the street it leaves a venom puddle spitPool wide for
+ // spitPoolSeconds that poisons whatever stands in it. Damage scales with the stage like every hit.
+ spitCooldown:.55,spitSpeed:560,spitAngle:12,spitLob:24,spitGravity:900,spitDamage:14,spitRadius:44,spitSize:4,
+ poisonSeconds:3,poisonTick:.5,poisonDamage:4,spitPool:42,spitPoolSeconds:2.6,spitPoolDamage:2,
  myrmexJump:1.12,myrmexAirJumps:2,myrmexAirJump:.78,myrmexRiseGravity:.8,myrmexFallGravity:.45,myrmexFallMax:260,myrmexGlideMax:120,
 };
 

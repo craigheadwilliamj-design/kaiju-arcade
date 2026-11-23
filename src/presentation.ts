@@ -782,7 +782,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // the stinger; hold quivers it as the venom swells and drips; slam whips it over his head into the street ahead in a magenta arc
   // and a splash of purple venom, then he settles. Pound (S+J) reuses the slam, as on the other forms. No fire: he uses poison.
   heavyRear:{src:'assets/myrmex-s2-heavy-rear.png',frames:5,fps:20,once:true,...MX2_LEFT},heavyHold:{src:'assets/myrmex-s2-heavy-hold.png',frames:4,fps:10,...MX2_LEFT},
-  heavySlam:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT},pound:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT}}},
+  heavySlam:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT},pound:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT},
+  // Venom Spit (L): a PixelLab roll (MX2_LEFT, 256x256): the tail winds back, arcs over his back and snaps forward until the stinger
+  // points ahead, then settles. The glob leaves on impact frame 5 from `mouth`, the stinger tip on that frame; the roll's own
+  // spray was erased since the game draws the glob.
+  rangedStand:{src:'assets/myrmex-s2-ranged-stand.png',frames:9,fps:20,once:true,impact:5,...MX2_LEFT,mouth:[113,141]}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -925,7 +929,8 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
  :kaiju==='Myrmex'?[
   {keys:'SPACE › SPACE › SPACE',name:'Wing Beat',desc:'He can\'t fly, but his jump is huge, and in the air he can beat his wings for two more jumps before he has to touch down. They come back as soon as he lands or grabs a wall.'},
   {keys:'SPACE (hold)',name:'Glide',desc:'He floats down far more gently than anyone else; hold Space on the way down to glide even slower and cover more ground.'},
-  {keys:'L',name:'Spine',desc:'A horizontal ranged spine (his own ranged attack is still to come).'},
+  {keys:'L',name:'Venom Spit',desc:'Flick the tail over your back and spit a glob of purple venom from the stinger in a forward arc. Works on the ground, in the air and on a wall. It hits the first thing in its path, and anything caught in the splash is poisoned and keeps taking damage for a few seconds. A glob that reaches the street leaves a venom puddle that poisons whatever walks through it.'},
+  {keys:'L+W',name:'Lob',desc:'Hold W as you spit to lob the glob higher and further, over cover and onto rooftops.'},
   {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
   slam]
  :[
