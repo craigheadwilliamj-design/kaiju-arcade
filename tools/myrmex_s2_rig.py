@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Cutout rig for Myrmex Stage 2: poses the keyed sprite's own pixels, so frames never get redrawn (no shimmer).
 
-Usage: python3 tools/myrmex_s2_rig.py OUT_DIR [--stride 14] [--lift 8] [--frames 12]
+Usage: python3 tools/myrmex_s2_rig.py OUT_DIR [--stride 24] [--lift 18] [--frames 16] [--duty 0.6]
 Writes OUT_DIR/myrmex-s2.png (the rest pose in a 256x192 frame at x=55, feet on the bottom row) and OUT_DIR/myrmex-s2-walk.png.
 
 Source: tools/myrmex-s2-native.png, the 146x122 sprite keyed from the render (key_render.py --square). Its far foreleg is
@@ -10,17 +10,17 @@ copies of the near legs, darkened to FAR_DARK, drawn behind the body. Each walki
 (thigh/shin/foot, upper/lower/claws) by nearest bone line; everything else (body, head, wings, tail, middle legs, the
 roots of the near legs under the body) is one body layer.
 
-Walk: a lateral-sequence gait (near hind, near fore, far hind, far fore, a quarter cycle apart). Each foot is planted for
-three quarters of the cycle, sliding back STRIDE*2 px along the ground, then lifts LIFT px (toes tipped down) and swings
-forward. Joint positions come from two-bone IK with the source's bone lengths, keeping each knee/elbow on the side it bends
-in the art; each piece is rotated about its upper joint (nearest-neighbour, inverse-mapped) and placed on the new joint.
-The body bobs 1px twice a cycle. Frame 0 is the rest pose, so the loop starts on the base still.
+Walk: big sweeping bug steps in a lateral sequence (near hind, near fore, far hind, far fore, a quarter cycle apart). Each
+foot is planted for DUTY of the cycle, sliding back 2*STRIDE px along the ground, then lifts up to LIFT px in a high arc
+(toes tipped down 30 degrees, eased so the leg whips through mid-swing) and reaches forward. Joint positions come from two-bone IK with the source's bone lengths, keeping each knee/elbow on the side it bends
+in the art; each piece is rotated about its upper joint (RotSprite: Scale2x to 8x, rotate, sample centres) and placed on the new joint.
+The body bobs 2px twice a cycle. The rest pose (all feet planted at home) is the base still.
 """
 import argparse, math, os, numpy as np
 from PIL import Image
 ap = argparse.ArgumentParser(); ap.add_argument('out')
-ap.add_argument('--stride', type=float, default=14); ap.add_argument('--lift', type=float, default=8)
-ap.add_argument('--frames', type=int, default=12)
+ap.add_argument('--stride', type=float, default=24); ap.add_argument('--lift', type=float, default=18)
+ap.add_argument('--frames', type=int, default=16); ap.add_argument('--duty', type=float, default=0.6)
 A = ap.parse_args()
 src = np.asarray(Image.open(os.path.join(os.path.dirname(__file__), 'myrmex-s2-native.png')).convert('RGBA')).astype(np.uint8)
 H, W = src.shape[:2]; op = src[..., 3] > 0; yy, xx = np.mgrid[0:H, 0:W]
@@ -39,7 +39,7 @@ edge = np.where(yy <= 78, 101, 104 + (yy - 72) * 0.2)
 far_fore = op & (yy >= 70) & (yy <= 92) & (xx > edge + 0.5) & (xx < 135)
 hind_foot = op & ~far_hind & (yy >= 109) & (xx >= 22) & (xx <= 48)
 hind = op & ~far_hind & ~hind_foot & (((dist(HIP, KNEE) <= 5.5) & (xx <= 54)) | (dist(KNEE, ANKLE) <= 5))
-fore_foot = op & ~far_fore & (yy >= 105) & (xx >= 106) & (xx <= 127)
+fore_foot = op & ~far_fore & (yy >= 105) & (xx >= 106) & (xx <= 134)
 fore = op & ~far_fore & ~fore_foot & (((dist(SHO, ELB) <= 4.5) & (yy >= 64)) | (dist(ELB, WRI) <= 4.5))
 pieces = {'thigh': hind & (dist(HIP, KNEE) <= dist(KNEE, ANKLE)), 'shin': hind & (dist(HIP, KNEE) > dist(KNEE, ANKLE)), 'hfoot': hind_foot,
           'upper': fore & (dist(SHO, ELB) <= dist(ELB, WRI)), 'lower': fore & (dist(SHO, ELB) > dist(ELB, WRI)), 'ffoot': fore_foot}
@@ -50,13 +50,30 @@ def layer(mask, dark=1.0):
     return im
 BODY = layer(body); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
 
+def scale2x(im):
+    """EPX/Scale2x: doubles pixel art, rounding diagonal steps instead of blocking them (the RotSprite upscale)."""
+    p = np.pad(im, ((1, 1), (1, 1), (0, 0)), mode='edge'); P = p[1:-1, 1:-1]
+    A_, B_, C_, D_ = p[:-2, 1:-1], p[1:-1, 2:], p[1:-1, :-2], p[2:, 1:-1]   # up, right, left, down
+    eq = lambda u, v: (u == v).all(-1)
+    out = np.repeat(np.repeat(P, 2, 0), 2, 1).copy()
+    c0 = eq(C_, A_) & ~eq(C_, D_) & ~eq(A_, B_); c1 = eq(A_, B_) & ~eq(A_, C_) & ~eq(B_, D_)
+    c2 = eq(D_, C_) & ~eq(D_, B_) & ~eq(C_, A_); c3 = eq(B_, D_) & ~eq(B_, A_) & ~eq(D_, C_)
+    out[0::2, 0::2][c0] = A_[c0]; out[0::2, 1::2][c1] = B_[c1]; out[1::2, 0::2][c2] = C_[c2]; out[1::2, 1::2][c3] = D_[c3]
+    return out
+UP = 8   # RotSprite: Scale2x three times, rotate nearest at 8x, sample each output pixel's centre
+def up8(im): return scale2x(scale2x(scale2x(im)))
 gy, gx = np.mgrid[0:FH, 0:FW]
 def blit(canvas, im, piv_src, piv_dst, ang=0.0):
-    """Rotate im by ang (rad, clockwise on screen) about piv_src and put piv_src at piv_dst (frame coords); nearest sample."""
+    """Rotate im by ang (rad, clockwise on screen) about piv_src and put piv_src at piv_dst (frame coords)."""
+    big = up8(im) if abs(ang) > 1e-6 else None
     c, s = math.cos(-ang), math.sin(-ang)
     dx, dy = gx + 0.5 - piv_dst[0], gy + 0.5 - piv_dst[1]
-    sx = np.floor(c * dx - s * dy + piv_src[0] + 0.5).astype(int); sy = np.floor(s * dx + c * dy + piv_src[1] + 0.5).astype(int)
-    ok = (sx >= 0) & (sx < W) & (sy >= 0) & (sy < H); out = np.zeros((FH, FW, 4), np.uint8); out[ok] = im[sy[ok], sx[ok]]
+    fx, fy = c * dx - s * dy + piv_src[0], s * dx + c * dy + piv_src[1]
+    out = np.zeros((FH, FW, 4), np.uint8)
+    if big is None:
+        sx, sy = np.floor(fx).astype(int), np.floor(fy).astype(int); ok = (sx >= 0) & (sx < W) & (sy >= 0) & (sy < H); out[ok] = im[sy[ok], sx[ok]]
+    else:
+        sx, sy = np.floor(fx * UP).astype(int), np.floor(fy * UP).astype(int); ok = (sx >= 0) & (sx < W * UP) & (sy >= 0) & (sy < H * UP); out[ok] = big[sy[ok], sx[ok]]
     m = out[..., 3] > 0; canvas[m] = out[m]
 def ik(root, foot, j_rest, r_rest, f_rest):
     """Joint position for a two-bone limb from root to foot, bending the same way as in the rest pose."""
@@ -84,26 +101,30 @@ F = lambda p, dx=0, dy=0: (p[0] + OX + dx, p[1] + OY + dy)   # source -> frame c
 # Far legs: the near legs' pieces, hip/shoulder a little further back on the body, feet spread like the source's hind pair.
 # The forelegs are almost straight in the art (shoulder to claws 50.0px of 50.7px of bone), so their feet are planted
 # FORE_BACK px further back to give the elbows room to bend, and step FORE_STRIDE of the hind stride.
-FORE_BACK, FORE_STRIDE = 10, 0.7
-LIMBS = {'RH': (False, (HIP, KNEE, ANKLE), 0, 0, 0.00, 1), 'RF': (False, (SHO, ELB, WRI), 0, -FORE_BACK, 0.25, FORE_STRIDE),
-         'LH': (True, (HIP, KNEE, ANKLE), 7, 16, 0.50, 1), 'LF': (True, (SHO, ELB, WRI), 4, 14 - FORE_BACK, 0.75, FORE_STRIDE)}
-# far?, joints, root dx, foot dx, phase, stride scale
-def step(p, k=1):
-    p %= 1; S = A.stride * k
-    if p < 0.75: return S - 2 * S * p / 0.75, 0.0, 0.0
-    s = (p - 0.75) / 0.25; return -S + 2 * S * s, A.lift * math.sin(math.pi * s), math.radians(14) * math.sin(math.pi * s)
-def frame(t):
-    cv = np.zeros((FH, FW, 4), np.uint8); bob = round(math.sin(4 * math.pi * t) ** 2)
+# FORE_BACK px further back, so a forward step ends at the art's (fully reached) claw position and the back of the sweep
+# folds the elbow. Forelegs step FORE_STRIDE of the hind stride and lift FORE_LIFT of the hind lift.
+FORE_BACK, FORE_STRIDE, FORE_LIFT = 16, 0.67, 0.8
+LIMBS = {'RH': (False, (HIP, KNEE, ANKLE), 0, 0, 0.00, 1, 1), 'RF': (False, (SHO, ELB, WRI), 0, -FORE_BACK, 0.25, FORE_STRIDE, FORE_LIFT),
+         'LH': (True, (HIP, KNEE, ANKLE), 7, 16, 0.50, 1, 1), 'LF': (True, (SHO, ELB, WRI), 4, 14 - FORE_BACK, 0.75, FORE_STRIDE, FORE_LIFT)}
+# far?, joints, root dx, foot dx (home), phase, stride scale, lift scale
+def step(p, k=1, kl=1):
+    """Foot x offset from home, lift and toe tilt at cycle phase p: planted for DUTY sliding back, then a high sweeping arc forward."""
+    p %= 1; S = A.stride * k; D = A.duty
+    if p < D: return S - 2 * S * p / D, 0.0, 0.0
+    s = (p - D) / (1 - D); e = 0.5 - 0.5 * math.cos(math.pi * s)   # eased so the leg whips through mid-swing
+    return -S + 2 * S * e, A.lift * kl * math.sin(math.pi * s) ** 0.8, math.radians(30) * math.sin(math.pi * s)
+def frame(t, rest=False):
+    cv = np.zeros((FH, FW, 4), np.uint8); bob = 0 if rest else round(2 * math.sin(4 * math.pi * t) ** 2)
     pose = {}
-    for k, (far, jt, rdx, fdx, ph, sk) in LIMBS.items():
-        dx, lift, tilt = step(ph + t, sk); dx0 = step(ph, sk)[0]
-        pose[k] = (far, jt, F(jt[0], rdx, -bob), F(jt[2], fdx + dx - dx0, -lift), tilt)
+    for k, (far, jt, rdx, fdx, ph, sk, kl) in LIMBS.items():
+        dx, lift, tilt = (0, 0, 0) if rest else step(ph + t, sk, kl)
+        pose[k] = (far, jt, F(jt[0], rdx, -bob), F(jt[2], fdx + dx, -lift), tilt)
     for k in ('LH', 'LF'): far, jt, r, f, tl = pose[k]; leg(cv, FAR, jt, r, f, tl)
     blit(cv, BODY, (0, 0), (OX, OY - bob))
     for k in ('RH', 'RF'): far, jt, r, f, tl = pose[k]; leg(cv, NEAR, jt, r, f, tl)
     return cv
 os.makedirs(A.out, exist_ok=True)
-Image.fromarray(frame(0)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
+Image.fromarray(frame(0, True)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
 strip = np.concatenate([frame(i / A.frames) for i in range(A.frames)], 1)
 Image.fromarray(strip).save(os.path.join(A.out, 'myrmex-s2-walk.png'), optimize=True)
 print(f'rest pose and {A.frames}-frame walk written to {A.out}')
