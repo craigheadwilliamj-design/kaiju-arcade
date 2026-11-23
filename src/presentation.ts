@@ -64,6 +64,76 @@ const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
+// Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
+// tools/key_render.py --period 8.04, then tools/belial_s3_restyle.py onto the Stage 2 palette): the adult stands hunched on his hind legs,
+// claws forward, pink crystals between the back spines.
+const BL3_NATIVE={scale:200/256,anchor:28+128*200/256};
+// Belial Stage 3 attack strips: the same base shifted flush left (sprite at x=0) for 28px more reach in front of the snout.
+const BL3_LEFT={scale:200/256,anchor:0+128*200/256};
+// Belial Stage 3 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
+const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-idle.png',frames:8,fps:8,...BL3_NATIVE},
+ walk:{src:'assets/belial-s3-walk.png',frames:16,fps:15,...BL3_NATIVE},
+ // Run: skeleton-posed (tools/belial_s3_run_poses.py), both feet on one stride cycle half a beat apart so they pass each other, a
+ // short flight phase at full extension, the body pitched forward and sinking over the planted leg, the arms pumping opposite the legs.
+ run:{src:'assets/belial-s3-run.png',frames:8,fps:15,...BL3_NATIVE},
+ // Jump: sinks onto bent legs with the arms swung back and springs off both feet into a level, legs-tucked leap (rise); the air loop is
+ // frames 0,1,2,1 of a roll from the rise's last pose (the tail sways); the landing reaches the legs down, hits with the tail flung up,
+ // squashes and closes on the base. Bottom-aligned: physics moves him, the art only changes pose. Timing matches the other forms.
+ jumpRise:{src:'assets/belial-s3-jump-rise.png',frames:9,fps:24,once:true,...BL3_NATIVE},jumpAir:{src:'assets/belial-s3-jump-air.png',frames:4,fps:8,...BL3_NATIVE},
+ jumpLand:{src:'assets/belial-s3-jump-land.png',frames:5,fps:20,once:true,...BL3_NATIVE},
+ // Crouch: drops from the hunch onto all fours, belly and chin low, the spine crest still up (113px tall to about 92), a 4-frame breathing loop
+ // lying low; crouchUp is crouchDown reversed.
+ crouchDown:{src:'assets/belial-s3-crouch-down.png',frames:5,fps:22,once:true,...BL3_NATIVE},crouch:{src:'assets/belial-s3-crouch.png',frames:4,fps:6,...BL3_NATIVE},
+ crouchUp:{src:'assets/belial-s3-crouch-up.png',frames:5,fps:22,once:true,...BL3_NATIVE},
+ // Light combo (BL3_LEFT), one hand each: light1 swings the near arm (raised over the head, raked down and across, lime streak on frames
+ // 4-7), light2 the far arm (shot out past the snout from behind the jaw, hooked down, lime crescent on frames 3-4), both skeleton-posed
+ // (tools/belial_s3_light_poses.py); light3 is a lunging bite that snaps shut in a puff of acid on frame 3. Each starts on the shifted
+ // base; light1 ends with its streak fading. Light3's puff grazes the right edge for a frame or two.
+ light1:{src:'assets/belial-s3-light1.png',frames:8,fps:24,once:true,...BL3_LEFT},light2:{src:'assets/belial-s3-light2.png',frames:8,fps:21,once:true,...BL3_LEFT},
+ light3:{src:'assets/belial-s3-light3.png',frames:8,fps:20,once:true,...BL3_LEFT},
+ // Heavy, the scorpion tail strike (256x256 from the shifted base): the bladed tail swings up into a tall curl over the back with the
+ // hooked blade poised above the head (rear), quivers while K is held (hold), then on release snaps over the head and slashes down in
+ // front of the snout with a lime arc (frames 0-4, grazing the right edge), swings back down behind and settles on the shifted base.
+ heavyRear:{src:'assets/belial-s3-heavy-rear.png',frames:5,fps:20,once:true,...BL3_LEFT},heavyHold:{src:'assets/belial-s3-heavy-hold.png',frames:4,fps:10,...BL3_LEFT},
+ heavySlam:{src:'assets/belial-s3-heavy-slam.png',frames:8,fps:16,once:true,...BL3_LEFT},
+ // Acid Vomit (BL3_LEFT; the game draws the stream from `mouth`): vomitStart swells and glows the neck gland, heaves, pulls the head back and
+ // lurches into a wide gape; vomitAim holds the gape with the head at each of `angles` (two chin-tuck frames, the gape, four frames of the
+ // neck rising), `mouth` the midpoint of the jaw tips; vomitEnd lashes the tongue out in a gag, snaps shut and settles onto the shifted base.
+ vomitStart:{src:'assets/belial-s3-vomit-start.png',frames:5,fps:20,once:true,...BL3_LEFT,mouth:[208,118]},
+ vomitAim:{src:'assets/belial-s3-vomit-aim.png',frames:7,fps:10,once:true,...BL3_LEFT,angles:[-25,-12,0,8,18,32,45],
+  mouth:[[212,139],[210,128],[208,118],[207,113],[205,104],[201,98],[196,89]]},
+ vomitEnd:{src:'assets/belial-s3-vomit-end.png',frames:4,fps:16,once:true,...BL3_LEFT},
+ // Acid Pounce (256x256, the base padded 64px on top): dive gathers from the air loop and tips into a steep nose-down plunge, claws
+ // reaching for the street, tail whipped up (frames 0,3,5,7 of a roll from the air pose, bottom-aligned, held on the last); slamLand =
+ // frames 1-7 of a roll from that plunge to the base plus the base: claws and chest hit in a huge acid splash both ways (frame 2 nearly
+ // hides him), splash rings and spatter, a belly-flop, and he pushes back up into the hunch.
+ dive:{src:'assets/belial-s3-dive.png',frames:4,fps:24,once:true,...BL3_NATIVE},slamLand:{src:'assets/belial-s3-slam-land.png',frames:8,fps:16,once:true,...BL3_NATIVE},
+ // Climb (256x256, the base padded to 256 tall): a vertical gecko cling, back to the street, head up, tail hanging to the bottom row,
+ // the gripping claws on the wall line at frame x=168 (the hitbox edge 24 world units out at k=120/200). The grab crouches and leaps from
+ // the base and eases 87px left and 42px down onto the wall line; the loop is hand over hand; the punch draws the upper arm back and slams
+ // it in with a lime flash from impact frame 4; the mantle starts 24px further back (the game's roof slide), pulls up and lands on the base.
+ climbGrab:{src:'assets/belial-s3-climb-grab.png',frames:5,fps:20,once:true,...BL3_NATIVE},climb:{src:'assets/belial-s3-climb.png',frames:8,fps:12,...BL3_NATIVE},
+ climbMantle:{src:'assets/belial-s3-climb-mantle.png',frames:9,fps:20,once:true,...BL3_NATIVE},climbPunch:{src:'assets/belial-s3-climb-punch.png',frames:8,fps:24,once:true,impact:4,...BL3_NATIVE},
+ // Grab/carry/throw in both claws, not the jaws (256x256, the base padded to 256 tall; the game draws the prop): the grab bends over and
+ // scoops both claws along the street, rears upright and raises both arms straight up with the claws together overhead; the carry
+ // strains under it and the carry-walk stomps forward with the claws held overhead (skeleton-posed so both legs stride; both loops
+ // closed on the grab's last pose); the throw whips both arms forward and down with lime swooshes on frames 1-2 and settles on the base.
+ // `hold` (the prop's bottom centre): frames 0-4 on the street under the front claws, 5-7 following the rising hands, then the claw tips.
+ grab:{src:'assets/belial-s3-grab.png',frames:9,fps:22,once:true,...BL3_NATIVE,hold:[[205,255],[222,255],[224,255],[224,255],[222,255],[200,228],[203,190],[205,138],[171,97]]},
+ carry:{src:'assets/belial-s3-carry.png',frames:4,fps:6,...BL3_NATIVE,hold:[[171,97],[172,98],[173,99],[172,98]]},
+ carryWalk:{src:'assets/belial-s3-carry-walk.png',frames:8,fps:10,...BL3_NATIVE,hold:[[170,96],[170,95],[169,96],[169,97],[169,96],[169,95],[169,97],[169,97]]},
+ throw:{src:'assets/belial-s3-throw.png',frames:8,fps:18,once:true,...BL3_NATIVE},
+ // Ultimate, Acid Deluge (256x256, the base padded to 256 tall): ultCharge (13 frames at 20 fps = delugeCharge) plants and heaves as the
+ // neck gland swells into a huge shaded sac; ultRoar rears straight up to the top of the frame with the jaws thrown open at the sky, fully
+ // reared (and the geyser up) on impact frame 2; ultPound holds the rear with the sac pumping; ultSettle (frames 2-7 of a roll back to the
+ // base, plus the exact base) shrinks the sac, snaps shut and drops back into the hunch. `mouth` is the midpoint of the jaw tips on the
+ // reared frames (frames 0-1 are rough snout positions, unused before the geyser). Pound (S+J) is his heavy slam, as on Stage 1 and 2.
+ ultCharge:{src:'assets/belial-s3-ult-charge.png',frames:13,fps:20,once:true,...BL3_NATIVE},
+ ultRoar:{src:'assets/belial-s3-ult-roar.png',frames:9,fps:18,once:true,impact:2,...BL3_NATIVE,
+  mouth:[[222,168],[222,164],[136,18],[136,18],[136,18],[136,18],[136,18],[136,18],[136,18]]},
+ ultPound:{src:'assets/belial-s3-ult-pound.png',frames:4,fps:10,...BL3_NATIVE,mouth:[136,18]},
+ ultSettle:{src:'assets/belial-s3-ult-settle.png',frames:7,fps:14,once:true,...BL3_NATIVE},
+ pound:{src:'assets/belial-s3-heavy-slam.png',frames:8,fps:16,once:true,...BL3_LEFT}}};
 // Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
@@ -603,7 +673,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
   stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
  // Belial (low-slung striped reptile, umber blade spines, green acid gland and drool): as with Mogurodon the Stage 2 form is the base
- // form; Stage 1 has its own complete set (BELIAL_S1), and Stage 3 still draws this. Keys to 216x79 at x=20 (BL2_NATIVE).
+ // form; Stage 1 (BELIAL_S1) and Stage 3 (BELIAL_S3) have their own complete sets. Keys to 216x79 at x=20 (BL2_NATIVE).
  Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE},
   // Run (Shift / double-tap): a low bounding gallop, the body gathering and stretching with a short flight phase on frames 4-5 and dust
   // kicked back, tail streaming straight behind. Starts on the base and loops back to it.
@@ -677,7 +747,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carryWalk:{src:'assets/belial-s2-carry-walk.png',frames:8,fps:10,bite:true,...BL2_LEFT,
    hold:[[198,184],[199,184],[200,186],[200,186],[200,186],[200,184],[199,183],[198,183]]},
   throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
-  stages:{1:BELIAL_S1}},
+  stages:{1:BELIAL_S1,3:BELIAL_S3}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
