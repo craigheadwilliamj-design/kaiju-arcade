@@ -37,7 +37,10 @@ export const EXPLOSIVE=new Set<VehicleKind>(['car','van','bus','patrol','apc','t
 export const CIVILIAN=new Set<VehicleKind>(['car','van','bus']);
 const IMPACT:Partial<Record<VehicleKind,number>>={lamp:1.6};
 export function impact(v:Vehicle){return IMPACT[v.kind]??mass(v);}
-const COLORS=['#b16d5b','#70958e','#a09b65','#7d84a6','#c1a06a'];
+let COLORS=['#b16d5b','#70958e','#a09b65','#7d84a6','#c1a06a'],TAXI='';
+// Each city's car colours and taxi livery (phase 4). Taxis are cars painted in the livery with a roof sign (label 'TAXI').
+export function setVehicleLook(colors:string[],taxi:string){COLORS=colors.length?colors:COLORS;TAXI=taxi;}
+function taxi(v:Vehicle){if(TAXI&&v.kind==='car'){v.color=TAXI;v.label='TAXI';}return v;}
 
 export function vehicleBox(v:Vehicle){return {x:v.x,y:v.y,w:v.w,h:v.h};}
 export function mass(v:Vehicle){return v.mass??VEHICLE_SPECS[v.kind].mass;}
@@ -58,7 +61,7 @@ export function liftedBuilding(id:number,b:{x:number,w:number,h:number,color:str
 // The authored spots keep ids 1..n and their kinds; each then grows a row of up to V.parkedRow more vehicles eastward,
 // stopping short of the next authored spot so rows never run into each other.
 export function createParked(xs:number[]):Vehicle[]{
- const out=xs.map((x,i)=>make(i+1,i%4===3?'van':'car',x,0,COLORS[i%COLORS.length]));let id=xs.length+1;
+ const out=xs.map((x,i)=>{const v=make(i+1,i%4===3?'van':'car',x,0,COLORS[i%COLORS.length]);return i%3===0?taxi(v):v;});let id=xs.length+1;
  xs.forEach((x,i)=>{let end=x+VEHICLE_SPECS[out[i].kind].w;const limit=Math.min(...xs.filter(o=>o>x),Infinity)-V.parkedGap;
   for(let k=1;k<=V.parkedRow;k++){const r=(i*3+k)%7,kind:VehicleKind=r===0?'bus':r===3||r===5?'van':'car',start=end+V.parkedGap;
    if(start+VEHICLE_SPECS[kind].w>limit)break;const v=make(id++,kind,start,(k%2) as 0|1,COLORS[(i+k*2)%COLORS.length]);out.push(v);end=v.x+v.w;}});
@@ -75,7 +78,7 @@ export function uproot(v:Vehicle){if(!upright(v))return;const cx=v.x+v.w/2,cy=v.
 export function spawnTraffic(id:number,camera:number,dir:1|-1,rng:()=>number,viewW=C.width):Vehicle{
  const roll=rng(),kind:VehicleKind=roll<V.busChance?'bus':roll<V.busChance+V.vanChance?'van':'car',s=VEHICLE_SPECS[kind];
  const v=make(id,kind,dir>0?camera-s.w-V.spawnMargin:camera+viewW+V.spawnMargin,dir>0?0:1,COLORS[Math.floor(rng()*COLORS.length)%COLORS.length]);
- v.state='driving';v.traffic=true;v.dir=dir;v.cruise=V.trafficSpeed[0]+rng()*(V.trafficSpeed[1]-V.trafficSpeed[0]);v.speed=v.cruise;return v;
+ if(rng()<.4)taxi(v);v.state='driving';v.traffic=true;v.dir=dir;v.cruise=V.trafficSpeed[0]+rng()*(V.trafficSpeed[1]-V.trafficSpeed[0]);v.speed=v.cruise;return v;
 }
 
 // Drivers cruise until the kaiju is ahead, brake hard, then U-turn and flee faster.
