@@ -1,3 +1,4 @@
+import {groundAt} from './terrain.ts';
 import {CONFIG as C,MILITARY as M,MILITARY_FEEL as MF,UNIT_CONFIG,WEAPON_CONFIG} from './config.ts';
 import {overlaps} from './rules.ts';
 export type Rect={x:number,y:number,w:number,h:number};
@@ -29,7 +30,7 @@ export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Proj
 export function createMilitary(tier=1,city=0,rng=Math.random):MilitaryState{return {tier:Math.max(1,Math.min(5,tier)),city,units:[],projectiles:[],wrecks:[],effects:[],events:[],spawnTimer:M.firstSpawn,sequence:0,nextID:1,rng,squad:[],squadSize:0,squadLabel:''};}
 export function onScreen(r:Rect,camera:number,viewW=C.width){return r.x+r.w>camera&&r.x<camera+viewW;}
 export function spawnUnit(s:MilitaryState,type:UnitType,x:number,side=1,spotter=false):Unit{
- const d=UNITS[type],y=d.air?(type==='helicopter'?285:type==='jet'?267:246):C.ground-d.h;
+ const d=UNITS[type],y=d.air?(type==='helicopter'?285:type==='jet'?267:246):groundAt(x+d.w/2)-d.h;
  const hp=d.hp*(1+s.city*M.cityHP);
  const u:Unit={id:s.nextID++,type,x,y,w:d.w,h:d.h,hp,maxHP:hp,face:side,pass:side,cooldown:1.1,burst:0,gap:0,shots:0,kb:0,
   windup:0,windTotal:0,aimX:0,aimY:0,pending:null,stun:0,spotter,call:0,vy:0,flash:0};s.units.push(u);return u;
@@ -148,7 +149,7 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
   const target=boss&&Math.abs(boss.x-u.x)<Math.abs(player.x-u.x)?boss:player;
   u.flash=Math.max(0,u.flash-dt);
   u.x+=u.kb*dt;u.kb*=Math.exp(-M.knockbackFriction*dt);
-  if(!d.air){const floor=C.ground-u.h;if(u.vy!==0||u.y<floor){u.vy+=MF.unitGravity*dt;u.y+=u.vy*dt;if(u.y>=floor){u.y=floor;u.vy=0;}}}
+  if(!d.air){const floor=groundAt(u.x+u.w/2)-u.h;if(u.vy!==0||u.y<floor-2){u.vy+=MF.unitGravity*dt;u.y+=u.vy*dt;if(u.y>=floor){u.y=floor;u.vy=0;}}else u.y=floor;}
   if(u.type==='jet'||u.type==='bomber')u.x+=u.pass*d.speed*dt;
   if(overlaps(u,player)){
    if(u.type==='police'||u.type==='soldier')hitUnit(s,u,u.hp,contactSource,0,u.face,false,'crush');
@@ -166,7 +167,7 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
   if(u.spotter&&target===player){u.call+=dt;if(u.call>=MF.spotterSeconds){u.call=0;callStrike(s,u,player.x+player.w/2);}}
   if(u.windup>0){
    // Track until the lock, then hold the aim; fire when the wind-up ends.
-   if(u.windup>MF.lockAt){u.aimX=target.x+target.w/2;u.aimY=target.y+target.h*.65;if(u.pending==='strafe')u.aimY=C.ground-4;}
+   if(u.windup>MF.lockAt){u.aimX=target.x+target.w/2;u.aimY=target.y+target.h*.65;if(u.pending==='strafe')u.aimY=groundAt(u.aimX)-4;}
    u.windup=Math.max(0,u.windup-dt);if(u.windup===0)fire(s,u);
   }
   else if(u.cooldown===0&&u.burst===0&&!u.pending){startBurst(s,u,target);u.cooldown=d.cooldown;}
@@ -181,12 +182,12 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
   }}
  }
  for(const p of s.projectiles){if(p.dead)continue;const ox=p.x,oy=p.y;p.age+=dt;p.life-=dt;
-  if(p.weapon==='artillery'){const t=Math.min(1,p.age/p.flight);p.x=p.startX+(p.targetX-p.startX)*t;p.y=p.startY+(C.ground-p.startY)*t-Math.sin(t*Math.PI)*170;}
+  if(p.weapon==='artillery'){const t=Math.min(1,p.age/p.flight);p.x=p.startX+(p.targetX-p.startX)*t;p.y=p.startY+(groundAt(p.targetX)-p.startY)*t-Math.sin(t*Math.PI)*170;}
   else {if(p.weapon==='bomb')p.vy+=210*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}
   const hitsPlayer=segmentHits(ox,oy,p.x,p.y,player,2),hitsBoss=boss&&segmentHits(ox,oy,p.x,p.y,boss,2);
   if(p.weapon==='artillery'||p.weapon==='bomb'){
-   if(p.y>=C.ground||p.weapon==='artillery'&&p.age>=p.flight){p.y=C.ground;detonate(s,p,player,boss);}
-  }else if(hitsPlayer||hitsBoss||p.y>=C.ground){
+   if(p.y>=groundAt(p.x)||p.weapon==='artillery'&&p.age>=p.flight){p.y=groundAt(p.x);detonate(s,p,player,boss);}
+  }else if(hitsPlayer||hitsBoss||p.y>=groundAt(p.x)){
    if(p.radius>0)detonate(s,p,player,boss);
    else {p.dead=true;if(hitsPlayer){const hy=Math.max(player.y,Math.min(p.y,player.y+player.h));s.events.push({kind:'playerHit',damage:p.damage,strength:0,direction:Math.sign(p.vx)||1,x:Math.max(player.x,Math.min(p.x,player.x+player.w)),y:hy,weapon:p.weapon});}else if(hitsBoss)s.events.push({kind:'cosmetic',x:p.x,y:p.y});}
   }
@@ -196,10 +197,10 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
  // Downed aircraft fall, spinning, and crash once on the street (a blast that catches other military).
  for(const w of s.wrecks){w.life-=dt;if(!w.falling)continue;w.life=Math.max(w.life,.5);
   w.vy+=MF.airGravity*dt;w.x+=w.vx*dt;w.y+=w.vy*dt;w.angle+=w.spin*dt;
-  if(w.y>=C.ground-w.h){w.y=C.ground-w.h;w.falling=false;w.vx=0;w.vy=0;w.life=M.wreckSeconds;
-   const cx=w.x+w.w/2;s.effects.push({x:cx,y:C.ground-10,radius:MF.crashRadius,life:M.impactSeconds,harmless:true});
-   s.events.push({kind:'crash',type:w.type,x:cx,y:C.ground-8,radius:MF.crashRadius});
-   blast(s,cx,C.ground-10,MF.crashRadius,MF.crashDamage,w.credit,w.ultimate);}}
+  if(w.y>=groundAt(w.x+w.w/2)-w.h){const g=groundAt(w.x+w.w/2);w.y=g-w.h;w.falling=false;w.vx=0;w.vy=0;w.life=M.wreckSeconds;
+   const cx=w.x+w.w/2;s.effects.push({x:cx,y:g-10,radius:MF.crashRadius,life:M.impactSeconds,harmless:true});
+   s.events.push({kind:'crash',type:w.type,x:cx,y:g-8,radius:MF.crashRadius});
+   blast(s,cx,g-10,MF.crashRadius,MF.crashDamage,w.credit,w.ultimate);}}
  s.wrecks=s.wrecks.filter(w=>w.life>0);
  for(const e of s.effects)e.life-=dt;s.effects=s.effects.filter(e=>e.life>0);
  // Effects are cosmetic; they never resolve damage a second time.

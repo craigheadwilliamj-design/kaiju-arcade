@@ -1,3 +1,4 @@
+import {groundAt} from './terrain.ts';
 import {CONFIG as C,MILITARY as M} from './config.ts';
 import {overlaps} from './rules.ts';import type {Rect} from './military.ts';
 export type Civilian={x:number,variant:number,escaped:boolean,squashed:boolean,panicked:boolean};
@@ -15,9 +16,9 @@ export function releaseOccupants(s:Population,buildingID:number,x:number){
  for(let n=0;n<count&&s.civilians.length<M.civilianMax;n++)s.civilians.push({x:x+n*8,variant:(buildingID+n)%3,escaped:false,squashed:false,panicked:true});return count;
 }
 export function crushCar(car:Car){if(car.crushed)return 0;car.crushed=true;return M.carPoints;}
-export function carBox(car:Car):Rect{return {x:car.x,y:C.ground-23,w:48,h:23};}
+export function carBox(car:Car):Rect{return {x:car.x,y:groundAt(car.x+24)-23,w:48,h:23};}
 // c.x is the left edge; civilians stand on the street.
-export function civilianBox(c:Civilian):Rect{return {x:c.x,y:C.ground-M.civilianH,w:M.civilianW,h:M.civilianH};}
+export function civilianBox(c:Civilian):Rect{return {x:c.x,y:groundAt(c.x+M.civilianW/2)-M.civilianH,w:M.civilianW,h:M.civilianH};}
 export function tickPopulation(s:Population,dt:number,player:Rect,worldWidth:number,awardPoints=true){
  let points=0;
  for(const c of s.civilians){if(c.escaped||c.squashed)continue;

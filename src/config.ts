@@ -303,3 +303,13 @@ export const CITY = {
  // Debris that hits: slabs from collapses deal this to ground units they land on (cars get punted).
  slabDamage:22,slabCount:5,
 };
+
+// Floor stacks (src/rules.ts floor helpers, effects in src/game.ts). Every ordinary building is a stack of floors about floorHeight
+// tall. Each hit also wears down the floor it lands on; a floor's integrity is integrity x its share of the building's HP, so a
+// floor only gives out if blows keep landing on it. A failed floor below others pancakes (everything above drops one floor, crushing
+// what is at the foot of the building); a failed top floor is knocked off. HP and destruction are unchanged: the building still
+// goes down (and towers still topple) when its HP runs out, just shorter if floors have already failed.
+export const FLOORS = {
+ floorHeight:Math.round(40*CITY_SCALE),integrity:2.4,minFloors:2,
+ pancakeDamage:24,pancakeKnockback:180,pancakePoints:150,pancakeHeat:6,topPoints:100,topHeat:4,
+};

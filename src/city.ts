@@ -24,7 +24,7 @@ export type RoofProp={b:Building,kind:'radar'|'tank',hp:number,max:number,dead:b
 const ROOF={radar:{w:Math.round(30*C.cityScale),h:Math.round(34*C.cityScale),at:.62},tank:{w:Math.round(34*C.cityScale),h:Math.round(46*C.cityScale),at:.28}};
 export function createRoofProps(buildings:Building[],grids:[number,number][]|undefined):RoofProp[]{
  return buildings.filter(b=>b.roof).map(b=>{const kind=b.roof!,max=kind==='radar'?Y.radarHP:Y.tankHP;return {b,kind,hp:max,max,dead:false,call:0,grid:gridOf(b.x+b.w/2,grids)};});}
-export function roofBox(p:RoofProp,height=p.b.h){const d=ROOF[p.kind],x=Math.round(p.b.x+(p.b.w-7)*d.at-d.w/2);return {x,y:C.ground-height-d.h,w:d.w,h:d.h};}
+export function roofBox(p:RoofProp,height=p.b.h){const d=ROOF[p.kind],x=Math.round(p.b.x+(p.b.w-7)*d.at-d.w/2);return {x,y:p.b.base-height-d.h,w:d.w,h:d.h};}
 
 // Live wire: a downed pole's span, arcing on the street.
 export type LiveWire={from:number,to:number,t:number,grid:number,tick:number,pole:number};

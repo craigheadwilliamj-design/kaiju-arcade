@@ -25,11 +25,13 @@ test('Belial Acid Deluge: heaves, rears up, geyser, rain soaks both sides in ful
   h.step(Math.round(B.delugeCharge*60*.8));
   assert.equal(h.state().delugeSpout,false,'still heaving');assert.equal(h.state().rainDrops,0);
   assert.ok(until(h,()=>h.state().delugeSpout,60),'the geyser goes up');
-  for(let n=0;n<240&&h.state().ultimateTime>0;n++){h.step();const s=h.state();
+  // Track the deepest corrosion the rain lays: a fully corroded building gives way (and drops its corrosion) at corrodeBreak.
+  let deepest=0;const corrNow=()=>{deepest=Math.max(deepest,...h.state().corrosion);};
+  for(let n=0;n<240&&h.state().ultimateTime>0;n++){h.step();const s=h.state();corrNow();
    assert.ok(Math.abs(s.x-x0)<1&&Math.abs(s.y-y0)<1,'planted for the whole Ultimate');}
   assert.equal(h.state().ultimate,0,'its own damage never refills the meter');
   // The rain outlives the Ultimate until the last drop is down.
-  assert.ok(until(h,()=>!h.state().delugeActive&&h.state().rainDrops===0,240),'every drop has fallen');
+  assert.ok(until(h,()=>{corrNow();return !h.state().delugeActive&&h.state().rainDrops===0;},240),'every drop has fallen');
   const landed=h.state().delugeLandings as number[];
   assert.equal(landed.length,B.delugeDrops,`every drop came down somewhere (${landed.length})`);
   const left=landed.filter(x=>x<cx).length,right=landed.filter(x=>x>cx).length;
@@ -37,7 +39,7 @@ test('Belial Acid Deluge: heaves, rears up, geyser, rain soaks both sides in ful
   assert.ok(landed.every(x=>Math.abs(x-cx)<=B.delugeRange+1),'never past the rain radius');
   assert.ok(landed.some(x=>Math.abs(x-cx)>B.delugeRange*.6),'and far out');
   const st=h.state();
-  assert.ok(st.corrosion.some((c:number)=>c===B.corrodeMax),'buildings in the downpour are fully corroded');
+  assert.equal(deepest,B.corrodeMax,'buildings in the downpour are fully corroded');
   assert.ok(st.delugePools>0,'puddles left on the street');
   assert.ok(st.buildingHP.reduce((a:number,b:number)=>a+b,0)<hp0,'buildings took damage');
   // The corrosion it left keeps eating (Ultimate damage) without touching the meter.

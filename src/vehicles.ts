@@ -1,3 +1,4 @@
+import {groundAt} from './terrain.ts';
 import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F} from './config.ts';
 
 // Civilian vehicles: parked cars, passing traffic, and anything the kaiju punts, carries or throws.
@@ -44,13 +45,13 @@ export function loose(v:Vehicle){return v.state==='parked'||v.state==='driving'|
 
 function make(id:number,kind:VehicleKind,x:number,lane:0|1,color:string):Vehicle{
  const s=VEHICLE_SPECS[kind];
- return {id,kind,x,y:C.ground-s.h,w:s.w,h:s.h,vx:0,vy:0,angle:0,spin:0,state:'parked',color,lane,dir:1,speed:0,cruise:0,panic:0,rewarded:false,traffic:false,damage:0,hits:new Set(),label:''};
+ return {id,kind,x,y:groundAt(x+s.w/2)-s.h,w:s.w,h:s.h,vx:0,vy:0,angle:0,spin:0,state:'parked',color,lane,dir:1,speed:0,cruise:0,panic:0,rewarded:false,traffic:false,damage:0,hits:new Set(),label:''};
 }
 // A lifted prop starts in the kaiju's grip; its reward was already paid when it was lifted.
 export function makeProp(id:number,kind:VehicleKind,x:number,color:string,label=''):Vehicle{const v=make(id,kind,x,1,color);v.state='held';v.rewarded=true;v.label=label;return v;}
 // A lifted building keeps its footprint; heavier the bigger it is.
 export function liftedBuilding(id:number,b:{x:number,w:number,h:number,color:string,label:string}):Vehicle{
- const v=makeProp(id,'building',b.x,b.color,b.label);v.w=b.w;v.h=b.h;v.y=C.ground-b.h;
+ const v=makeProp(id,'building',b.x,b.color,b.label);v.w=b.w;v.h=b.h;v.y=groundAt(b.x+b.w/2)-b.h;
  const [lo,hi]=F.liftMassRange;v.mass=Math.max(lo,Math.min(hi,b.w*b.h/F.liftMassArea));return v;}
 // The authored spots keep ids 1..n and their kinds; each then grows a row of up to V.parkedRow more vehicles eastward,
 // stopping short of the next authored spot so rows never run into each other.
@@ -63,10 +64,10 @@ export function createParked(xs:number[]):Vehicle[]{
 // Street lamps keep the old backdrop spacing (every lampSpacing px from the west edge), now as real props.
 export function createLamps(worldWidth:number,firstId:number):Vehicle[]{const out:Vehicle[]=[];for(let x=V.lampSpacing,i=0;x<worldWidth-40;x+=V.lampSpacing,i++)out.push(make(firstId+i,'lamp',x-2,0,'#44575a'));return out;}
 // Power poles: taller lamp-kind props on a grid, strung with wires between neighbours.
-export function createPoles(xs:number[],grids:number[],height:number,firstId:number):Vehicle[]{return xs.map((x,i)=>{const v=make(firstId+i,'lamp',x-4,0,'#5b4a3a');v.w=8;v.h=height;v.y=C.ground-height;v.pole=grids[i];return v;});}
+export function createPoles(xs:number[],grids:number[],height:number,firstId:number):Vehicle[]{return xs.map((x,i)=>{const v=make(firstId+i,'lamp',x-4,0,'#5b4a3a');v.w=8;v.h=height;v.y=groundAt(x)-height;v.pole=grids[i];return v;});}
 export function upright(v:Vehicle){return v.kind==='lamp'&&v.w<v.h;}
 // Pull a lamppost out of the sidewalk: lay it flat about its centre so it can be carried and thrown lengthwise.
-export function uproot(v:Vehicle){if(!upright(v))return;const cx=v.x+v.w/2,cy=v.y+v.h/2;[v.w,v.h]=[v.h,v.w];v.x=cx-v.w/2;v.y=Math.min(C.ground-v.h,cy-v.h/2);}
+export function uproot(v:Vehicle){if(!upright(v))return;const cx=v.x+v.w/2,cy=v.y+v.h/2;[v.w,v.h]=[v.h,v.w];v.x=cx-v.w/2;v.y=Math.min(groundAt(v.x+v.w/2)-v.h,cy-v.h/2);}
 
 // Eastbound traffic uses lane 0 and enters from the left of the view; westbound uses lane 1 from the right.
 export function spawnTraffic(id:number,camera:number,dir:1|-1,rng:()=>number,viewW=C.width):Vehicle{
@@ -82,7 +83,7 @@ export function tickDriving(v:Vehicle,dt:number,kaijuX:number){
  if(v.panic===0&&ahead>0&&ahead<V.panicRange)v.panic=1;
  if(v.panic===1){v.speed=Math.max(0,v.speed-V.panicDecel*dt);if(v.speed===0){v.dir=-v.dir;v.panic=2;}}
  else if(v.panic===2)v.speed=Math.min(v.cruise*V.panicSpeed,v.speed+V.panicDecel*.6*dt);
- v.x+=v.dir*v.speed*dt;
+ v.x+=v.dir*v.speed*dt;v.y=groundAt(v.x+v.w/2)-v.h;
 }
 
 export function launch(v:Vehicle,vx:number,vy:number,damage:number){
@@ -94,7 +95,7 @@ export function tickFlying(v:Vehicle,dt:number,worldWidth:number){
  if(v.state!=='flying')return false;
  v.vy+=V.gravity*dt;v.x+=v.vx*dt;v.y+=v.vy*dt;if(v.kind==='lamp'&&v.damage>1)v.angle=Math.atan2(v.vy,v.vx);else v.angle+=v.spin*dt;
  if(v.x<0||v.x+v.w>worldWidth){v.x=Math.max(0,Math.min(worldWidth-v.w,v.x));v.vx=-v.vx*V.restitution;}
- const floor=C.ground-v.h;
+ const floor=groundAt(v.x+v.w/2)-v.h;
  if(v.y>=floor){v.y=floor;
   if(v.vy>V.bounceMin){v.vy=-v.vy*V.restitution;v.vx*=V.friction;v.spin*=V.friction;v.damage*=.5;}
   else{v.vy=0;v.vx=0;v.spin=0;v.damage=0;v.state='wreck';

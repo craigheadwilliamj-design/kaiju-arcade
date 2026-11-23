@@ -1,11 +1,16 @@
-import {CONFIG,FEEL} from './config.ts';
+import {groundUnder} from './terrain.ts';
+import {CONFIG,FEEL,FLOORS} from './config.ts';
 import type {BuildingSpec} from './levels.ts';
 // Hole positions are relative to the building: x from its left edge, y as height above the street.
 export type Hole={x:number,y:number,r:number,seed:number};
 // topple: 0 standing/squash, 1 falling (rigid rotation about the base corner on the tiltDir side), 2 lying as rubble.
-export type Building=BuildingSpec & {hpNow:number,collapse:number,rewarded:boolean,jolt:number,joltDir:number,holes:Hole[],topple:0|1|2,tilt:number,tiltV:number,tiltDir:number,toppleUlt:boolean,toppleGen:number,lifted:boolean,creak:number};
+export type Building=BuildingSpec & {hpNow:number,collapse:number,rewarded:boolean,jolt:number,joltDir:number,holes:Hole[],topple:0|1|2,tilt:number,tiltV:number,tiltDir:number,toppleUlt:boolean,toppleGen:number,lifted:boolean,creak:number,base:number,floors:number[],floorMax:number};
+// floors: integrity left per floor, bottom first (empty for tiny structures and utility yards); floorMax is a fresh floor's integrity.
+// base: street height under the building (its foot; the roof is at base - h).
 // creak: seconds left of a destroyed tower shuddering before it falls (it stays solid until then).
-export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.map(b=>({...b,hpNow:b.hp,collapse:0,rewarded:false,jolt:0,joltDir:1,holes:[],topple:0,tilt:0,tiltV:0,tiltDir:1,toppleUlt:false,toppleGen:0,lifted:false,creak:0}));}
+export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.map(b=>({...b,hpNow:b.hp,collapse:0,rewarded:false,jolt:0,joltDir:1,holes:[],topple:0,tilt:0,tiltV:0,tiltDir:1,toppleUlt:false,toppleGen:0,lifted:false,creak:0,base:groundUnder(b.x,b.w),...floorStack(b)}));}
+function floorStack(b:BuildingSpec){const n=Math.round(b.h/FLOORS.floorHeight);if(b.kind==='tiny'||b.role||n<FLOORS.minFloors)return {floors:[] as number[],floorMax:0};
+ const max=b.hp/n*FLOORS.integrity;return {floors:Array(n).fill(max),floorMax:max};}
 // Small enough for the kaiju to pick up whole (newsstands, stronghold barricades); Stage 3 can lift small buildings too.
 export function liftable(b:Building,stage=1){if(b.hpNow<=0||b.lifted)return false;if(b.h<=FEEL.liftHeight)return true;
  return stage>=3&&!b.landmark&&b.h<=FEEL.liftHeightStage3&&b.w<=FEEL.liftWidthStage3;}
@@ -43,3 +48,14 @@ export function separateHorizontal(body:{x:number,y:number,w:number,h:number},ob
  const candidates=[0,limit,...obstacles.flatMap(o=>[o.x-body.w,o.x+o.w])].filter(v=>v>=0&&v<=limit).sort((a,b)=>Math.abs(a-body.x)-Math.abs(b-body.x));
  return candidates.find(v=>!obstacles.some(o=>overlaps({...body,x:v},o)))??x;
 }
+
+// Floors: which one a blow `height` px above the foot lands on, how tall each is, and what happens when one gives out.
+export function floorHeightOf(b:Building){return b.floors.length?b.h/b.floors.length:b.h;}
+export function floorAt(b:Building,height:number){return Math.max(0,Math.min(b.floors.length-1,Math.floor(height/floorHeightOf(b))));}
+// Wear the floor at `height` by `amount`. Returns the failure ('pancake' / 'top') if it gave out, after removing it: the building
+// is one floor shorter, holes in that floor are gone and the ones above drop with the floors they are in.
+export function wearFloor(b:Building,amount:number,height:number):null|'pancake'|'top'{
+ if(b.floors.length<=1||b.hpNow<=0||amount<=0)return null;const i=floorAt(b,height);b.floors[i]-=amount;if(b.floors[i]>0)return null;
+ const fh=floorHeightOf(b),lo=i*fh,top=i===b.floors.length-1;b.floors.splice(i,1);b.h=Math.round(b.h-fh);
+ b.holes=b.holes.filter(o=>o.y<lo||o.y>=lo+fh).map(o=>o.y>=lo+fh?{...o,y:o.y-fh}:o);
+ return top?'top':'pancake';}
