@@ -189,6 +189,10 @@ export const BUILDING_PRESETS={
  x:{w:108,h:520,hp:780,value:520,kind:'medium'},
  n:{w:64,h:460,hp:540,value:340,kind:'medium'},
  L:{w:190,h:500,hp:1200,value:1000,kind:'large'},
+ // City systems (src/city.ts): a fenced power substation and a fuel depot. Low yards you walk past like a newsstand (tiny kind,
+ // so they never wall off a street) but they do not break on contact; you have to attack them. Not liftable.
+ S:{w:96,h:64,hp:240,value:200,kind:'tiny'},
+ F:{w:92,h:70,hp:160,value:150,kind:'tiny'},
 } as const;
 
 // Open-district exploration rewards. Neither drops crystals, so they never speed up evolution.
@@ -271,4 +275,31 @@ export const MOVE = {
  // charge, and on the street leaves a pool heavyLavaPoolWidth x body width there.
  heavyLavaGlobs:4,heavyLavaPower:[.6,1.2],heavyLavaPoolWidth:.5,
  poundMult:1.25,poundCooldown:.34,poundKnockback:120,
+};
+
+// City systems: the rampage multiplier and structures with jobs (src/city.ts; wired up in src/game.ts).
+export const CITY = {
+ // Rampage: heat 0-100 climbs with every point earned (gainPerRootPoint x sqrt(points), at most gainMax per award) and with damage
+ // dealt to buildings (gainPerDamage). After `grace` seconds without any it drains at `decay`/s. Thresholds pick the score multiplier.
+ rampageLevels:[0,15,38,62,85],rampageMult:[1,1.5,2,3,4],rampageGrace:2.4,rampageDecay:12,
+ gainPerRootPoint:.3,gainMax:18,gainPerDamage:.06,
+ // Extra heat for set pieces.
+ toppleHeat:6,explodeHeat:14,blackoutHeat:12,splashHeat:5,radarHeat:10,wireHeat:4,
+ // Substation down: its grid goes dark. Rooftop radars there go offline, spotter radios there lose signal, live wires go dead.
+ blackoutPoints:2500,
+ // Fuel depot: blows up when destroyed. Damage hits military, buildings (x buildingFactor) and vehicles in `radius`;
+ // other depots inside the radius go up too. Leaves burning fuel on the street.
+ depotRadius:Math.round(170*CITY_SCALE),depotDamage:130,depotBuildingFactor:1.1,depotFire:Math.round(150*CITY_SCALE),depotFireSeconds:7,depotFireDamage:7,
+ // Rooftop air-defence radar: while its grid is powered and its building is in view within radarRange of the kaiju it builds a call;
+ // at radarCall seconds it brings down a marked artillery strike. Climb up (or shoot it) and break it.
+ radarHP:70,radarCall:11,radarRange:Math.round(650*CITY_SCALE),radarPoints:3000,radarUltimate:15,
+ // Water tower: break it and the tank dumps onto the street, washing troops and cars away from the spot and dousing fires.
+ tankHP:30,tankPoints:400,splashRadius:Math.round(190*CITY_SCALE),splashDamage:10,splashKnockback:420,splashStun:1.2,
+ // Power poles (lamp-kind props): one knocked down on a powered grid drops a live wire across the street between its neighbours
+ // for wireSeconds, shocking (and stunning) ground units every wireTick.
+ poleH:Math.round(110*CITY_SCALE),wireSeconds:9,wireTick:.35,wireDamage:9,wireStun:.9,
+ // Delayed collapse: a destroyed tower creaks this long (direct hit / chain) before it starts to fall.
+ creakSeconds:.6,creakChain:.3,
+ // Debris that hits: slabs from collapses deal this to ground units they land on (cars get punted).
+ slabDamage:22,slabCount:5,
 };

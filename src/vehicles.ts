@@ -8,7 +8,8 @@ export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'sta
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number};
+ damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean};
+// pole: a power pole (lamp-kind prop) on that grid index; snapped once it has been knocked out of upright.
 export const VEHICLE_SPECS={
  // Sized to sit with the military's road vehicles (patrol car 48x23, APC 52x26, tank 59x31).
  car:{w:48,h:23,mass:1,points:80},
@@ -61,6 +62,8 @@ export function createParked(xs:number[]):Vehicle[]{
  return out;}
 // Street lamps keep the old backdrop spacing (every lampSpacing px from the west edge), now as real props.
 export function createLamps(worldWidth:number,firstId:number):Vehicle[]{const out:Vehicle[]=[];for(let x=V.lampSpacing,i=0;x<worldWidth-40;x+=V.lampSpacing,i++)out.push(make(firstId+i,'lamp',x-2,0,'#44575a'));return out;}
+// Power poles: taller lamp-kind props on a grid, strung with wires between neighbours.
+export function createPoles(xs:number[],grids:number[],height:number,firstId:number):Vehicle[]{return xs.map((x,i)=>{const v=make(firstId+i,'lamp',x-4,0,'#5b4a3a');v.w=8;v.h=height;v.y=C.ground-height;v.pole=grids[i];return v;});}
 export function upright(v:Vehicle){return v.kind==='lamp'&&v.w<v.h;}
 // Pull a lamppost out of the sidewalk: lay it flat about its centre so it can be carried and thrown lengthwise.
 export function uproot(v:Vehicle){if(!upright(v))return;const cx=v.x+v.w/2,cy=v.y+v.h/2;[v.w,v.h]=[v.h,v.w];v.x=cx-v.w/2;v.y=Math.min(C.ground-v.h,cy-v.h/2);}

@@ -3,8 +3,9 @@ import type {BuildingSpec} from './levels.ts';
 // Hole positions are relative to the building: x from its left edge, y as height above the street.
 export type Hole={x:number,y:number,r:number,seed:number};
 // topple: 0 standing/squash, 1 falling (rigid rotation about the base corner on the tiltDir side), 2 lying as rubble.
-export type Building=BuildingSpec & {hpNow:number,collapse:number,rewarded:boolean,jolt:number,joltDir:number,holes:Hole[],topple:0|1|2,tilt:number,tiltV:number,tiltDir:number,toppleUlt:boolean,toppleGen:number,lifted:boolean};
-export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.map(b=>({...b,hpNow:b.hp,collapse:0,rewarded:false,jolt:0,joltDir:1,holes:[],topple:0,tilt:0,tiltV:0,tiltDir:1,toppleUlt:false,toppleGen:0,lifted:false}));}
+export type Building=BuildingSpec & {hpNow:number,collapse:number,rewarded:boolean,jolt:number,joltDir:number,holes:Hole[],topple:0|1|2,tilt:number,tiltV:number,tiltDir:number,toppleUlt:boolean,toppleGen:number,lifted:boolean,creak:number};
+// creak: seconds left of a destroyed tower shuddering before it falls (it stays solid until then).
+export function createBuildings(specs:BuildingSpec[]):Building[]{return specs.map(b=>({...b,hpNow:b.hp,collapse:0,rewarded:false,jolt:0,joltDir:1,holes:[],topple:0,tilt:0,tiltV:0,tiltDir:1,toppleUlt:false,toppleGen:0,lifted:false,creak:0}));}
 // Small enough for the kaiju to pick up whole (newsstands, stronghold barricades); Stage 3 can lift small buildings too.
 export function liftable(b:Building,stage=1){if(b.hpNow<=0||b.lifted)return false;if(b.h<=FEEL.liftHeight)return true;
  return stage>=3&&!b.landmark&&b.h<=FEEL.liftHeightStage3&&b.w<=FEEL.liftWidthStage3;}
@@ -23,7 +24,7 @@ export function damageBuilding(b:Building,amount:number,source='player'):{damage
 export function destruction(buildings:Building[]):number {const total=buildings.reduce((n,b)=>n+b.value,0);return total?buildings.reduce((n,b)=>n+(b.rewarded?b.value:0),0)/total:0;}
 export function exitUnlocked(buildings:Building[]):boolean{return destruction(buildings)>=CONFIG.exitThreshold;}
 export function perfectBonus(buildings:Building[]):number{return destruction(buildings)===1?CONFIG.perfectBonus:0;}
-export function solid(b:Building):boolean{return b.kind!=='tiny'&&b.hpNow>0;}
+export function solid(b:Building):boolean{return b.kind!=='tiny'&&(b.hpNow>0||b.creak>0);}
 export function overlaps(a:{x:number,y:number,w:number,h:number},b:{x:number,y:number,w:number,h:number}){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
 
 export type CrystalObjective={x:number,hp:number,maxHP:number,shattered:boolean};
