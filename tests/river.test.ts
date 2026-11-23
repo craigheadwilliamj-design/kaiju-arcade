@@ -42,9 +42,10 @@ test('an armory down cuts off squads from its side; troops never walk into open 
 async function eastRiver(){const p=emptyPermanent();p.conquered=[0];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
  h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value='0';h.node('#free-boss').value='Mogurodon';h.node('#free-block').value='3';h.click('#free-start');return h;}
 
-test('real loop: Free Play can start on any block; East River opens with the bridge standing',async()=>{
+test('real loop: Free Play can start on any block; East River opens with the bridge standing and trains already running',async()=>{
  const h=await eastRiver();
- try{const s=h.state();assert.equal(s.mode,'playing');assert.equal(s.blockIndex,3);assert.deepEqual(s.spans.map((x:any)=>x.alive),[true,true,true]);assert.equal(s.pits.length,0);}
+ try{let seen=false;for(let n=0;n<Math.round((RIVER.trainEvery+1)*60);n++){h.step();if(h.state().trains>0){seen=true;break;}}assert.ok(seen,'trains run in the tunnel before any street is broken');
+  const s=h.state();assert.equal(s.mode,'playing');assert.equal(s.blockIndex,3);assert.deepEqual(s.spans.map((x:any)=>x.alive),[true,true,true]);assert.equal(s.pits.length,0);}
  finally{h.release();h.cleanup();}
 });
 
@@ -56,8 +57,12 @@ test('real loop: a slam on the street over the subway caves it in; the kaiju lan
   assert.ok(Math.abs(s.y+s.height-p.floor)<2,'standing on the pit floor');assert.ok(p.x1-p.x0>=RIVER.pitMin-1);
   h.tap('Space');h.step(14);h.down('KeyS');h.step(30);h.up('KeyS');h.step(20);s=h.state();
   assert.equal(s.pits.length,1);assert.ok(Math.abs(s.pits[0].floor-p.floor)<1,'slamming inside a pit does not dig it deeper');
-  let train=false;for(let n=0;n<Math.round((RIVER.trainEvery+2)*60);n++){h.step();if(h.state().trains>0){train=true;break;}}
-  assert.ok(train,'a train runs while a pit is open');
+  // Standing in the pit puts the kaiju in the trains' way: the next one smashes into it and derails; the one after piles into the wreck.
+  let smashed=false,banner='';
+  for(let n=0;n<Math.round((RIVER.trainEvery*2+4)*60);n++){h.step();const q=h.state();if(q.banner)banner=q.banner;if(q.trainWrecks>0){smashed=true;break;}}
+  assert.ok(smashed,'a train derailed against the kaiju');assert.equal(banner,'TRAIN SMASHED INTO THE KAIJU');assert.ok(h.state().damageTaken>0,'and it hurt a little');
+  let pile=false;for(let n=0;n<Math.round((RIVER.trainEvery*3+4)*60);n++){h.step();if(h.state().trainWrecks>=2){pile=true;break;}}
+  assert.ok(pile,'the next train piled into the wreck (or the kaiju)');
  }finally{h.release();h.cleanup();}
 });
 
@@ -78,5 +83,17 @@ test('real loop: a fully charged Stage 3 heavy on a middle floor shears the top 
   const after=h.state();assert.ok(after.buildings[k].hp>0,'the tower survives');assert.ok(after.buildings[k].floors<=f0-3,`sheared (${f0} -> ${after.buildings[k].floors} floors)`);
   assert.ok(after.vehicles.some((v:any)=>v.kind==='building'&&v.state==='flying'),'the top is flying');
   for(let n=0;n<240;n++)h.step();assert.ok(h.state().vehicles.every((v:any)=>v.kind!=='building'||v.state!=='flying'),'and lands');
+ }finally{h.release();h.cleanup();}
+});
+
+test('real loop: traffic that drives into a pit careens off the edge instead of driving through it',async()=>{
+ const h=await eastRiver();
+ try{
+  h.down('KeyA');h.step(90);h.up('KeyA');h.tap('Space');h.step(14);h.down('KeyS');h.step(30);h.up('KeyS');h.step(20);
+  const p=h.state().pits[0];assert.ok(p);h.down('KeyD');h.step(60);h.up('KeyD');
+  let through=0,careened=0;const seen=new Set<number>();
+  for(let n=0;n<60*40;n++){h.step();for(const v of h.state().vehicles){const c=v.x+v.w/2,inside=c>p.x0&&c<p.x1;
+   if(inside&&v.state==='driving')through++;if(inside&&v.state==='flying'&&!seen.has(v.id)){seen.add(v.id);careened++;}}}
+  assert.equal(through,0,'nothing drives along the pit floor');assert.ok(careened>0,'cars went over the edge');
  }finally{h.release();h.cleanup();}
 });
