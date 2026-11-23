@@ -18,12 +18,12 @@ import argparse, numpy as np
 from PIL import Image
 from scipy import ndimage as nd
 
-def grid(p, ax):
+def grid(p, ax, period=None):
     """Pixel-grid period and phase along an axis, from the strongest periodic component of colour edges."""
     rgb = p[..., :3] * (p[..., 3:] / 255)
     prof = np.abs(np.diff(rgb, axis=ax)).sum(2).sum(0 if ax == 1 else 1)
     prof -= prof.mean(); n = np.arange(len(prof)); best = None
-    for per in np.arange(4.0, 12.0, 0.005):
+    for per in ([period] if period else np.arange(4.0, 12.0, 0.005)):
         z = (prof * np.exp(2j * np.pi * n / per)).sum()
         if best is None or abs(z) > best[0]: best = (abs(z), per, (-np.angle(z) / (2 * np.pi) * per) % per)
     return best[1], best[2]
@@ -34,11 +34,13 @@ ap.add_argument('--frame', default='256x192'); ap.add_argument('--x', default='c
 ap.add_argument('--native', help='also write the cropped native sprite here')
 ap.add_argument('--width', type=int, help='resample to this sprite width when the native sprite is too big for the frame: the measured grid is '
                 'coarsened by native/target and cells are still median-sampled from the render, so colours stay crisp (no blending)')
+ap.add_argument('--square', action='store_true', help='reuse the x period for y (phase still measured): for renders whose y rhythm locks '
+                'onto a false harmonic and squashes the sprite')
 a = ap.parse_args()
 
 im = Image.open(a.src); has_alpha = 'A' in im.getbands()
 p = np.asarray(im.convert('RGBA')).astype(float)
-px, ox = grid(p, 1); py, oy = grid(p, 0)
+px, ox = grid(p, 1); py, oy = grid(p, 0, px if a.square else None)
 if a.width:
     # Native sprite width from the measured grid, then scale both periods so the opaque span is a.width cells.
     cols = np.nonzero((p[..., 3] >= 128).any(0))[0]; k = (cols[-1] - cols[0] + 1) / px / a.width

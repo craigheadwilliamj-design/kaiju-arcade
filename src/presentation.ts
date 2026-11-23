@@ -62,6 +62,9 @@ const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 // Belial Stage 1 strips: the belial-s1 base still, a 145x54 lean juvenile sprite at x=57 in a 256x192 frame (PixelLab Pixen edit of the
 // Stage 2 base, shrunk to 62% and re-drawn younger: slimmer, short nub spines, thin tail, the gland reduced to a drool).
 const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
+// Myrmex Stage 2 strips: the myrmex-s2 base still, a 146x122 winged scorpion-ant sprite at x=55 in a 256x192 frame, keyed with
+// tools/key_render.py --square.
+const MX2_NATIVE={scale:146/256,anchor:55+128*146/256};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
@@ -678,6 +681,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    hold:[[198,184],[199,184],[200,186],[200,186],[200,186],[200,184],[199,183],[198,183]]},
   throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
   stages:{1:BELIAL_S1}},
+ // Myrmex (red winged scorpion-ant: curled tail with a flaming stinger, orange wasp wings, long neck, two long hind legs, small
+ // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form until Stage 1 and 3 art exist, so every stage draws
+ // it. Keys to 146x122 at x=55 (MX2_NATIVE).
+ Myrmex:{width:120,anims:{idle:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,...MX2_NATIVE},
+  walk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,...MX2_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
