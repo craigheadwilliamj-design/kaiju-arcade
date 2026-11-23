@@ -24,6 +24,8 @@ from PIL import Image
 ap = argparse.ArgumentParser(); ap.add_argument('out')
 ap.add_argument('--frames', type=int, default=16); ap.add_argument('--idle-frames', type=int, default=8)
 ap.add_argument('--run-frames', type=int, default=12)
+ap.add_argument('--wings-only', action='store_true', help='render only the wings (a per-frame map of where they land, to keep a recolour off them)')
+ap.add_argument('--glow-only', action='store_true', help='render only the stinger-tip glow pixels (a per-frame map of where the glow lands, for recolouring finished strips)')
 ap.add_argument('--only', help='render only the strips whose name starts with this (e.g. crouch); skips the rest')
 A = ap.parse_args()
 src = np.asarray(Image.open(os.path.join(os.path.dirname(__file__), 'myrmex-s2-native.png')).convert('RGBA')).astype(np.uint8)
@@ -87,8 +89,17 @@ TAIL_J = [(31, 67), (20, 65), (10, 58), (5, 52), (4, 42), (6, 34), (10, 28), (21
 td = [dist(TAIL_J[i], TAIL_J[i + 1]) for i in range(len(TAIL_J) - 1)]
 td[-1] = np.minimum(td[-1], dist(TAIL_J[-1], (35, 42)))
 tseg = np.argmin(np.stack(td), 0)
+# The stinger-tip glow (bright, saturated orange to white at the tip of the tail): its colours match the wing membrane, so it is
+# found by place, not colour. --glow-only keeps just these pixels in every piece.
+_rgb = src[..., :3].astype(float) / 255; _mx, _mn = _rgb.max(-1), _rgb.min(-1); _l = (_mx + _mn) / 2
+_s = np.where(_mx == _mn, 0, (_mx - _mn) / np.maximum(1e-6, 1 - np.abs(2 * _l - 1)))
+_r, _g, _b = _rgb[..., 0], _rgb[..., 1], _rgb[..., 2]
+_h = np.where(_mx == _r, (60 * (_g - _b) / np.maximum(1e-6, _mx - _mn)) % 360, 0)
+GLOW = op & (xx >= 20) & (xx <= 38) & (yy >= 30) & (yy <= 44) & (_h >= 8) & (_h <= 60) & (_s >= .8) & (_l >= .38)
 def layer(mask, dark=1.0):
     im = src.copy(); im[~mask] = 0
+    if A.glow_only: im[~GLOW] = 0
+    if A.wings_only: im[~(mask & wing_m)] = 0
     if dark != 1: im[..., :3] = (im[..., :3] * dark).astype(np.uint8)
     return im
 ABD, THX = layer(abd_m), layer(thx_m); WINGS, HEAD, JAW = layer(wing_m), layer(head_m), layer(jaw_m); MIDN, MIDF = layer(mid_n), layer(mid_f); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
