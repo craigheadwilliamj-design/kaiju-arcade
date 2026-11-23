@@ -140,3 +140,24 @@ test('each authored parked spot becomes a bumper-to-bumper row, originals keep t
  const tight=createParked([1850,2000]);assert.ok(tight.every((c,i)=>i<2||c.x>2000||c.x+c.w<2000),'a row stops before the next authored car');assert.equal(tight[1].x,2000);
  assert.ok(cars.some(c=>c.kind==='bus')&&cars.some(c=>c.kind==='van'),'mixed row');
 });
+
+test('real loop: Stage 3 rips up a whole building and carries it (the carried building draws every frame)',async()=>{
+ const {FEEL}=await import('../src/config.ts');
+ const h=await bootGame(.75);
+ try{
+  h.click('#new');h.click('#skip-intro');h.node('#initials').value='LFT';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  const hold=(code:string,frames:number)=>{h.down(code);h.step(frames);h.up(code);};
+  for(let n=0;n<160&&h.state().stage<3&&h.state().mode==='playing';n++){hold('KeyD',8);h.tap('KeyK');h.step(40);hold('KeyA',1);h.tap('KeyK');h.step(40);hold('KeyD',3);}
+  assert.equal(h.state().stage,3,'reached Stage 3');for(let n=0;n<90;n++)h.step();
+  const s=h.state(),cx=s.x+s.width/2;
+  const ok=(b:any)=>b.hp>0&&b.kind!=='tiny'&&!b.landmark&&b.h<=FEEL.liftHeightStage3&&b.w<=FEEL.liftWidthStage3;
+  const clear=(b:any)=>!s.buildings.some((o:any)=>o!==b&&o.hp>0&&o.kind!=='tiny'&&o.x+o.w>Math.min(cx,b.x+b.w/2)&&o.x<Math.max(cx,b.x+b.w/2));
+  const target=s.buildings.filter((b:any)=>ok(b)&&clear(b)).sort((a:any,b:any)=>Math.abs(a.x+a.w/2-cx)-Math.abs(b.x+b.w/2-cx))[0];assert.ok(target,'a liftable building is standing');
+  const dir=target.x+target.w/2>cx?'KeyD':'KeyA';
+  for(let n=0;n<2400;n++){const q=h.state();const gap=dir==='KeyD'?target.x-(q.x+q.width):q.x-(target.x+target.w);if(gap<4)break;h.down(dir);h.step(1);}h.up(dir);
+  for(let n=0;n<4&&h.state().held!=='building';n++){h.tap('KeyH');h.step(20);}
+  assert.equal(h.state().held,'building','lifted it');h.step(60);
+  assert.equal(h.state().held,'building','still carrying it after a second of frames');
+  h.tap('KeyH');h.step(120);assert.equal(h.state().mode,'playing');
+ }finally{h.release();h.cleanup();}
+});
