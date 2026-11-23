@@ -23,6 +23,7 @@ from PIL import Image
 ap = argparse.ArgumentParser(); ap.add_argument('out')
 ap.add_argument('--frames', type=int, default=16); ap.add_argument('--idle-frames', type=int, default=8)
 ap.add_argument('--run-frames', type=int, default=12)
+ap.add_argument('--only', help='render only the strips whose name starts with this (e.g. crouch); skips the rest')
 A = ap.parse_args()
 src = np.asarray(Image.open(os.path.join(os.path.dirname(__file__), 'myrmex-s2-native.png')).convert('RGBA')).astype(np.uint8)
 H, W = src.shape[:2]; op = src[..., 3] > 0; yy, xx = np.mgrid[0:H, 0:W]
@@ -243,10 +244,11 @@ JUMP = {
                   jpose()],
 }
 # Crouch: the body sinks low with the hind feet splayed back and the forefeet forward (the legs fold out like a crouching
-# spider), the middle legs fold back flat under the belly, the wings sweep back flat, the head drops and the tail curls tighter.
+# spider), the middle legs fold back flat under the belly, the wings sweep back (not so far that they hide the stinger) and the
+# head drops.
 # Down eases into it over 5 frames (played once; up is the same frames reversed); the loop breathes 1px with a slow tail
 # ripple and a wing twitch.
-CROUCH = dict(bob=-24, hdx=-12, fdx=10, wings=-24, head=9, tail=2, midfold=55)
+CROUCH = dict(bob=-24, hdx=-12, fdx=10, wings=-14, head=9, tail=0, midfold=55)
 ease = lambda x: 0.5 - 0.5 * math.cos(math.pi * x)
 def crouch_at(k, **extra):
     c = {key: v * k for key, v in CROUCH.items()}; c['bob'] = round(c['bob'])
@@ -257,7 +259,9 @@ JUMP['crouch-up'] = JUMP['crouch-down'][::-1]
 os.makedirs(A.out, exist_ok=True)
 Image.fromarray(frame(0)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
 for mode, n in (('walk', A.frames), ('idle', A.idle_frames), ('run', A.run_frames)):
+    if A.only and not mode.startswith(A.only): continue
     Image.fromarray(np.concatenate([frame(i / n, mode) for i in range(n)], 1)).save(os.path.join(A.out, f'myrmex-s2-{mode}.png'), optimize=True)
 for name, poses in JUMP.items():
+    if A.only and not name.startswith(A.only): continue
     Image.fromarray(np.concatenate([render(P) for P in poses], 1)).save(os.path.join(A.out, f'myrmex-s2-{name}.png'), optimize=True)
 print(f'rest pose, walk, idle, run and the jump strips written to {A.out}')
