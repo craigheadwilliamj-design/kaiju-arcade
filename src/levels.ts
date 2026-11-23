@@ -63,7 +63,8 @@ function riverworks(b:BlockDef,o:{ground:[number,number][],water:[number,number,
  return {...terrain(b,o.ground),water:[[sc(wa),sc(wz),Math.round(CONFIG.ground-wr*CONFIG.cityScale)]],bridge:{x0:sc(ba),x1:sc(bz),spans:n},subway:[[sc(o.subway[0]),sc(o.subway[1])]]};}
 function powered(b:BlockDef,grids:[number,number][],poles:number[]):BlockDef{return {...b,grids:grids.map(([a,z])=>[sc(a),sc(z)] as [number,number]),poles:poles.map(sc)};}
 // The original packed wall-to-wall Lower Manhattan stays as the Combat Drills map.
-export const DRILL_BLOCK:BlockDef=district(0,'Combat Drills',4,[[400,'s'],[483,'l'],[637,'s'],[724,'s'],[807,'h'],[944,'x'],[1059,'n'],[1128,'m'],[1248,'n'],[1316,'h'],[1454,'l'],[1608,'m'],[1727,'s'],[1810,'m'],[1926,'h'],[2061,'l'],[2219,'m'],[2335,'x'],[2446,'m'],[2562,'h'],[2699,'h'],[2835,'n'],[2907,'l'],[3061,'s'],[3149,'m'],[3268,'h'],[3405,'l'],[3560,'m'],[3675,'s']],[175,375,520,805,1005,1185,1425,1605,1715,1920,2160,2330,2570,2815,3130,3390,3630],[230,710,1005,1195,1580,1910,2160,2370,2550,2830,3120,3380,3650]);
+// Drills also carry a short subway line at the far east end, to practise cave-ins, trains and (at Stage 3) snatching a train.
+export const DRILL_BLOCK:BlockDef={...district(0,'Combat Drills',4,[[400,'s'],[483,'l'],[637,'s'],[724,'s'],[807,'h'],[944,'x'],[1059,'n'],[1128,'m'],[1248,'n'],[1316,'h'],[1454,'l'],[1608,'m'],[1727,'s'],[1810,'m'],[1926,'h'],[2061,'l'],[2219,'m'],[2335,'x'],[2446,'m'],[2562,'h'],[2699,'h'],[2835,'n'],[2907,'l'],[3061,'s'],[3149,'m'],[3268,'h'],[3405,'l'],[3560,'m'],[3675,'s']],[175,375,520,805,1005,1185,1425,1605,1715,1920,2160,2330,2570,2815,3130,3390,3630],[230,710,1005,1195,1580,1910,2160,2370,2550,2830,3120,3380,3650]),subway:[[sc(2600),sc(3840)]]};
 export const LEVELS:BlockDef[][]=[
  [
  // Lower Manhattan is the city-systems pilot: a west and an east power grid (substation 'S' each), fuel depots 'F', rooftop radars and

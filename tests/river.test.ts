@@ -63,6 +63,7 @@ test('real loop: a slam on the street over the subway caves it in; the kaiju lan
   assert.ok(smashed,'a train derailed against the kaiju');assert.equal(banner,'TRAIN SMASHED INTO THE KAIJU');assert.ok(h.state().damageTaken>0,'and it hurt a little');
   let pile=false;for(let n=0;n<Math.round((RIVER.trainEvery*3+4)*60);n++){h.step();if(h.state().trainWrecks>=2){pile=true;break;}}
   assert.ok(pile,'the next train piled into the wreck (or the kaiju)');
+  for(let n=0;n<3;n++){h.tap('KeyH');h.step(20);}assert.notEqual(h.state().held,'train','only Stage 3 can lift a train');if(h.state().held){h.tap('KeyH');h.step(30);}
   // Three wrecks close the line: no more trains, so it can't be farmed.
   for(let n=0;n<Math.round((RIVER.trainEvery*4+4)*60)&&h.state().trainsWrecked<RIVER.trainWrecks;n++)h.step();
   assert.equal(h.state().trainsWrecked,RIVER.trainWrecks);for(let n=0;n<Math.round(RIVER.trainEvery*60*.2);n++)h.step();
@@ -100,5 +101,26 @@ test('real loop: traffic that drives into a pit careens off the edge instead of 
   for(let n=0;n<60*40;n++){h.step();for(const v of h.state().vehicles){const c=v.x+v.w/2,inside=c>p.x0&&c<p.x1;
    if(inside&&v.state==='driving')through++;if(inside&&v.state==='flying'&&!seen.has(v.id)){seen.add(v.id);careened++;}}}
   assert.equal(through,0,'nothing drives along the pit floor');assert.ok(careened>0,'cars went over the edge');
+ }finally{h.release();h.cleanup();}
+});
+
+test('real loop: Stage 3 pulls a whole train out of a pit and throws it (in Combat Drills, which has a subway at its east end)',async()=>{
+ const {DRILL_BLOCK}=await import('../src/levels.ts');
+ const h=await bootGame(.75);
+ try{
+  h.click('#drills');h.click('#start');
+  const hold=(code:string,frames:number)=>{h.down(code);h.step(frames);h.up(code);};
+  const [a,z]=DRILL_BLOCK.subway![0];
+  // Smash east through the packed street until Stage 3 and standing over the subway line on open street.
+  const open=()=>{const q=h.state(),c=q.x+q.width/2;return c>a+200&&c<z-300&&!q.buildings.some((b:any)=>b.hp>0&&b.kind!=='tiny'&&b.x<c+q.width&&b.x+b.w>c-q.width);};
+  for(let n=0;n<500&&h.state().mode==='playing'&&!(h.state().stage>=3&&open());n++){if(h.state().ultimate>=100&&h.state().transform===0)h.tap('KeyU');hold('KeyD',8);h.tap('KeyK');h.step(40);hold('KeyA',1);h.tap('KeyK');h.step(40);hold('KeyD',3);}
+  assert.equal(h.state().mode,'playing');assert.equal(h.state().stage,3,'Stage 3');assert.ok(open(),'on open street over the subway');
+  h.tap('Space');h.step(20);h.down('KeyS');h.step(40);h.up('KeyS');h.step(30);assert.ok(h.state().pits.length>=1,'caved in');
+  for(let n=0;n<60*20&&h.state().trainWrecks===0;n++)h.step();assert.ok(h.state().trainWrecks>0,'a train wrecked in the pit');
+  let s=h.state();const t=s.trainList.find((x:any)=>x.crashed),cx=s.x+s.width/2;if((t.x+120>cx)!==(s.face>0)){h.tap(s.face>0?'KeyA':'KeyD');h.step(2);}
+  for(let n=0;n<4&&h.state().held!=='train';n++){h.tap('KeyH');h.step(20);}
+  assert.equal(h.state().held,'train','lifted the whole train');h.step(30);
+  h.tap('KeyH');h.step(6);assert.ok(h.state().vehicles.some((v:any)=>v.kind==='train'&&v.state==='flying'),'thrown');
+  for(let n=0;n<240;n++)h.step();assert.equal(h.state().mode,'playing');
  }finally{h.release();h.cleanup();}
 });
