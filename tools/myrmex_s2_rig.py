@@ -49,11 +49,30 @@ MID_N, MID_F = (80, 75), (88, 73)   # pivots: near (bright) and far (dark) middl
 mid_n = op & (xx >= 75) & (xx <= 84) & (yy >= 77)
 mid_f = op & ~fore & ~fore_foot & (xx >= 85) & (xx <= 95) & (yy >= 74)
 body = op & ~far_hind & ~far_fore & ~hind & ~hind_foot & ~fore & ~fore_foot & ~mid_n & ~mid_f
+# The body is split too so it isn't a frozen block: tail, wings and head/neck each hinge on their joint to the core.
+TAIL_P, WING_P, HEAD_P = (30, 66), (81, 49), (99, 56)
+wing_m = body & (xx >= 26) & (xx <= 90) & (yy <= 50) & (yy <= 26 + (xx - 26) * 0.45) & ~((xx <= 37) & (yy >= 20))
+# Where the wing's lower-left edge overlaps the top of the tail curl (x 26-37, y 18-31), split by colour: orange/yellow wing
+# membrane (green channel >= 90) and the dark outline touching it go with the wing, the red curl with the tail.
+G, R = src[..., 1].astype(int), src[..., 0].astype(int)
+amb = body & (xx >= 26) & (xx <= 37) & (yy >= 18) & (yy <= 31)
+memb = amb & (G >= 90)
+near = lambda m: np.pad(m, 1)[2:, 1:-1] | np.pad(m, 1)[:-2, 1:-1] | np.pad(m, 1)[1:-1, 2:] | np.pad(m, 1)[1:-1, :-2]
+red = body & (R > 150) & (G < 90)
+wing_m = (wing_m & ~amb) | memb | (amb & (R + G < 200) & near(memb) & ~near(red))
+# The straight cut leaves the membrane's lower edge on the core (it gapped open when the wings fluttered): take all the
+# membrane in the wing area and the dark outline round it, short of outline that also touches the red body.
+reg = body & (xx >= 26) & (xx <= 90) & (yy <= 50) & ~((xx <= 37) & (yy >= 31))
+memb = reg & (G >= 90)
+wing_m |= memb | (reg & (R + G < 200) & near(memb) & ~near(red & ~wing_m))
+tail_m = body & ~wing_m & ((xx <= 29) | ((xx <= 37) & (yy >= 20) & (yy <= 45)))
+head_m = body & ~wing_m & (((xx >= 100) & (yy <= 58) & (yy <= 56 + (xx - 100) * -0.1 + 6)) | ((xx >= 86) & (yy <= 34)))
+core_m = body & ~wing_m & ~tail_m & ~head_m
 def layer(mask, dark=1.0):
     im = src.copy(); im[~mask] = 0
     if dark != 1: im[..., :3] = (im[..., :3] * dark).astype(np.uint8)
     return im
-BODY = layer(body); MIDN, MIDF = layer(mid_n), layer(mid_f); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
+BODY = layer(core_m); TAIL, WINGS, HEAD = layer(tail_m), layer(wing_m), layer(head_m); MIDN, MIDF = layer(mid_n), layer(mid_f); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
 
 def scale2x(im):
     """EPX/Scale2x: doubles pixel art, rounding diagonal steps instead of blocking them (the RotSprite upscale)."""
@@ -110,6 +129,7 @@ F = lambda p, dx=0, dy=0: (p[0] + OX + dx, p[1] + OY + dy)   # source -> frame c
 # folds the elbow. Forelegs step FORE_STRIDE of the hind stride and lift FORE_LIFT of the hind lift.
 FORE_BACK, FORE_STRIDE, FORE_LIFT = 16, 0.67, 0.8
 MID_SWING = 16   # middle legs' swing either way, degrees
+TAIL_SWAY, HEAD_NOD, WING_FLUTTER = 5, 4, 3   # degrees either way: once, twice and four times a cycle
 LIMBS = {'RH': (False, (HIP, KNEE, ANKLE), 0, 0, 0.00, 1, 1), 'RF': (False, (SHO, ELB, WRI), 0, -FORE_BACK, 0.25, FORE_STRIDE, FORE_LIFT),
          'LH': (True, (HIP, KNEE, ANKLE), 7, 16, 0.50, 1, 1), 'LF': (True, (SHO, ELB, WRI), 4, 14 - FORE_BACK, 0.75, FORE_STRIDE, FORE_LIFT)}
 # far?, joints, root dx, foot dx (home), phase, stride scale, lift scale
@@ -130,7 +150,14 @@ def frame(t, rest=False):
     mid = lambda ph: 0.0 if rest else math.radians(MID_SWING) * math.copysign(abs(math.sin(2 * math.pi * (t + ph))) ** 0.6, math.sin(2 * math.pi * (t + ph)))
     for k in ('LH', 'LF'): far, jt, r, f, tl = pose[k]; leg(cv, FAR, jt, r, f, tl)
     blit(cv, MIDF, (MID_F[0] + .5, MID_F[1] + .5), F((MID_F[0] + .5, MID_F[1] + .5), 0, -bob), mid(0.55))
+    # Secondary motion: the tail sways once a cycle, lagging the steps; the head nods with each footfall, a beat late;
+    # the wings flutter. Tail and head go under the core so it hides their seams; the wings go on top.
+    w = lambda deg, f, lag: 0.0 if rest else math.radians(deg) * math.sin(2 * math.pi * f * t - lag)
+    piv = lambda p: (p[0] + .5, p[1] + .5)
+    blit(cv, TAIL, piv(TAIL_P), F(piv(TAIL_P), 0, -bob), w(TAIL_SWAY, 1, 1.2))
+    blit(cv, HEAD, piv(HEAD_P), F(piv(HEAD_P), 0, -bob), w(HEAD_NOD, 2, 0.9))
     blit(cv, BODY, (0, 0), (OX, OY - bob))
+    blit(cv, WINGS, piv(WING_P), F(piv(WING_P), 0, -bob), w(WING_FLUTTER, 4, 0))
     blit(cv, MIDN, (MID_N[0] + .5, MID_N[1] + .5), F((MID_N[0] + .5, MID_N[1] + .5), 0, -bob), mid(0.05))
     for k in ('RH', 'RF'): far, jt, r, f, tl = pose[k]; leg(cv, NEAR, jt, r, f, tl)
     return cv
