@@ -3,7 +3,7 @@
 
 Usage: python3 tools/myrmex_s2_rig.py OUT_DIR [--frames 16] [--idle-frames 8] [--run-frames 12]   (gaits: MODES below)
 Writes OUT_DIR/myrmex-s2.png (the rest pose in a 256x192 frame at x=55, feet on the bottom row) and OUT_DIR/myrmex-s2-walk.png,
--idle.png and -run.png.
+-idle.png, -run.png and the jump strips (-jump-rise, -jump-air, -jump-flap, -jump-land).
 
 Source: tools/myrmex-s2-native.png, the 146x122 sprite keyed from the render (key_render.py --square). Its far foreleg is
 bent up in the air and its far hind leg is half hidden behind the near thigh, so both far legs are dropped and rebuilt as
@@ -160,44 +160,91 @@ def step(p, M, k=1, kl=1):
     if p < D: return S - 2 * S * p / D, 0.0, 0.0
     s = (p - D) / (1 - D); e = 0.5 - 0.5 * math.cos(math.pi * s)   # eased so the leg whips through mid-swing
     return -S + 2 * S * e, M['lift'] * kl * math.sin(math.pi * s) ** 0.8, math.radians(30) * math.sin(math.pi * s)
-def frame(t, mode=None):
-    M = MODES[mode] if mode else None
-    cv = np.zeros((FH, FW, 4), np.uint8)
-    if M is None: bob = 0
-    elif mode == 'idle': bob = round(0.5 - 0.5 * math.cos(2 * math.pi * t))
-    else: bob = round(M['bob'][0] * math.sin(2 * math.pi * M['bob'][1] * t) ** 2)   # sin^2: 2*f dips a cycle
-    bob -= M['low'] if M else 0   # negative bob sinks the body
+def render(P):
+    """Draw one pose. P: bob (px up), feet {limb: (dx from home, lift px, toe tilt rad)}, mid (near, far) rad, tail [per-joint rad],
+    head rad, wings rad (positive raises them toward upright)."""
+    cv = np.zeros((FH, FW, 4), np.uint8); bob = P['bob']; piv = lambda p: (p[0] + .5, p[1] + .5)
     pose = {}
     for k, (far, jt, rdx, fdx, sk, kl) in LIMBS.items():
-        dx, lift, tilt = step(M['phases'][k] + t, M, sk, kl) if M and M['phases'] else (0, 0, 0)
-        pose[k] = (far, jt, F(jt[0], rdx, -bob), F(jt[2], fdx + dx, -lift), tilt)
-    # Middle legs swing like pendulums, out of phase with each other, with a quick flick at the end of each swing (a
-    # sharpened sine), so they paddle along instead of hanging dead.
-    def mid(ph):
-        if not M: return 0.0
-        x = math.sin(2 * math.pi * (M['mid'][1] * t + ph)); return math.radians(M['mid'][0]) * math.copysign(abs(x) ** 0.6, x)
-    w = lambda d, lag: 0.0 if not M else math.radians(d[0]) * math.sin(2 * math.pi * d[1] * t - lag)
-    off = lambda key: math.radians(M[key]) if M else 0.0
-    piv = lambda p: (p[0] + .5, p[1] + .5)
-    for k in ('LH', 'LF'): far, jt, r, f, tl = pose[k]; leg(cv, FAR, jt, r, f, tl)
-    blit(cv, MIDF, piv(MID_F), F(piv(MID_F), 0, -bob), mid(0.55))
-    # The tail curls segment by segment: a wave runs from the base to the stinger, each joint bending a beat after the one
-    # before, so the curl ripples out and the stinger whips. Drawn tip first so each plate overlaps the next one out.
+        dx, lift, tilt = P['feet'][k]
+        pose[k] = (jt, F(jt[0], rdx, -bob), F(jt[2], fdx + dx, -lift), tilt)
+    for k in ('LH', 'LF'): jt, r, f, tl = pose[k]; leg(cv, FAR, jt, r, f, tl)
+    blit(cv, MIDF, piv(MID_F), F(piv(MID_F), 0, -bob), P['mid'][1])
+    # The tail curls segment by segment, drawn tip first so each plate overlaps the next one out.
     js, phi = [F(piv(TAIL_J[0]), 0, -bob)], []
     for i in range(len(TAIL_J) - 1):
-        a = (phi[-1] if phi else 0) + off('tail_off') + (w(M['tail'], 1.2 + TAIL_LAG * i) if M else 0); phi.append(a)
+        a = (phi[-1] if phi else 0) + P['tail'][i]; phi.append(a)
         vx, vy = TAIL_J[i + 1][0] - TAIL_J[i][0], TAIL_J[i + 1][1] - TAIL_J[i][1]
         js.append((js[-1][0] + vx * math.cos(a) - vy * math.sin(a), js[-1][1] + vx * math.sin(a) + vy * math.cos(a)))
     for i in reversed(range(len(TAIL_J) - 1)): blit(cv, TAIL_SEGS[i], piv(TAIL_J[i]), js[i], phi[i])
-    # Head nods a beat late; wings flutter. Tail and head go under the core so it hides their seams; the wings go on top.
-    blit(cv, HEAD, piv(HEAD_P), F(piv(HEAD_P), 0, -bob), off('head_off') + (w(M['head'], 0.9) if M else 0))
+    # Tail and head go under the core so it hides their seams; the wings go on top.
+    blit(cv, HEAD, piv(HEAD_P), F(piv(HEAD_P), 0, -bob), P['head'])
     blit(cv, BODY, (0, 0), (OX, OY - bob))
-    blit(cv, WINGS, piv(WING_P), F(piv(WING_P), 0, -bob), w(M['wings'], 0) if M else 0)
-    blit(cv, MIDN, piv(MID_N), F(piv(MID_N), 0, -bob), mid(0.05))
-    for k in ('RH', 'RF'): far, jt, r, f, tl = pose[k]; leg(cv, NEAR, jt, r, f, tl)
+    blit(cv, WINGS, piv(WING_P), F(piv(WING_P), 0, -bob), P['wings'])
+    blit(cv, MIDN, piv(MID_N), F(piv(MID_N), 0, -bob), P['mid'][0])
+    for k in ('RH', 'RF'): jt, r, f, tl = pose[k]; leg(cv, NEAR, jt, r, f, tl)
     return cv
+NJ = len(TAIL_J) - 1
+REST = dict(bob=0, feet={k: (0, 0, 0) for k in LIMBS}, mid=(0.0, 0.0), tail=[0.0] * NJ, head=0.0, wings=0.0)
+def cycle_pose(t, M, mode):
+    """The pose at cycle position t for a looping gait."""
+    if mode == 'idle': bob = round(0.5 - 0.5 * math.cos(2 * math.pi * t))
+    else: bob = round(M['bob'][0] * math.sin(2 * math.pi * M['bob'][1] * t) ** 2)   # sin^2: 2*f dips a cycle
+    bob -= M['low']   # negative sinks the body
+    feet = {k: step(M['phases'][k] + t, M, sk, kl) if M['phases'] else (0, 0, 0) for k, (_, _, _, _, sk, kl) in LIMBS.items()}
+    # Middle legs swing like pendulums, out of phase, with a flick at the end of each swing (a sharpened sine).
+    def mid(ph):
+        x = math.sin(2 * math.pi * (M['mid'][1] * t + ph)); return math.radians(M['mid'][0]) * math.copysign(abs(x) ** 0.6, x)
+    w = lambda d, lag: math.radians(d[0]) * math.sin(2 * math.pi * d[1] * t - lag)
+    # A wave runs down the tail, each joint a beat after the one before, so the curl ripples and the stinger whips.
+    tail = [math.radians(M['tail_off']) + w(M['tail'], 1.2 + TAIL_LAG * i) for i in range(NJ)]
+    return dict(bob=bob, feet=feet, mid=(mid(0.05), mid(0.55)), tail=tail, head=math.radians(M['head_off']) + w(M['head'], 0.9), wings=w(M['wings'], 0))
+def frame(t, mode=None): return render(cycle_pose(t, MODES[mode], mode) if mode else REST)
+
+# Jump strips, posed by hand (degrees and px; feet lift toward the body, which stays put: physics moves the sprite).
+# Wings: positive raises them toward upright, negative sweeps them back; alternating frames read as a buzz.
+def jpose(bob=0, lift=0, hdx=0, fdx=0, tilt=0, wings=0, head=0, tail=0, wave=0, mid=0, t=0.0):
+    """A jump pose: hind feet trail hdx px and forefeet fdx px from home, all lifted `lift` px with toes tipped `tilt` deg;
+    the far pair follows a touch lower. tail: per-joint hold (negative uncurls); wave: tail ripple (deg) at phase t."""
+    r = math.radians
+    feet = {'RH': (hdx, lift, r(tilt)), 'LH': (hdx + 2, max(0, lift - 3), r(tilt)), 'RF': (fdx, lift * FORE_LIFT, r(tilt)), 'LF': (fdx + 2, max(0, lift * FORE_LIFT - 3), r(tilt))}
+    tl = [r(tail) + r(wave) * math.sin(2 * math.pi * t - 1.2 - TAIL_LAG * i) for i in range(NJ)]
+    return dict(bob=bob, feet=feet, mid=(r(mid), r(-mid * .7)), tail=tl, head=r(head), wings=r(wings))
+AIR = dict(lift=28, hdx=-12, fdx=-6, tilt=30, tail=-1.5)   # tucked in the air, tail streaming a little
+JUMP = {
+    # Rise (8 frames, played once): crouch with the wings cocked up, spring off all fours on a downstroke, legs tuck as the
+    # wings start buzzing; the last frame is the air loop's first.
+    'jump-rise': [jpose(),
+                  jpose(bob=-4, wings=8, head=3, tail=1),
+                  jpose(bob=-7, wings=16, head=5, tail=2, mid=6),
+                  jpose(bob=1, wings=-16, head=-4, tail=-1, mid=-10),
+                  jpose(lift=10, hdx=-5, fdx=-2, tilt=15, wings=14, tail=-1.5, mid=-6),
+                  jpose(lift=22, hdx=-10, fdx=-5, tilt=26, wings=-12, tail=-1.5, mid=4),
+                  jpose(**AIR, wings=14, mid=8),
+                  jpose(**AIR, wings=-12, mid=4)],
+    # Air (6-frame loop): wings buzz three times a loop, legs dangle and sway, the tail ripples, the body bobs 1px.
+    'jump-air': [jpose(**{**AIR, 'hdx': AIR['hdx'] + 3 * math.sin(2 * math.pi * i / 6), 'lift': AIR['lift'] - 2 * math.sin(2 * math.pi * i / 6)},
+                       bob=round(math.sin(2 * math.pi * i / 6)), wings=14 if i % 2 else -12, wave=4, t=i / 6,
+                       mid=8 * math.sin(2 * math.pi * i / 6), head=-2 * math.sin(2 * math.pi * i / 6)) for i in range(6)],
+    # Flap (6 frames, played once on an air jump): wings thrown up high, then a hard downstroke as the legs kick down and back,
+    # tucking again into the air pose.
+    'jump-flap': [jpose(**AIR, wings=24, head=3, mid=10),
+                  jpose(lift=10, hdx=-14, fdx=-10, tilt=35, tail=-3, wings=-22, head=-4, bob=1, mid=-14),
+                  jpose(lift=13, hdx=-13, fdx=-8, tilt=30, tail=-2.5, wings=-14, head=-2, bob=1, mid=-8),
+                  jpose(lift=22, hdx=-13, fdx=-7, tilt=30, tail=-2, wings=10, mid=4),
+                  jpose(**AIR, wings=-10, mid=6),
+                  jpose(**AIR, wings=14, mid=8)],
+    # Land (5 frames, played once): feet down, the body sinks to soak it up with the wings flicking down, then settles.
+    'jump-land': [jpose(bob=-3, wings=12, tail=-1, head=2, mid=6),
+                  jpose(bob=-6, wings=-8, tail=1.5, head=4, mid=-6),
+                  jpose(bob=-5, wings=4, tail=1, head=3, mid=3),
+                  jpose(bob=-2, wings=-2, head=1, mid=-1),
+                  jpose()],
+}
 os.makedirs(A.out, exist_ok=True)
 Image.fromarray(frame(0)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
 for mode, n in (('walk', A.frames), ('idle', A.idle_frames), ('run', A.run_frames)):
     Image.fromarray(np.concatenate([frame(i / n, mode) for i in range(n)], 1)).save(os.path.join(A.out, f'myrmex-s2-{mode}.png'), optimize=True)
-print(f'rest pose, {A.frames}-frame walk, {A.idle_frames}-frame idle and {A.run_frames}-frame run written to {A.out}')
+for name, poses in JUMP.items():
+    Image.fromarray(np.concatenate([render(P) for P in poses], 1)).save(os.path.join(A.out, f'myrmex-s2-{name}.png'), optimize=True)
+print(f'rest pose, walk, idle, run and the jump strips written to {A.out}')

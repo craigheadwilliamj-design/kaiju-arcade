@@ -758,7 +758,13 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  Myrmex:{width:120,anims:{idle:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,...MX2_NATIVE},
   walk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,...MX2_NATIVE},
   // Run (Shift / double-tap): a low scuttling trot from the rig, diagonal pairs together, with a brief flight phase.
-  run:{src:'assets/myrmex-s2-run.png',frames:12,fps:20,...MX2_NATIVE}}},
+  run:{src:'assets/myrmex-s2-run.png',frames:12,fps:20,...MX2_NATIVE},
+  // Jump (his wings: a big floaty jump plus two wing-beat air jumps, MOVE.myrmex*): rise crouches with the wings cocked, springs
+  // on a downstroke and tucks the legs; the air loop buzzes the wings with the legs dangling; jumpFlap (played on each air jump)
+  // throws the wings up and drives them down as the legs kick; land soaks it up and settles. Feet lift toward the body in the air
+  // (the body stays put; physics moves him).
+  jumpRise:{src:'assets/myrmex-s2-jump-rise.png',frames:8,fps:20,once:true,...MX2_NATIVE},jumpAir:{src:'assets/myrmex-s2-jump-air.png',frames:6,fps:18,...MX2_NATIVE},
+  jumpFlap:{src:'assets/myrmex-s2-jump-flap.png',frames:6,fps:20,once:true,...MX2_NATIVE},jumpLand:{src:'assets/myrmex-s2-jump-land.png',frames:5,fps:20,once:true,...MX2_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -898,6 +904,12 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'SHIFT+A/D',name:'Gore Charge',desc:'His run is a head-down tusk charge. Ramming a building with a running start hits far harder than a normal barge (back off and charge again for another hit), troops get thrown, and cars get flipped up over his tusks.'},
   {...slam,name:'Meteor Drop',desc:'Dive tusks- or fists-first. The landing cracks the ground and hurls a ring of rock chunks out both ways, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging there is no street to scoop: fire one shot.'}]
+ :kaiju==='Myrmex'?[
+  {keys:'SPACE › SPACE › SPACE',name:'Wing Beat',desc:'He can\'t fly, but his jump is huge, and in the air he can beat his wings for two more jumps before he has to touch down. They come back as soon as he lands or grabs a wall.'},
+  {keys:'SPACE (hold)',name:'Glide',desc:'He floats down far more gently than anyone else; hold Space on the way down to glide even slower and cover more ground.'},
+  {keys:'L',name:'Spine',desc:'A horizontal ranged spine (his own ranged attack is still to come).'},
+  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
+  slam]
  :[
   {keys:'L',name:'Spine',desc:'A horizontal ranged spine.'},
   {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},

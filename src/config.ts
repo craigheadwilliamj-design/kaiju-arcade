@@ -277,6 +277,11 @@ export const MOVE = {
  // charge, and on the street leaves a pool heavyLavaPoolWidth x body width there.
  heavyLavaGlobs:4,heavyLavaPower:[.6,1.2],heavyLavaPoolWidth:.5,
  poundMult:1.25,poundCooldown:.34,poundKnockback:120,
+ // Myrmex's wings: he can't fly, but jumps myrmexJump x higher, gets myrmexAirJumps more wing-beat jumps in the air (each
+ // myrmexAirJump of a ground jump's launch; they refill on landing or grabbing a wall), and floats: gravity is x myrmexRiseGravity
+ // going up and x myrmexFallGravity coming down, and he falls no faster than myrmexFallMax (myrmexGlideMax while Space is held),
+ // both x sqrt(stage scale). A slam dive ignores all of it.
+ myrmexJump:1.12,myrmexAirJumps:2,myrmexAirJump:.78,myrmexRiseGravity:.8,myrmexFallGravity:.45,myrmexFallMax:260,myrmexGlideMax:120,
 };
 
 // City systems: the rampage multiplier and structures with jobs (src/city.ts; wired up in src/game.ts).
