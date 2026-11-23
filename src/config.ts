@@ -189,6 +189,12 @@ export const BUILDING_PRESETS={
  x:{w:108,h:520,hp:780,value:520,kind:'medium'},
  n:{w:64,h:460,hp:540,value:340,kind:'medium'},
  L:{w:190,h:500,hp:1200,value:1000,kind:'large'},
+ // City systems (src/city.ts): a fenced power substation and a fuel depot. Low yards you walk past like a newsstand (tiny kind,
+ // so they never wall off a street) but they do not break on contact; you have to attack them. Not liftable.
+ S:{w:96,h:64,hp:240,value:200,kind:'tiny'},
+ F:{w:92,h:70,hp:160,value:150,kind:'tiny'},
+ // Armory (city systems): a solid castle-style drill hall; destroying it cuts off reinforcements from its side for a while.
+ K:{w:124,h:100,hp:380,value:260,kind:'medium'},
 } as const;
 
 // Open-district exploration rewards. Neither drops crystals, so they never speed up evolution.
@@ -272,3 +278,115 @@ export const MOVE = {
  heavyLavaGlobs:4,heavyLavaPower:[.6,1.2],heavyLavaPoolWidth:.5,
  poundMult:1.25,poundCooldown:.34,poundKnockback:120,
 };
+
+// City systems: the rampage multiplier and structures with jobs (src/city.ts; wired up in src/game.ts).
+export const CITY = {
+ // Rampage: heat 0-100 climbs with every point earned (gainPerRootPoint x sqrt(points), at most gainMax per award) and with damage
+ // dealt to buildings (gainPerDamage). After `grace` seconds without any it drains at `decay`/s. Thresholds pick the score multiplier.
+ rampageLevels:[0,15,38,62,85],rampageMult:[1,1.5,2,3,4],rampageGrace:2.4,rampageDecay:12,
+ gainPerRootPoint:.3,gainMax:18,gainPerDamage:.06,
+ // Extra heat for set pieces.
+ toppleHeat:6,explodeHeat:14,blackoutHeat:12,splashHeat:5,radarHeat:10,wireHeat:4,
+ // Substation down: its grid goes dark. Rooftop radars there go offline, spotter radios there lose signal, live wires go dead.
+ blackoutPoints:2500,
+ // Fuel depot: blows up when destroyed. Damage hits military, buildings (x buildingFactor) and vehicles in `radius`;
+ // other depots inside the radius go up too. Leaves burning fuel on the street.
+ depotRadius:Math.round(170*CITY_SCALE),depotDamage:130,depotBuildingFactor:1.1,depotFire:Math.round(150*CITY_SCALE),depotFireSeconds:7,depotFireDamage:7,
+ // Rooftop air-defence radar: while its grid is powered and its building is in view within radarRange of the kaiju it builds a call;
+ // at radarCall seconds it brings down a marked artillery strike. Climb up (or shoot it) and break it.
+ radarHP:70,radarCall:11,radarRange:Math.round(650*CITY_SCALE),radarPoints:3000,radarUltimate:15,
+ // Water tower: break it and the tank dumps onto the street, washing troops and cars away from the spot and dousing fires.
+ tankHP:30,tankPoints:400,splashRadius:Math.round(190*CITY_SCALE),splashDamage:10,splashKnockback:420,splashStun:1.2,
+ // Power poles (lamp-kind props): one knocked down on a powered grid drops a live wire across the street between its neighbours
+ // for wireSeconds, shocking (and stunning) ground units every wireTick.
+ poleH:Math.round(110*CITY_SCALE),wireSeconds:9,wireTick:.35,wireDamage:9,wireStun:.9,
+ // Delayed collapse: a destroyed tower creaks this long (direct hit / chain) before it starts to fall.
+ creakSeconds:.6,creakChain:.3,
+ // Debris that hits: slabs from collapses deal this to ground units they land on (cars get punted).
+ slabDamage:22,slabCount:5,
+};
+
+// Floor stacks (src/rules.ts floor helpers, effects in src/game.ts). Every ordinary building is a stack of floors about floorHeight
+// tall. Each hit also wears down the floor it lands on; a floor's integrity is integrity x its share of the building's HP, so a
+// floor only gives out if blows keep landing on it. A failed floor below others pancakes (everything above drops one floor, crushing
+// what is at the foot of the building); a failed top floor is knocked off. HP and destruction are unchanged: the building still
+// goes down (and towers still topple) when its HP runs out, just shorter if floors have already failed.
+export const FLOORS = {
+ floorHeight:Math.round(40*CITY_SCALE),integrity:2.4,minFloors:2,
+ pancakeDamage:24,pancakeKnockback:180,pancakePoints:150,pancakeHeat:6,topPoints:100,topHeat:4,
+ // Shearing: a single blow of at least shearDamage landing on a middle floor (not the bottom one or the top two) of a building with
+ // shearMinFloors or more breaks it there. That floor is crushed and everything above comes off as one flying chunk (a building prop)
+ // thrown the way the blow went, spinning, that smashes what it hits and breaks up where it lands. The stump keeps the floors below.
+ shearDamage:140,shearMinFloors:4,shearSpeed:150,shearLift:140,shearSpin:1.4,shearImpact:16,shearPoints:.5,shearHeat:12,
+};
+
+// Rivers, bridges, subways and armories (phase 3; wired up in src/game.ts, ground handling in src/terrain.ts).
+export const RIVER = {
+ // Wading: the kaiju moves at wadeSlow in water. Ground troops and vehicles in open water drown/sink (troops never walk in on their
+ // own: they stop at the bank, so the bridge is the only way across).
+ wadeSlow:.55,
+ // Bridge spans: the deck is the street across them while they stand. Break one (pound or slam it from on top, hit it from below,
+ // blast it, drop a tower or a sheared top on it) and it falls into the river with everything on it.
+ spanHP:420,deckThick:Math.round(12*CITY_SCALE),spanPoints:4000,spanHeat:16,toppleMult:1.4,chunkDamage:45,
+ // Subway: a slam on the street over the line, or a tower landing across it, caves the street in: a pit pitDepth deep (at least
+ // pitMin wide) that troops fall into (fallDamage) and cannot climb out of. While any pit is open a train runs through every
+ // trainEvery seconds, hitting what is down there.
+ pitDepth:Math.round(58*CITY_SCALE),tunnelRoof:Math.round(22*CITY_SCALE),pitMin:Math.round(100*CITY_SCALE),pitPoints:600,pitHeat:8,fallDamage:40,
+ // Trains run the line every trainEvery seconds whether or not the street is open, seen in cutaway under the street. Through a pit
+ // they can be attacked (trainHP); one that hits the kaiju standing in a pit derails (the kaiju takes trainHitDamage and a shove).
+ // A derailed train stays in the tunnel and the next one piles into it. After trainWrecks derailments the line is closed: no more
+ // trains run. The tunnel roof (tunnelRoof below the street) leaves a solid band of street over the line; pits cut through it.
+ trainEvery:5,trainSpeed:950,trainLength:Math.round(240*CITY_SCALE),trainDamage:90,trainHP:200,trainPoints:3000,trainHeat:15,
+ trainHitDamage:5,trainKnock:320,trainWrecks:3,
+ // A car driving into a pit careens off the edge and goes up when it lands.
+ careenSpeed:1.15,careenLift:90,careenDamage:30,
+ // Armory: destroying one stops squads arriving from its side of the block for armorySeconds.
+ armorySeconds:40,armoryPoints:3000,armoryHeat:12,
+};
+
+// Phase 5: fire, rubble and the per-city twists (wired up in src/game.ts).
+export const FIRE = {
+ // A burning building takes dps x heat (heat climbs to 1 at grow/s); every spreadEvery seconds each neighbour within reach builds
+ // exposure (spreadChance x heat) and catches when it reaches 1. Scorched walls and pools beside a wall build exposure at poolChance/s. At most cap buildings burn at once. Rain (Tokyo) halves growth and spread; a water tower douses.
+ // Fire damage pays points but never charges the Ultimate. Sources: depot blasts, burning wrecks smashing into walls (wreckChance), fuel and flame
+ // pools on the pavement within poolReach of a wall (poolChance per second).
+ dps:7,grow:.12,spreadEvery:1.2,spreadChance:.35,reach:Math.round(36*CITY_SCALE),cap:6,poolChance:.35,start:.25,wreckChance:.35,poolReach:Math.round(24*CITY_SCALE),
+};
+export const RUBBLE = {
+ // Destroyed buildings leave rubble mounds you can climb: a collapse heaps heightK x height (min..max) over its footprint, a toppled
+ // tower leaves a ridge `ridge` high along where it fell. Mound sides slope over `side` of their width.
+ heightK:.12,min:Math.round(8*CITY_SCALE),max:Math.round(30*CITY_SCALE),ridge:Math.round(16*CITY_SCALE),side:.3,
+};
+export const TWISTS = {
+ // Mexico City: soft lake-bed ground. Slams, topple landings and blasts within sinkRadius sink nearby buildings sinkStep px (and
+ // sinkDamage); a building sunk past sinkMax of its height gives way.
+ sinkRadius:Math.round(170*CITY_SCALE),sinkStep:Math.round(9*CITY_SCALE),sinkDamage:30,sinkMax:.3,
+ // Paris: catacombs under every street. Slams cave in anywhere (no trains), catacombDepth deep.
+ catacombDepth:Math.round(46*CITY_SCALE),
+ // Hong Kong: towers packed shoulder to shoulder go down like dominoes: crush falloff and chain strength are higher.
+ dominoFalloff:.65,dominoChain:.7,
+ // Tokyo: quake-proof towers (quakeHeight and taller) shrug off half of any blow under quakeBreak and sway instead.
+ quakeHeight:Math.round(200*CITY_SCALE),quakeBreak:60,quakeKeep:.5,swaySeconds:.8,
+};
+
+// City response (phase 5b): the city escalates as the block's destruction climbs past each threshold. Evacuation: every civilian
+// flees and roadblocks (barriers, `roadblocks` each side) go up ahead of the kaiju. Martial law: the military response steps up a tier
+// and the buildings still standing are reinforced (`reinforce` x HP). Air strike: a bombing run walks marked strikes across the kaiju
+// (`bombs` of them, `bombGap` px apart, `bombStep` s apart), again every `bombEvery` s.
+export const RESPONSE = {
+ thresholds:[.2,.45,.65],labels:['EVACUATION','MARTIAL LAW','AIR STRIKE'],roadblocks:2,roadblockOffset:Math.round(380*CITY_SCALE),
+ // The air-strike stage only comes in a city's blocks from airStrikeFrom on (block 1 tops out at martial law).
+ airStrikeFrom:1,reinforce:1.2,bombs:5,bombGap:Math.round(110*CITY_SCALE),bombStep:.4,bombEvery:20,
+};
+// Water mains (phase 5b): hydrants along district streets. Knock one over and the main bursts into a geyser for `seconds`: troops in
+// `radius` are shoved away and stunned every `tick`, cars pushed, fires doused.
+export const MAINS = {every:3,seconds:4,radius:Math.round(110*CITY_SCALE),tick:.5,damage:6,knockback:300,stun:.8,points:250,heat:6};
+// Tunnelling (phase 5b): at Stage 3 a shoulder barge at street level bursts a walk-through tunnel in a building
+// at least `minHeight` x the kaiju's height tall.
+export const TUNNEL = {minHeight:1.25,points:800,heat:8};
+
+// Elevated railway (phase 5b, Tokyo): a guideway `height` above the street on pillars every `pillar` px, in breakable spans
+// (`spanHP`). The kaiju can stand on it. Trains run along it every `trainEvery` s; one that reaches the kaiju on (or level with) the
+// track smashes into it and is thrown off, falling to the street to explode; one that reaches a broken span falls through.
+export const ELEVATED = {height:Math.round(72*CITY_SCALE),pillar:Math.round(260*CITY_SCALE),thick:Math.round(13*CITY_SCALE),spanHP:300,
+ trainEvery:6,trainSpeed:620,trainLength:Math.round(200*CITY_SCALE),points:2500,heat:14,trainPoints:3000,hitDamage:4,knock:280};

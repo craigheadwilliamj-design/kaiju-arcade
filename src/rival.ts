@@ -1,10 +1,11 @@
 // M4 conventional-HP rival: shared temporary moveset so the campaign is playable.
 // M5 replaces this with individual kaiju attacks, stages and Ultimate behavior.
+import {groundAt} from './terrain.ts';
 import {CAMPAIGN as P,CONFIG as C} from './config.ts';
 import {overlaps,solid,damageBuilding} from './rules.ts';import type {Building} from './rules.ts';
 import {segmentHits} from './military.ts';import type {Rect} from './military.ts';
 export type Rival=Rect&{hp:number,maxHP:number,dead:boolean,face:number,turn:number,cooldown:number,windup:number,attack:'melee'|'ranged',stagger:number,kb:number,shots:{x:number,y:number,vx:number,life:number}[]};
-export function createRival(worldWidth:number,city:number):Rival{const hp=P.bossHP*(1+city*.1);return {x:worldWidth-250,y:C.ground-P.bossHeight,w:P.bossWidth,h:P.bossHeight,hp,maxHP:hp,dead:false,face:-1,turn:0,cooldown:1.5,windup:0,attack:'melee',stagger:0,kb:0,shots:[]};}
+export function createRival(worldWidth:number,city:number):Rival{const hp=P.bossHP*(1+city*.1);return {x:worldWidth-250,y:groundAt(worldWidth-250+P.bossWidth/2)-P.bossHeight,w:P.bossWidth,h:P.bossHeight,hp,maxHP:hp,dead:false,face:-1,turn:0,cooldown:1.5,windup:0,attack:'melee',stagger:0,kb:0,shots:[]};}
 export function hitRival(r:Rival,damage:number,source='player',strength=0,direction=1){if(r.dead||source!=='player'||damage<=0)return 0;const actual=Math.min(r.hp,damage);r.hp-=actual;if(r.hp<=0){r.dead=true;r.windup=0;r.shots=[];r.kb=0;}else if(strength>=150){r.stagger=.3;r.windup=0;r.kb=direction*strength*.4;}return actual;}
 export function tickRival(r:Rival,dt:number,player:Rect,worldWidth:number,buildings:Building[]){
  const hits:{damage:number,strength:number,direction:number}[]=[];if(r.dead)return hits;
@@ -19,11 +20,11 @@ export function tickRival(r:Rival,dt:number,player:Rect,worldWidth:number,buildi
  }}else{
  const distance=Math.abs(player.x+player.w/2-r.x-r.w/2);
  let nx=r.x+(distance>P.bossRange+r.w*.5?r.face*P.bossSpeed*dt:0)+r.kb*dt;
- for(const b of buildings)if(solid(b)&&overlaps({x:nx,y:r.y,w:r.w,h:r.h},{x:b.x,y:C.ground-b.h,w:b.w,h:b.h})){
+ for(const b of buildings)if(solid(b)&&overlaps({x:nx,y:r.y,w:r.w,h:r.h},{x:b.x,y:b.base-b.h,w:b.w,h:b.h})){
  nx=r.face>0?b.x-r.w:b.x+b.w;if(r.cooldown===0){damageBuilding(b,95,'impact');r.cooldown=1;}break;
  }
  if(overlaps({x:nx,y:r.y,w:r.w,h:r.h},player))nx=r.face>0?player.x-r.w:player.x+player.w;
- r.x=Math.max(0,Math.min(worldWidth-r.w,nx));
+ r.x=Math.max(0,Math.min(worldWidth-r.w,nx));r.y=groundAt(r.x+r.w/2)-r.h;
  if(r.cooldown===0){r.attack=distance<P.bossRange+r.w?'melee':'ranged';r.windup=P.bossTelegraph;}
  }}
  r.kb*=Math.exp(-8*dt);

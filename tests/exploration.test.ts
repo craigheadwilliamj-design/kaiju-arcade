@@ -3,9 +3,11 @@ import {bootGame} from './helpers/game-harness.ts';
 import {LEVELS,DRILL_BLOCK,levelWidth} from '../src/levels.ts';
 import {CONFIG} from '../src/config.ts';
 
-test('open NYC districts: mid-map start plaza, named landmarks, hidden caches; drills keep the packed wall',()=>{
- const open=LEVELS[0].filter(b=>b.start!==undefined);
- assert.deepEqual(open.map(b=>b.name),['Lower Manhattan','Midtown Corridor','East River Offensive']);
+test('open districts in every city: mid-map start plaza, named landmarks, hidden caches; drills keep the packed wall',()=>{
+ assert.deepEqual(LEVELS[0].filter(b=>b.start!==undefined).map(b=>b.name),['Lower Manhattan','Midtown Corridor','East River Offensive']);
+ // Every city: blocks 1, 2 and 4 are open layouts.
+ for(const city of LEVELS)assert.deepEqual(city.map(b=>b.start!==undefined),[true,true,false,true,false]);
+ const open=LEVELS.flat().filter(b=>b.start!==undefined);
  for(const b of open){
   assert.equal(b.kind,'district');assert.equal(b.start,levelWidth(b)/2);
   for(const x of b.buildings)if(x.kind!=='tiny')assert.ok(x.x>=b.start!+80||x.x+x.w<=b.start!-80,`${b.name}: start plaza clear`);
