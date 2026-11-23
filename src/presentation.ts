@@ -66,6 +66,8 @@ const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
 // Myrmex Stage 2 strips: posed by the cutout rig (tools/myrmex_s2_rig.py) from the 146x122 keyed sprite, origin at x=55 in a
 // 256x192 frame, then redrawn clean by PixelLab (tools/pixellab_edit_animation.py).
 const MX2_NATIVE={scale:146/256,anchor:55+128*146/256};
+// Myrmex Stage 2 PixelLab attack strips: the base shifted 40px left (origin at x=15) for room in front of the snout.
+const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
@@ -770,10 +772,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   crouchDown:{src:'assets/myrmex-s2-crouch-down.png',frames:5,fps:22,once:true,...MX2_NATIVE},crouch:{src:'assets/myrmex-s2-crouch.png',frames:4,fps:6,...MX2_NATIVE},
   crouchUp:{src:'assets/myrmex-s2-crouch-up.png',frames:5,fps:22,once:true,...MX2_NATIVE},
   // Light combo (shared 24/21/20 fps): bite, harder bite, sting. light1 rears back with the jaw opening, lunges and snaps; light2
-  // bites lower and further with the jaws gaping wider, then wrenches the head up; light3 is a hissing-cat sting: rear up and face
-  // down with the back arched, the tail arched over his back, then the stinger whips forward over his head.
+  // bites lower and further with the jaws gaping wider, then wrenches the head up; light3 (a PixelLab roll, MX2_LEFT) is a hissing-cat sting: the
+  // rear lifts, the tail rises over his back and lashes far forward with a slash streak, then he settles back to standing.
   light1:{src:'assets/myrmex-s2-light1.png',frames:8,fps:24,once:true,...MX2_NATIVE},light2:{src:'assets/myrmex-s2-light2.png',frames:8,fps:21,once:true,...MX2_NATIVE},
-  light3:{src:'assets/myrmex-s2-light3.png',frames:8,fps:20,once:true,...MX2_NATIVE}}},
+  light3:{src:'assets/myrmex-s2-light3.png',frames:9,fps:20,once:true,...MX2_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
