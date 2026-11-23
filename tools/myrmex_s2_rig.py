@@ -8,7 +8,8 @@ Source: tools/myrmex-s2-native.png, the 146x122 sprite keyed from the render (ke
 bent up in the air and its far hind leg is half hidden behind the near thigh, so both far legs are dropped and rebuilt as
 copies of the near legs, darkened to FAR_DARK, drawn behind the body. Each walking leg is cut into three rigid pieces
 (thigh/shin/foot, upper/lower/claws) by nearest bone line; everything else (body, head, wings, tail, middle legs, the
-roots of the near legs under the body) is one body layer.
+roots of the near legs under the body) is one body layer, except the two small middle legs, which swing as pendulums
+with the stride.
 
 Walk: big sweeping bug steps in a lateral sequence (near hind, near fore, far hind, far fore, a quarter cycle apart). Each
 foot is planted for DUTY of the cycle, sliding back 2*STRIDE px along the ground, then lifts up to LIFT px in a high arc
@@ -43,12 +44,16 @@ fore_foot = op & ~far_fore & (yy >= 105) & (xx >= 106) & (xx <= 134)
 fore = op & ~far_fore & ~fore_foot & (((dist(SHO, ELB) <= 4.5) & (yy >= 64)) | (dist(ELB, WRI) <= 4.5))
 pieces = {'thigh': hind & (dist(HIP, KNEE) <= dist(KNEE, ANKLE)), 'shin': hind & (dist(HIP, KNEE) > dist(KNEE, ANKLE)), 'hfoot': hind_foot,
           'upper': fore & (dist(SHO, ELB) <= dist(ELB, WRI)), 'lower': fore & (dist(SHO, ELB) > dist(ELB, WRI)), 'ffoot': fore_foot}
-body = op & ~far_hind & ~far_fore & ~hind & ~hind_foot & ~fore & ~fore_foot
+# Middle legs: one rigid piece each hanging from under the belly plates (the orange coxae stay on the body).
+MID_N, MID_F = (80, 75), (88, 73)   # pivots: near (bright) and far (dark) middle legs
+mid_n = op & (xx >= 75) & (xx <= 84) & (yy >= 77)
+mid_f = op & ~fore & ~fore_foot & (xx >= 85) & (xx <= 95) & (yy >= 74)
+body = op & ~far_hind & ~far_fore & ~hind & ~hind_foot & ~fore & ~fore_foot & ~mid_n & ~mid_f
 def layer(mask, dark=1.0):
     im = src.copy(); im[~mask] = 0
     if dark != 1: im[..., :3] = (im[..., :3] * dark).astype(np.uint8)
     return im
-BODY = layer(body); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
+BODY = layer(body); MIDN, MIDF = layer(mid_n), layer(mid_f); NEAR = {k: layer(m) for k, m in pieces.items()}; FAR = {k: layer(m, FAR_DARK) for k, m in pieces.items()}
 
 def scale2x(im):
     """EPX/Scale2x: doubles pixel art, rounding diagonal steps instead of blocking them (the RotSprite upscale)."""
@@ -104,6 +109,7 @@ F = lambda p, dx=0, dy=0: (p[0] + OX + dx, p[1] + OY + dy)   # source -> frame c
 # FORE_BACK px further back, so a forward step ends at the art's (fully reached) claw position and the back of the sweep
 # folds the elbow. Forelegs step FORE_STRIDE of the hind stride and lift FORE_LIFT of the hind lift.
 FORE_BACK, FORE_STRIDE, FORE_LIFT = 16, 0.67, 0.8
+MID_SWING = 16   # middle legs' swing either way, degrees
 LIMBS = {'RH': (False, (HIP, KNEE, ANKLE), 0, 0, 0.00, 1, 1), 'RF': (False, (SHO, ELB, WRI), 0, -FORE_BACK, 0.25, FORE_STRIDE, FORE_LIFT),
          'LH': (True, (HIP, KNEE, ANKLE), 7, 16, 0.50, 1, 1), 'LF': (True, (SHO, ELB, WRI), 4, 14 - FORE_BACK, 0.75, FORE_STRIDE, FORE_LIFT)}
 # far?, joints, root dx, foot dx (home), phase, stride scale, lift scale
@@ -119,8 +125,13 @@ def frame(t, rest=False):
     for k, (far, jt, rdx, fdx, ph, sk, kl) in LIMBS.items():
         dx, lift, tilt = (0, 0, 0) if rest else step(ph + t, sk, kl)
         pose[k] = (far, jt, F(jt[0], rdx, -bob), F(jt[2], fdx + dx, -lift), tilt)
+    # Middle legs swing like pendulums with the stride, out of phase with each other, with a quick flick at the end of
+    # each swing (a sharpened sine), so they paddle along instead of hanging dead.
+    mid = lambda ph: 0.0 if rest else math.radians(MID_SWING) * math.copysign(abs(math.sin(2 * math.pi * (t + ph))) ** 0.6, math.sin(2 * math.pi * (t + ph)))
     for k in ('LH', 'LF'): far, jt, r, f, tl = pose[k]; leg(cv, FAR, jt, r, f, tl)
+    blit(cv, MIDF, (MID_F[0] + .5, MID_F[1] + .5), F((MID_F[0] + .5, MID_F[1] + .5), 0, -bob), mid(0.55))
     blit(cv, BODY, (0, 0), (OX, OY - bob))
+    blit(cv, MIDN, (MID_N[0] + .5, MID_N[1] + .5), F((MID_N[0] + .5, MID_N[1] + .5), 0, -bob), mid(0.05))
     for k in ('RH', 'RF'): far, jt, r, f, tl = pose[k]; leg(cv, NEAR, jt, r, f, tl)
     return cv
 os.makedirs(A.out, exist_ok=True)
