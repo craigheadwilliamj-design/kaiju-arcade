@@ -768,7 +768,12 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // Crouch (shared crouch timing): down sinks to about 0.65 of standing with the hind feet splayed back, forefeet forward, the
   // middle legs folded flat under the belly and the wings swept back; the loop breathes 1px; up is down reversed.
   crouchDown:{src:'assets/myrmex-s2-crouch-down.png',frames:5,fps:22,once:true,...MX2_NATIVE},crouch:{src:'assets/myrmex-s2-crouch.png',frames:4,fps:6,...MX2_NATIVE},
-  crouchUp:{src:'assets/myrmex-s2-crouch-up.png',frames:5,fps:22,once:true,...MX2_NATIVE}}},
+  crouchUp:{src:'assets/myrmex-s2-crouch-up.png',frames:5,fps:22,once:true,...MX2_NATIVE},
+  // Light combo (shared 24/21/20 fps): bite, harder bite, sting. light1 rears back with the jaw opening, lunges and snaps; light2
+  // bites lower and further with the jaws gaping wider, then wrenches the head up; light3 is a hissing-cat sting: rear up and face
+  // down with the back arched, the tail arched over his back, then the stinger whips forward over his head.
+  light1:{src:'assets/myrmex-s2-light1.png',frames:8,fps:24,once:true,...MX2_NATIVE},light2:{src:'assets/myrmex-s2-light2.png',frames:8,fps:21,once:true,...MX2_NATIVE},
+  light3:{src:'assets/myrmex-s2-light3.png',frames:8,fps:20,once:true,...MX2_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
