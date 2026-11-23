@@ -70,7 +70,7 @@ const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 const BL3_NATIVE={scale:200/256,anchor:28+128*200/256};
 // Belial Stage 3 attack strips: the same base shifted flush left (sprite at x=0) for 28px more reach in front of the snout.
 const BL3_LEFT={scale:200/256,anchor:0+128*200/256};
-// Belial Stage 3 form (in progress): idle, walk, run, jump, crouch, light combo, heavy, Acid Vomit, Acid Pounce, climb and grab/carry/throw; `borrow` plays the Stage 2 strip for every other move until Stage 3 art lands.
+// Belial Stage 3 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-idle.png',frames:8,fps:8,...BL3_NATIVE},
  walk:{src:'assets/belial-s3-walk.png',frames:16,fps:15,...BL3_NATIVE},
  // Run: skeleton-posed (tools/belial_s3_run_poses.py), both feet on one stride cycle half a beat apart so they pass each other, a
@@ -122,7 +122,18 @@ const BELIAL_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s3-i
  grab:{src:'assets/belial-s3-grab.png',frames:9,fps:22,once:true,...BL3_NATIVE,hold:[[205,255],[222,255],[224,255],[224,255],[222,255],[200,228],[203,190],[205,138],[171,97]]},
  carry:{src:'assets/belial-s3-carry.png',frames:4,fps:6,...BL3_NATIVE,hold:[[171,97],[172,98],[173,99],[172,98]]},
  carryWalk:{src:'assets/belial-s3-carry-walk.png',frames:8,fps:10,...BL3_NATIVE,hold:[[170,96],[170,95],[169,96],[169,97],[169,96],[169,95],[169,97],[169,97]]},
- throw:{src:'assets/belial-s3-throw.png',frames:8,fps:18,once:true,...BL3_NATIVE}}};
+ throw:{src:'assets/belial-s3-throw.png',frames:8,fps:18,once:true,...BL3_NATIVE},
+ // Ultimate, Acid Deluge (256x256, the base padded to 256 tall): ultCharge (13 frames at 20 fps = delugeCharge) plants and heaves as the
+ // neck gland swells into a huge shaded sac; ultRoar rears straight up to the top of the frame with the jaws thrown open at the sky, fully
+ // reared (and the geyser up) on impact frame 2; ultPound holds the rear with the sac pumping; ultSettle (frames 2-7 of a roll back to the
+ // base, plus the exact base) shrinks the sac, snaps shut and drops back into the hunch. `mouth` is the midpoint of the jaw tips on the
+ // reared frames (frames 0-1 are rough snout positions, unused before the geyser). Pound (S+J) is his heavy slam, as on Stage 1 and 2.
+ ultCharge:{src:'assets/belial-s3-ult-charge.png',frames:13,fps:20,once:true,...BL3_NATIVE},
+ ultRoar:{src:'assets/belial-s3-ult-roar.png',frames:9,fps:18,once:true,impact:2,...BL3_NATIVE,
+  mouth:[[222,168],[222,164],[136,18],[136,18],[136,18],[136,18],[136,18],[136,18],[136,18]]},
+ ultPound:{src:'assets/belial-s3-ult-pound.png',frames:4,fps:10,...BL3_NATIVE,mouth:[136,18]},
+ ultSettle:{src:'assets/belial-s3-ult-settle.png',frames:7,fps:14,once:true,...BL3_NATIVE},
+ pound:{src:'assets/belial-s3-heavy-slam.png',frames:8,fps:16,once:true,...BL3_LEFT}}};
 // Belial Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const BELIAL_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/belial-s1-idle.png',frames:8,fps:8,...BL1_NATIVE},
  walk:{src:'assets/belial-s1-walk.png',frames:16,fps:15,...BL1_NATIVE},
@@ -662,7 +673,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   throw:{src:'assets/tlezcatl-s1-throw.png',frames:8,fps:18,once:true,...TZ1_NATIVE}},
   stages:{2:TLEZCATL_S2,3:TLEZCATL_S3}},
  // Belial (low-slung striped reptile, umber blade spines, green acid gland and drool): as with Mogurodon the Stage 2 form is the base
- // form; Stage 1 has its own complete set (BELIAL_S1) and Stage 3 its own form (BELIAL_S3), which borrows these strips for moves it lacks. Keys to 216x79 at x=20 (BL2_NATIVE).
+ // form; Stage 1 (BELIAL_S1) and Stage 3 (BELIAL_S3) have their own complete sets. Keys to 216x79 at x=20 (BL2_NATIVE).
  Belial:{width:120,anims:{idle:{src:'assets/belial-s2-idle.png',frames:8,fps:8,...BL2_NATIVE},walk:{src:'assets/belial-s2-walk.png',frames:16,fps:15,...BL2_NATIVE},
   // Run (Shift / double-tap): a low bounding gallop, the body gathering and stretching with a short flight phase on frames 4-5 and dust
   // kicked back, tail streaming straight behind. Starts on the base and loops back to it.
