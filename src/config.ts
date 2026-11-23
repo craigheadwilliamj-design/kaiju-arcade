@@ -89,6 +89,12 @@ export const COMBAT = {
  // fully corroded within a few drops and gives way at corrodeBreak. On the street it splashes delugeSplash round the landing and
  // leaves an acid puddle (its own cap, delugePuddleCap). All of it, the corrosion it leaves behind included, is Ultimate damage, so
  // none of it refills the meter.
+ // Myrmex's Ultimate (The Swarm): planted. He hunches for swarmCharge seconds while his abdomen swells and throbs, rears up, and on the
+ // roar's impact frame his abdomen bursts open and releases swarmCount venomous drones from it (the roar strip's `mouth`). Each
+ // drone lives swarmLife seconds, flying at swarmSpeed (x sqrt(stage scale)) after the nearest troop, aircraft or the rival within
+ // swarmRange (else the nearest building), and stings for swarmDamage (Ultimate damage) plus poison at most every swarmSting
+ // seconds, swarmBuilding on a building. The swarm outlives the Ultimate.
+ swarmCharge:.65,swarmCount:40,swarmLife:6,swarmSpeed:280,swarmDamage:6,swarmSting:.45,swarmRange:700,swarmBuilding:5,
  delugeCharge:.65,delugeDelay:.3,delugeDrops:110,delugeRange:640,delugeFall:520,delugeGravity:1300,delugeDamage:16,delugeSoak:1,
  delugeSplash:18,delugeDropSize:3,delugePuddleCap:30,
  superMax:40,superDuration:20,superDamage:1.5,superSpeed:1.18,superResistance:.55,superKnockback:1.5,

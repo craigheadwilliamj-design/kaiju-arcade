@@ -805,6 +805,13 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   carry:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,bite:true,...MX2_NATIVE,hold:[[200,116],[200,116],[200,118],[200,118],[200,116],[200,116],[200,114],[200,114]]},
   carryWalk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,bite:true,...MX2_NATIVE,hold:[[200,115],[200,116],[200,116],[201,118],[200,119],[200,116],[200,113],[199,112],[199,114],[200,116],[200,116],[201,118],[200,118],[200,116],[200,113],[199,112]]},
   throw:{src:'assets/myrmex-s2-throw.png',frames:6,fps:18,once:true,...MX2_LEFT},
+  // The Swarm, his Ultimate (PixelLab rolls, 256x256, MX2_NATIVE, the base padded 64px on top): ultCharge (13 frames at 20 fps =
+  // swarmCharge) hunches as the abdomen swells and throbs purple; ultRoar rears up on the hind legs with the wings flared and the
+  // abdomen bursts in a magenta starburst on impact frame 4, where the drones pour out (`mouth`, the burst's core); ultPound holds the
+  // reared pose with the wings buzzing and the abdomen pulsing; ultSettle folds the wings and lowers back to standing.
+  ultCharge:{src:'assets/myrmex-s2-ult-charge.png',frames:13,fps:20,once:true,...MX2_NATIVE},
+  ultRoar:{src:'assets/myrmex-s2-ult-roar.png',frames:8,fps:18,once:true,impact:4,...MX2_NATIVE,mouth:[100,178]},
+  ultPound:{src:'assets/myrmex-s2-ult-pound.png',frames:4,fps:10,...MX2_NATIVE},ultSettle:{src:'assets/myrmex-s2-ult-settle.png',frames:8,fps:14,once:true,...MX2_NATIVE},
   spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
   spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}}},
 };
@@ -952,7 +959,7 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {...slam,name:'Sting Dive',desc:'Dive head-first out of the air and stab the stinger into whatever you land on. The impact bursts into a poison cloud (bigger the further you fell) and, on the street, a venom puddle, on top of the slam itself.'},
   {keys:'L (hold)',name:'Venom Bomb',desc:'Hold to brew a bubble of venom on the stinger (it swells the longer you hold, and you can still creep or float), release to fling it. It bursts on the first thing it hits into a big poison cloud that hangs and drifts for several seconds: every trooper, aircraft or rival inside is poisoned and keeps taking damage. A fuller bomb flies further and makes a bigger cloud. Works on the ground, in the air and on a wall.'},
   {keys:'L+W',name:'Lob',desc:'Hold W as you release to lob the bomb higher and further, over cover and onto rooftops.'},
-  {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'}]
+  {keys:'U',name:'The Swarm',desc:'Full meter. He hunches as his abdomen swells, rears up and it bursts open, releasing a swarm of venomous drones. They hunt down every trooper, aircraft and the rival nearby, stinging and poisoning them, and chew on buildings when there is nothing alive to sting. The swarm keeps going for a few seconds after he settles. Invulnerable while he summons it.'}]
  :[
   {keys:'L',name:'Spine',desc:'A horizontal ranged spine.'},
   {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
