@@ -1215,6 +1215,13 @@ function background(){
  else{// Terrain: the curb, road and roadbed follow the ground profile; earth fills down to the bottom of the view.
   const bottom=540+C.ground/zoom,band=(off:number,th:number,col:string)=>{ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(-8,groundAt(camera-8)+off);
    for(let x=0;x<=W+8;x+=8)ctx.lineTo(x,groundAt(x+camera)+off);for(let x=W+8;x>=-8;x-=8)ctx.lineTo(x,groundAt(x+camera)+off+th);ctx.closePath();ctx.fill();};
+  // Where the street dips below the normal street line, the far side of the dip is a stone retaining wall (capstone and railing
+  // at street level), so the sunken stretch reads as a plaza, not a gap onto the sky.
+  const wt=C.ground-4;let dipped=false;for(let x=-8;x<=W+8;x+=8)if(groundAt(x+camera)-4>wt+1){dipped=true;break;}
+  if(dipped){ctx.fillStyle='#8c8775';ctx.beginPath();ctx.moveTo(-8,wt);for(let x=-8;x<=W+8;x+=8)ctx.lineTo(x,Math.max(wt,groundAt(x+camera)-4));ctx.lineTo(W+8,wt);ctx.closePath();ctx.fill();
+   for(let x=-((camera%26)+26);x<W+26;x+=26){const d=groundAt(x+13+camera)-4-wt;if(d<3)continue;
+    for(let r=0;r*12<d;r++){const yy=wt+r*12;rect(x+(r%2?13:0),yy,1,Math.min(12,d-r*12),'#6f6b5c');rect(x,yy+11,26,1,'#6f6b5c');}
+    rect(x,wt-3,26,4,'#c9c5ab');rect(x+3,wt-15,2,12,'#56625e');rect(x+16,wt-15,2,12,'#56625e');rect(x,wt-15,26,2,'#56625e');}}
   band(-4,bottom,'#34413f');band(-4,10,'#c9c5ab');band(6,99,'#4c5755');band(8,3,'#202e31');
   for(let i=-1,n=W/85+1;i<n;i++){const x=i*85-camera%85;rect(x,groundAt(x+18+camera)+52,37,3,'#b4b294');}}
  // Street lamps are world props now (src/vehicles.ts createLamps), drawn with the vehicles.
