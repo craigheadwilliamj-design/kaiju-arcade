@@ -2,7 +2,8 @@
 """Cutout rig for Myrmex Stage 2: poses the keyed sprite's own pixels, so frames never get redrawn (no shimmer).
 
 Usage: python3 tools/myrmex_s2_rig.py OUT_DIR [--stride 24] [--lift 18] [--frames 16] [--duty 0.6]
-Writes OUT_DIR/myrmex-s2.png (the rest pose in a 256x192 frame at x=55, feet on the bottom row) and OUT_DIR/myrmex-s2-walk.png.
+Writes OUT_DIR/myrmex-s2.png (the rest pose in a 256x192 frame at x=55, feet on the bottom row), OUT_DIR/myrmex-s2-walk.png
+and OUT_DIR/myrmex-s2-idle.png.
 
 Source: tools/myrmex-s2-native.png, the 146x122 sprite keyed from the render (key_render.py --square). Its far foreleg is
 bent up in the air and its far hind leg is half hidden behind the near thigh, so both far legs are dropped and rebuilt as
@@ -22,6 +23,7 @@ from PIL import Image
 ap = argparse.ArgumentParser(); ap.add_argument('out')
 ap.add_argument('--stride', type=float, default=24); ap.add_argument('--lift', type=float, default=18)
 ap.add_argument('--frames', type=int, default=16); ap.add_argument('--duty', type=float, default=0.6)
+ap.add_argument('--idle-frames', type=int, default=8)
 A = ap.parse_args()
 src = np.asarray(Image.open(os.path.join(os.path.dirname(__file__), 'myrmex-s2-native.png')).convert('RGBA')).astype(np.uint8)
 H, W = src.shape[:2]; op = src[..., 3] > 0; yy, xx = np.mgrid[0:H, 0:W]
@@ -147,15 +149,21 @@ def step(p, k=1, kl=1):
     if p < D: return S - 2 * S * p / D, 0.0, 0.0
     s = (p - D) / (1 - D); e = 0.5 - 0.5 * math.cos(math.pi * s)   # eased so the leg whips through mid-swing
     return -S + 2 * S * e, A.lift * kl * math.sin(math.pi * s) ** 0.8, math.radians(30) * math.sin(math.pi * s)
-def frame(t, rest=False):
-    cv = np.zeros((FH, FW, 4), np.uint8); bob = 0 if rest else round(2 * math.sin(4 * math.pi * t) ** 2)
+# Idle: feet planted, the body breathes 1px up and down (knees and elbows flex), the tail curls slowly, the head bobs,
+# the wings twitch and the middle legs sway, all once or twice a cycle and smaller than the walk's.
+IDLE = {'tail': (2, 1), 'head': (2, 1), 'wings': (2, 2), 'mid': 5}
+WALK = {'tail': (TAIL_BEND, 1), 'head': (HEAD_NOD, 2), 'wings': (WING_FLUTTER, 4), 'mid': MID_SWING}
+def frame(t, rest=False, idle=False):
+    M = IDLE if idle else WALK
+    cv = np.zeros((FH, FW, 4), np.uint8)
+    bob = 0 if rest else round(0.5 - 0.5 * math.cos(2 * math.pi * t)) if idle else round(2 * math.sin(4 * math.pi * t) ** 2)
     pose = {}
     for k, (far, jt, rdx, fdx, ph, sk, kl) in LIMBS.items():
-        dx, lift, tilt = (0, 0, 0) if rest else step(ph + t, sk, kl)
+        dx, lift, tilt = (0, 0, 0) if rest or idle else step(ph + t, sk, kl)
         pose[k] = (far, jt, F(jt[0], rdx, -bob), F(jt[2], fdx + dx, -lift), tilt)
     # Middle legs swing like pendulums with the stride, out of phase with each other, with a quick flick at the end of
     # each swing (a sharpened sine), so they paddle along instead of hanging dead.
-    mid = lambda ph: 0.0 if rest else math.radians(MID_SWING) * math.copysign(abs(math.sin(2 * math.pi * (t + ph))) ** 0.6, math.sin(2 * math.pi * (t + ph)))
+    mid = lambda ph: 0.0 if rest else math.radians(M['mid']) * math.copysign(abs(math.sin(2 * math.pi * (t + ph))) ** 0.6, math.sin(2 * math.pi * (t + ph)))
     for k in ('LH', 'LF'): far, jt, r, f, tl = pose[k]; leg(cv, FAR, jt, r, f, tl)
     blit(cv, MIDF, (MID_F[0] + .5, MID_F[1] + .5), F((MID_F[0] + .5, MID_F[1] + .5), 0, -bob), mid(0.55))
     # Secondary motion: the head nods with each footfall, a beat late;
@@ -167,13 +175,13 @@ def frame(t, rest=False):
     # the next one out, as in the art.
     js, phi, segs = [F(piv(TAIL_J[0]), 0, -bob)], [], []
     for i in range(len(TAIL_J) - 1):
-        a = (phi[-1] if phi else 0) + w(TAIL_BEND, 1, 1.2 + TAIL_LAG * i); phi.append(a)
+        a = (phi[-1] if phi else 0) + w(M['tail'][0], M['tail'][1], 1.2 + TAIL_LAG * i); phi.append(a)
         vx, vy = TAIL_J[i + 1][0] - TAIL_J[i][0], TAIL_J[i + 1][1] - TAIL_J[i][1]
         js.append((js[-1][0] + vx * math.cos(a) - vy * math.sin(a), js[-1][1] + vx * math.sin(a) + vy * math.cos(a)))
     for i in reversed(range(len(TAIL_J) - 1)): blit(cv, TAIL_SEGS[i], piv(TAIL_J[i]), js[i], phi[i])
-    blit(cv, HEAD, piv(HEAD_P), F(piv(HEAD_P), 0, -bob), w(HEAD_NOD, 2, 0.9))
+    blit(cv, HEAD, piv(HEAD_P), F(piv(HEAD_P), 0, -bob), w(*M['head'], 0.9))
     blit(cv, BODY, (0, 0), (OX, OY - bob))
-    blit(cv, WINGS, piv(WING_P), F(piv(WING_P), 0, -bob), w(WING_FLUTTER, 4, 0))
+    blit(cv, WINGS, piv(WING_P), F(piv(WING_P), 0, -bob), w(*M['wings'], 0))
     blit(cv, MIDN, (MID_N[0] + .5, MID_N[1] + .5), F((MID_N[0] + .5, MID_N[1] + .5), 0, -bob), mid(0.05))
     for k in ('RH', 'RF'): far, jt, r, f, tl = pose[k]; leg(cv, NEAR, jt, r, f, tl)
     return cv
@@ -181,4 +189,6 @@ os.makedirs(A.out, exist_ok=True)
 Image.fromarray(frame(0, True)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
 strip = np.concatenate([frame(i / A.frames) for i in range(A.frames)], 1)
 Image.fromarray(strip).save(os.path.join(A.out, 'myrmex-s2-walk.png'), optimize=True)
-print(f'rest pose and {A.frames}-frame walk written to {A.out}')
+strip = np.concatenate([frame(i / A.idle_frames, idle=True) for i in range(A.idle_frames)], 1)
+Image.fromarray(strip).save(os.path.join(A.out, 'myrmex-s2-idle.png'), optimize=True)
+print(f'rest pose, {A.frames}-frame walk and {A.idle_frames}-frame idle written to {A.out}')
