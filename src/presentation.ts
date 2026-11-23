@@ -790,12 +790,12 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // wings back and tips into a steep head-first plunge with the tail curled (frames 0, 3, 5 and 8 of a roll, bottom-aligned, held on
   // the last); slamLand crashes in, whips the stinger into the street in a burst of purple venom and pushes back up to standing.
   dive:{src:'assets/myrmex-s2-dive.png',frames:4,fps:24,once:true,...MX2_NATIVE},slamLand:{src:'assets/myrmex-s2-slam-land.png',frames:8,fps:16,once:true,...MX2_NATIVE},
-  // Climb (PixelLab rolls, 256x256, MX2_NATIVE): he clings like an insect, body vertical, head up, belly to the wall, the gripping
-  // claws on the wall line at frame x=157 (the hitbox edge, 24 world units out) and the tail hanging to the bottom row. climbGrab is
-  // frames 0-3 and 8 of a leap-and-cling roll eased 50px left and 61px down onto the wall line; climb (hand-over-hand, closed on the
-  // cling), climbPunch (claw slam, impact frame 4) and climbMantle (up over the edge to standing, starting 17px back for the roof
-  // slide) are rolled from the placed cling. PixelLab's thin wall lines erased (tools/erase_wall_lines.py).
-  climbGrab:{src:'assets/myrmex-s2-climb-grab.png',frames:5,fps:20,once:true,...MX2_NATIVE},climb:{src:'assets/myrmex-s2-climb.png',frames:8,fps:12,...MX2_NATIVE},
+  // Climb (256x256, MX2_NATIVE): he walks up the wall like an insect. The loop is his own walk strip turned a quarter turn (head up,
+  // belly to the wall), so every leg lifts and plants; its feet sit on the wall line at frame x=157 (the hitbox edge, 24 world units
+  // out) and the tail hangs to the bottom row. climbGrab (frames 0-3 and 8 of a leap roll ending on that turned pose; the overshoot
+  // frames pulled back off the wall), climbPunch (claw slam, impact frame 4) and climbMantle (up and over to standing, starting 17px
+  // back for the roof slide) are PixelLab rolls from the turned pose.
+  climbGrab:{src:'assets/myrmex-s2-climb-grab.png',frames:5,fps:20,once:true,...MX2_NATIVE},climb:{src:'assets/myrmex-s2-climb.png',frames:16,fps:15,...MX2_NATIVE},
   climbPunch:{src:'assets/myrmex-s2-climb-punch.png',frames:8,fps:24,once:true,impact:4,...MX2_NATIVE},climbMantle:{src:'assets/myrmex-s2-climb-mantle.png',frames:9,fps:20,once:true,...MX2_NATIVE},
   spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
   spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}}},
