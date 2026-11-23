@@ -797,6 +797,14 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // back for the roof slide) are PixelLab rolls from the turned pose.
   climbGrab:{src:'assets/myrmex-s2-climb-grab.png',frames:5,fps:20,once:true,...MX2_NATIVE},climb:{src:'assets/myrmex-s2-climb.png',frames:16,fps:15,...MX2_NATIVE},
   climbPunch:{src:'assets/myrmex-s2-climb-punch.png',frames:8,fps:24,once:true,impact:4,...MX2_NATIVE},climbMantle:{src:'assets/myrmex-s2-climb-mantle.png',frames:9,fps:20,once:true,...MX2_NATIVE},
+  // Grab/carry/throw in the mandibles (`bite`: the game grips the prop by its near end at the jaws). grab (PixelLab roll, MX2_LEFT,
+  // 256x256, the shifted base appended) lowers the head to the street, clamps the mandibles and lifts back to standing; the prop waits
+  // on the street until the jaws reach it (frame 3). carry and carryWalk are his idle and walk strips, so his legs really step, with the
+  // prop at the snout tip. throw (frames 3-7 of a roll plus the base; its fire spark erased) jerks the head and flings it forward.
+  grab:{src:'assets/myrmex-s2-grab.png',frames:9,fps:22,once:true,bite:true,...MX2_LEFT,hold:[[175,248],[175,248],[175,248],[175,248],[171,230],[173,240],[175,221],[169,193],[160,180]]},
+  carry:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,bite:true,...MX2_NATIVE,hold:[[200,116],[200,116],[200,118],[200,118],[200,116],[200,116],[200,114],[200,114]]},
+  carryWalk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,bite:true,...MX2_NATIVE,hold:[[200,115],[200,116],[200,116],[201,118],[200,119],[200,116],[200,113],[199,112],[199,114],[200,116],[200,116],[201,118],[200,118],[200,116],[200,113],[199,112]]},
+  throw:{src:'assets/myrmex-s2-throw.png',frames:6,fps:18,once:true,...MX2_LEFT},
   spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
   spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}}},
 };
