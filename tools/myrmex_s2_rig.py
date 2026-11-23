@@ -3,7 +3,7 @@
 
 Usage: python3 tools/myrmex_s2_rig.py OUT_DIR [--frames 16] [--idle-frames 8] [--run-frames 12]   (gaits: MODES below)
 Writes OUT_DIR/myrmex-s2.png (the rest pose in a 256x192 frame at x=55, feet on the bottom row) and OUT_DIR/myrmex-s2-walk.png,
--idle.png, -run.png and the jump strips (-jump-rise, -jump-air, -jump-flap, -jump-land).
+-idle.png, -run.png, the jump strips (-jump-rise, -jump-air, -jump-flap, -jump-land) and the crouch (-crouch-down, -crouch, -crouch-up).
 
 Source: tools/myrmex-s2-native.png, the 146x122 sprite keyed from the render (key_render.py --square). Its far foreleg is
 bent up in the air and its far hind leg is half hidden behind the near thigh, so both far legs are dropped and rebuilt as
@@ -203,13 +203,14 @@ def frame(t, mode=None): return render(cycle_pose(t, MODES[mode], mode) if mode 
 
 # Jump strips, posed by hand (degrees and px; feet lift toward the body, which stays put: physics moves the sprite).
 # Wings: positive raises them toward upright, negative sweeps them back; alternating frames read as a buzz.
-def jpose(bob=0, lift=0, hdx=0, fdx=0, tilt=0, wings=0, head=0, tail=0, wave=0, mid=0, t=0.0):
+def jpose(bob=0, lift=0, hdx=0, fdx=0, tilt=0, wings=0, head=0, tail=0, wave=0, mid=0, t=0.0, midfold=0):
     """A jump pose: hind feet trail hdx px and forefeet fdx px from home, all lifted `lift` px with toes tipped `tilt` deg;
-    the far pair follows a touch lower. tail: per-joint hold (negative uncurls); wave: tail ripple (deg) at phase t."""
+    the far pair follows a touch lower. tail: per-joint hold (negative uncurls); wave: tail ripple (deg) at phase t; midfold
+    swings both middle legs back (deg) to tuck them under the belly."""
     r = math.radians
     feet = {'RH': (hdx, lift, r(tilt)), 'LH': (hdx + 2, max(0, lift - 3), r(tilt)), 'RF': (fdx, lift * FORE_LIFT, r(tilt)), 'LF': (fdx + 2, max(0, lift * FORE_LIFT - 3), r(tilt))}
     tl = [r(tail) + r(wave) * math.sin(2 * math.pi * t - 1.2 - TAIL_LAG * i) for i in range(NJ)]
-    return dict(bob=bob, feet=feet, mid=(r(mid), r(-mid * .7)), tail=tl, head=r(head), wings=r(wings))
+    return dict(bob=bob, feet=feet, mid=(r(mid + midfold), r(-mid * .7 + midfold)), tail=tl, head=r(head), wings=r(wings))
 AIR = dict(lift=28, hdx=-12, fdx=-6, tilt=30, tail=-1.5)   # tucked in the air, tail streaming a little
 JUMP = {
     # Rise (8 frames, played once): crouch with the wings cocked up, spring off all fours on a downstroke, legs tuck as the
@@ -241,6 +242,18 @@ JUMP = {
                   jpose(bob=-2, wings=-2, head=1, mid=-1),
                   jpose()],
 }
+# Crouch: the body sinks low with the hind feet splayed back and the forefeet forward (the legs fold out like a crouching
+# spider), the middle legs fold back flat under the belly, the wings sweep back flat, the head drops and the tail curls tighter.
+# Down eases into it over 5 frames (played once; up is the same frames reversed); the loop breathes 1px with a slow tail
+# ripple and a wing twitch.
+CROUCH = dict(bob=-24, hdx=-12, fdx=10, wings=-24, head=9, tail=2, midfold=55)
+ease = lambda x: 0.5 - 0.5 * math.cos(math.pi * x)
+def crouch_at(k, **extra):
+    c = {key: v * k for key, v in CROUCH.items()}; c['bob'] = round(c['bob'])
+    return jpose(**{**c, **extra})
+JUMP['crouch-down'] = [crouch_at(ease(i / 4)) for i in range(5)]
+JUMP['crouch'] = [crouch_at(1, bob=CROUCH['bob'] + (1 if i in (1, 2) else 0), wave=2, t=i / 4, wings=CROUCH['wings'] + (3 if i == 2 else 0)) for i in range(4)]
+JUMP['crouch-up'] = JUMP['crouch-down'][::-1]
 os.makedirs(A.out, exist_ok=True)
 Image.fromarray(frame(0)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
 for mode, n in (('walk', A.frames), ('idle', A.idle_frames), ('run', A.run_frames)):
