@@ -178,7 +178,7 @@ def render(P):
     """Draw one pose. P: bob (px up), feet {limb: (dx from home, lift px, toe tilt rad)}, mid (near, far) rad, tail [per-joint rad],
     head rad, wings rad (positive raises them toward upright); optional pitch (rad, clockwise tips the nose down, about
     PITCH_P), lean (px forward: the body moves, the feet stay planted), jaw (rad, opens the lower mandible), abd (rad, bends the
-    abdomen at the waist; negative drops the rear) and tail_front (draw the tail over the body and wings)."""
+    abdomen at the waist; positive lifts the rear) and tail_front (draw the tail over the body and wings)."""
     cv = np.zeros((FH, FW, 4), np.uint8); bob = P['bob']; pitch = P.get('pitch', 0.0); lean = P.get('lean', 0)
     piv = lambda p: (p[0] + .5, p[1] + .5)
     T = lambda p: F(rotp(p, PITCH_P, pitch), lean, -bob)   # source point on the body -> frame
@@ -280,16 +280,16 @@ JUMP['crouch-down'] = [crouch_at(ease(i / 4)) for i in range(5)]
 JUMP['crouch'] = [crouch_at(1, bob=CROUCH['bob'] + (1 if i in (1, 2) else 0), wave=2, t=i / 4, wings=CROUCH['wings'] + (3 if i == 2 else 0)) for i in range(4)]
 JUMP['crouch-up'] = JUMP['crouch-down'][::-1]
 # Light combo (bite, bite, sting; 8 frames each at the shared 24/21/20 fps, feet planted). atk() is jpose plus pitch (deg,
-# positive tips the nose down), lean (px forward), jaw (deg open), abd (deg, negative drops the rear at the waist) and tails
+# positive tips the nose down), lean (px forward), jaw (deg open), abd (deg at the waist; positive lifts the rear) and tails
 # (per-joint bends in deg, base first).
 def atk(pitch=0, lean=0, jaw=0, tails=None, front=False, abd=0, **kw):
     p = jpose(**kw); p['pitch'] = math.radians(pitch); p['lean'] = lean; p['jaw'] = math.radians(jaw); p['tail_front'] = front
     p['abd'] = math.radians(abd)
     if tails: p['tail'] = [math.radians(x) for x in tails]
     return p
-# The sting: like a hissing cat he flexes his rear (the abdomen, at the waist) down toward the street and arches the tail up
-# high over his back (drawn in front of the body and wings), then whips the stinger forward as his front dips and lunges.
-STRIKE = [110, -5, -15, -20, -15, 0, 20, 45]
+# The sting: like a hissing cat he tips nose-down and bends the abdomen up at the waist (rear up, face down, back arched),
+# arching the tail up over his back (drawn in front of the body and wings), then whips the stinger forward over his head.
+STRIKE = [95, -8, -15, -19, -12, 3, 22, 48]
 JUMP['light1'] = [atk(),   # quick bite: rear back with the jaw opening, lunge and snap shut, settle
                   atk(lean=-3, head=-6, jaw=20, mid=4),
                   atk(lean=-5, head=-10, jaw=35, pitch=-3, mid=6),
@@ -306,13 +306,13 @@ JUMP['light2'] = [atk(),   # harder bite: lower and further, jaws gaping wider, 
                   atk(lean=14, head=-4, jaw=-2, pitch=4, bob=-2, wings=6, mid=-6),
                   atk(lean=6, head=-2, mid=-2),
                   atk()]
-JUMP['light3'] = [atk(),   # sting: flex the rear down and arch the tail up high like a hissing cat, then whip the stinger forward
-                  atk(abd=-12, tails=[20, 0, -3, -3, -3, -2, 0, 5], bob=-1, head=-3, wings=4),
-                  atk(abd=-25, tails=[50, 0, -8, -8, -8, -5, 0, 10], bob=-3, head=-6, wings=10, front=True),
-                  atk(abd=-30, tails=[80, 0, -12, -14, -12, -5, 2, 18], bob=-3, head=-8, wings=14, jaw=15, front=True),
-                  atk(abd=-35, pitch=8, lean=10, tails=STRIKE, bob=-4, head=22, wings=-10, front=True),
-                  atk(abd=-33, pitch=7, lean=9, tails=[x * .95 for x in STRIKE], bob=-4, head=20, wings=-6, front=True),
-                  atk(abd=-15, pitch=3, lean=4, tails=[40, 0, -5, -6, -5, -2, 4, 10], bob=-1, head=8, front=True),
+JUMP['light3'] = [atk(),   # sting: rear up, face down, back arched like a hissing cat, then the stinger whips forward over his head
+                  atk(pitch=10, abd=10, tails=[15, 0, -2, -2, -2, -1, 0, 4], head=12, bob=-2),
+                  atk(pitch=20, abd=22, tails=[40, 0, -6, -6, -6, -3, 0, 10], head=24, bob=-6, lean=4, wings=10, front=True),
+                  atk(pitch=24, abd=28, tails=[55, 0, -8, -10, -8, -4, 2, 15], head=30, bob=-8, lean=4, wings=14, jaw=15, front=True),
+                  atk(pitch=28, abd=30, tails=STRIKE, head=34, bob=-9, lean=13, wings=-10, front=True),
+                  atk(pitch=27, abd=29, tails=[x * .95 for x in STRIKE], head=32, bob=-9, lean=12, wings=-6, front=True),
+                  atk(pitch=10, abd=10, tails=[30, 0, -4, -5, -4, -1, 4, 10], head=12, bob=-3, lean=4, front=True),
                   atk()]
 os.makedirs(A.out, exist_ok=True)
 Image.fromarray(frame(0)).save(os.path.join(A.out, 'myrmex-s2.png'), optimize=True)
