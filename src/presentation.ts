@@ -775,7 +775,13 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // bites lower and further with the jaws gaping wider, then wrenches the head up; light3 (a PixelLab roll, MX2_LEFT) is a hissing-cat sting: the
   // rear lifts, the tail rises over his back and lashes far forward with a slash streak, then he settles back to standing.
   light1:{src:'assets/myrmex-s2-light1.png',frames:8,fps:24,once:true,...MX2_NATIVE},light2:{src:'assets/myrmex-s2-light2.png',frames:8,fps:21,once:true,...MX2_NATIVE},
-  light3:{src:'assets/myrmex-s2-light3.png',frames:9,fps:20,once:true,...MX2_LEFT}}},
+  light3:{src:'assets/myrmex-s2-light3.png',frames:9,fps:20,once:true,...MX2_LEFT},
+  // Heavy, a charged sting (PixelLab rolls, MX2_LEFT, 256x256 frames: the shifted base padded 64px on top for the raised tail; strips
+  // draw bottom-anchored): rear lifts the rear end and cocks the flaming tail high over his back; hold quivers it while the stinger
+  // flame flares; slam lashes the tail over his head in a flaming arc into the street ahead (fire burst), then he settles. Pound
+  // (S+J) reuses the slam, as on the other forms.
+  heavyRear:{src:'assets/myrmex-s2-heavy-rear.png',frames:5,fps:20,once:true,...MX2_LEFT},heavyHold:{src:'assets/myrmex-s2-heavy-hold.png',frames:4,fps:10,...MX2_LEFT},
+  heavySlam:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT},pound:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
