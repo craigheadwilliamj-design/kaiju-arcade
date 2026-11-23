@@ -37,12 +37,14 @@ ap.add_argument('--width', type=int, help='resample to this sprite width when th
                 'coarsened by native/target and cells are still median-sampled from the render, so colours stay crisp (no blending)')
 ap.add_argument('--period', help='force the grid period, PX or PXxPY, when the measurement locks onto a harmonic or the render has no '
                 'consistent grid (only the phase is measured then)')
+ap.add_argument('--square', action='store_true', help='reuse the x period for y (phase still measured): for renders whose y rhythm locks '
+                'onto a false harmonic and squashes the sprite')
 a = ap.parse_args()
 
 im = Image.open(a.src); has_alpha = 'A' in im.getbands()
 p = np.asarray(im.convert('RGBA')).astype(float)
 fx, fy = (list(map(float, a.period.split('x'))) * 2)[:2] if a.period else (None, None)
-px, ox = grid(p, 1, fx); py, oy = grid(p, 0, fy)
+px, ox = grid(p, 1, fx); py, oy = grid(p, 0, fy or (px if a.square else None))
 if a.width:
     # Native sprite width from the measured grid, then scale both periods so the opaque span is a.width cells.
     cols = np.nonzero((p[..., 3] >= 128).any(0))[0]; k = (cols[-1] - cols[0] + 1) / px / a.width
