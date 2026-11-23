@@ -764,7 +764,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // throws the wings up and drives them down as the legs kick; land soaks it up and settles. Feet lift toward the body in the air
   // (the body stays put; physics moves him).
   jumpRise:{src:'assets/myrmex-s2-jump-rise.png',frames:8,fps:20,once:true,...MX2_NATIVE},jumpAir:{src:'assets/myrmex-s2-jump-air.png',frames:6,fps:18,...MX2_NATIVE},
-  jumpFlap:{src:'assets/myrmex-s2-jump-flap.png',frames:6,fps:20,once:true,...MX2_NATIVE},jumpLand:{src:'assets/myrmex-s2-jump-land.png',frames:5,fps:20,once:true,...MX2_NATIVE}}},
+  jumpFlap:{src:'assets/myrmex-s2-jump-flap.png',frames:6,fps:20,once:true,...MX2_NATIVE},jumpLand:{src:'assets/myrmex-s2-jump-land.png',frames:5,fps:20,once:true,...MX2_NATIVE},
+  // Crouch (shared crouch timing): down sinks to about 0.65 of standing with the hind feet splayed back, forefeet forward, the
+  // middle legs folded flat under the belly and the wings swept back; the loop breathes 1px; up is down reversed.
+  crouchDown:{src:'assets/myrmex-s2-crouch-down.png',frames:5,fps:22,once:true,...MX2_NATIVE},crouch:{src:'assets/myrmex-s2-crouch.png',frames:4,fps:6,...MX2_NATIVE},
+  crouchUp:{src:'assets/myrmex-s2-crouch-up.png',frames:5,fps:22,once:true,...MX2_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
