@@ -756,7 +756,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form until Stage 1 and 3 art exist, so every stage draws
  // it. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
  Myrmex:{width:120,anims:{idle:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,...MX2_NATIVE},
-  walk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,...MX2_NATIVE}}},
+  walk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,...MX2_NATIVE},
+  // Run (Shift / double-tap): a low scuttling trot from the rig, diagonal pairs together, with a brief flight phase.
+  run:{src:'assets/myrmex-s2-run.png',frames:12,fps:20,...MX2_NATIVE}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
