@@ -281,13 +281,17 @@ export const MOVE = {
  // myrmexAirJump of a ground jump's launch; they refill on landing or grabbing a wall), and floats: gravity is x myrmexRiseGravity
  // going up and x myrmexFallGravity coming down, and he falls no faster than myrmexFallMax (myrmexGlideMax while Space is held),
  // both x sqrt(stage scale). A slam dive ignores all of it.
- // Myrmex's Venom Spit (L, ground, air or wall): a glob of venom leaves the stinger (the strip's `mouth`) on the flick's impact
- // frame at spitSpeed x sqrt(stage scale), spitAngle above level (spitLob more with W held), falling at spitGravity. It hits the
- // first thing in its path for spitDamage; troops and the rival within spitRadius of the splash are poisoned: poisonDamage every
- // poisonTick for poisonSeconds (a fresh dose resets the timer). On the street it leaves a venom puddle spitPool wide for
- // spitPoolSeconds that poisons whatever stands in it. Damage scales with the stage like every hit.
- spitCooldown:.55,spitSpeed:560,spitAngle:12,spitLob:24,spitGravity:900,spitDamage:14,spitRadius:44,spitSize:4,
- poisonSeconds:3,poisonTick:.5,poisonDamage:4,spitPool:42,spitPoolSeconds:2.6,spitPoolDamage:2,
+ // Myrmex's Venom Bomb (L, ground, air or wall): hold to brew a venom bomb on the stinger (charge 0-1 over cloudCharge seconds;
+ // he walks at cloudSlow while brewing), release to throw it: it leaves the stinger (the throw strip's `mouth`) on the throw's impact
+ // frame at bombSpeed (x .6 empty to x1 full charge, x sqrt(stage scale)), bombAngle above level (bombLob more with W held), falling
+ // at bombGravity. It hits the first thing in its path for bombDamage (x .5 to x1 by charge) and bursts into a poison cloud of radius
+ // cloudRadius[0..1] by charge (x sqrt(stage scale)) that hangs for cloudSeconds, drifting cloudDrift the way he threw it and
+ // swelling by cloudGrow, poisoning every troop (aircraft too) and the rival inside it: poisonDamage every poisonTick for
+ // poisonSeconds after they leave (a fresh dose resets the timer). At most cloudMax clouds at once. A burst on or near the street
+ // also leaves a venom puddle spitPool wide for spitPoolSeconds.
+ cloudCharge:1.2,cloudSlow:.5,spitCooldown:.7,bombSpeed:620,bombAngle:20,bombLob:20,bombGravity:900,bombDamage:30,bombSize:[5,12],
+ cloudRadius:[70,150],cloudSeconds:5,cloudDrift:18,cloudGrow:.3,cloudMax:4,
+ poisonSeconds:3,poisonTick:.5,poisonDamage:5,spitPool:60,spitPoolSeconds:3,spitPoolDamage:2,
  myrmexJump:1.12,myrmexAirJumps:2,myrmexAirJump:.78,myrmexRiseGravity:.8,myrmexFallGravity:.45,myrmexFallMax:260,myrmexGlideMax:120,
 };
 
