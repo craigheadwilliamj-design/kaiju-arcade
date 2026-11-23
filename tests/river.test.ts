@@ -63,6 +63,11 @@ test('real loop: a slam on the street over the subway caves it in; the kaiju lan
   assert.ok(smashed,'a train derailed against the kaiju');assert.equal(banner,'TRAIN SMASHED INTO THE KAIJU');assert.ok(h.state().damageTaken>0,'and it hurt a little');
   let pile=false;for(let n=0;n<Math.round((RIVER.trainEvery*3+4)*60);n++){h.step();if(h.state().trainWrecks>=2){pile=true;break;}}
   assert.ok(pile,'the next train piled into the wreck (or the kaiju)');
+  // Three wrecks close the line: no more trains, so it can't be farmed.
+  for(let n=0;n<Math.round((RIVER.trainEvery*4+4)*60)&&h.state().trainsWrecked<RIVER.trainWrecks;n++)h.step();
+  assert.equal(h.state().trainsWrecked,RIVER.trainWrecks);for(let n=0;n<Math.round(RIVER.trainEvery*60*.2);n++)h.step();
+  let more=false;for(let n=0;n<Math.round(RIVER.trainEvery*3*60);n++){h.step();if(h.state().trains>0){more=true;break;}}
+  assert.equal(more,false,'the line is closed');assert.equal(h.state().trainsWrecked,RIVER.trainWrecks);
  }finally{h.release();h.cleanup();}
 });
 

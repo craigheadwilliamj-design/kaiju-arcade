@@ -331,12 +331,13 @@ export const RIVER = {
  // Subway: a slam on the street over the line, or a tower landing across it, caves the street in: a pit pitDepth deep (at least
  // pitMin wide) that troops fall into (fallDamage) and cannot climb out of. While any pit is open a train runs through every
  // trainEvery seconds, hitting what is down there.
- pitDepth:Math.round(42*CITY_SCALE),pitMin:Math.round(100*CITY_SCALE),pitPoints:600,pitHeat:8,fallDamage:40,
+ pitDepth:Math.round(58*CITY_SCALE),tunnelRoof:Math.round(22*CITY_SCALE),pitMin:Math.round(100*CITY_SCALE),pitPoints:600,pitHeat:8,fallDamage:40,
  // Trains run the line every trainEvery seconds whether or not the street is open, seen in cutaway under the street. Through a pit
  // they can be attacked (trainHP); one that hits the kaiju standing in a pit derails (the kaiju takes trainHitDamage and a shove).
- // A derailed train stays in the tunnel and the next one piles into it.
+ // A derailed train stays in the tunnel and the next one piles into it. After trainWrecks derailments the line is closed: no more
+ // trains run. The tunnel roof (tunnelRoof below the street) leaves a solid band of street over the line; pits cut through it.
  trainEvery:5,trainSpeed:950,trainLength:Math.round(240*CITY_SCALE),trainDamage:90,trainHP:200,trainPoints:3000,trainHeat:15,
- trainHitDamage:5,trainKnock:320,trainWrecks:4,
+ trainHitDamage:5,trainKnock:320,trainWrecks:3,
  // A car driving into a pit careens off the edge and goes up when it lands.
  careenSpeed:1.15,careenLift:90,careenDamage:30,
  // Armory: destroying one stops squads arriving from its side of the block for armorySeconds.
