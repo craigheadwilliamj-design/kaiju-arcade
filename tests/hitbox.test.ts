@@ -18,16 +18,19 @@ test('every landmark has a valid, distinct part silhouette',()=>{
  for(const b of landmarks){
   assert.ok(b.parts&&b.parts.length>=2,`${b.label} has tiers`);
   assert.deepEqual(checkParts(b),[],`${b.label} parts are sound`);
-  for(const p of hitParts(b))assert.ok(p.x>=b.x&&p.x+p.w<=b.x+b.w&&p.y>=C.ground-b.h&&p.y+p.h<=C.ground,`${b.label} part inside its bounds`);}
- const outlines=new Set(landmarks.map(b=>JSON.stringify(landmarkShape(b.label))));
- assert.equal(outlines.size,new Set(landmarks.map(b=>b.label)).size,'each landmark has its own outline');
+  // Inside the footprint and above the street; crowns and spires may rise above the box.
+  for(const p of hitParts(b))assert.ok(p.x>=b.x&&p.x+p.w<=b.x+b.w&&p.y+p.h<=C.ground,`${b.label} part inside its footprint`);}
+ // Named NYC towers each have their own authored tiers; every other landmark's parts follow its drawn shape.
+ const nyc=landmarks.filter(b=>!b.shape);assert.ok(nyc.length>=8);
+ for(const b of nyc)assert.deepEqual(b.parts?.map(p=>p.top),landmarkShape(b.label)!.map(p=>Math.round(p.top*C.cityScale)),`${b.label} uses its authored tiers`);
+ assert.equal(new Set(nyc.map(b=>JSON.stringify(landmarkShape(b.label)))).size,new Set(nyc.map(b=>b.label)).size,'each NYC tower has its own outline');
+ for(const b of landmarks.filter(b=>b.shape))assert.ok(b.parts!.some(p=>!p.spire&&!p.base),`${b.label} (${b.shape}) stands on the street`);
 });
 
 test('authoring checks catch floating, spilling and empty parts',()=>{
  const base={x:0,w:100,h:300};
  assert.match(checkParts({...base,parts:[{x:0,w:100,top:100},{x:0,w:50,top:300,base:200}]}).join(),/floats/);
  assert.match(checkParts({...base,parts:[{x:0,w:100,top:300},{x:80,w:40,top:200}]}).join(),/spills/);
- assert.match(checkParts({...base,parts:[{x:0,w:100,top:250}]}).join(),/height/);
  assert.match(checkParts({...base,parts:[{x:0,w:100,top:300},{x:10,w:10,top:200,base:200}]}).join(),/empty/);
 });
 
