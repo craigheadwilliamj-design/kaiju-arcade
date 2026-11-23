@@ -193,6 +193,8 @@ export const BUILDING_PRESETS={
  // so they never wall off a street) but they do not break on contact; you have to attack them. Not liftable.
  S:{w:96,h:64,hp:240,value:200,kind:'tiny'},
  F:{w:92,h:70,hp:160,value:150,kind:'tiny'},
+ // Armory (city systems): a solid castle-style drill hall; destroying it cuts off reinforcements from its side for a while.
+ K:{w:124,h:100,hp:380,value:260,kind:'medium'},
 } as const;
 
 // Open-district exploration rewards. Neither drops crystals, so they never speed up evolution.
@@ -312,4 +314,25 @@ export const CITY = {
 export const FLOORS = {
  floorHeight:Math.round(40*CITY_SCALE),integrity:2.4,minFloors:2,
  pancakeDamage:24,pancakeKnockback:180,pancakePoints:150,pancakeHeat:6,topPoints:100,topHeat:4,
+ // Shearing: a single blow of at least shearDamage landing on a middle floor (not the bottom one or the top two) of a building with
+ // shearMinFloors or more breaks it there. That floor is crushed and everything above comes off as one flying chunk (a building prop)
+ // thrown the way the blow went, spinning, that smashes what it hits and breaks up where it lands. The stump keeps the floors below.
+ shearDamage:140,shearMinFloors:4,shearSpeed:150,shearLift:140,shearSpin:1.4,shearImpact:16,shearPoints:.5,shearHeat:12,
+};
+
+// Rivers, bridges, subways and armories (phase 3; wired up in src/game.ts, ground handling in src/terrain.ts).
+export const RIVER = {
+ // Wading: the kaiju moves at wadeSlow in water. Ground troops and vehicles in open water drown/sink (troops never walk in on their
+ // own: they stop at the bank, so the bridge is the only way across).
+ wadeSlow:.55,
+ // Bridge spans: the deck is the street across them while they stand. Break one (pound or slam it from on top, hit it from below,
+ // blast it, drop a tower or a sheared top on it) and it falls into the river with everything on it.
+ spanHP:420,deckThick:Math.round(12*CITY_SCALE),spanPoints:4000,spanHeat:16,toppleMult:1.4,chunkDamage:45,
+ // Subway: a slam on the street over the line, or a tower landing across it, caves the street in: a pit pitDepth deep (at least
+ // pitMin wide) that troops fall into (fallDamage) and cannot climb out of. While any pit is open a train runs through every
+ // trainEvery seconds, hitting what is down there.
+ pitDepth:Math.round(42*CITY_SCALE),pitMin:Math.round(100*CITY_SCALE),pitPoints:600,pitHeat:8,fallDamage:40,
+ trainEvery:7,trainSpeed:950,trainLength:Math.round(240*CITY_SCALE),trainDamage:90,
+ // Armory: destroying one stops squads arriving from its side of the block for armorySeconds.
+ armorySeconds:40,armoryPoints:3000,armoryHeat:12,
 };

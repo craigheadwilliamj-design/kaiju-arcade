@@ -1,4 +1,4 @@
-import {groundAt} from './terrain.ts';
+import {groundAt,submerged} from './terrain.ts';
 import {CONFIG as C,MILITARY as M,MILITARY_FEEL as MF,UNIT_CONFIG,WEAPON_CONFIG} from './config.ts';
 import {overlaps} from './rules.ts';
 export type Rect={x:number,y:number,w:number,h:number};
@@ -26,11 +26,12 @@ export type MilitaryEvent={kind:'reward',x:number,damage:number,points:number,sh
  |{kind:'crash',type:UnitType,x:number,y:number,radius:number}
  |{kind:'announce',label:string,side:number,count:number}
  |{kind:'strike',x:number,spotter:number};
-export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Projectile[],wrecks:Wreck[],effects:Effect[],events:MilitaryEvent[],spawnTimer:number,sequence:number,nextID:number,rng:()=>number,squad:number[],squadSize:number,squadLabel:string};
-export function createMilitary(tier=1,city=0,rng=Math.random):MilitaryState{return {tier:Math.max(1,Math.min(5,tier)),city,units:[],projectiles:[],wrecks:[],effects:[],events:[],spawnTimer:M.firstSpawn,sequence:0,nextID:1,rng,squad:[],squadSize:0,squadLabel:''};}
+export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Projectile[],wrecks:Wreck[],effects:Effect[],events:MilitaryEvent[],spawnTimer:number,sequence:number,nextID:number,rng:()=>number,squad:number[],squadSize:number,squadLabel:string,cutOff:Record<string,number>};
+// cutOff: seconds left that no squad may arrive from that side ('1' = from the west, '-1' = from the east): an armory there was destroyed.
+export function createMilitary(tier=1,city=0,rng=Math.random):MilitaryState{return {tier:Math.max(1,Math.min(5,tier)),city,units:[],projectiles:[],wrecks:[],effects:[],events:[],spawnTimer:M.firstSpawn,sequence:0,nextID:1,rng,squad:[],squadSize:0,squadLabel:'',cutOff:{'1':0,'-1':0}};}
 export function onScreen(r:Rect,camera:number,viewW=C.width){return r.x+r.w>camera&&r.x<camera+viewW;}
 export function spawnUnit(s:MilitaryState,type:UnitType,x:number,side=1,spotter=false):Unit{
- const d=UNITS[type],y=d.air?(type==='helicopter'?285:type==='jet'?267:246):groundAt(x+d.w/2)-d.h;
+ const d=UNITS[type];if(!d.air)for(let k=0;k<80&&submerged(x+d.w/2);k++)x-=side*40;const y=d.air?(type==='helicopter'?285:type==='jet'?267:246):groundAt(x+d.w/2)-d.h;
  const hp=d.hp*(1+s.city*M.cityHP);
  const u:Unit={id:s.nextID++,type,x,y,w:d.w,h:d.h,hp,maxHP:hp,face:side,pass:side,cooldown:1.1,burst:0,gap:0,shots:0,kb:0,
   windup:0,windTotal:0,aimX:0,aimY:0,pending:null,stun:0,spotter,call:0,vy:0,flash:0};s.units.push(u);return u;
@@ -130,7 +131,8 @@ export function spawnSquad(s:MilitaryState,camera:number,viewW:number,threat:num
  const full=squadTypes(t,Math.round(Math.max(0,Math.min(1,threat))*MF.squadEscalate)),types=full.slice(0,Math.max(0,cap-alive));
  // A squad that would arrive as a straggler or two waits until there is room for most of it (the template is not used up).
  if(types.length<Math.ceil(full.length*MF.squadMinFit)){s.sequence--;return null;}
- const side=s.rng()<.5?1:-1,radio=types.indexOf('soldier');s.squad=[];
+ let side=s.rng()<.5?1:-1;if(s.cutOff[side]>0)side=-side;if(s.cutOff[side]>0){s.sequence--;return null;}
+ const radio=types.indexOf('soldier');s.squad=[];
  types.forEach((type,k)=>{const def=UNITS[type],off=k*MF.waveSpacing;
   // Stationary guns arrive just outside the leading viewport and remain fixed.
   const u=spawnUnit(s,type,side===1?camera-M.spawnMargin-def.w-off:camera+viewW+M.spawnMargin+off,side,k===radio);s.squad.push(u.id);});
@@ -138,7 +140,7 @@ export function spawnSquad(s:MilitaryState,camera:number,viewW:number,threat:num
  s.events.push({kind:'announce',label:t.label,side:-side,count:types.length});return types;
 }
 export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:number,player:Rect,threat:number,boss?:Rect,contactSource:'player'|'military'='player',viewW=C.width,stage=1){
- s.spawnTimer-=dt;
+ s.spawnTimer-=dt;for(const k of ['1','-1'])s.cutOff[k]=Math.max(0,s.cutOff[k]-dt);
  // Squad director: the next squad comes when this one is mostly wrecked (after a breather) or when the long timer runs out.
  if(s.squad.length){const left=s.units.filter(u=>u.hp>0&&s.squad.includes(u.id)).length;
   if(left<=s.squadSize*MF.squadClear){s.squad=[];s.spawnTimer=Math.min(s.spawnTimer,MF.squadBreather);}}
@@ -159,7 +161,8 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
   if(u.hp<=0)continue;
   if(u.stun>0){u.stun=Math.max(0,u.stun-dt);continue;}
   u.face=target.x+target.w/2>=u.x+u.w/2?1:-1;
-  if(u.type!=='jet'&&u.type!=='bomber'&&d.speed>0&&u.windup<=0&&Math.abs(target.x+target.w/2-u.x-u.w/2)>d.range*.7)u.x+=u.face*d.speed*dt;
+  if(u.type!=='jet'&&u.type!=='bomber'&&d.speed>0&&u.windup<=0&&Math.abs(target.x+target.w/2-u.x-u.w/2)>d.range*.7){const nx=u.x+u.face*d.speed*dt,c0=u.x+u.w/2,c1=nx+u.w/2;
+   if(d.air||!(submerged(c1)&&!submerged(c0))&&Math.abs(groundAt(c1)-groundAt(c0))<12)u.x=nx;}
   u.cooldown=Math.max(0,u.cooldown-dt);
   // Rounds may only be launched inside the engagement window: the native 960 width around the player, kept inside the
   // (possibly zoomed-out) view. Units still spawn beyond the visible edge, but a wider camera does not put more guns in range.

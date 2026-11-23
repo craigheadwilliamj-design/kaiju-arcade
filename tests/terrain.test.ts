@@ -20,7 +20,7 @@ test('Midtown has a sunken start plaza and a raised terrace; buildings stay on f
  assert.ok(groundAt(b.start!)>C.ground+20,'the start plaza is sunken');
  const bs=createBuildings(b.buildings);const raised=bs.filter(x=>x.base<C.ground);assert.ok(raised.length>=3,'a cluster stands on the terrace');
  for(const x of bs)if(x.kind!=='tiny')assert.equal(groundAt(x.x),groundAt(x.x+x.w),`${x.x}: footprint is flat`);
- assert.ok(LEVELS.flat().filter(x=>x.ground).length===1&&!DRILL_BLOCK.ground,'only the pilot block has terrain');
+ assert.deepEqual(LEVELS.flat().filter(x=>x.ground).map(x=>x.name),['Midtown Corridor','East River Offensive']);assert.ok(!DRILL_BLOCK.ground,'drills stay flat');
  setTerrain(null);
 });
 

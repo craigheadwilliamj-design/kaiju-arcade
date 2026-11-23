@@ -1,4 +1,4 @@
-import {groundAt} from './terrain.ts';
+import {groundAt,submerged} from './terrain.ts';
 import {CONFIG as C,MILITARY as M} from './config.ts';
 import {overlaps} from './rules.ts';import type {Rect} from './military.ts';
 export type Civilian={x:number,variant:number,escaped:boolean,squashed:boolean,panicked:boolean};
@@ -25,6 +25,8 @@ export function tickPopulation(s:Population,dt:number,player:Rect,worldWidth:num
  if(overlaps(player,civilianBox(c))){c.squashed=true;if(awardPoints)points+=M.civilianPoints;continue;}
  if(Math.abs(c.x-player.x)<420)c.panicked=true;if(!c.panicked)continue;
  c.x+=(c.x<player.x+player.w/2?-1:1)*M.civilianSpeed*dt;
+ // Into the river: they swim for it (gone from the street, not squashed).
+ if(submerged(c.x+M.civilianW/2)){c.escaped=true;continue;}
  if(c.x<-15||c.x>worldWidth+15)c.escaped=true;
  }return points;
 }

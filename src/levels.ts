@@ -1,7 +1,7 @@
 // `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 // `role`: a structure with a job in the city (src/city.ts). `roof`: a rooftop fixture on an ordinary building.
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot',roof?:'radar'|'tank'};
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory',roof?:'radar'|'tank'};
 // Fixed New York Block 1: four screen widths, authored positions, never generated.
 const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:295,w:64,h:82,hp:60,value:70,kind:'medium',label:'DELI',color:'#577b84'},
@@ -37,7 +37,9 @@ export const CITIES=[
 // Blocks without it keep the classic west spawn and single eastern exit.
 // `grids`: power grids as [from,to] x ranges; each is fed by the substation standing inside it. `poles`: power-pole x positions
 // (street lamps standing on the same spot are left out). Both optional; blocks without them have no city systems.
-export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][]};
+export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number},subway?:[number,number][]};
+// `water`: river spans [from, to, surfaceY]; `bridge`: a deck at street level over [x0, x1] in `spans` breakable spans; `subway`: x ranges
+// with a subway line under the street (slams cave it in). All world units.
 // `ground`: the street profile as world [x, y] points (src/terrain.ts); absent = flat.
 // Third entry element: a landmark's name (key 'L'), 'cache', or a rooftop fixture ('radar' / 'tank').
 type Entry=[number,keyof typeof BUILDING_PRESETS]|[number,keyof typeof BUILDING_PRESETS,string];
@@ -50,12 +52,15 @@ export const NEW_YORK_BLOCK_ONE:BuildingSpec[]=NEW_YORK_BLOCK_ONE_AUTHORED.map(s
 function district(city:number,name:string,screens:number,entries:Entry[],street:number[],cars:number[],kind:BlockDef['kind']='district',start?:number):BlockDef{
  const theme=CITIES[city];let landmarks=0;return {name,screens,kind,street:street.map(sc),cars:cars.map(sc),...(start===undefined?{}:{start:sc(start)}),buildings:entries.map(([x,key,tag],i)=>{
   if(key==='L')return scaled({...BUILDING_PRESETS[key],x,label:tag??'',color:LANDMARK_COLORS[landmarks++%LANDMARK_COLORS.length],landmark:true});
-  if(key==='S'||key==='F')return scaled({...BUILDING_PRESETS[key],x,label:'',color:key==='S'?'#7f8c88':'#c4bea6',role:key==='S'?'substation':'depot'});
+  if(key==='S'||key==='F'||key==='K')return scaled({...BUILDING_PRESETS[key],x,label:key==='K'?'ARMORY':'',color:key==='S'?'#7f8c88':key==='F'?'#c4bea6':'#8a5444',role:key==='S'?'substation':key==='F'?'depot':'armory'});
   return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='radar'||tag==='tank'?{roof:tag}:{})});
  })};
 }
 // Terrain from authored [x, rise] pairs (rise above the default street, negative dips). Keep slopes in gaps: buildings need flat ground.
 function terrain(b:BlockDef,rises:[number,number][]):BlockDef{return {...b,ground:profileFrom(rises,CONFIG.cityScale)};}
+function riverworks(b:BlockDef,o:{ground:[number,number][],water:[number,number,number],bridge:[number,number,number],subway:[number,number]}):BlockDef{
+ const [wa,wz,wr]=o.water,[ba,bz,n]=o.bridge;
+ return {...terrain(b,o.ground),water:[[sc(wa),sc(wz),Math.round(CONFIG.ground-wr*CONFIG.cityScale)]],bridge:{x0:sc(ba),x1:sc(bz),spans:n},subway:[[sc(o.subway[0]),sc(o.subway[1])]]};}
 function powered(b:BlockDef,grids:[number,number][],poles:number[]):BlockDef{return {...b,grids:grids.map(([a,z])=>[sc(a),sc(z)] as [number,number]),poles:poles.map(sc)};}
 // The original packed wall-to-wall Lower Manhattan stays as the Combat Drills map.
 export const DRILL_BLOCK:BlockDef=district(0,'Combat Drills',4,[[400,'s'],[483,'l'],[637,'s'],[724,'s'],[807,'h'],[944,'x'],[1059,'n'],[1128,'m'],[1248,'n'],[1316,'h'],[1454,'l'],[1608,'m'],[1727,'s'],[1810,'m'],[1926,'h'],[2061,'l'],[2219,'m'],[2335,'x'],[2446,'m'],[2562,'h'],[2699,'h'],[2835,'n'],[2907,'l'],[3061,'s'],[3149,'m'],[3268,'h'],[3405,'l'],[3560,'m'],[3675,'s']],[175,375,520,805,1005,1185,1425,1605,1715,1920,2160,2330,2570,2815,3130,3390,3630],[230,710,1005,1195,1580,1910,2160,2370,2550,2830,3120,3380,3650]);
@@ -70,7 +75,9 @@ export const LEVELS:BlockDef[][]=[
  terrain(district(0,'Midtown Corridor',6,[[220,'m'],[332,'h'],[462,'s'],[700,'l'],[850,'L','RADIO CITY'],[1040,'x'],[1148,'m'],[1450,'t'],[1560,'s'],[1640,'h'],[1770,'n','cache'],[1834,'m'],[1946,'s'],[2270,'m'],[2382,'l'],[2630,'t'],[3150,'h'],[3280,'x'],[3388,'n'],[3452,'L','EMPIRE STATE'],[3642,'m'],[3940,'s'],[4020,'l'],[4170,'h','cache'],[4500,'t'],[4620,'m'],[4732,'x'],[4840,'L','CHRYSLER'],[5030,'h'],[5160,'s'],[5340,'m']],[160,640,1300,1500,2180,2700,2900,3080,3880,4440,4570,5250,5650],[180,660,1320,1480,2200,2760,2980,3090,4460,4560,5260,5640],'district',2880),
   [[0,0],[2560,0],[2630,-24],[3050,-24],[3120,0],[3770,0],[3900,40],[4320,40],[4450,0],[5760,0]]),
  district(0,'Central Stronghold',8,[[400,'l'],[555,'m'],[675,'h'],[810,'m'],[929,'s'],[1012,'x'],[1125,'l'],[1280,'x'],[1393,'l'],[1551,'s'],[1637,'h'],[1775,'h'],[1913,'h'],[2046,'l'],[2199,'h'],[2333,'x'],[2445,'s'],[2530,'l'],[2685,'h'],[3070,'b'],[3400,'b'],[3650,'b'],[4020,'b'],[4300,'b'],[4430,'m'],[4548,'h'],[4685,'l'],[4842,'h'],[4979,'m'],[5099,'s'],[5183,'h'],[5317,'m'],[5433,'x'],[5546,'m'],[5665,'n'],[5734,'l'],[5891,'h'],[6024,'l'],[6177,'x'],[6293,'l'],[6447,'m'],[6562,'l'],[6715,'s'],[6800,'n'],[6869,'m'],[6984,'x'],[7096,'m'],[7212,'m'],[7328,'n'],[7399,'s'],[7483,'n']],[550,1300,2140,2930,4600,5350,6190,7060],[500,1250,2150,2870,4510,5300,6120,7030],'stronghold'),
- district(0,'East River Offensive',8,[[220,'h'],[350,'m'],[462,'s'],[700,'x'],[808,'L','UN HQ'],[998,'l'],[1260,'t'],[1380,'m'],[1492,'s'],[1572,'h'],[1702,'m','cache'],[2000,'n'],[2064,'l'],[2214,'m'],[2440,'t'],[2560,'h'],[2690,'L','CITICORP'],[2880,'x'],[2988,'s'],[3260,'m'],[3372,'h'],[4140,'s'],[4220,'m'],[4332,'n'],[4396,'h','cache'],[4720,'t'],[4840,'l'],[4990,'x'],[5098,'L','MET LIFE'],[5288,'m'],[5560,'s'],[5780,'h'],[5910,'l','cache'],[6060,'n'],[6290,'t'],[6400,'m'],[6512,'h'],[6642,'L','SEAPORT'],[6832,'s'],[7110,'m'],[7222,'h']],[150,640,1230,1330,1940,2380,2500,3200,3560,3720,4000,4080,4700,4780,5500,5700,6250,6360,7040,7520],[170,650,1240,1340,1960,2400,2510,3540,3700,4010,4740,4790,5520,5720,6270,6370,7060,7540],'district',3840),
+// East River is the phase 3 showcase: the river crosses the east end under a three-span suspension bridge (the only way across for
+ // ground troops), a subway line runs under the west half (slams cave the street in), and an armory stands at each end.
+ riverworks(district(0,'East River Offensive',8,[[220,'h'],[350,'m'],[462,'s'],[548,'K'],[700,'x'],[808,'L','UN HQ'],[998,'l'],[1260,'t'],[1380,'m'],[1492,'s'],[1572,'h'],[1702,'m','cache'],[2000,'n'],[2064,'l'],[2214,'m'],[2440,'t'],[2560,'h'],[2690,'L','CITICORP'],[2880,'x'],[2988,'s'],[3260,'m'],[3372,'h'],[4140,'s'],[4220,'m'],[4332,'n'],[4396,'h','cache'],[4720,'t'],[4840,'l'],[4990,'x'],[5098,'L','MET LIFE'],[5288,'m'],[6060,'n'],[6290,'t'],[6400,'m'],[6512,'h'],[6642,'L','SEAPORT'],[6832,'s'],[6930,'K'],[7110,'m'],[7222,'h']],[150,640,1230,1330,1940,2380,2500,3200,3560,3720,4000,4080,4700,4780,5500,5700,6250,6360,7040,7520],[170,650,1240,1340,1960,2400,2510,3540,3700,4010,4740,4790,5520,5720,6270,6370,7060,7540],'district',3840),{ground:[[0,0],[5410,0],[5470,-40],[5990,-40],[6050,0],[7680,0]],water:[5420,6040,-10],bridge:[5400,6060,3],subway:[400,3700]}),
  district(0,'Kaiban Arena',4,[[500,'m'],[890,'l'],[1300,'s'],[1720,'t'],[2130,'h'],[2550,'l'],[2980,'m'],[3370,'s']],[340,780,1210,1650,2400,3190],[350,1150,1580,2350,3200],'boss'),
  ],
  [
