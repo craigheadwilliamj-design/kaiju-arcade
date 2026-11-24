@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -77,7 +77,9 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
  units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
  exits?:{west?:string,east?:string},after?:string,fog?:{from:number,to:number,max:number},sealions?:number[],kaiban?:{x:number,wade:[number,number]},
- buses?:number[],elevatedLook?:'park',ramps?:[number,number][],coastguard?:number[]};
+ buses?:number[],elevatedLook?:'park'|'freeway',ramps?:[number,number][],coastguard?:number[],
+ // Phase 5 (SF Act 3), all opt-in. See the notes below.
+ cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2};
 // Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
 // (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
 // over an underground garage: a slam caves it into a pit of parked cars. `police`: helicopters and soldiers here are drawn as police / SWAT.
@@ -97,6 +99,9 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `sealions`: Pier 39 sea lions at x. `kaiban`: Kaiban's silhouette wading in the bay at x over a wade range. `buses`: bus terminal buses under
 // an `elevatedLook: 'park'` roof (the elevated system drawn as a roof park, no trains). `coastguard`: Coast Guard boats on the water at x.
 // `runaway`: x of cable cars (listed in `cablecars`) that come loose rolling when the camera nears (Jefferson Street).
+// Phase 5 (SF Act 3). `cracks`: x of the fault cracks (src/config.ts CRACK): a slam, pound or Ultimate near one sets off a district quake;
+// the last is the Big One. `gas`: the level's hydrants are gas mains (a burst is a fire geyser). `fireCap`: how many buildings may burn at
+// once (default FIRE.cap). `elevatedDecks: 2` with `elevatedLook: 'freeway'`: the elevated line is a double-deck freeway that pancakes on the Big One.
 // `elevated`: an elevated railway over [x0, x1] (Tokyo); world units.
 // `water`: river spans [from, to, surfaceY]; `bridge`: a deck at street level over [x0, x1] in `spans` breakable spans; `subway`: x ranges
 // with a subway line under the street (slams cave it in). All world units.
@@ -377,6 +382,30 @@ function sfWharf():BlockDef{
   fog:{from:sc(2200),to:sc(7000),max:.72},
   exits:{west:'The Fault',east:'Alcatraz'}};
 }
+// Level 7. The Fault (the 1906 level), west to east: Van Ness (start), Civic Center (the dome, the first crack), Mid-Market (the old
+// mint, the second crack, fire trucks that cannot keep up), SoMa (warehouses, the double-deck freeway, the third crack: the Big One)
+// and the on-ramp at the east end, a climb onto the road that is the exit. The new thing: the fault cracks and the gas mains.
+function sfFault():BlockDef{
+ const CRACKS=[2300,4000,6300],FREEWAY:[number,number]=[5560,7060],RAMP:[number,number]=[7260,7640];
+ let b=sfLevel('The Fault',8,'district',
+  `s,m,r,_,h,s,m,_,l,r,>1900,L,=,>2540,h,m,r,_,m:vault,h,s,_,>3500,r,h,_,s,m,_,>4180,w:brick,r,w:shed,_,w:brick,r,s,_,w:brick,r,_`,
+  ['CITY HALL|dome'],{startStage:3,cap:3,tier:4});
+ b=clearClutter(b,[FREEWAY],true);
+ // The old mint is a granite vault.
+ b={...b,buildings:b.buildings.map(x=>x.deco==='vault'?{...x,label:'OLD MINT',color:'#9a9c97'}:x)};
+ // Gas mains: the generic hydrants, plus a pair either side of every crack (and under the freeway) where the quake will find them.
+ const solids=b.buildings.filter(x=>x.kind!=='tiny'),mw=Math.round(10*CONFIG.cityScale),mh=Math.round(16*CONFIG.cityScale);
+ const mains=CRACKS.flatMap(c=>[-420,-220,220,420].map(o=>c+o)).map(x=>sc(x)).filter(x=>x>sc(240)&&x<sc(RAMP[0])-60&&!solids.some(o=>x+mw>o.x-6&&x<o.x+o.w+6)&&!b.buildings.some(o=>o.role==='hydrant'&&Math.abs(o.x-x)<mw*3))
+  .map(x=>({x,w:mw,h:mh,hp:1,value:5,kind:'tiny' as const,label:'',color:'#c0392b',role:'hydrant' as const}));
+ b={...b,buildings:[...b.buildings,...mains]};
+ b=terrain(b,[[0,0],[RAMP[0],0],[RAMP[1],130],[8000,130]]);
+ const trucks=station(b,[3000,3380,3760].map(x=>[sc(x),VEHICLE_SPECS.firetruck.w] as [number,number]));
+ return {...b,cracks:CRACKS.map(sc),gas:true,fireCap:GAS.fireCap,elevated:[sc(FREEWAY[0]),sc(FREEWAY[1])],elevatedLook:'freeway',elevatedDecks:2,
+  firetrucks:trucks.xs,cars:trucks.cars,
+  // Full military from the start: tanks and artillery down Van Ness and Mid-Market, jets overhead, soldiers at the on-ramp.
+  units:[['soldier',sc(900)],['tank',sc(1300)],['tank',sc(1750)],['artillery',sc(2900)],['soldier',sc(3200)],['tank',sc(3560)],['jet',sc(4300)],
+   ['tank',sc(4700)],['artillery',sc(5100)],['apc',sc(5300)],['soldier',sc(5700)],['tank',sc(6500)],['soldier',sc(6900)],['helicopter',sc(6100),560]]};
+}
 export const SAN_FRANCISCO:BlockDef[]=[
  sfEmbarcadero(),
  sfUnionSquare(),
@@ -384,7 +413,7 @@ export const SAN_FRANCISCO:BlockDef[]=[
  sfNobHill(),
  sfFinancial(),
  sfWharf(),
- sfLevel('The Fault',8,'district',`L,h,m,_,l,S,_,x,h:cache,_,l,m:tank,_,${SF_ROW},n,x,_,L,F,_,h,l,_,x,m,_,h,l:radar,_,m,x,_,l`,['CITY HALL|dome','OPERA HOUSE|dome'],{startStage:3,cap:3,tier:4}),
+ sfFault(),
  sfLevel('Bay Bridge',8,'stronghold',`L,K,_,m,h,_,l,F,_,x,m,_,h:tank,l,_,L,m,_,K,_,h,l,_,m,x,_,l`,['BAY BRIDGE WEST TOWER|lattice','BAY BRIDGE EAST TOWER|lattice'],{startStage:3,cap:3,tier:4}),
  sfLevel('Golden Gate',6,'boss',`=,m,=,l,=,s,=,t,=,h,=,l,=,m,=,s`,[],{startStage:3,cap:3,tier:5}),
  {...sfLevel('Alcatraz',4,'district',`=,s,m:tank,_,L,h,_,l,s,_,L,m`,['CELLHOUSE|tower','LIGHTHOUSE|needle'],{startStage:3,cap:3,tier:5,secret:true}),after:'The Fault'},

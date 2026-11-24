@@ -20,7 +20,7 @@ test('Midtown has a sunken start plaza and a raised terrace; buildings stay on f
  assert.ok(groundAt(b.start!)>C.ground+20,'the start plaza is sunken');
  const bs=createBuildings(b.buildings);const raised=bs.filter(x=>x.base<C.ground);assert.ok(raised.length>=3,'a cluster stands on the terrace');
  for(const x of bs)if(x.kind!=='tiny')assert.equal(groundAt(x.x),groundAt(x.x+x.w),`${x.x}: footprint is flat`);
- assert.deepEqual(LEVELS.flat().filter(x=>x.ground).map(x=>x.name),['Embarcadero','Nob Hill',"Fisherman's Wharf",'Midtown Corridor','East River Offensive','Kowloon Streets','Nathan Road','Victoria Assault']);
+ assert.deepEqual(LEVELS.flat().filter(x=>x.ground).map(x=>x.name),['Embarcadero','Nob Hill',"Fisherman's Wharf",'The Fault','Midtown Corridor','East River Offensive','Kowloon Streets','Nathan Road','Victoria Assault']);
  // Hong Kong's open blocks climb a hillside; every building still stands on flat ground.
  // Street junk may sit on a gentle slope.
  for(const hk of LEVELS[cityIndexOf('hkg')].filter(x=>x.ground)){setTerrain(hk.ground!);const bs=createBuildings(hk.buildings);assert.ok(Math.min(...bs.map(x=>x.base))<C.ground-100,`${hk.name} climbs`);

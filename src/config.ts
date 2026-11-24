@@ -497,3 +497,19 @@ export const SF2 = {
 // Fog (Fisherman's Wharf; the Golden Gate reuses it): a level's `fog` is {from, to, max}: the overlay is clear before `from`,
 // thickens linearly to `max` (0-1 opacity) at `to`, and holds. `tint` is the fog colour.
 export const FOG = {tint:'#d9dee0',drift:6};
+
+// SF Act 3 (redesign phase 5): The Fault (Level 7). Fault cracks are set off by a slam or a pound within `reach` of them (an Ultimate
+// within `ultReach`); each sets off a district quake: everything within `radius` (`ultRadius` for an Ultimate) shakes (`sway` s),
+// takes damage that falls off with distance, and a shockwave rolls out both ways from the crack. The quake bursts the gas mains
+// within `mainRadius`. The last crack is the Big One: the whole level shakes for `bigSeconds`, every building is hit, and the
+// freeway pancakes: each column's upper deck gives way (a `pancakeGap` s after the one before), the lower deck `pancakeDrop` s later,
+// crushing what is under it for `crushDamage`.
+export const CRACK = {
+ reach:Math.round(260*CITY_SCALE),ultReach:Math.round(620*CITY_SCALE),radius:Math.round(700*CITY_SCALE),ultRadius:Math.round(1150*CITY_SCALE),
+ damage:46,ultDamage:92,sway:2.2,shake:12,ultShake:20,waveDamage:30,mainRadius:Math.round(560*CITY_SCALE),points:1800,shards:14,
+ deckGap:Math.round(80*CITY_SCALE),pancakePoints:700,bigSeconds:6,bigDamage:60,bigShake:16,pancakeGap:.28,pancakeDrop:.55,crushDamage:70,crushKnock:200,unitStun:1.2,unitDamage:20,
+};
+// Gas mains (The Fault): the hydrants of a level with `gas` are gas mains. A burst main is a fire geyser for `seconds`: it burns
+// troops and cars within `radius` (`dps`, ticking every `tick`) and sets every building within `ignite` alight. `fireCap` on the
+// level raises FIRE.cap (how many buildings may burn at once).
+export const GAS = {seconds:7,radius:Math.round(120*CITY_SCALE),ignite:Math.round(150*CITY_SCALE),tick:.5,damage:9,knockback:260,points:400,heat:8,height:190,fireCap:16};
