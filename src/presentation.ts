@@ -63,6 +63,11 @@ const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 // Belial Stage 1 strips: the belial-s1 base still, a 145x54 lean juvenile sprite at x=57 in a 256x192 frame (PixelLab Pixen edit of the
 // Stage 2 base, shrunk to 62% and re-drawn younger: slimmer, short nub spines, thin tail, the gland reduced to a drool).
 const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
+// Myrmex Stage 2 strips: posed by the cutout rig (tools/myrmex_s2_rig.py) from the 146x122 keyed sprite, origin at x=55 in a
+// 256x192 frame, then redrawn clean by PixelLab (tools/pixellab_edit_animation.py).
+const MX2_NATIVE={scale:146/256,anchor:55+128*146/256};
+// Myrmex Stage 2 PixelLab attack strips: the base shifted 40px left (origin at x=15) for room in front of the snout.
+const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
@@ -749,6 +754,66 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    hold:[[198,184],[199,184],[200,186],[200,186],[200,186],[200,184],[199,183],[198,183]]},
   throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
   stages:{1:BELIAL_S1,3:BELIAL_S3}},
+ // Myrmex (red winged scorpion-ant: curled tail with a glowing venom stinger (poison, not fire), orange wasp wings, long neck, two long hind legs, small
+ // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form until Stage 1 and 3 art exist, so every stage draws
+ // it. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
+ Myrmex:{width:120,anims:{idle:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,...MX2_NATIVE},
+  walk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,...MX2_NATIVE},
+  // Run (Shift / double-tap): a low scuttling trot from the rig, diagonal pairs together, with a brief flight phase.
+  run:{src:'assets/myrmex-s2-run.png',frames:12,fps:20,...MX2_NATIVE},
+  // Jump (his wings: a big floaty jump plus two wing-beat air jumps, MOVE.myrmex*): rise crouches with the wings cocked, springs
+  // on a downstroke and tucks the legs; the air loop buzzes the wings with the legs dangling; jumpFlap (played on each air jump)
+  // throws the wings up and drives them down as the legs kick; land soaks it up and settles. Feet lift toward the body in the air
+  // (the body stays put; physics moves him).
+  jumpRise:{src:'assets/myrmex-s2-jump-rise.png',frames:8,fps:20,once:true,...MX2_NATIVE},jumpAir:{src:'assets/myrmex-s2-jump-air.png',frames:6,fps:18,...MX2_NATIVE},
+  jumpFlap:{src:'assets/myrmex-s2-jump-flap.png',frames:6,fps:20,once:true,...MX2_NATIVE},jumpLand:{src:'assets/myrmex-s2-jump-land.png',frames:5,fps:20,once:true,...MX2_NATIVE},
+  // Crouch (shared crouch timing): down sinks to about 0.65 of standing with the hind feet splayed back, forefeet forward, the
+  // middle legs folded flat under the belly and the wings swept back; the loop breathes 1px; up is down reversed.
+  crouchDown:{src:'assets/myrmex-s2-crouch-down.png',frames:5,fps:22,once:true,...MX2_NATIVE},crouch:{src:'assets/myrmex-s2-crouch.png',frames:4,fps:6,...MX2_NATIVE},
+  crouchUp:{src:'assets/myrmex-s2-crouch-up.png',frames:5,fps:22,once:true,...MX2_NATIVE},
+  // Light combo (shared 24/21/20 fps): bite, harder bite, sting. light1 rears back with the jaw opening, lunges and snaps; light2
+  // bites lower and further with the jaws gaping wider, then wrenches the head up; light3 (a PixelLab roll, MX2_LEFT, 256x256 so the raised tail
+  // clears the top) is a hissing-cat sting: the rear lifts, the tail rises over his back and lashes far forward in a purple venom
+  // arc, then he settles back to standing.
+  light1:{src:'assets/myrmex-s2-light1.png',frames:8,fps:24,once:true,...MX2_NATIVE},light2:{src:'assets/myrmex-s2-light2.png',frames:8,fps:21,once:true,...MX2_NATIVE},
+  light3:{src:'assets/myrmex-s2-light3.png',frames:9,fps:20,once:true,...MX2_LEFT},
+  // Heavy, a charged poison sting (PixelLab rolls, MX2_LEFT, 256x256 frames: the shifted base padded 64px on top for the raised
+  // tail; strips draw bottom-anchored): rear lifts the rear end and cocks the tail high over his back with purple venom beading on
+  // the stinger; hold quivers it as the venom swells and drips; slam whips it over his head into the street ahead in a magenta arc
+  // and a splash of purple venom, then he settles. Pound (S+J) reuses the slam, as on the other forms. No fire: he uses poison.
+  heavyRear:{src:'assets/myrmex-s2-heavy-rear.png',frames:5,fps:20,once:true,...MX2_LEFT},heavyHold:{src:'assets/myrmex-s2-heavy-hold.png',frames:4,fps:10,...MX2_LEFT},
+  heavySlam:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT},pound:{src:'assets/myrmex-s2-heavy-slam.png',frames:8,fps:16,once:true,...MX2_LEFT},
+  // Venom Bomb (L, PixelLab rolls, MX2_LEFT, 256x256): spitBrew raises the tail forward over his back as a big glossy bubble of venom
+  // swells on the stinger; spitHold wobbles and drips it while L is held; spitThrow whips the tail forward (the bubble is erased
+  // from the release on, since the game draws the bomb: it leaves on impact frame 1 from `mouth`, the stinger tip) and settles.
+  // Sting Dive (his Slam; PixelLab rolls, 256x256, the air pose and the base padded 64px on top so MX2_NATIVE lines up): dive folds the
+  // wings back and tips into a steep head-first plunge with the tail curled (frames 0, 3, 5 and 8 of a roll, bottom-aligned, held on
+  // the last); slamLand crashes in, whips the stinger into the street in a burst of purple venom and pushes back up to standing.
+  dive:{src:'assets/myrmex-s2-dive.png',frames:4,fps:24,once:true,...MX2_NATIVE},slamLand:{src:'assets/myrmex-s2-slam-land.png',frames:8,fps:16,once:true,...MX2_NATIVE},
+  // Climb (256x256, MX2_NATIVE): he walks up the wall like an insect. The loop is his own walk strip turned a quarter turn (head up,
+  // belly to the wall), so every leg lifts and plants; its feet sit on the wall line at frame x=157 (the hitbox edge, 24 world units
+  // out) and the tail hangs to the bottom row. climbGrab (frames 0-3 and 8 of a leap roll ending on that turned pose; the overshoot
+  // frames pulled back off the wall), climbPunch (claw slam, impact frame 4) and climbMantle (up and over to standing, starting 17px
+  // back for the roof slide) are PixelLab rolls from the turned pose.
+  climbGrab:{src:'assets/myrmex-s2-climb-grab.png',frames:5,fps:20,once:true,...MX2_NATIVE},climb:{src:'assets/myrmex-s2-climb.png',frames:16,fps:15,...MX2_NATIVE},
+  climbPunch:{src:'assets/myrmex-s2-climb-punch.png',frames:8,fps:24,once:true,impact:4,...MX2_NATIVE},climbMantle:{src:'assets/myrmex-s2-climb-mantle.png',frames:9,fps:20,once:true,...MX2_NATIVE},
+  // Grab/carry/throw in the mandibles (`bite`: the game grips the prop by its near end at the jaws). grab (PixelLab roll, MX2_LEFT,
+  // 256x256, the shifted base appended) lowers the head to the street, clamps the mandibles and lifts back to standing; the prop waits
+  // on the street until the jaws reach it (frame 3). carry and carryWalk are his idle and walk strips, so his legs really step, with the
+  // prop at the snout tip. throw (frames 3-7 of a roll plus the base; its fire spark erased) jerks the head and flings it forward.
+  grab:{src:'assets/myrmex-s2-grab.png',frames:9,fps:22,once:true,bite:true,...MX2_LEFT,hold:[[175,248],[175,248],[175,248],[175,248],[171,230],[173,240],[175,221],[169,193],[160,180]]},
+  carry:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,bite:true,...MX2_NATIVE,hold:[[200,116],[200,116],[200,118],[200,118],[200,116],[200,116],[200,114],[200,114]]},
+  carryWalk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,bite:true,...MX2_NATIVE,hold:[[200,115],[200,116],[200,116],[201,118],[200,119],[200,116],[200,113],[199,112],[199,114],[200,116],[200,116],[201,118],[200,118],[200,116],[200,113],[199,112]]},
+  throw:{src:'assets/myrmex-s2-throw.png',frames:6,fps:18,once:true,...MX2_LEFT},
+  // The Swarm, his Ultimate (PixelLab rolls, 256x256, MX2_NATIVE, the base padded 64px on top): ultCharge (13 frames at 20 fps =
+  // swarmCharge) hunches as the abdomen swells and throbs purple; ultRoar rears up on the hind legs with the wings flared and the
+  // abdomen bursts in a magenta starburst on impact frame 4, where the drones pour out (`mouth`, the burst's core); ultPound holds the
+  // reared pose with the wings buzzing and the abdomen pulsing; ultSettle folds the wings and lowers back to standing.
+  ultCharge:{src:'assets/myrmex-s2-ult-charge.png',frames:13,fps:20,once:true,...MX2_NATIVE},
+  ultRoar:{src:'assets/myrmex-s2-ult-roar.png',frames:8,fps:18,once:true,impact:4,...MX2_NATIVE,mouth:[100,178]},
+  ultPound:{src:'assets/myrmex-s2-ult-pound.png',frames:4,fps:10,...MX2_NATIVE},ultSettle:{src:'assets/myrmex-s2-ult-settle.png',frames:8,fps:14,once:true,...MX2_NATIVE},
+  spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
+  spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
@@ -888,6 +953,13 @@ export function moveList(kaiju:string):{moves:MoveSection[],controls:MoveSection
   {keys:'SHIFT+A/D',name:'Gore Charge',desc:'His run is a head-down tusk charge. Ramming a building with a running start hits far harder than a normal barge (back off and charge again for another hit), troops get thrown, and cars get flipped up over his tusks.'},
   {...slam,name:'Meteor Drop',desc:'Dive tusks- or fists-first. The landing cracks the ground and hurls a ring of rock chunks out both ways, on top of the slam itself.'},
   {keys:'L',name:'Single shot (air / wall)',desc:'Airborne or clinging there is no street to scoop: fire one shot.'}]
+ :kaiju==='Myrmex'?[
+  {keys:'SPACE › SPACE › SPACE',name:'Wing Beat',desc:'He can\'t fly, but his jump is huge, and in the air he can beat his wings for two more jumps before he has to touch down. They come back as soon as he lands or grabs a wall.'},
+  {keys:'SPACE (hold)',name:'Glide',desc:'He floats down far more gently than anyone else; hold Space on the way down to glide even slower and cover more ground.'},
+  {...slam,name:'Sting Dive',desc:'Dive head-first out of the air and stab the stinger into whatever you land on. The impact bursts into a poison cloud (bigger the further you fell) and, on the street, a venom puddle, on top of the slam itself.'},
+  {keys:'L (hold)',name:'Venom Bomb',desc:'Hold to brew a bubble of venom on the stinger (it swells the longer you hold, and you can still creep or float), release to fling it. It bursts on the first thing it hits into a big poison cloud that hangs and drifts for several seconds: every trooper, aircraft or rival inside is poisoned and keeps taking damage. A fuller bomb flies further and makes a bigger cloud. Works on the ground, in the air and on a wall.'},
+  {keys:'L+W',name:'Lob',desc:'Hold W as you release to lob the bomb higher and further, over cover and onto rooftops.'},
+  {keys:'U',name:'The Swarm',desc:'Full meter. He hunches as his abdomen swells, rears up and it bursts open, releasing a swarm of venomous drones. They hunt down every trooper, aircraft and the rival nearby, stinging and poisoning them, and chew on buildings when there is nothing alive to sting. The swarm keeps going for a few seconds after he settles. Invulnerable while he summons it.'}]
  :[
   {keys:'L',name:'Spine',desc:'A horizontal ranged spine.'},
   {keys:'U',name:'Seismic Rupture',desc:'Full meter. Shockwaves both ways while invulnerable (shared preview Ultimate).'},
