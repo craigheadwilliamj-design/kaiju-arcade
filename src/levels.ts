@@ -2,7 +2,7 @@ import type {Part} from './hitbox.ts';
 // `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 // `role`: a structure with a job in the city (src/city.ts). `roof`: a rooftop fixture on an ordinary building.
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant',roof?:'radar'|'tank',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean};
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant'|'powerhouse',roof?:'radar'|'tank'|'sign'|'crab'|'helipad',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean};
 // `parts`: the hitbox silhouette (src/hitbox.ts); omitted means one box, the whole footprint.
 // `prop`: street junk (a walk-through breakable: hot dog cart, trash can, taco stand, advertising column, café table, market stall,
 // vending machine), drawn per kind.
@@ -72,8 +72,12 @@ export const CITIES:City[]=[
 // over from the last block, Stage 1 to 3. `tier`: the military response tier (absent = the block's position, 1-5).
 // `secret`: in the city's level list but off the campaign route (reached later by a secret exit).
 export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
- target?:{x:number,label:string,art:'clock'|'command'},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
- guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number}};
+ target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter',scale?:number},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
+ guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
+ // Phase 4 (SF Act 2), all opt-in. See the notes below.
+ units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
+ exits?:{west?:string,east?:string},after?:string,fog?:{from:number,to:number,max:number},headroom?:number,sealions?:number[],kaiban?:{x:number,wade:[number,number]},
+ buses?:number[],elevatedLook?:'park',ramps?:[number,number][],coastguard?:number[]};
 // Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
 // (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
 // over an underground garage: a slam caves it into a pit of parked cars. `police`: helicopters and soldiers here are drawn as police / SWAT.
@@ -84,13 +88,22 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `bands`: the water follows the depth bands (src/water.ts: shallows, wading, over your head, drowning); without it water is the old
 // flat wade. `tunnel: 'deep'`: subway pits are RIVER.deepPitDepth deep (San Francisco). `boats`: police boats stationed on the water at
 // these x positions. All opt-in, for the San Francisco campaign; no existing city sets them.
+// Phase 4 (SF Act 2). `units`: extra stationed units at x (join as the camera nears, like `air`/`swat`); `garrison`: replaces a stronghold's
+// default garrison near its target (type, offset from the target). `cableLines`: street stretches [x0, x1] with a cable car shuttling on
+// each (src/rolling.ts); the level's powerhouse (role 'powerhouse') sets them all loose when destroyed. `tumble`: x range where parked
+// cars are let go downhill when the camera nears (Lombard Street). `ramps`: the ramp stretches of a terraced hill (for placing lines).
+// `exits`: a there-and-back level's two exits, each naming the level (by name) it leads to; `after`: where a secret level rejoins the route.
+// `fog`: fog overlay {from, to, max} (src/fog.ts). `headroom`: camera rise above the street for very tall levels (default CONFIG.maxCameraY).
+// `sealions`: Pier 39 sea lions at x. `kaiban`: Kaiban's silhouette wading in the bay at x over a wade range. `buses`: bus terminal buses under
+// an `elevatedLook: 'park'` roof (the elevated system drawn as a roof park, no trains). `coastguard`: Coast Guard boats on the water at x.
+// `runaway`: x of cable cars (listed in `cablecars`) that come loose rolling when the camera nears (Jefferson Street).
 // `elevated`: an elevated railway over [x0, x1] (Tokyo); world units.
 // `water`: river spans [from, to, surfaceY]; `bridge`: a deck at street level over [x0, x1] in `spans` breakable spans; `subway`: x ranges
 // with a subway line under the street (slams cave it in). All world units.
 // `ground`: the street profile as world [x, y] points (src/terrain.ts); absent = flat.
 // Third entry element: a landmark's name (key 'L'), 'cache', or a rooftop fixture ('radar' / 'tank').
 // Façade decoration tags (the third entry element): drawn by drawDeco in src/game.ts.
-const DECOS=new Set(['shed','brick','fireworks','store','hotel','post']);
+const DECOS=new Set(['shed','brick','fireworks','store','hotel','post','carousel','factory','sub','freighter','crabshack','wall','tallship','powerhouse','vault']);
 type Entry=[number,keyof typeof BUILDING_PRESETS]|[number,keyof typeof BUILDING_PRESETS,string];
 const LANDMARK_COLORS=['#c3b48d','#b7a37c','#a9a9a0'];
 // Named NYC landmarks: authored tier silhouettes on the 190-wide 'L' footprint, drawn tier by tier from these parts, authored scale, bottom tier first. Every tier is a roof you can stand on
@@ -124,7 +137,8 @@ function district(city:string,name:string,screens:number,entries:Entry[],street:
    if(tiers)return scaled({...BUILDING_PRESETS[key],x,h:Math.max(...tiers.map(p=>p.top)),parts:tiers,label,color,landmark:true});
    const b=scaled({...BUILDING_PRESETS[key],x,label,color,landmark:true,...(shape?{shape}:{})});return {...b,shape:shape||'tower',parts:shapeParts(shape||'tower',theme.style,b.w,b.h)};}
   if(key==='S'||key==='F'||key==='K')return scaled({...BUILDING_PRESETS[key],x,label:key==='K'?'ARMORY':'',color:key==='S'?'#7f8c88':key==='F'?'#c4bea6':'#8a5444',role:key==='S'?'substation':key==='F'?'depot':'armory'});
-  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='radar'||tag==='tank'?{roof:tag}:tag&&DECOS.has(tag)?{deco:tag,label:'',...(tag==='fireworks'?{explosive:true,label:'FIREWORKS'}:{})}:{})});
+  if(key==='P')return scaled({...BUILDING_PRESETS[key],x,label:'CABLE CAR POWERHOUSE',color:'#8a5a44',role:'powerhouse',deco:'powerhouse'});
+  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='vault'?{cache:true,deco:'vault',label:'VAULT'}:tag==='factory'?{deco:'factory',roof:'sign',label:'CHOCOLATE'}:tag==='radar'||tag==='tank'||tag==='sign'||tag==='crab'||tag==='helipad'?{roof:tag}:tag&&DECOS.has(tag)?{deco:tag,label:'',...(tag==='fireworks'?{explosive:true,label:'FIREWORKS'}:{})}:{})});
  });
  // Water mains: a fire hydrant on the pavement beside every MAINS.every-th street spot (never inside a building), in district and
  // stronghold blocks. Appended after the authored buildings so their order is untouched.
@@ -173,21 +187,34 @@ export function cityIndexOf(id:string){return CITIES.findIndex(c=>c.id===id);}
 // street (240 wide, a street spot and a parked car in it) or `=` an open lot (420). Buildings stand 4 apart. Landmarks ('L') take the
 // next name from `landmarks`. A stronghold keeps its middle clear for the crystal, ringed by barricades; a boss level is an arena.
 type Growth={startStage:1|2|3,cap:1|2|3,capLift?:2|3,tier:number,secret?:boolean};
-function sfLevel(name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts:{target?:number,ring?:number[],from?:number}={}):BlockDef{
- const W=screens*960,mid=opts.target??W/2,entries:Entry[]=[],street:number[]=[175],cars:number[]=[230];let x=opts.from??400,l=0;
+// Extra pattern tokens (SF Act 2): `~N` a bare gap of N (a hillside ramp: no street spot, no car); `^R` a new terrace at rise R
+// (authored, above the base street) starting at the current x: the ramp is the gap just before it (`~N` right before the `^R`).
+// The block gets `terraces` (consumed by terraced()) listing [rampStart, start, rise].
+type Terraces=[number,number,number][];
+function sfLevel(name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts:{target?:number,ring?:number[],from?:number}={}):BlockDef&{terraces?:Terraces}{
+ const W=screens*960,mid=opts.target??W/2,entries:Entry[]=[],street:number[]=[175],cars:number[]=[230],terraces:Terraces=[];let x=opts.from??400,l=0,lastGap=0;
  const clear=kind==='stronghold'?[mid-900,mid+560]:null;
  if(clear)for(const o of opts.ring??[-770,-440,-190,180,460])entries.push([mid+o,'b']);
  for(const token of pattern.split(',').map(t=>t.trim())){
-  if(token[0]==='>'){x=Math.max(x,+token.slice(1));continue;}
-  if(token==='_'||token==='='){const gap=token==='_'?240:420;if(x+gap<W-130){street.push(x+gap/2-40);cars.push(x+20);}x+=gap;continue;}
+  if(token[0]==='>'){x=Math.max(x,+token.slice(1));lastGap=0;continue;}
+  if(token[0]==='~'){lastGap=+token.slice(1);x+=lastGap;continue;}
+  if(token[0]==='^'){if(lastGap<=0)throw Error(`${name}: a terrace needs a ramp (~N) before it`);terraces.push([x-lastGap,x,+token.slice(1)]);continue;}
+  if(token==='_'||token==='='){const gap=token==='_'?240:420;if(x+gap<W-130){street.push(x+gap/2-40);cars.push(x+20);}x+=gap;lastGap=gap;continue;}
   const [key,tag]=token.split(':') as [keyof typeof BUILDING_PRESETS,string|undefined],w=BUILDING_PRESETS[key].w;
   if(clear&&x+w>clear[0]&&x<clear[1]){street.push(clear[0]+60,mid-320,mid+320);cars.push(clear[0]+120);x=clear[1];}
   if(x+w>W-130)break;
-  const label=key==='L'?landmarks[l++]:tag;entries.push(label===undefined?[x,key]:[x,key,label]);x+=w+4;
+  const label=key==='L'?landmarks[l++]:tag;entries.push(label===undefined?[x,key]:[x,key,label]);x+=w+4;lastGap=0;
  }
  entries.sort((a,b)=>a[0]-b[0]);
- return {...district('sfo',name,screens,entries,[...new Set(street)].filter(v=>v<W-60).sort((a,b)=>a-b),[...new Set(cars)].filter(v=>v<W-60).sort((a,b)=>a-b),kind),...growth};
+ return {...district('sfo',name,screens,entries,[...new Set(street)].filter(v=>v<W-60).sort((a,b)=>a-b),[...new Set(cars)].filter(v=>v<W-60).sort((a,b)=>a-b),kind),...growth,...(terraces.length?{terraces}:{})};
 }
+// Terraced hillside: buildings stand on flat terraces, the slopes are the ramp gaps (authored: each terrace rise, `^R` in the pattern).
+// Returns the block with its ground profile and `ramps` (world x ranges), minus the `terraces` bookkeeping. `base` is the rise before the first terrace.
+function terraced(b:BlockDef&{terraces?:Terraces},base=0,end?:number):BlockDef{
+ const t=b.terraces??[],pts:[number,number][]=[[0,base]],ramps:[number,number][]=[];
+ for(const [a,z,r] of t){pts.push([a,pts[pts.length-1][1]],[z,r]);ramps.push([sc(a),sc(z)]);}
+ const W=levelWidth(b);pts.push([W/CONFIG.cityScale,end??pts[pts.length-1][1]]);
+ const {terraces:_,...rest}=b;return {...terrain(rest,pts),ramps};}
 const SF_ROW='s,m:tank,h,_,l,m,s:cache,_,x,n,m,_,h:radar,s,t,_,m,l,_,h,s:tank,m,_';
 
 // ---- San Francisco Act 1 (redesign phase 3): Embarcadero, Union Square, Chinatown ----
@@ -271,17 +298,97 @@ function sfChinatown():BlockDef{
   lanterns:lanternGaps(b),
   firetrucks:st.xs,cars:st.cars,swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)],crystal:sc(CRYSTAL),guard:true,police:true};
 }
+// ---- San Francisco Act 2 (redesign phase 4): Nob Hill, the Financial District, Fisherman's Wharf ----
+// The Victorian houses (96 wide) and their hillside terraces: a row stair-steps up or down, each house on its own flat with the street
+// ramping between, so a runaway car going down it bowls into each next house.
+// Level 4. Up from Chinatown, over the summit, down the Russian Hill side to the foot of Lombard Street. The one new thing: runaway cable
+// cars (src/rolling.ts). Before the powerhouse (halfway up) is destroyed they shuttle on their lines and can be grabbed; once it is down
+// every one is loose. The Guard make a stand with APCs at the summit park; Lombard is a steep terraced garden slope where parked cars tumble.
+function sfNobHill():BlockDef{
+ const climb=(r:number,tail:string)=>`~170,^${r},${tail}`;
+ const pattern=['m,r,_',climb(30,'r,s,r'),climb(60,'r,s,r'),climb(90,'r,s,r'),climb(120,'P,r,s'),climb(150,'=,L,d:hotel,d:hotel,l:hotel'),
+  climb(120,'r,s,r'),climb(90,'r,s,r'),climb(60,'h,r,r'),'~110,^38,w:wall','~110,^16,w:wall','~110,^0,r,s'].join(',');
+ let b=terraced(sfLevel('Nob Hill',7,'district',pattern,['SUMMIT CATHEDRAL|twin'],{startStage:2,cap:2,tier:2}));
+ // The summit park: trees on the open lot east of the hotels' approach.
+ const park=[2990,3070,3150,3230].map(x=>scaled({x,w:27,h:84,hp:10,value:15,kind:'tiny' as const,label:'',color:'#4f7d4a',prop:'palm'}));
+ b={...b,buildings:[...b.buildings.filter(x=>!(x.prop&&x.x>sc(2860)&&x.x<sc(3330))),...park]};
+ // Cable lines: one cable car shuttling on each of four ramps (two on the climb, two on the Russian Hill side).
+ const R=b.ramps!,lines:[number,number][]=[R[1],R[3],R[5],R[6]].map(([a,z])=>[a,z] as [number,number]);
+ const cars=lines.map(([a,z])=>Math.round((a+z)/2-VEHICLE_SPECS.cablecar.w/2));
+ // Lombard: parked cars at the head of each of the three switchback ramps, let go when the camera nears.
+ const lombard=R.slice(-3),lot=lombard.map(([a])=>a+Math.round(sc(8))),tumble:[number,number]=[lombard[0][0],lombard[2][1]];
+ const keep=b.cars.filter(c=>!lombard.some(([a,z])=>c+sc(400)>a&&c<z+sc(40))&&!lines.some(([a,z])=>c+sc(400)>a&&c<z));
+ return {...b,cablecars:cars,cableLines:lines,cars:[...keep,...lot].sort((p,q)=>p-q),tumble,
+  // The Guard's stand at the summit: APCs across the park, soldiers behind them.
+  units:[['apc',sc(3000)],['apc',sc(3230)],['soldier',sc(2930)],['soldier',sc(3060)],['soldier',sc(3140)],['soldier',sc(3300)],['soldier',sc(3380)],['apc',sc(3560)]]};
+}
+// Level 5. Montgomery Street: a canyon of bank towers with the first tanks; the bank vault (a cache, tagged); the transit center (a long
+// park on a bus terminal's roof: the elevated system, drawn as a park, over a row of buses: collapse it onto them); the tower climb to a
+// helipad with military helicopters at height; and the pyramid tower, the target, ringed by tanks and the Guard.
+function sfFinancial():BlockDef{
+ const T=5300,DECK:[number,number]=[2820,4060];
+ let b=sfLevel('Financial District',7,'stronghold',
+  `x,n,x,n,_,n,x,n,x,L,_,m:vault,S,_,>4100,x:helipad,n,x,l,_,x,n,>5900,x,n,x,l`,
+  ['CORPORATE TOWER|tower'],{startStage:2,cap:2,tier:3},{target:T,ring:[-840,-700,-560,480]});
+ b=clearClutter(b,[DECK]);
+ const buses=[2900,3260,3620].map(sc);
+ return {...b,elevated:[sc(DECK[0]),sc(DECK[1])],elevatedLook:'park',buses,
+  target:{x:sc(T),label:'PYRAMID TOWER',art:'pyramid'},
+  // Montgomery Street's tanks, the Guard in front of the vault, helicopters at the helipad towers, the garrison round the pyramid.
+  units:[['tank',sc(1000)],['tank',sc(1600)],['soldier',sc(900)],['soldier',sc(1300)],['soldier',sc(1900)],['apc',sc(2300)],['tank',sc(2500)],
+   ['helicopter',sc(4150)],['helicopter',sc(4500)],['helicopter',sc(4900)]],
+  garrison:[['tank',-420],['tank',-250],['soldier',-130],['soldier',-70],['apc',220],['soldier',340],['tank',420]],
+  headroom:HEADROOM};
+}
+// Camera rise (px above the street) for the tallest level: CONFIG.maxCameraY is 560; the Financial District's towers need a bit more
+// headroom for a Stage 2 climb to a rooftop helipad. Checked in tests/sf-act2.test.ts against the real towers.
+const HEADROOM=760;
+// Level 6. Fisherman's Wharf: a there-and-back level (open layout, an exit at each end). West to east: the main exit (to The Fault), the
+// chocolate factory, Hyde Street Pier, Jefferson Street (start), Pier 45, Pier 39 (with the crystal), the open bay with the Coast Guard
+// cutter, deep water and the Alcatraz exit. Piers are street-level plateaus between water slips (wading at Stage 2); the bay is too deep
+// at Stage 2 and wading depth at Stage 3, so the crystal on Pier 39 is what opens it.
+function sfWharf():BlockDef{
+ const START=2800,CUTTER=6250,CRYSTAL=5300,CAR=3330;
+ let b=sfLevel('Fisherman\'s Wharf',8,'stronghold',
+  `s,l:factory,_,L,>2210,s:crabshack,m:crab,s:crabshack,_,=,>3580,r`,['WHARF CLOCK TOWER|tower'],{startStage:2,cap:2,capLift:3,tier:3},{target:CUTTER,ring:[]});
+ // Terrain (authored x; null = street level, a number > 0 = the water's depth over the seabed, a number < 0 = a hill that high): the hill
+ // the runaway cable car starts on, then shore, slip, pier plateau, slip, ..., the bay, deep water.
+ const D:[number,number|null][]=[[0,null],[1090,null],[1150,40],[1250,40],[1310,null],[2000,null],[2060,40],[2140,40],[2200,null],
+  [3160,null],[3260,-45],[3480,-45],[3560,null],
+  [3700,null],[3760,40],[3840,40],[3900,null],[4560,null],[4620,40],[4700,40],[4760,null],[5560,null],[5700,90],[6700,90],[6820,118],[8000,118]];
+ const ground:[number,number][]=D.map(([x,d])=>[sc(x),d===null?CONFIG.ground:d>0?CONFIG.ground+6+d:CONFIG.ground+Math.round(d*CONFIG.cityScale)]);
+ const waterLine=CONFIG.ground+6;
+ // Piers: hand-built props. Old sailing ships on Hyde Street Pier, a WWII submarine and a cargo ship on Pier 45, a carousel on Pier 39.
+ const props=[hall(1330,300,150,'','#6a4a34','tallship',260),hall(1680,260,130,'','#7a5a3a','tallship',240),
+  hall(3930,330,70,'','#5d6a64','sub',280),hall(4290,250,140,'','#7a3a34','freighter',420),
+  hall(4880,150,130,'','#c98a3c','carousel',300)];
+ // Seafood stands in the Jefferson Street lot (tiny, walk-through).
+ const stands=[3010,3070].map(x=>scaled({x,w:26,h:28,hp:10,value:40,kind:'tiny' as const,label:'',color:'#c2312b',prop:'stall'}));
+ // Street junk and hydrants stay on the land west of Hyde Street Pier and on Jefferson Street's lot, never on a pier or in the water.
+ const keep=(x:BuildingSpec)=>!((x.prop||x.role==='hydrant')&&x.x>sc(1040)&&!(x.x>sc(2260)&&x.x<sc(3100)));
+ const buildings=[...b.buildings.filter(keep),...props,...stands];
+ return {...b,buildings,ground,start:sc(START),
+  water:[[sc(1090),sc(2200),waterLine],[sc(3700),sc(4760),waterLine],[sc(5560),sc(8000),waterLine]],bands:true,
+  boats:[1190,1280,3800,4660].map(sc),coastguard:[1200,5900,6600,7100].map(sc),
+  target:{x:sc(CUTTER),label:'COAST GUARD CUTTER',art:'cutter'},garrison:[],
+  crystal:sc(CRYSTAL),cablecars:[sc(CAR)],runaway:[sc(CAR)],cars:b.cars.filter(c=>c<sc(2400)),
+  // Jefferson Street: the Guard and the first tank squad; the runaway cable car starts on the hill at the east end and careens in.
+  units:[['soldier',sc(2950)],['soldier',sc(3050)],['apc',sc(3100)],['tank',sc(3620)],['soldier',sc(3640)],['tank',sc(1800)]],
+  sealions:[5020,5110,5440,5500].map(sc),kaiban:{x:sc(3950),wade:[sc(3500),sc(6900)]},
+  fog:{from:sc(2200),to:sc(7000),max:.72},
+  exits:{west:'The Fault',east:'Alcatraz'}};
+}
 export const SAN_FRANCISCO:BlockDef[]=[
  sfEmbarcadero(),
  sfUnionSquare(),
  sfChinatown(),
- sfLevel('Nob Hill',7,'district',`m,h:tank,_,L,S,_,h,m,_,l,m:cache,_,h,h,F,_,x,m,_,L,s,_,h,m:tank,_,l,h,_,m,s,_`,['GRACE CATHEDRAL|twin','COIT TOWER|tower'],{startStage:2,cap:2,tier:2}),
- sfLevel('Financial District',7,'stronghold',`x,n,_,l,S,_,x:radar,m,_,L,n,x,_,l,n:cache,_,x,F,_,L,n,_,x,l`,['TRANSAMERICA PYRAMID|needle','SALESFORCE TOWER|tower'],{startStage:2,cap:2,tier:3}),
- sfLevel('Fisherman\'s Wharf',8,'stronghold',`s,m:tank,_,K,_,L,s,F,_,m,h,_,s:cache,m,_,L,_,${SF_ROW},m,s,_,K,_,m`,['WHARF CLOCK TOWER|tower','AQUARIUM HALL|dome'],{startStage:2,cap:2,capLift:3,tier:3}),
+ sfNobHill(),
+ sfFinancial(),
+ sfWharf(),
  sfLevel('The Fault',8,'district',`L,h,m,_,l,S,_,x,h:cache,_,l,m:tank,_,${SF_ROW},n,x,_,L,F,_,h,l,_,x,m,_,h,l:radar,_,m,x,_,l`,['CITY HALL|dome','OPERA HOUSE|dome'],{startStage:3,cap:3,tier:4}),
  sfLevel('Bay Bridge',8,'stronghold',`L,K,_,m,h,_,l,F,_,x,m,_,h:tank,l,_,L,m,_,K,_,h,l,_,m,x,_,l`,['BAY BRIDGE WEST TOWER|lattice','BAY BRIDGE EAST TOWER|lattice'],{startStage:3,cap:3,tier:4}),
  sfLevel('Golden Gate',6,'boss',`=,m,=,l,=,s,=,t,=,h,=,l,=,m,=,s`,[],{startStage:3,cap:3,tier:5}),
- sfLevel('Alcatraz',4,'district',`=,s,m:tank,_,L,h,_,l,s,_,L,m`,['CELLHOUSE|tower','LIGHTHOUSE|needle'],{startStage:3,cap:3,tier:5,secret:true}),
+ {...sfLevel('Alcatraz',4,'district',`=,s,m:tank,_,L,h,_,l,s,_,L,m`,['CELLHOUSE|tower','LIGHTHOUSE|needle'],{startStage:3,cap:3,tier:5,secret:true}),after:'The Fault'},
 ];
 export const LEVELS:BlockDef[][]=[
  SAN_FRANCISCO,

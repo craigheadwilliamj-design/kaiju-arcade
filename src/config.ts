@@ -207,6 +207,8 @@ export const BUILDING_PRESETS={
  w:{w:190,h:96,hp:200,value:150,kind:'medium'},
  r:{w:96,h:128,hp:170,value:130,kind:'medium'},
  d:{w:170,h:250,hp:520,value:380,kind:'medium'},
+ // San Francisco Act 2: P = the cable car powerhouse (a solid brick barn; destroying it sets every cable car on the hill loose).
+ P:{w:150,h:110,hp:300,value:300,kind:'medium'},
 } as const;
 
 // Open-district exploration rewards. Neither drops crystals, so they never speed up evolution.
@@ -458,3 +460,40 @@ export const SF = {
  // National Guard: when Chinatown's exit opens, guardSoldiers soldiers and an APC roll in from the east edge.
  guardSoldiers:4,guardApc:1,
 };
+
+// Runaway cable cars (SF Act 2, Nob Hill). A vehicle in the `rolling` state is driven by the street's slope alone: it picks up
+// `gravity` px/s² per unit of slope (rise over run) toward downhill, loses `friction` px/s² to rolling resistance (so on flat
+// ground it coasts to a stop below `stopSpeed`), and tops out at `maxSpeed`. Cable cars on their line (`cable` state) shuttle at
+// `cableSpeed`; when the powerhouse goes down every one is shoved loose at `shove`. On a building it hits for
+// impactDamage x mass x (speed / impactRef, clamped); a building it destroys is bowled through (the car keeps `plowKeep` of its
+// speed and has `plows` of them in it), a building left standing wrecks it (it is launched on the careening-car rules, so it goes up
+// when it lands). Troops and vehicles in its way take unitDamage and are shoved.
+export const RUNAWAY = {
+ gravity:1500,friction:110,maxSpeed:560,stopSpeed:14,shove:90,cableSpeed:46,
+ plows:3,plowKeep:.72,impactDamage:120,impactRef:300,impactMin:.3,impactMax:1.6,crashLift:130,crashSpeed:.35,crashDamage:30,unitDamage:30,
+ // Parked cars on a level's `tumble` slope (Lombard Street) are let go when the camera comes within tumbleRange; each is nudged by `shove`.
+ tumbleRange:1000,tumbleStagger:.18,points:150,
+};
+
+// SF Act 2 (Financial District, Fisherman's Wharf). Targets: the pyramid tower is a very tall narrow stronghold target; the Coast Guard
+// cutter is a floating one (src/ship.ts): it rides the water at the waterline, takes damage like any objective and sinks when it is
+// destroyed (sinkSeconds to go under, listing as it goes). `scale` on a level's target grows or shrinks a ship (the aircraft carrier
+// of a later level is the same hull at a bigger scale). The hull is hit from the water or from the deck.
+export const SF2 = {
+ pyramidW:150,pyramidH:640,
+ cutterW:330,cutterH:96,cutterDeck:34,sinkSeconds:5,sinkDepth:1,listMax:.16,
+ // The bank vault (a cache building tagged `vault`): cracked open it spills gold: goldPoints and goldBursts of gold-coloured bursts.
+ goldPoints:1500,goldBursts:5,
+ // Transit center: a bus terminal under a long roof park (the elevated system, drawn as a park). A span that falls onto a bus
+ // wrecks it (busCrush damage, points per bus).
+ busCrush:60,busPoints:250,
+ // Sea lions on Pier 39: they flop away from the kaiju once it is within lionAlarm and dive into the water at the pier edge.
+ lionAlarm:420,lionSpeed:90,lionHop:150,lionPoints:30,
+ // Kaiban's silhouette wades across the bay behind the fog, roaring when the kaiju reaches its trigger.
+ kaibanSpeed:14,kaibanRoar:3,
+ // Roof fixtures of the Wharf and the Financial District: hit points and the score for smashing each.
+ roofHP:{sign:40,crab:60,helipad:90} as Record<'sign'|'crab'|'helipad',number>,roofPoints:{sign:600,crab:800,helipad:900} as Record<'sign'|'crab'|'helipad',number>,
+};
+// Fog (Fisherman's Wharf; the Golden Gate reuses it): a level's `fog` is {from, to, max}: the overlay is clear before `from`,
+// thickens linearly to `max` (0-1 opacity) at `to`, and holds. `tint` is the fog colour.
+export const FOG = {tint:'#d9dee0',drift:6};
