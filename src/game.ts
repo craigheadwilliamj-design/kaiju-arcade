@@ -161,8 +161,10 @@ type Cloud={x:number,y:number,r:number,life:number,max:number,vx:number};
 let brew:{t:number}|null=null,spit:{t:number,dir:number,charge:number}|null=null,clouds:Cloud[]=[];const poison=new Map<object,{t:number,tick:number,ult?:boolean}>();
 // Myrmex's Ultimate: `swarm` while it charges (released once the drones are out); `wasps` are the drones, which outlive it. `target` is
 // what each one is chasing, `sting` its cooldown, `seed` its weave.
-type Wasp={x:number,y:number,vx:number,vy:number,life:number,sting:number,target:any,seed:number};
-let swarm:{released:boolean}|null=null,wasps:Wasp[]=[];
+type Wasp={x:number,y:number,vx:number,vy:number,life:number,sting:number,target:any,seed:number,tr:number[]};
+// Swarm effects (looks only): `hive` is the abdomen bursting open (shockwave ring and flash, `t` seconds since), `stings` the sparks
+// where drones strike.
+let swarm:{released:boolean}|null=null,wasps:Wasp[]=[],hive:{x:number,y:number,t:number}|null=null,stings:{x:number,y:number,t:number}[]=[];
 function poisonTarget(o:object,ult=false){const p=poison.get(o);if(p){p.t=MV.poisonSeconds;if(ult)p.ult=true;}else poison.set(o,{t:MV.poisonSeconds,tick:time,ult});}
 // Flame Jet afterburn: a track of fire spots up the wall where the flame touched (x = wall face, y = height above the street, snapped
 // to jetWallCell rows), each burning `t` more seconds. Damage ticks once per building however many spots it has (`burnHits`).
@@ -616,7 +618,7 @@ function loadBlock(drill=false){
   if(!drill)setupPocket();else pocketRoof=null;
   stations=[];garageDrops=[];rampage=createRampage();rampFlash=0;wires=[];splashes=[];fired=new Set();ultKill=new Set();
   subs=substations(buildings,block.grids);power=gridPowered(subs);roofs=createRoofProps(buildings,block.grids);roofOf=new Map(roofs.map(p=>[p.b,p]));gridOfB=new Map(buildings.map(b=>[b,gridOf(b.x+b.w/2,block.grids)]));
-  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);for(const [kind,xs,color,label] of [['tram',block.streetcars,'#b9402f',''],['cablecar',block.cablecars,'#8a2f2a',''],['bus',block.trolleys,'#c9c3a2','TROLLEY'],['firetruck',block.firetrucks,'#c0392b','']] as const)if(xs&&!drill){vehicles.push(...createFleet(kind,xs,nextVehicle,color,label));nextVehicle+=xs.length;}held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];spit=null;brew=null;clouds=[];poison.clear();swarm=null;wasps=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
+  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);for(const [kind,xs,color,label] of [['tram',block.streetcars,'#b9402f',''],['cablecar',block.cablecars,'#8a2f2a',''],['bus',block.trolleys,'#c9c3a2','TROLLEY'],['firetruck',block.firetrucks,'#c0392b','']] as const)if(xs&&!drill){vehicles.push(...createFleet(kind,xs,nextVehicle,color,label));nextVehicle+=xs.length;}held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];spit=null;brew=null;clouds=[];poison.clear();swarm=null;wasps=[];hive=null;stings=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
  // Campaign levels with their own growth set the stage window; Free Play, drills and the original cities stay fully dynamic.
  if(!drill&&session==='campaign'&&block.startStage)setGrowth(combat,block.startStage,block.cap??3);
  cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
@@ -1314,9 +1316,12 @@ function tickSwarm(dt:number,w:number,h:number){const sw=swarm!;if(combat.ultima
  if(particles.length<C.particleCap&&Math.random()<dt*(6+18*p))particles.push({x:player.x+w/2-player.face*w*.25+(Math.random()-.5)*w*.4,y:player.y+h*.55+(Math.random()-.5)*h*.3,vx:(Math.random()-.5)*30,vy:-20-Math.random()*40,life:.3+Math.random()*.3,color:Math.random()<.5?'#c04bff':'#f0b8ff',size:2});
  if(el<B.swarmCharge+animImpact(activeKaiju,'ultRoar',combat.stage))return;
  sw.released=true;const s=scale(combat),m=holdPoint(activeKaiju,'ultRoar',animImpact(activeKaiju,'ultRoar',combat.stage),combat.stage,'mouth')??[-23,-63];
- const x=player.x+w/2+player.face*m[0]*s,y=player.y+h+C.spriteDrop+m[1]*s,v=B.swarmSpeed*g;shake=Math.max(shake,10);burst(x,y,'#c04bff',18);burst(x,y,'#ffffff',8);
- for(let i=0;i<B.swarmCount;i++){const a=-Math.PI*(.05+.9*Math.random()),sp=v*(.6+Math.random()*.8);
-  wasps.push({x,y,vx:Math.cos(a)*sp*(Math.random()<.5?-1:1),vy:Math.sin(a)*sp,life:B.swarmLife*(.8+Math.random()*.4),sting:.3+Math.random()*.4,target:null,seed:Math.random()*100});}}
+ const x=player.x+w/2+player.face*m[0]*s,y=player.y+h+C.spriteDrop+m[1]*s,v=B.swarmSpeed*g;shake=Math.max(shake,16);freeze(.08);hive={x,y,t:0};
+ burst(x,y,'#c04bff',26);burst(x,y,'#ffffff',10);burst(x,y,'#ff4f9a',12);
+ // They erupt in a fountain, fastest straight up, and fan out from there.
+ for(let i=0;i<B.swarmCount;i++){const a=-Math.PI*(.05+.9*Math.random()),sp=v*(.9+Math.random()*1.1)*(1.3-.6*Math.abs(Math.cos(a)));
+  wasps.push({x,y,vx:Math.cos(a)*sp*(Math.random()<.5?-1:1),vy:Math.sin(a)*sp,life:B.swarmLife*(.8+Math.random()*.4),sting:.3+Math.random()*.4,target:null,seed:Math.random()*100,tr:[]});}}
+function tickSwarmFx(dt:number){if(hive&&(hive.t+=dt)>1)hive=null;if(stings.length){for(const k of stings)k.t+=dt;stings=stings.filter(k=>k.t<.22);}}
 // Drones chase the nearest troop, aircraft or the rival in range (else the nearest building), weaving as they fly, and sting what
 // they reach: Ultimate damage plus poison for anything alive, a chunk of damage for a building.
 function tickWasps(dt:number){const g=Math.sqrt(scale(combat)),v=B.swarmSpeed*g,R=B.swarmRange*g,dm=damageMultiplier(combat);
@@ -1331,12 +1336,12 @@ function tickWasps(dt:number){const g=Math.sqrt(scale(combat)),v=B.swarmSpeed*g,
   if(t){if(t.base!==undefined){tx=Math.max(t.x,Math.min(wp.x,t.x+t.w));ty=Math.max(t.base-t.h,Math.min(wp.y,t.base-8));}else{tx=t.x+t.w/2;ty=t.y+t.h*.4;}}
   const dx=tx-wp.x,dy=ty-wp.y,d=Math.hypot(dx,dy)||1,wob=Math.sin(time*9+wp.seed)*.6;
   const ax=(dx/d*Math.cos(wob)-dy/d*Math.sin(wob))*v,ay=(dy/d*Math.cos(wob)+dx/d*Math.sin(wob))*v;
-  wp.vx+=(ax-wp.vx)*Math.min(1,dt*3.5);wp.vy+=(ay-wp.vy)*Math.min(1,dt*3.5);wp.x+=wp.vx*dt;wp.y+=wp.vy*dt;
+  wp.vx+=(ax-wp.vx)*Math.min(1,dt*3.5);wp.vy+=(ay-wp.vy)*Math.min(1,dt*3.5);wp.x+=wp.vx*dt;wp.y+=wp.vy*dt;wp.tr.push(wp.x,wp.y);if(wp.tr.length>16)wp.tr.splice(0,2);
   if(t&&d<14*g&&wp.sting<=0){wp.sting=B.swarmSting*(.8+Math.random()*.4);const dir=Math.sign(wp.vx)||1;
    if(t===rival){strikeRival(B.swarmDamage*dm,10,dir,true);poisonTarget(rival!,true);}
    else if(t.base!==undefined)hit(t,B.swarmBuilding*dm,true,dir,{x:wp.x,y:wp.y},true);
    else{hitUnit(military,t,B.swarmDamage*dm,'player',10,dir,true,'ultimate');poisonTarget(t,true);}
-   wp.vx=-wp.vx*.8;wp.vy=-Math.abs(wp.vy)*.6-60;if(particles.length<C.particleCap)particles.push({x:wp.x,y:wp.y,vx:0,vy:-20,life:.25,color:'#c04bff',size:2});}}
+   wp.vx=-wp.vx*.8;wp.vy=-Math.abs(wp.vy)*.6-60;if(stings.length<60)stings.push({x:wp.x,y:wp.y,t:0});if(particles.length<C.particleCap)particles.push({x:wp.x,y:wp.y,vx:0,vy:-20,life:.25,color:'#c04bff',size:2});}}
  wasps=wasps.filter(w=>w.life>0&&w.x>-50&&w.x<worldWidth+50);}
 // Acid Deluge: planted. He heaves for delugeCharge seconds while the gland swells, rears up (the roar strip) and on its impact frame
 // retches a geyser of acid straight up out of the jaws (mouth point from the strip). It spouts until the settle strip starts. Every
@@ -1631,7 +1636,7 @@ function update(dt:number){
  shots=shots.filter(s=>s.life>0&&s.x>0&&s.x<worldWidth);
  if(combat.ultimateTime<=0){stampede=null;eruption=null;}
  if(deluge)tickDeluge(dt,w,h);
- if(swarm)tickSwarm(dt,w,h);if(wasps.length)tickWasps(dt);
+ if(swarm)tickSwarm(dt,w,h);if(wasps.length)tickWasps(dt);tickSwarmFx(dt);
  if(combat.ultimateTime>0&&stampede)tickStampede(dt,w,h);
  else if(combat.ultimateTime>0&&eruption)tickEruption(dt,w,h);
  else if(combat.ultimateTime>0&&!deluge&&!isBelial()&&!isMyrmex()){ultimateTimer-=dt;if(ultimateTimer<=0){ultimateTimer+=B.ultimatePulse;
@@ -2381,6 +2386,49 @@ function drawEruption(){const e=eruption;if(!e?.blasted)return;const w=bodyWidth
  for(const [k,col] of [[1,`rgba(168,40,26,${a(.55)})`],[.82,`rgba(236,90,23,${a(.7)})`],[.6,`rgba(255,174,46,${a(.8)})`],[.35,`rgba(255,242,192,${a(.9)})`]] as [number,string][]){
   const pts:number[][]=[];for(let i=0;i<28;i++){const an=i/28*Math.PI*2,j=1+.07*Math.sin(time*40+i*2.3+k*5);pts.push([sx+Math.cos(an)*r*k*j,y+Math.sin(an)*r*k*j]);}poly(pts,col);}
  const ring=R*(.4+.75*Math.min(1,t/.3));if(t<.45)for(let i=0;i<36;i++){const an=i/36*Math.PI*2,z=(9-12*t)*g;rect(sx+Math.cos(an)*ring-z/2,y+Math.sin(an)*ring-z/2,z,z,i%2?'#ffd34d':'#fff2c0');}}
+// The Swarm on screen. While he charges, a venom-lit glow swells and throbs in the abdomen. The burst sends out a violet
+// shockwave ring. Each drone glows (additively, so a dense knot of them reads as a bright violet cloud), drags a streak behind it
+// and a little comet of dark specks (looks only: five per drone, strung along its trail), and is drawn bigger with the stage:
+// a red body and dark head, a glowing venom sting, blurred wings. Stings flash a violet-white star.
+function drawSwarm(){const g=Math.sqrt(scale(combat)),C2=ctx as any;
+ if(swarm&&!swarm.released&&combat.ultimateTime>0){const w=bodyWidth(),h=bodyHeight(),p=Math.min(1,(B.ultimateDuration-combat.ultimateTime)/B.swarmCharge),
+  x=player.x-camera+w/2-player.face*w*.25,y=player.y+h*.55,r=(6+16*p)*g*(1+.18*Math.sin(time*(14+16*p)));
+  C2.globalCompositeOperation='lighter';for(const [k,a] of [[2.2,.10],[1.4,.18],[.8,.32],[.4,.55]] as [number,number][]){ctx.globalAlpha=a*(.4+.6*p);ctx.fillStyle=k<.5?'#ffe0ff':'#b23cf0';ctx.beginPath();ctx.arc(x,y,r*k,0,Math.PI*2);ctx.fill();}
+  C2.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
+ if(hive){const t=hive.t,sx=hive.x-camera,R=(40+520*Math.sqrt(t))*g,f=Math.max(0,1-t);
+  ctx.globalAlpha=.5*f;ctx.strokeStyle='#d77bff';ctx.lineWidth=(10*f+2)*g;ctx.beginPath();ctx.arc(sx,hive.y,R,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=.8*f;ctx.strokeStyle='#ffe0ff';ctx.lineWidth=(3*f+1)*g;ctx.beginPath();ctx.arc(sx,hive.y,R*.92,0,Math.PI*2);ctx.stroke();
+  if(t<.3){const z=(1-t/.3);C2.globalCompositeOperation='lighter';ctx.globalAlpha=.7*z;ctx.fillStyle='#c04bff';ctx.beginPath();ctx.arc(sx,hive.y,70*g*(.6+t*3),0,Math.PI*2);ctx.fill();
+   ctx.globalAlpha=.9*z;ctx.fillStyle='#fff2ff';ctx.beginPath();ctx.arc(sx,hive.y,28*g*(.6+t*3),0,Math.PI*2);ctx.fill();C2.globalCompositeOperation='source-over';}
+  ctx.globalAlpha=1;}
+ if(!wasps.length&&!stings.length)return;const vw=viewW(),on=(wp:Wasp)=>wp.x-camera>-40&&wp.x-camera<vw+40;
+ // Glow pass.
+ C2.globalCompositeOperation='lighter';
+ for(const wp of wasps){if(!on(wp))continue;const a=Math.min(1,wp.life*1.5),sx=wp.x-camera;
+  ctx.globalAlpha=.07*a;ctx.fillStyle='#a12ee0';ctx.beginPath();ctx.arc(sx,wp.y,26*g,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=.22*a;ctx.fillStyle='#d77bff';ctx.beginPath();ctx.arc(sx,wp.y,6*g,0,Math.PI*2);ctx.fill();}
+ for(const k of stings){const f=1-k.t/.22,sx=k.x-camera,r=(4+16*k.t/.22)*g;ctx.globalAlpha=.8*f;ctx.fillStyle='#e9a8ff';ctx.beginPath();ctx.arc(sx,k.y,r,0,Math.PI*2);ctx.fill();}
+ C2.globalCompositeOperation='source-over';
+ // Streaks.
+ ctx.lineCap='round';
+ for(const wp of wasps){if(!on(wp)||wp.tr.length<4)continue;const a=Math.min(1,wp.life*1.5),n=wp.tr.length;
+  ctx.globalAlpha=.45*a;ctx.strokeStyle='#b23cf0';ctx.lineWidth=2.2*g;ctx.beginPath();ctx.moveTo(wp.tr[0]-camera,wp.tr[1]);for(let i=2;i<n;i+=2)ctx.lineTo(wp.tr[i]-camera,wp.tr[i+1]);ctx.stroke();
+  ctx.globalAlpha=.7*a;ctx.strokeStyle='#f0b8ff';ctx.lineWidth=1*g;ctx.beginPath();ctx.moveTo(wp.tr[Math.max(0,n-8)]-camera,wp.tr[Math.max(1,n-7)]);ctx.lineTo(wp.x-camera,wp.y);ctx.stroke();}
+ ctx.lineCap='butt';
+ // Trailing specks.
+ for(const wp of wasps){if(!on(wp))continue;const a=Math.min(1,wp.life*1.5),n=wp.tr.length;ctx.globalAlpha=a;
+  for(let k=1;k<=5;k++){const i=Math.max(0,n-2-k*3);if(i>=n)break;const s=wp.seed*k,ox=Math.sin(time*13+s)*(6+3*k)*g,oy=Math.cos(time*11+s*1.7)*(5+3*k)*g,
+   px=(n?wp.tr[i]:wp.x)-camera+ox,py=(n?wp.tr[i+1]:wp.y)+oy,z=Math.max(1.5,2.6*g-k*.25);rect(px-z/2,py-z/2,z,z,k%2?'#2a0a14':'#6a1424');
+   if(Math.sin(time*70+s)>0)rect(px-z/2,py-z/2-z*.8,z,z*.6,'#ffe9c866');}}
+ // Drones.
+ for(const wp of wasps){if(!on(wp))continue;const sx=wp.x-camera,f=wp.vx>=0?1:-1,fl=Math.sin(time*60+wp.seed)>0,z=1.8*g,y=wp.y;
+  ctx.globalAlpha=Math.min(1,wp.life*1.5);
+  rect(sx-3*z-(f>0?0:0),y-1.5*z,6*z,3*z,'#7a0f12');rect(sx-2.6*z,y-1.3*z,5.2*z,2.3*z,'#d8301f');rect(sx-1.5*z,y-1.3*z,2.5*z,.8*z,'#ff7a4a');
+  rect(sx+f*2.6*z-(f>0?0:1.8*z),y-1.2*z,1.8*z,1.8*z,'#2a0606');rect(sx-f*3.4*z-(f>0?1.6*z:0),y-.2*z,1.6*z,1.1*z,'#e08cff');
+  ctx.globalAlpha*=.75;rect(sx-2.2*z,y-(fl?4.2:3)*z,4.4*z,(fl?1.6:1)*z,'#fff4e0');rect(sx-1.2*z,y-(fl?2.2:5)*z+(fl?0:1.6*z),2.4*z,1*z,'#ffe9c8');}
+ // Sting stars.
+ for(const k of stings){const f=1-k.t/.22,sx=k.x-camera,l=(5+9*f)*g;ctx.globalAlpha=f;rect(sx-l,k.y-.8*g,l*2,1.6*g,'#fff2ff');rect(sx-.8*g,k.y-l,1.6*g,l*2,'#fff2ff');rect(sx-2*g,k.y-2*g,4*g,4*g,'#c04bff');}
+ ctx.globalAlpha=1;}
 function render(){
  fitCanvas();
  if(mode==='intro'){drawIntro(ctx,introElapsed);return;}
@@ -2430,10 +2478,7 @@ function render(){
  // Debris Shotgun rocks: tumbling slabs of street with a dark rim.
  for(const r of rocks){rect(r.x-camera-Math.sign(r.vx)*r.size*2.2-r.size*.6,r.y-r.size*.3-r.vy*.012,r.size*1.2,r.size*.6,'#c9a77c66');const sx=r.x-camera,z=r.size,c=Math.cos(r.spin),n=Math.sin(r.spin),pts=[[-1,-.6],[.7,-1],[1,.4],[-.3,.85]],at=(k:number)=>pts.map(([px,py])=>[sx+(px*c-py*n)*z*k,r.y+(px*n+py*c)*z*k]);poly(at(1.3),'#3b2f28');poly(at(1),'#9a8670');}
  // Magma Dive globs: a dark crust round a molten core with a short trailing streak.
- // Swarm drones: a red body with a dark head, a purple sting at the rear and flickering pale wings.
- for(const wp of wasps){const sx=wp.x-camera,f=wp.vx>=0?1:-1,fl=Math.sin(time*60+wp.seed)>0;if(sx<-10||sx>viewW()+10)continue;
-  ctx.globalAlpha=Math.min(1,wp.life*2);rect(sx-3,wp.y-1,6,3,'#c2261b');rect(sx+f*3-(f>0?0:1),wp.y-1,2,2,'#3a0a0a');rect(sx-f*4-(f>0?1:0),wp.y,2,1,'#c04bff');
-  rect(sx-2,wp.y-(fl?4:3),4,fl?2:1,'#ffe9c8');ctx.globalAlpha=1;}
+ drawSwarm();
  // Poison clouds: soft purple puffs that churn, swell and thin out as they fade.
  for(const c of clouds){const sx=c.x-camera,f=Math.min(1,c.life/c.max*2.5),r=c.r*(1+MV.cloudGrow*(1-c.life/c.max));if(sx+r<-20||sx-r>viewW()+20)continue;
   for(let k=0;k<7;k++){const a=k*0.9+time*.35+c.x*.01,d=r*(.25+.35*((k*37)%10)/10),pr=r*(.45+.15*Math.sin(time*1.7+k));
@@ -2446,6 +2491,19 @@ function render(){
  for(const p of particles)rect(p.x-camera,p.y,p.size,p.size,p.color);
  drawRain();drawFireballs();drawIncoming();
  ctx.restore();ctx.restore();if(eruption?.blasted){rect(0,0,960,540,`rgba(255,80,20,${(.16+.04*Math.sin(time*9)).toFixed(3)})`);if(eruption.flash>0)rect(0,0,960,540,`rgba(255,236,190,${(eruption.flash*1.1).toFixed(3)})`);}
+ // The swarm darkens the sky with a violet cast while it's out, and the abdomen bursting flashes the screen.
+ if(wasps.length){const f=Math.min(1,wasps.length/B.swarmCount);rect(0,0,960,540,`rgba(48,6,70,${(f*(.24+.04*Math.sin(time*11))).toFixed(3)})`);
+  // A few drones whip past right in front of the camera, big and out of focus (looks only).
+  const n=Math.round(5*f);for(let i=0;i<n;i++){const per=.9+(i*.37)%0.7,ph=(time/per+i*.618)%1,dir=i%2?1:-1,z=12+(i*7)%10,
+   x=dir>0?-120+ph*1200:1080-ph*1200,y=90+((i*197)%360)+Math.sin(time*4+i)*30,fl=Math.sin(time*50+i*3)>0,tilt=Math.cos(time*4+i)*.15;
+   for(let k=3;k>=0;k--){const ox=x-dir*k*z*1.1;ctx.globalAlpha=k?.12:.5;ctx.fillStyle='#1a0610';
+    // Abdomen, thorax and head in a row, the abdomen trailing.
+    ctx.beginPath();ctx.ellipse(ox-dir*z*1.2,y+z*.15,z*1.1,z*.55,tilt,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(ox,y,z*.6,z*.45,tilt,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ox+dir*z*.85,y-z*.1,z*.38,0,Math.PI*2);ctx.fill();}
+   ctx.globalAlpha=.18;ctx.fillStyle='#ffe9c8';ctx.beginPath();ctx.ellipse(x-dir*z*.3,y-z*(fl?.9:.55),z*1.5,z*(fl?.45:.25),-dir*.3,0,Math.PI*2);ctx.fill();
+   ctx.globalAlpha=.6;ctx.fillStyle='#c04bff';ctx.beginPath();ctx.arc(x-dir*z*2.3,y+z*.25,z*.22,0,Math.PI*2);ctx.fill();}
+  ctx.globalAlpha=1;}
+ if(hive&&hive.t<.18)rect(0,0,960,540,`rgba(236,170,255,${((.18-hive.t)/.18*.45).toFixed(3)})`);
  // The downpour greens the whole sky while it lasts.
  if(rain.length)rect(0,0,960,540,`rgba(150,210,40,${Math.min(.14,rain.length*.004+.04*Math.sin(time*7)**2).toFixed(3)})`);drawRain2();hud();
 }
