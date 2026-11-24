@@ -1,10 +1,11 @@
-// Builds a single self-contained page for publishing as a claude.ai Artifact: dist-artifact/index.html.
-// The Artifact viewer is happiest with one file and no outside requests, so this inlines the stylesheet,
-// bundles every module into one classic script and embeds the sprites as data URIs. No dependencies:
+// Builds the page for publishing as a claude.ai Artifact: dist-artifact/index.html (+ dist-artifact/assets/ and files.json).
+// The Artifact viewer is happiest with no outside requests, so this inlines the stylesheet and bundles every module into one
+// classic script; sprites ship as sheets beside it (default) or embedded as data URIs (--inline). No dependencies:
 // each module runs in its own function scope (no name collisions) and returns the names other modules import.
 // The page body has no <html>/<head>/<body>: the Artifact tool adds that skeleton when it publishes.
 import {mkdir,readFile,writeFile,copyFile,rm} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
 import {stripTypeScriptTypes} from 'node:module';
 
 const IMPORT=/import\s*\{([^}]*)\}\s*from\s*['"]\.\/(\w+)\.(?:ts|js)['"]\s*;?/g;
@@ -36,34 +37,60 @@ const scoped=order.map(name=>{
 }).join('\n');
 
 let js=scoped;
-const sprites=[...new Set(js.match(/assets\/[\w.-]+\.png/g)??[])];
-// `--files`: sprites stay separate files beside the page (dist-artifact/assets/, listed in dist-artifact/files.json for the
-// publisher's supporting-files option) instead of base64 inside it. The page is then a few hundred KB whatever the art weighs, the
-// 16MB page limit and base64's extra third no longer apply, and the game only downloads the kaiju being played.
-// Default: one self-contained page, with the 16MB limit and the shrinking below.
-const separate=process.argv.includes('--files');
-const SPRITE_BUDGET=11e6,shrinkDir='dist-artifact/sprites';let shrunk=new Set();
-await mkdir('dist-artifact',{recursive:true});
-if(separate){
- await rm('dist-artifact/assets',{recursive:true,force:true});await mkdir('dist-artifact/assets',{recursive:true});
- const files={};let bytes=0;
- for(const path of sprites){await copyFile(`public/${path}`,`dist-artifact/${path}`);files[path]=`dist-artifact/${path}`;bytes+=(await readFile(`public/${path}`)).length;}
- await writeFile('dist-artifact/files.json',JSON.stringify(files,null,1));
- console.log(`Wrote ${sprites.length} sprites (${(bytes/1e6).toFixed(1)} MB) to dist-artifact/assets/ and their list to dist-artifact/files.json`);
- // Publisher limits: 255 files per publish, 511 per version, 15MB per file. Past ~450 strips, pack each form's strips into one sheet.
- if(sprites.length>250)console.warn(`warning: ${sprites.length} sprites is over the 255 files one publish can send; publish them in two batches`);
- if(sprites.length>450)console.warn(`warning: ${sprites.length} sprites is close to the 511-file limit per Artifact version`);
-}else{
-// The Artifact limit is 16MB for the whole page and base64 adds a third, so if the sprites are too big the largest are re-saved as
-// 256-colour PNGs (tools/shrink_sprites.py; public/assets is never modified). If Python/Pillow is missing the originals are embedded.
-try{shrunk=new Set(JSON.parse(execFileSync('python3',['tools/shrink_sprites.py','--out',shrinkDir,'--budget',String(SPRITE_BUDGET),...sprites.map(p=>`public/${p}`)],{encoding:'utf8'})));}
-catch(e){console.warn(`Could not shrink sprites (${e.message.split('\n')[0]}); embedding the originals.`);}
-for(const path of sprites){
- const file=shrunk.has(path.split('/').pop())?`${shrinkDir}/${path.split('/').pop()}`:`public/${path}`;
- const uri=`data:image/png;base64,${(await readFile(file)).toString('base64')}`;
- js=js.replaceAll(`'${path}'`,`'${uri}'`).replaceAll(`"${path}"`,`"${uri}"`);
+const strips=[...new Set(js.match(/assets\/[\w.-]+\.png/g)??[])];
+// Default: sprites stay separate files beside the page (dist-artifact/assets/, listed in dist-artifact/files.json for the publisher's
+// supporting-files option), so the page is a few hundred KB whatever the art weighs and the game only downloads the kaiju being played.
+// Each kaiju form's strips are packed into one sheet (tools/pack_sprites.py, lossless WebP; `--png` for 256-colour PNG sheets instead)
+// and src/presentation.ts finds them through the atlas injected at /*__ATLAS__*/. Strips that must load before a kaiju is picked
+// (every kaiju's base idle, the title/ending art slots) stay loose. public/assets is never modified.
+// `--inline`: one self-contained page with every sheet embedded as base64, only while it fits the 16MB Artifact page limit.
+// Publisher limits: 255 files per publish, 511 per Artifact version, 15MB per file.
+const inline=process.argv.includes('--inline'),format=process.argv.includes('--png')?'png':'webp';
+const outDir='dist-artifact',sheetDir=`${outDir}/assets/sheets`;
+await rm(`${outDir}/assets`,{recursive:true,force:true});await mkdir(sheetDir,{recursive:true});
+
+// The structure of SPRITES (which strips make a form) comes from the real module, not from scanning source text.
+async function sheetGroups(){
+ const tmp=`${outDir}/.modules`;await mkdir(tmp,{recursive:true});
+ for(const name of order)await writeFile(`${tmp}/${name}.js`,modules.get(name).replaceAll('.ts"','.js"').replaceAll(".ts'",".js'"));
+ try{
+  const {SPRITES,ART_SLOTS}=await import(pathToFileURL(`${process.cwd()}/${tmp}/presentation.js`).href);
+  const loose=new Set([ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).map(k=>k.anims.idle?.src)].filter(Boolean));
+  const groups={},taken=new Set(loose);
+  const add=(name,form)=>{for(const {src} of Object.values(form.anims))if(strips.includes(src)&&!taken.has(src)){taken.add(src);(groups[name]??=[]).push(src);}};
+  for(const [kaiju,s] of Object.entries(SPRITES)){const slug=kaiju.normalize('NFD').replace(/[^\w]/g,'').toLowerCase(); // ASCII file names (Tlézcatl)
+   add(slug,s);for(const [stage,f] of Object.entries(s.stages??{}))add(`${slug}-stage${stage}`,f);}
+  return groups;
+ }finally{await rm(tmp,{recursive:true,force:true});}
 }
-if(/assets\/[\w.-]+\.png/.test(js))throw Error('A sprite path was not embedded');
+let atlas={};
+try{
+ const groups=await sheetGroups(),manifest=`${outDir}/.manifest.json`;
+ await writeFile(manifest,JSON.stringify(groups));
+ atlas=JSON.parse(execFileSync('python3',['tools/pack_sprites.py','--out',sheetDir,'--format',format,manifest],{encoding:'utf8',maxBuffer:1e8}));
+ await rm(manifest,{force:true});
+ for(const sheet of Object.values(atlas))sheet[0]=`assets/sheets/${sheet[0]}`;
+}catch(e){console.warn(`Could not pack sprites into sheets (${e.message.split('\n')[0]}); using one file per strip.`);atlas={};}
+const sheets=[...new Set(Object.values(atlas).map(c=>c[0]))],loose=strips.filter(src=>!atlas[src]);
+const bytesOf=async list=>{let n=0;for(const f of list)n+=(await readFile(f)).length;return n;};
+let assetBytes;
+if(inline){
+ const uri=async(file,type)=>`data:${type};base64,${(await readFile(file)).toString('base64')}`;
+ js=js.replace('/*__ATLAS__*/{}',JSON.stringify(atlas));
+ for(const sheet of sheets)js=js.replaceAll(`"${sheet}"`,`"${await uri(`${outDir}/${sheet}`,`image/${format}`)}"`);
+ for(const path of loose){const u=await uri(`public/${path}`,'image/png');js=js.replaceAll(`'${path}'`,`'${u}'`).replaceAll(`"${path}"`,`"${u}"`);}
+ assetBytes=await bytesOf(sheets.map(f=>`${outDir}/${f}`).concat(loose.map(f=>`public/${f}`)));
+ await rm(`${outDir}/assets`,{recursive:true,force:true});await rm(`${outDir}/files.json`,{force:true});
+}else{
+ js=js.replace('/*__ATLAS__*/{}',JSON.stringify(atlas));
+ const files={};
+ for(const f of sheets)files[f]=`${outDir}/${f}`;
+ for(const path of loose){await copyFile(`public/${path}`,`${outDir}/${path}`);files[path]=`${outDir}/${path}`;}
+ for(const [path,file] of Object.entries(files))if((await readFile(file)).length>15e6)throw Error(`${path} is over the 15MB per-file limit`);
+ await writeFile(`${outDir}/files.json`,JSON.stringify(files,null,1));
+ assetBytes=await bytesOf(Object.values(files));
+ console.log(`Wrote ${Object.keys(files).length} files (${sheets.length} sheets + ${loose.length} loose strips, ${(assetBytes/1e6).toFixed(1)} MB) to ${outDir}/assets/ and their list to ${outDir}/files.json`);
+ if(Object.keys(files).length>250)console.warn(`warning: ${Object.keys(files).length} files is close to the 255 one publish can send`);
 }
 js=js.replaceAll('</script','<\\/script');
 
@@ -78,5 +105,5 @@ const page=`<title>${title}</title>\n<style>\n${css}\n</style>\n${errorBar}\n${b
 
 await mkdir('dist-artifact',{recursive:true});
 await writeFile('dist-artifact/index.html',page);
-console.log(`Built dist-artifact/index.html (${order.length} modules, ${sprites.length} sprites ${separate?'as separate files':'embedded'}${shrunk.size?`, ${shrunk.size} shrunk to 256 colours`:''}, ${(page.length/1e6).toFixed(2)} MB)`);
+console.log(`Built dist-artifact/index.html (${order.length} modules, ${strips.length} strips in ${sheets.length} ${format} sheets + ${loose.length} loose, ${inline?'embedded':'separate files'}, page ${(page.length/1e6).toFixed(2)} MB)`);
 if(page.length>16e6)throw Error('Page is over the 16MB Artifact limit');
