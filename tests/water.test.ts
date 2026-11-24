@@ -18,7 +18,7 @@ const EXPECTED:Record<number,string[]>={
  3:['shallows','shallows','wading','wading','deep','shallows'],
 };
 
-const SF_ACT1=['Embarcadero','Union Square','Chinatown'];
+const SF_ACT1=['Embarcadero','Union Square','Chinatown',"Fisherman's Wharf"]; // Act 1, plus the Wharf (Act 2) which opts into water bands
 test('depth bands: under 25% of your height is shallows, to 65% wading, over that over your head',()=>{
  assert.equal(waterBand(0,69),'dry');assert.equal(waterBand(17,69),'shallows');assert.equal(waterBand(18,69),'wading');
  assert.equal(waterBand(44,69),'wading');assert.equal(waterBand(46,69),'deep');
