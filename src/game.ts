@@ -162,7 +162,7 @@ let brew:{t:number}|null=null,spit:{t:number,dir:number,charge:number}|null=null
 // Myrmex's Ultimate: `swarm` while it charges (released once the drones are out); `wasps` are the drones, which outlive it. `target` is
 // what each one is chasing, `sting` its cooldown, `seed` its weave.
 type Wasp={x:number,y:number,vx:number,vy:number,life:number,sting:number,target:any,seed:number,tr:number[]};
-// Swarm effects (looks only): `hive` is the abdomen bursting open (shockwave ring and flash, `t` seconds since), `stings` the sparks
+// Swarm effects (looks only; see also drawTornado): `hive` is the abdomen bursting open (shockwave ring and flash, `t` seconds since), `stings` the sparks
 // where drones strike.
 let swarm:{released:boolean}|null=null,wasps:Wasp[]=[],hive:{x:number,y:number,t:number}|null=null,stings:{x:number,y:number,t:number}[]=[];
 function poisonTarget(o:object,ult=false){const p=poison.get(o);if(p){p.t=MV.poisonSeconds;if(ult)p.ult=true;}else poison.set(o,{t:MV.poisonSeconds,tick:time,ult});}
@@ -2390,6 +2390,25 @@ function drawEruption(){const e=eruption;if(!e?.blasted)return;const w=bodyWidth
 // shockwave ring. Each drone glows (additively, so a dense knot of them reads as a bright violet cloud), drags a streak behind it
 // and a little comet of dark specks (looks only: five per drone, strung along its trail), and is drawn bigger with the stage:
 // a red body and dark head, a glowing venom sting, blurred wings. Stings flash a violet-white star.
+// While the swarm is out (looks only), a tornado of bugs whirls round him: a funnel narrow at his feet and flaring wide overhead,
+// reaching far above him and leaning as it sways. Each bug spirals up it and wraps back to the bottom; the half of the funnel behind
+// him is drawn before him (smaller, darker) and the front half after. It spins up as the abdomen bursts and thins as drones die.
+function drawTornado(front:boolean){if(!wasps.length)return;const g=Math.sqrt(scale(combat)),f=Math.min(1,wasps.length/B.swarmCount)*Math.min(1,hive?hive.t/.35:1),
+ w=bodyWidth(),h=bodyHeight(),cx=player.x-camera+w/2,foot=player.y+h,H=Math.max(440,h*4.5),r0=w*.55,r1=r0+H*.5,n=Math.round(650*f),z=Math.max(2.2,2.6*g);
+ if(f<=0)return;
+ if(!front){// Funnel haze: stacked dark violet bands, wider going up.
+  for(let k=0;k<10;k++){const t=(k+.5)/10,y=foot-t*H,lean=Math.sin(time*1.3+t*2)*H*.08*t,r=r0+(r1-r0)*t**1.4;
+   ctx.globalAlpha=.1*f;ctx.fillStyle=k%2?'#3a0f52':'#6a1f8a';ctx.beginPath();ctx.ellipse(cx+lean,y,r*(1+.06*Math.sin(time*7+k)),H/10*.9,0,0,Math.PI*2);ctx.fill();}}
+ for(let i=0;i<n;i++){const u=(i*.618034)%1,v=(i*.414214)%1,t=(u+time*(.18+.14*v))%1,a=time*(3.2+2.5*v)*(1-.4*t)+i*2.39996,
+  depth=Math.sin(a);if((depth>=0)!==front)continue;
+  const lean=Math.sin(time*1.3+t*2)*H*.08*t,r=(r0+(r1-r0)*t**1.4)*(.75+.35*v),x=cx+lean+Math.cos(a)*r+Math.sin(time*21+i)*2*g,
+   y=foot-t*H+depth*r*.18+Math.cos(time*17+i*1.7)*3*g,q=z*(front?1+.4*depth:.7)*(.8+.5*u)*(t<.08?t/.08:1);
+  ctx.globalAlpha=front?.95:.6;rect(x-q*.7,y-q/2,q*1.4,q,i%7===0?'#c04bff':front?(i%3?'#1e0810':'#4a1020'):'#2a1430');
+  if(front&&Math.sin(time*70+i*1.3)>0){ctx.globalAlpha=.55;rect(x-q*.6,y-q*1.2,q*1.2,q*.6,'#fff2dc');}}
+ // Grit kicked up round the base.
+ if(front)for(let i=0;i<40*f;i++){const a=time*5+i*2.4,t=((i*.37+time*.9)%1)*.25,r=r0*(1+t*2),x=cx+Math.cos(a)*r,y=foot-t*60*g+Math.sin(a)*6*g;
+  ctx.globalAlpha=.5*(1-t*4);rect(x-1.5*g,y-1.5*g,3*g,3*g,i%2?'#8d7a66':'#c9a77c');}
+ ctx.globalAlpha=1;}
 function drawSwarm(){const g=Math.sqrt(scale(combat)),C2=ctx as any;
  if(swarm&&!swarm.released&&combat.ultimateTime>0){const w=bodyWidth(),h=bodyHeight(),p=Math.min(1,(B.ultimateDuration-combat.ultimateTime)/B.swarmCharge),
   x=player.x-camera+w/2-player.face*w*.25,y=player.y+h*.55,r=(6+16*p)*g*(1+.18*Math.sin(time*(14+16*p)));
@@ -2401,6 +2420,7 @@ function drawSwarm(){const g=Math.sqrt(scale(combat)),C2=ctx as any;
   if(t<.3){const z=(1-t/.3);C2.globalCompositeOperation='lighter';ctx.globalAlpha=.7*z;ctx.fillStyle='#c04bff';ctx.beginPath();ctx.arc(sx,hive.y,70*g*(.6+t*3),0,Math.PI*2);ctx.fill();
    ctx.globalAlpha=.9*z;ctx.fillStyle='#fff2ff';ctx.beginPath();ctx.arc(sx,hive.y,28*g*(.6+t*3),0,Math.PI*2);ctx.fill();C2.globalCompositeOperation='source-over';}
   ctx.globalAlpha=1;}
+ drawTornado(true);
  if(!wasps.length&&!stings.length)return;const vw=viewW(),on=(wp:Wasp)=>wp.x-camera>-40&&wp.x-camera<vw+40;
  // Glow pass.
  C2.globalCompositeOperation='lighter';
@@ -2471,7 +2491,7 @@ function render(){
   rect(x+d*6*z-3*z,groundAt(wave.x)-(62*z+j*2),6*z,6*z,'#c9a77c');rect(x-d*8*z-2*z,groundAt(wave.x)-(48*z-j*2),4*z,4*z,'#8d7a66');
   rect(Math.min(x,x+d*40*z),groundAt(wave.x),40*z,3,'#ffe0a8');}
  if(combat.superTime>0){const x=player.x-camera;rect(x-7,player.y-7,bodyWidth()+14,bodyHeight()+10,Math.sin(time*10)>0?'#c47cab':'#8d799e');}
- drawEruptionGlow();if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawVehicles(1);drawMilitary(1);drawGeysers();drawRiverFront();drawTelegraphs();drawCityFx();
+ drawEruptionGlow();drawTornado(false);if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawVehicles(1);drawMilitary(1);drawGeysers();drawRiverFront();drawTelegraphs();drawCityFx();
  if(combat.transform>0){const x=player.x-camera+bodyWidth()/2,y=player.y+bodyHeight()/2;const radius=bodyHeight()*.75;poly([[x,y-radius],[x+radius*.6,y],[x,y+radius],[x-radius*.6,y]],'#f4b0d8');poly([[x,y-radius*.85],[x+radius*.35,y],[x,y+radius*.8],[x-radius*.35,y]],'#ffe0f1');}
  if(combat.ultimateTime>0)text(ultimateLabel(),player.x-camera+bodyWidth()/2,player.y-24,10,'#fff1d8','center');
  // Launched tail quill: bone-white spike pointing along its flight, dark base, faint motion streak.
@@ -2493,16 +2513,7 @@ function render(){
  ctx.restore();ctx.restore();if(eruption?.blasted){rect(0,0,960,540,`rgba(255,80,20,${(.16+.04*Math.sin(time*9)).toFixed(3)})`);if(eruption.flash>0)rect(0,0,960,540,`rgba(255,236,190,${(eruption.flash*1.1).toFixed(3)})`);}
  // The swarm darkens the sky with a violet cast while it's out, and the abdomen bursting flashes the screen.
  if(wasps.length){const f=Math.min(1,wasps.length/B.swarmCount);rect(0,0,960,540,`rgba(48,6,70,${(f*(.24+.04*Math.sin(time*11))).toFixed(3)})`);
-  // A few drones whip past right in front of the camera, big and out of focus (looks only).
-  const n=Math.round(5*f);for(let i=0;i<n;i++){const per=.9+(i*.37)%0.7,ph=(time/per+i*.618)%1,dir=i%2?1:-1,z=12+(i*7)%10,
-   x=dir>0?-120+ph*1200:1080-ph*1200,y=90+((i*197)%360)+Math.sin(time*4+i)*30,fl=Math.sin(time*50+i*3)>0,tilt=Math.cos(time*4+i)*.15;
-   for(let k=3;k>=0;k--){const ox=x-dir*k*z*1.1;ctx.globalAlpha=k?.12:.5;ctx.fillStyle='#1a0610';
-    // Abdomen, thorax and head in a row, the abdomen trailing.
-    ctx.beginPath();ctx.ellipse(ox-dir*z*1.2,y+z*.15,z*1.1,z*.55,tilt,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.ellipse(ox,y,z*.6,z*.45,tilt,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ox+dir*z*.85,y-z*.1,z*.38,0,Math.PI*2);ctx.fill();}
-   ctx.globalAlpha=.18;ctx.fillStyle='#ffe9c8';ctx.beginPath();ctx.ellipse(x-dir*z*.3,y-z*(fl?.9:.55),z*1.5,z*(fl?.45:.25),-dir*.3,0,Math.PI*2);ctx.fill();
-   ctx.globalAlpha=.6;ctx.fillStyle='#c04bff';ctx.beginPath();ctx.arc(x-dir*z*2.3,y+z*.25,z*.22,0,Math.PI*2);ctx.fill();}
-  ctx.globalAlpha=1;}
+}
  if(hive&&hive.t<.18)rect(0,0,960,540,`rgba(236,170,255,${((.18-hive.t)/.18*.45).toFixed(3)})`);
  // The downpour greens the whole sky while it lasts.
  if(rain.length)rect(0,0,960,540,`rgba(150,210,40,${Math.min(.14,rain.length*.004+.04*Math.sin(time*7)**2).toFixed(3)})`);drawRain2();hud();
