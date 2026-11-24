@@ -39,6 +39,8 @@ export function bedAt(x:number){if(!points&&!pits.length)return C.ground;const g
 export function waterAt(x:number){for(const [a,b,y] of water)if(x>=a&&x<b)return y;return null;}
 // Under water: over a river, below its surface, with no deck in the way.
 export function submerged(x:number){const s=waterAt(x);return s!==null&&groundAt(x)>s;}
+// How deep the water is at x: surface down to whatever is underfoot (riverbed, pit floor). 0 on dry land or over a standing deck.
+export function depthAt(x:number){const s=waterAt(x);return s!==null&&groundAt(x)>s?groundAt(x)-s:0;}
 // Highest street (smallest y) anywhere under a span: what something that wide rests on.
 export function groundUnder(x:number,w:number){let y=Math.min(groundAt(x),groundAt(x+w));if(points)for(const [px,py] of points)if(px>x&&px<x+w)y=Math.min(y,py);return y;}
 // Rise per pixel at x (positive = the street climbs toward +x).

@@ -59,7 +59,10 @@ export const CITIES:City[]=[
 // Blocks without it keep the classic west spawn and single eastern exit.
 // `grids`: power grids as [from,to] x ranges; each is fed by the substation standing inside it. `poles`: power-pole x positions
 // (street lamps standing on the same spot are left out). Both optional; blocks without them have no city systems.
-export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number},subway?:[number,number][],elevated?:[number,number]};
+export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[]};
+// `bands`: the water follows the depth bands (src/water.ts: shallows, wading, over your head, drowning); without it water is the old
+// flat wade. `tunnel: 'deep'`: subway pits are RIVER.deepPitDepth deep (San Francisco). `boats`: police boats stationed on the water at
+// these x positions. All opt-in, for the San Francisco campaign; no existing city sets them.
 // `elevated`: an elevated railway over [x0, x1] (Tokyo); world units.
 // `water`: river spans [from, to, surfaceY]; `bridge`: a deck at street level over [x0, x1] in `spans` breakable spans; `subway`: x ranges
 // with a subway line under the street (slams cave it in). All world units.
@@ -131,6 +134,15 @@ function powered(b:BlockDef,grids:[number,number][],poles:number[]):BlockDef{ret
 // The original packed wall-to-wall Lower Manhattan stays as the Combat Drills map.
 // Drills also carry a short subway line at the far east end, to practise cave-ins, trains and (at Stage 3) snatching a train.
 export const DRILL_BLOCK:BlockDef={...district(0,'Combat Drills',4,[[400,'s'],[483,'l'],[637,'s'],[724,'s'],[807,'h'],[944,'x'],[1059,'n'],[1128,'m'],[1248,'n'],[1316,'h'],[1454,'l'],[1608,'m'],[1727,'s'],[1810,'m'],[1926,'h'],[2061,'l'],[2219,'m'],[2335,'x'],[2446,'m'],[2562,'h'],[2699,'h'],[2835,'n'],[2907,'l'],[3061,'s'],[3149,'m'],[3268,'h'],[3405,'l'],[3560,'m'],[3675,'s']],[175,375,520,805,1005,1185,1425,1605,1715,1920,2160,2330,2570,2815,3130,3390,3630],[230,710,1005,1195,1580,1910,2160,2370,2550,2830,3120,3380,3650]),subway:[[sc(2600),sc(3840)]]};
+// Water drills: a stepped lake (12, 34, 56, 90 and 150px deep) east of an open street with a deep subway line, so every depth band
+// shows up at every stage, plus two police boats. World units; the lake runs from WATER_LAKE[0] to WATER_LAKE[1], surface 6px below
+// the street. Steps: Stage 1 is shallow / wading / over its head at 12 / 34 / 56; Stage 2 at 12 / 34-56 / 90; Stage 3 at 12-34 / 56-90 / 150.
+export const WATER_LAKE:[number,number,number]=[1900,4240,CONFIG.ground+6];
+export const WATER_STEPS:[number,number,number][]=[[1930,2300,12],[2330,2700,34],[2730,3100,56],[3140,3500,90],[3560,3900,150],[3960,4200,34]];
+export const WATER_DRILL:BlockDef=(()=>{const [la,lz,ly]=WATER_LAKE,b=district(0,'Water Drills',4,[[3150,'m'],[3500,'s']],[3100,3450],[]);
+ const ground:[number,number][]=[[0,CONFIG.ground],[la,CONFIG.ground]];for(const [a,z,d] of WATER_STEPS)ground.push([a,ly+d],[z,ly+d]);ground.push([lz,CONFIG.ground],[sc(4*960),CONFIG.ground]);
+ // The street west of the lake is left open (nothing to climb or smash on the way to the subway and the water).
+ return {...b,buildings:b.buildings.filter(x=>x.x>lz+20),ground,water:[[la,lz,ly]],subway:[[400,1750]],bands:true,tunnel:'deep',boats:[3200,3600]};})();
 export const LEVELS:BlockDef[][]=[
  [
  // Lower Manhattan is the city-systems pilot: a west and an east power grid (substation 'S' each), fuel depots 'F', rooftop radars and
