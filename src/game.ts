@@ -2613,10 +2613,21 @@ function drawObjectiveArt(o:NonNullable<typeof objective>){const x=o.x-camera,gy
   if(shipSunk(s))return;
   // Everything above the waterline, clipped there so a sinking hull goes under the surface. It rides high at the bow, lists as it goes.
   ctx.save();ctx.beginPath();ctx.rect(x-w,wl-1400,w*2,1400);ctx.clip();ctx.translate(x,wl+s.sink*(s.h+s.deck));ctx.rotate(s.list);
-  const big=s.scale>1.5;poly([[-w/2,-s.deck*.62],[w/2-w*.1,-s.deck],[w/2,-s.deck*.5],[w*.36,s.h],[-w/2+w*.06,s.h]],big?'#8d979b':'#e9ecee');poly([[w*.18,-s.deck*.9],[w/2,-s.deck*.5],[w*.4,s.h*.2],[w*.14,-s.deck*.3]],big?'#5e686c':'#d6452f');
-  if(big){rect(-w/2+2,-s.deck-3,w*.92,5,'#3d464a');rect(-w/2+2,-s.deck-3,w*.92,1,'#c9cfd1');for(let k=0;k<5;k++){const jx=-w*.38+k*w*.15;poly([[jx,-s.deck-3],[jx+w*.05,-s.deck-3],[jx+w*.035,-s.deck-9],[jx+w*.012,-s.deck-8]],'#5d676b');}}rect(-w/2+4,-s.deck*.2,w*.9,4,'#25415f');
+  const big=s.scale>1.5;
+  if(big){
+   // Aircraft carrier: a long grey hull with an angled bow, a flat flight deck with a centre line, the island with its mast and radar on the
+   // starboard side, parked jets, and the waterline stripe.
+   const dk=s.deck,top=-dk;poly([[-w/2,top+2],[w/2-w*.05,top+2],[w/2,top+dk*.45],[w*.4,s.h],[-w/2+w*.05,s.h]],'#7d878b');
+   poly([[-w/2,top+2],[w/2-w*.05,top+2],[w/2,top+dk*.45],[w/2-w*.06,top+dk*.45],[-w/2,top+dk*.45]],'#9aa4a8');
+   rect(-w/2+w*.015,-dk*.1,w*.97,5,'#9b3a32');rect(-w/2,top-6,w*.99,8,'#3b4448');rect(-w/2,top-6,w*.99,2,'#aeb6b9');
+   for(let x=-w*.46;x<w*.44;x+=w*.07)rect(x,top-3,w*.035,2,'#e8e3c9');
+   for(let k=0;k<6;k++){const jx=-w*.4+k*w*.095+(k>2?w*.2:0);poly([[jx,top-6],[jx+w*.06,top-6],[jx+w*.045,top-14],[jx+w*.02,top-16],[jx+w*.005,top-9]],'#5d676b');rect(jx+w*.02,top-20,2,4,'#46505a');}
+   rect(w*.06,top-dk*.9,w*.07,dk*.9,'#aab3b6');rect(w*.05,top-dk*1.15,w*.09,dk*.3,'#8c979b');rect(w*.07,top-dk*1.05,w*.05,dk*.1,'#27414e');
+   rect(w*.095,top-dk*1.9,2,dk*.75,'#3f4a4e');rect(w*.07,top-dk*1.6,w*.05,2,'#3f4a4e');rect(w*.1,top-dk*1.35,w*.02,2,'#c23b3b');
+   rect(-w/2+6,top+dk*.55,w*.9,3,'#5d686c');
+  }else{poly([[-w/2,-s.deck*.62],[w/2-w*.1,-s.deck],[w/2,-s.deck*.5],[w*.36,s.h],[-w/2+w*.06,s.h]],'#e9ecee');poly([[w*.18,-s.deck*.9],[w/2,-s.deck*.5],[w*.4,s.h*.2],[w*.14,-s.deck*.3]],'#d6452f');rect(-w/2+4,-s.deck*.2,w*.9,4,'#25415f');
   rect(-w*.2,-s.deck-s.deck*1.15,w*.34,s.deck*1.15,'#dfe3e5');rect(-w*.17,-s.deck-s.deck*.95,w*.28,s.deck*.32,'#27414e');rect(-w*.05,-s.deck-s.deck*1.9,3,s.deck*.8,'#3f4a4e');rect(-w*.1,-s.deck-s.deck*1.5,w*.12,3,'#3f4a4e');
-  rect(w*.2,-s.deck-s.deck*.3,w*.12,s.deck*.3,'#a9b2b5');rect(w*.26,-s.deck-s.deck*.22,w*.14,3,'#5a6366');rect(-w*.42,-s.deck-s.deck*.4,w*.1,s.deck*.4,'#e8873a');
+  rect(w*.2,-s.deck-s.deck*.3,w*.12,s.deck*.3,'#a9b2b5');rect(w*.26,-s.deck-s.deck*.22,w*.14,3,'#5a6366');rect(-w*.42,-s.deck-s.deck*.4,w*.1,s.deck*.4,'#e8873a');}
   if(hp<.66)poly([[-w*.1,-s.deck],[-w*.04,-s.deck*.2],[-w*.14,s.deck*.1]],'#2c3638');if(hp<.33)for(let k=0;k<3;k++)rect(-w*.2+k*w*.18,-s.deck-s.deck*1.2-((time*30+k*17)%30),4,4,'#555c60');
   ctx.restore();rect(x-w*.55,wl-2,w*1.1,3,'#cfe3ec');
   if(s.sinking&&s.sink<1)for(let k=0;k<4;k++)rect(x-w*.4+k*w*.25+Math.sin(time*5+k)*6,wl-4-((time*40+k*23)%24),4,4,'#e8f4f8');
