@@ -55,7 +55,7 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  key('Escape');callbacks.get('#restart:click')!();assert.equal(state().mode,'confirm');callbacks.get('#no:click')!();assert.equal(state().mode,'paused');assert.equal(state().blockIndex,0);
  callbacks.get('#restart:click')!();callbacks.get('#yes:click')!();assert.equal(state().blockIndex,0);assert.equal(state().hp,B.startHP);assert.equal(state().score,0);assert.equal(state().ultimate,0);assert.equal(state().superCharge,0);
  key('Escape');callbacks.get('#menu:click')!();assert.equal(state().mode,'confirm');callbacks.get('#yes:click')!();assert.equal(state().mode,'title');assert.equal(JSON.parse(savedData.get(CHECKPOINT_KEY)!).city,0);
- callbacks.get('#continue:click')!();assert.equal(state().mode,'progress');callbacks.get('#begin-city:click')!();assert.equal(state().blockIndex,0);step(60*150);assert.equal(state().mode,'gameover');assert.equal(state().checkpoint,null);assert.equal(savedData.has(CHECKPOINT_KEY),false);assert.equal(state().highScores.length,1);assert.equal(state().highScores[0].initials,'ABC');
+ callbacks.get('#continue:click')!();assert.equal(state().mode,'progress');callbacks.get('#begin-city:click')!();assert.equal(state().blockIndex,0);for(let k=0;k<10;k++){key('Space');step(45);key('Space','keyup');step(40);}key('KeyD');step(60*5);key('KeyD','keyup');step(60*150);assert.equal(state().mode,'gameover');assert.equal(state().checkpoint,null);assert.equal(savedData.has(CHECKPOINT_KEY),false);assert.equal(state().highScores.length,1);assert.equal(state().highScores[0].initials,'ABC');
  Math.random=savedRandom;
 });
 

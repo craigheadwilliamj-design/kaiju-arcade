@@ -18,6 +18,7 @@ const EXPECTED:Record<number,string[]>={
  3:['shallows','shallows','wading','wading','deep','shallows'],
 };
 
+const SF_ACT1=['Embarcadero','Union Square','Chinatown'];
 test('depth bands: under 25% of your height is shallows, to 65% wading, over that over your head',()=>{
  assert.equal(waterBand(0,69),'dry');assert.equal(waterBand(17,69),'shallows');assert.equal(waterBand(18,69),'wading');
  assert.equal(waterBand(44,69),'wading');assert.equal(waterBand(46,69),'deep');
@@ -42,7 +43,8 @@ test('water drill block: opt-in bands, the deep tunnel and boats; no other block
  const [la,lz]=WATER_LAKE;assert.ok(b.buildings.every(x=>x.x>lz),'nothing stands in or west of the lake');
  assert.ok(b.subway![0][1]<la,'the subway line runs under the open street west of the lake');
  loadDrill();try{for(const x of b.boats!)assert.ok(navigable(x+UNIT_CONFIG.boat.w/2),`boat at ${x} is on water deep enough`);}finally{setTerrain(null);}
- for(const blk of [DRILL_BLOCK,...LEVELS.flat()]){assert.ok(!blk.bands&&!blk.tunnel&&!blk.boats,`${blk.name} is unchanged`);}
+ // The SF Act 1 levels opt in to the water/tunnel systems (phase 3); every other block is unchanged.
+ for(const blk of [DRILL_BLOCK,...LEVELS.flat().filter(b=>!SF_ACT1.includes(b.name))]){assert.ok(!blk.bands&&!blk.tunnel&&!blk.boats,`${blk.name} is unchanged`);}
  assert.equal(RIVER.deepPitDepth-RIVER.deepTunnelRoof,80,'about 80px inside the deep tunnel');
  assert.ok(RIVER.deepPitDepth-RIVER.deepTunnelRoof>height(1),'a Stage 1 kaiju stands up in it');
  assert.ok(C.jumpVelocity**2/(2*C.gravity)>=RIVER.deepPitDepth,'and can jump back out of a deep pit');

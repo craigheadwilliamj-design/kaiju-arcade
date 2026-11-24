@@ -4,7 +4,7 @@ export async function bootGame(seed=.75,saved=new Map<string,string>()){
  const ctx=new Proxy({},{get:()=>()=>{}});
  const node=(selector:string)=>{if(!nodes.has(selector))nodes.set(selector,{style:{},value:'',innerHTML:'',focus:()=>{},getContext:()=>ctx,addEventListener:(e:string,f:Function)=>callbacks.set(selector+':'+e,f)});return nodes.get(selector);};
  const priorRandom=Math.random;Math.random=()=>seed;
- const win:any={innerWidth:1280,localStorage:{getItem:(k:string)=>saved.get(k)||null,setItem:(k:string,v:string)=>saved.set(k,v),removeItem:(k:string)=>saved.delete(k)},addEventListener:(e:string,f:Function)=>events.set(e,f)};
+ const win:any={__kaijuTest:true,innerWidth:1280,localStorage:{getItem:(k:string)=>saved.get(k)||null,setItem:(k:string,v:string)=>saved.set(k,v),removeItem:(k:string)=>saved.delete(k)},addEventListener:(e:string,f:Function)=>events.set(e,f)};
  Object.assign(globalThis,{window:win,document:{querySelector:node,addEventListener:(e:string,f:Function)=>events.set('document:'+e,f)},requestAnimationFrame:(f:Function)=>{raf=f;}});
  await import(`../../dist/game.js?qa=${Date.now()}-${Math.random()}`);
  const held=new Set<string>();
@@ -14,7 +14,7 @@ export async function bootGame(seed=.75,saved=new Map<string,string>()){
  const tap=(code:string)=>{down(code);up(code);};
  const step=(count=1,delta=1000/60)=>{for(let i=0;i<count;i++){now+=delta;raf(now);frames++;}};
  const click=(selector:string)=>{const fn=callbacks.get(selector+':click');if(!fn)throw Error(`Missing control ${selector}`);return fn();};
- return {state:()=>win.kaijuDebug,node,events,callbacks,down,up,tap,step,click,saved,frames:()=>frames,release:()=>{for(const k of [...held])up(k);},cleanup:()=>{Math.random=priorRandom;}};
+ return {state:()=>win.kaijuDebug,test:()=>win.kaijuTest,node,events,callbacks,down,up,tap,step,click,saved,frames:()=>frames,release:()=>{for(const k of [...held])up(k);},cleanup:()=>{Math.random=priorRandom;}};
 }
 // Boot into a campaign city from a v2 checkpoint (Continue, then Begin City): `city` is a campaign city id (default New York,
 // where the original single-kaiju tests play), `kaiju` the run's kaiju. The profile has every kaiju unlocked unless one is given.

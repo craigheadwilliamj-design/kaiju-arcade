@@ -203,6 +203,10 @@ export const BUILDING_PRESETS={
  F:{w:92,h:70,hp:160,value:150,kind:'tiny'},
  // Armory (city systems): a solid castle-style drill hall; destroying it cuts off reinforcements from its side for a while.
  K:{w:124,h:100,hp:380,value:260,kind:'medium'},
+ // San Francisco Act 1: w = a low arched pier shed, r = a low-rise brick row house, d = a department store.
+ w:{w:190,h:96,hp:200,value:150,kind:'medium'},
+ r:{w:96,h:128,hp:170,value:130,kind:'medium'},
+ d:{w:170,h:250,hp:520,value:380,kind:'medium'},
 } as const;
 
 // Open-district exploration rewards. Neither drops crystals, so they never speed up evolution.
@@ -432,3 +436,25 @@ export const TUNNEL = {minHeight:1.25,points:800,heat:8};
 // track smashes into it and is thrown off, falling to the street to explode; one that reaches a broken span falls through.
 export const ELEVATED = {height:Math.round(72*CITY_SCALE),pillar:Math.round(260*CITY_SCALE),thick:Math.round(13*CITY_SCALE),spanHP:300,
  trainEvery:6,trainSpeed:620,trainLength:Math.round(200*CITY_SCALE),points:2500,heat:14,trainPoints:3000,hitDamage:4,knock:280};
+
+// San Francisco Act 1 (redesign phase 3): the Embarcadero, Union Square and Chinatown mechanics. All opt-in per level (src/levels.ts).
+export const SF = {
+ // Tunnel pocket: a breakable roof box over a sealed pit. Hit it from below (a jump into it, a heavy attack) until it gives.
+ pocketHP:240,pocketWall:34,pocketThick:28,pocketPoints:600,pocketJump:60,
+ // Targets (stronghold kind): a clock tower is tall and narrow, a command post wide and low. HP is CAMPAIGN.strongholdHP.
+ clockW:84,clockH:170,commandW:150,commandH:78,
+ // The crystal formation under Portsmouth Square: a big growth. Shattering it lifts the cap (liftCap) and grows the kaiju to Stage 2.
+ formationW:132,formationH:150,formationHP:700,formationShards:40,
+ // Garage cave-in: a slam over the garage opens a pit of parked cars (garageCars of them, pitDepth deep like a subway pit).
+ garageCars:7,garagePoints:900,
+ // Fireworks shop: destroyed, it goes off for fireworksSeconds: fireballs and a fire pool, and it lights neighbours within fireworksReach.
+ fireworksSeconds:5,fireworksReach:150,fireworksDamage:5,fireworksBlast:70,fireworksPoints:700,
+ // Lantern strings: a fuse of lanterns between two rooftops. Fire reaching either end runs along it at lanternSpeed px/s, lighting
+ // a flame at each lantern (lanternSpacing apart) that burns lanternBurn s and sets the walls under it alight (FIRE system).
+ lanternSpeed:260,lanternSpacing:46,lanternBurn:3.2,lanternHeight:150,lanternPoints:60,
+ // Fire trucks: drive to the nearest blaze, park, spray. Spraying douses fire pools in sprayReach and slows building fire spread a little.
+ truckSpeed:70,truckSprayReach:170,truckSlow:.6,truckPark:40,
+ // Police helicopter (a reskinned helicopter, spawned by a level's `air`), SWAT (reskinned soldiers: `swat`).
+ // National Guard: when Chinatown's exit opens, guardSoldiers soldiers and an APC roll in from the east edge.
+ guardSoldiers:4,guardApc:1,
+};
