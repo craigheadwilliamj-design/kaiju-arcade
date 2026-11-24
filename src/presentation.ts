@@ -23,6 +23,14 @@ export function unlockEnding(p:Permanent,name:string){if(!KAIJU.includes(name)||
 export function canViewEnding(p:Permanent,name:string){return KAIJU.includes(name)&&p.gallery.includes(name);}
 export function endingFor(name:string){return ENDINGS.find(e=>e.name===name)||ENDINGS[0];}
 const images=new Map<string,HTMLImageElement>();
+// Sprite atlas, filled in by build-artifact.mjs: strip path -> [sheet file, x, y, width, height] for every strip packed into a sheet
+// (one sheet per kaiju form). Empty in the normal build, where each strip is its own file. Strips are always named by their own path
+// (Strip.src); `file()` says which image holds them and `cell()` where in it they sit.
+const ATLAS:Record<string,[string,number,number,number,number]>=/*__ATLAS__*/{};
+const file=(src:string)=>ATLAS[src]?.[0]??src;
+// The loaded image holding a strip and its pixel box in it (a whole file for loose art), or null until it has loaded.
+function cell(src:string):{img:HTMLImageElement,x:number,y:number,w:number,h:number}|null{const img=images.get(file(src));if(!img?.complete||!img.naturalWidth)return null;
+ const c=ATLAS[src];return c?{img,x:c[1],y:c[2],w:c[3],h:c[4]}:{img,x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};}
 // Final kaiju sprites. Bottom-center anchored, drawn nearest-neighbor. `width` is world units at Stage 1 (hitbox is unchanged).
 // Each animation is a horizontal strip of equal-width frames looped at `fps` (generated with PixelLab, see tools/pixellab_animate.py).
 // `idle` is required; any other animation falls back to idle until it exists and has loaded.
@@ -817,8 +825,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
-function preload(src:string){if(typeof Image==='undefined'||images.has(src))return;const img=new Image();img.src=src;images.set(src,img);}
-function ready(src?:string){const img=src?images.get(src):null;return !!img?.complete&&!!img.naturalWidth;}
+function preload(src:string){const f=file(src);if(typeof Image==='undefined'||images.has(f))return;const img=new Image();img.src=f;images.set(f,img);}
+function ready(src?:string){return !!src&&!!cell(src);}
 // Art loads per kaiju, not all at once: every strip of every form is ~30MB of PNG (~300MB decoded) and a run draws one kaiju.
 // Boot loads the slot art and each kaiju's base idle (intro, endings, previews before a kaiju is picked).
 const slotArt=()=>[ART_SLOTS.menu,...ART_SLOTS.intro,...Object.values(ART_SLOTS.endings),...Object.values(SPRITES).map(s=>s.anims.idle?.src)].filter(Boolean) as string[];
@@ -830,10 +838,10 @@ export function loadPresentationArt(){for(const src of slotArt())preload(src);}
 let artFor='';
 export function loadKaijuArt(name:string,first=1){const s=SPRITES[name];if(typeof Image==='undefined'||!s)return;
  const now=[...new Set([...strips(form(name,first)),...strips(s)])],all=[...new Set([...now,...Object.values(s.stages??{}).flatMap(strips)])];
- if(artFor!==name){artFor=name;const keep=new Set([...slotArt(),...all]);for(const src of [...images.keys()])if(!keep.has(src))images.delete(src);}
+ if(artFor!==name){artFor=name;const keep=new Set([...slotArt(),...all].map(file));for(const src of [...images.keys()])if(!keep.has(src))images.delete(src);}
  for(const src of now)preload(src);
  const settled=(img:HTMLImageElement)=>img.decode?img.decode().catch(()=>{}):new Promise<void>(r=>{if(img.complete)r();else img.onload=img.onerror=()=>r();});
- Promise.all(now.map(src=>settled(images.get(src)!))).then(()=>{if(artFor===name)for(const src of all)preload(src);});}
+ Promise.all(now.map(src=>settled(images.get(file(src))!))).then(()=>{if(artFor===name)for(const src of all)preload(src);});}
 // The form and strip drawn for a move: the stage form's own strip, else (a `borrow` form) the base form's, else the stage form's idle.
 function pick(name:string,anim:string,stage?:number):{f:Form,a:Strip}|null{const f=form(name,stage);if(!f)return null;
  if(f.anims[anim]&&ready(f.anims[anim].src))return {f,a:f.anims[anim]};
@@ -861,28 +869,28 @@ export function aimTime(name:string,anim:string,angle:number,stage?:number){cons
 export function holdBite(name:string,anim:string,stage?:number){return !!pick(name,anim,stage)?.a.bite;}
 export function holdPoint(name:string,anim:string,t:number,stage?:number,key:'hold'|'pivot'|'mouth'='hold'):[number,number]|null{
  const p0=pick(name,anim,stage),s=p0?.f,a=p0?.a;if(!s||!a?.[key]||a!==s.anims[anim])return null;
- const img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),f=spriteFrame(name,t,anim,stage);
+ const c=cell(a.src)!,fw=c.w/a.frames,k=s.width/(256*(a.scale??1)),f=spriteFrame(name,t,anim,stage);
  const p=(typeof a[key][0]==='number'?a[key]:(a[key] as number[][])[f]) as number[];
- return [(p[0]-(a.anchor??fw/2))*k,-(img.naturalHeight-1-p[1])*k];}
+ return [(p[0]-(a.anchor??fw/2))*k,-(c.h-1-p[1])*k];}
 // Draws at the current origin (feet) in the caller's scaled space; flipping and Stage scale come from the caller's transform.
 export function drawSprite(ctx:CanvasRenderingContext2D,name:string,t=0,anim='idle',stage?:number){if(!hasSprite(name,stage))return false;
- const {f:s,a}=pick(name,anim,stage)!,img=images.get(a.src)!,fw=img.naturalWidth/a.frames,k=s.width/(256*(a.scale??1)),w=fw*k,h=img.naturalHeight*k;
- const smooth=ctx.imageSmoothingEnabled,sx=spriteFrame(name,t,anim,stage)*fw,fh=img.naturalHeight,dx=-(a.anchor??fw/2)*k;
+ const {f:s,a}=pick(name,anim,stage)!,c=cell(a.src)!,img=c.img,fw=c.w/a.frames,k=s.width/(256*(a.scale??1)),w=fw*k,h=c.h*k;
+ const smooth=ctx.imageSmoothingEnabled,sx=c.x+spriteFrame(name,t,anim,stage)*fw,sy=c.y,fh=c.h,dx=-(a.anchor??fw/2)*k;
  // Enlarged sprites (Stage 3, title art): nearest-neighbour at a non-integer zoom doubles some source pixels and not others, so
  // lines change thickness and crawl as the sprite moves. Scale up by a whole number first, then smooth down to the target size.
- const m=ctx.getTransform?.(),zoom=m?Math.hypot(m.a,m.b)*k:0,even=zoom>1.01?evenPixels(img,sx,fw,fh,Math.ceil(zoom)):null;
+ const m=ctx.getTransform?.(),zoom=m?Math.hypot(m.a,m.b)*k:0,even=zoom>1.01?evenPixels(img,sx,sy,fw,fh,Math.ceil(zoom)):null;
  if(even){ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(even,0,0,even.width,even.height,dx,-h,w,h);}
- else{ctx.imageSmoothingEnabled=false;ctx.drawImage(img,sx,0,fw,fh,dx,-h,w,h);}
+ else{ctx.imageSmoothingEnabled=false;ctx.drawImage(img,sx,sy,fw,fh,dx,-h,w,h);}
  ctx.imageSmoothingEnabled=smooth;return true;}
 let scratch:HTMLCanvasElement|null=null;
 // One frame of a strip, enlarged n times with hard pixel edges, on a reused scratch canvas. Null where there is no DOM (headless tests).
-function evenPixels(img:HTMLImageElement,sx:number,fw:number,fh:number,n:number){
+function evenPixels(img:HTMLImageElement,sx:number,sy:number,fw:number,fh:number,n:number){
  if(typeof document==='undefined')return null;
  scratch??=document.createElement('canvas');const W=Math.round(fw*n),H=fh*n;
  if(scratch.width!==W||scratch.height!==H){scratch.width=W;scratch.height=H;}
  const c=scratch.getContext('2d');if(!c)return null;
- c.imageSmoothingEnabled=false;c.clearRect(0,0,W,H);c.drawImage(img,sx,0,fw,fh,0,0,W,H);return scratch;}
-function art(ctx:CanvasRenderingContext2D,src:string|null){const img=src?images.get(src):null;if(!img?.complete||!img.naturalWidth)return false;ctx.drawImage(img,0,0,960,540);return true;}
+ c.imageSmoothingEnabled=false;c.clearRect(0,0,W,H);c.drawImage(img,sx,sy,fw,fh,0,0,W,H);return scratch;}
+function art(ctx:CanvasRenderingContext2D,src:string|null){const c=src?cell(src):null;if(!c)return false;ctx.drawImage(c.img,c.x,c.y,c.w,c.h,0,0,960,540);return true;}
 function box(ctx:CanvasRenderingContext2D,x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 function polygon(ctx:CanvasRenderingContext2D,points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();}
 // Deliberately simple replaceable geometric stand-ins, not final sprite designs.

@@ -6,12 +6,12 @@ import {createRequire} from 'node:module';
 const {chromium}=createRequire(import.meta.url)('playwright');
 const arg=(name,fallback)=>{const i=process.argv.indexOf('--'+name);return i>0?Number(process.argv[i+1]):fallback;};
 const scale=arg('scale',1),throttle=arg('throttle',1),dives=arg('dives',4);
-const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png'};
+const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.webp':'image/webp'};
 const server=createServer(async(req,res)=>{try{const path=normalize(decodeURIComponent(new URL(req.url,'http://x').pathname)).replace(/^(\.\.[/\\])+/,'');
  const file=/[/\\]$/.test(path)?path+'index.html':path,body=await readFile(join(process.env.PERF_DIR||'dist',file));res.writeHead(200,{'content-type':types[extname(file)]||'application/octet-stream'});res.end(body);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
 const browser=await chromium.launch(),page=await browser.newPage({viewport:{width:1280,height:900},deviceScaleFactor:scale});
-const fetched=[],errors=[];page.on('response',async r=>{if(r.url().endsWith('.png')&&r.ok())fetched.push((await r.body().catch(()=>Buffer.alloc(0))).length);});
+const fetched=[],errors=[];page.on('response',async r=>{if(/\.(png|webp)$/.test(r.url())&&r.ok())fetched.push((await r.body().catch(()=>Buffer.alloc(0))).length);});
 page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&!/fonts\.g|ERR_|Failed to load resource/.test(m.text()))errors.push(m.text());});
 if(throttle>1){const cdp=await page.context().newCDPSession(page);await cdp.send('Emulation.setCPUThrottlingRate',{rate:throttle});}
 const art=()=>({files:fetched.length,mb:+(fetched.reduce((a,b)=>a+b,0)/1e6).toFixed(2)});

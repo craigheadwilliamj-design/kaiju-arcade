@@ -132,6 +132,8 @@ export const UNIT_CONFIG = {
  emplacement:{hp:85,w:29,h:25,speed:0,range:420,cooldown:3.9,points:200,air:false,mass:5},
  jet:{hp:90,w:61,h:15,speed:330,range:900,cooldown:1.5,points:400,air:true,mass:3},
  bomber:{hp:135,w:75,h:20,speed:185,range:800,cooldown:3.6,points:500,air:true,mass:4},
+ // Police boat: a naval unit (stays on the water, floats at the surface). Plays like the patrol car: weak, fast, one shot a burst.
+ boat:{hp:30,w:50,h:20,speed:125,range:210,cooldown:2.7,points:150,air:false,mass:1.2},
 };
 
 export const WEAPON_CONFIG = {
@@ -342,6 +344,20 @@ export const FLOORS = {
  shearDamage:140,shearMinFloors:4,shearSpeed:150,shearLift:140,shearSpin:1.4,shearImpact:16,shearPoints:.5,shearHeat:12,
 };
 
+// Depth bands (blocks with `bands`, src/water.ts): the water's depth at x (surface to bed) against the kaiju's standing height.
+// Under shallow is the shallows (shallowSlow, splashes); up to deep is wading (wadeSlow, no running, jumps at wadeJump, lower body hidden
+// under the front water); over deep is over your head: the shore is a drop-off you won't walk off, and ending up in it drowns you.
+// Drowning: sink for sinkSeconds, the camera slides back to the last safe ground over slideSeconds, you respawn there with mercy
+// seconds of flashing invincibility, then penaltyDelay later lose penalty HP (never lethal; a stage drop shrinks you, the soft floor
+// holds). Feet more than dip below the surface in over-your-head water start it.
+export const WATER = {
+ shallow:.25,deep:.65,shallowSlow:.85,wadeSlow:.55,wadeJump:.72,frontAlpha:.82,
+ dip:10,sinkSeconds:.45,slideSeconds:.8,mercy:2,penaltyDelay:.3,penalty:8,
+ // Boats need boatMinDepth of water under them and float boatFloat x their height under the surface; within boatSight they chase,
+ // else patrol. A wreck that goes into the water sinks out of sight over wreckSink seconds.
+ boatMinDepth:16,boatFloat:.35,boatSight:620,wreckSink:1.1,
+};
+
 // Rivers, bridges, subways and armories (phase 3; wired up in src/game.ts, ground handling in src/terrain.ts).
 export const RIVER = {
  // Wading: the kaiju moves at wadeSlow in water. Ground troops and vehicles in open water drown/sink (troops never walk in on their
@@ -353,7 +369,11 @@ export const RIVER = {
  // Subway: a slam on the street over the line, or a tower landing across it, caves the street in: a pit pitDepth deep (at least
  // pitMin wide) that troops fall into (fallDamage) and cannot climb out of. While any pit is open a train runs through every
  // trainEvery seconds, hitting what is down there.
- pitDepth:Math.round(58*CITY_SCALE),tunnelRoof:Math.round(22*CITY_SCALE),pitMin:Math.round(100*CITY_SCALE),pitPoints:600,pitHeat:8,fallDamage:40,
+ pitDepth:Math.round(58*CITY_SCALE),tunnelRoof:Math.round(22*CITY_SCALE),
+ // A block with `tunnel: 'deep'` (San Francisco) digs deeper: deepPitDepth below the street under a deepTunnelRoof roof, about 80px
+ // of tunnel, room for a Stage 1 kaiju standing. Every other block keeps pitDepth/tunnelRoof.
+ deepPitDepth:110,deepTunnelRoof:30,
+pitMin:Math.round(100*CITY_SCALE),pitPoints:600,pitHeat:8,fallDamage:40,
  // Trains run the line every trainEvery seconds whether or not the street is open, seen in cutaway under the street. Through a pit
  // they can be attacked (trainHP); one that hits the kaiju standing in a pit derails (the kaiju takes trainHitDamage and a shove).
  // A derailed train stays in the tunnel and the next one piles into it. After trainWrecks derailments the line is closed: no more
