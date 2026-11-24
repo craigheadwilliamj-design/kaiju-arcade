@@ -77,6 +77,12 @@ const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
 const MX2_NATIVE={scale:146/256,anchor:55+128*146/256};
 // Myrmex Stage 2 PixelLab attack strips: the base shifted 40px left (origin at x=15) for room in front of the snout.
 const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
+// Myrmex Stage 1 strips: the myrmex-s1 base still, a 116x74 young wingless ant (six long clawed legs, wing buds, short purple-tipped
+// stinger) keyed from the user's render with tools/key_render.py, origin at x=70 in a 256x192 frame.
+const MX1_NATIVE={scale:116/256,anchor:70+128*116/256};
+// Myrmex Stage 1 form (just started): idle and walk only. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
+ walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE}}};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
@@ -764,8 +770,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
   stages:{1:BELIAL_S1,3:BELIAL_S3}},
  // Myrmex (red winged scorpion-ant: curled tail with a glowing venom stinger (poison, not fire), orange wasp wings, long neck, two long hind legs, small
- // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form until Stage 1 and 3 art exist, so every stage draws
- // it. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
+ // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form; Stage 1 (MYRMEX_S1) is being filled in and borrows
+ // these strips meanwhile, and Stage 3 still draws this. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
  Myrmex:{width:120,anims:{idle:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,...MX2_NATIVE},
   walk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,...MX2_NATIVE},
   // Run (Shift / double-tap): a low scuttling trot from the rig, diagonal pairs together, with a brief flight phase.
@@ -822,7 +828,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   ultRoar:{src:'assets/myrmex-s2-ult-roar.png',frames:8,fps:18,once:true,impact:4,...MX2_NATIVE,mouth:[100,178]},
   ultPound:{src:'assets/myrmex-s2-ult-pound.png',frames:4,fps:10,...MX2_NATIVE},ultSettle:{src:'assets/myrmex-s2-ult-settle.png',frames:8,fps:14,once:true,...MX2_NATIVE},
   spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
-  spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}}},
+  spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}},
+  stages:{1:MYRMEX_S1}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
