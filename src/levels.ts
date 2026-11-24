@@ -422,15 +422,15 @@ function sfBayBridge():BlockDef{
  // No street clutter on the ramps, the decks or in the bay; the island's sheds are the Navy base's hangars.
  b=clearClutter(b,[[RAMP[0],BAY[1]],[ISLAND_END,8000]]);
  b={...b,buildings:b.buildings.map(x=>x.deco==='shed'?{...x,label:'HANGAR',color:'#7e8a82'}:x)};
- // The upper deck: a slab on two towers over the middle of the west span, climbable at either end.
- const U0=1700,U1=3300,bd=BRIDGE,T=bd.clear+bd.slab,TW=2*bd.leg+bd.gap,UW=sc(U1)-sc(U0);
+ // The upper deck: a slab the full length of the west span with a tower at each end (climbable); it ends where the bridge does.
+ const U0=WEST[0],U1=WEST[1],bd=BRIDGE,T=bd.clear+bd.slab,TW=2*bd.leg+bd.gap,UW=sc(U1)-sc(U0);
  const legs=(x:number,top=T)=>[{x,w:bd.leg,top},{x:x+bd.leg+bd.gap,w:bd.leg,top}];
  const upper:BuildingSpec={x:sc(U0),w:UW,h:T,hp:bd.upperHP,value:900,kind:'large',label:'UPPER DECK',color:'#7d8588',upperDeck:true,deco:'updeck',
   parts:[...legs(0),...legs(UW-TW),{x:0,w:UW,top:T,base:bd.clear}]};
  // The east span's two towers, either side of the carrier; the climb to the top of the deck road is the way up.
  const TT=bd.clear+bd.slab+Math.round(150*CONFIG.cityScale),tower=(x:number):BuildingSpec=>({x:sc(x),w:TW,h:TT,hp:bd.towerHP,value:700,kind:'large',label:'',color:'#8a8f8e',deco:'btower',
   parts:[...legs(0,TT),{x:0,w:TW,top:TT,base:TT-bd.slab*2}]});
- const roadblock=[1480,1520,1560].map(x=>scaled({...BUILDING_PRESETS.b,x,label:'BARRIER',color:'#8d8f86'}));
+ const roadblock=[1700,1740,1780].map(x=>scaled({...BUILDING_PRESETS.b,x,label:'BARRIER',color:'#8d8f86'}));
  b={...b,buildings:[...b.buildings,upper,tower(6400),tower(7200),...roadblock]};
  // Gridlock on the lower deck: parked rows end to end.
  const cars=[1620,1960,2300,2640,2980,3320].map(sc);
@@ -458,7 +458,7 @@ function sfGoldenGate():BlockDef{
  b=clearClutter(b,[[RAMP[0],8000]]);
  // The bridge: spans from the foot of the ramp to the north end; the towers stand at the joints, the main span between them.
  const x0=sc(DECK[0]),x1=sc(DECK[1]),w=(x1-x0)/SPANS,joint=(k:number)=>Math.round(x0+k*w),TW=2*BRIDGE.leg+BRIDGE.gap,TT=BRIDGE.clear+BRIDGE.slab+GATE.tower;
- const tower=(x:number):BuildingSpec=>({x,w:TW,h:TT,hp:BRIDGE.towerHP*2,value:900,kind:'large',label:'',color:'#b9472b',deco:'btower',
+ const tower=(x:number):BuildingSpec=>({x,w:TW,h:TT,hp:BRIDGE.towerHP*2,value:900,kind:'large',label:'',color:'#c0301f',deco:'btower',
   parts:[{x:0,w:BRIDGE.leg,top:TT},{x:BRIDGE.leg+BRIDGE.gap,w:BRIDGE.leg,top:TT},{x:0,w:TW,top:TT,base:TT-BRIDGE.slab*2},{x:0,w:TW,top:Math.round(TT*.6),base:Math.round(TT*.6)-BRIDGE.slab}]});
  b={...b,buildings:[...b.buildings,tower(joint(2)),tower(joint(10))]};
  const mid=Math.round((joint(2)+joint(10))/2);

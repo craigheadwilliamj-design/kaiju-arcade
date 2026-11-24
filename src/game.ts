@@ -2482,7 +2482,7 @@ function drawUpperDeck(b:typeof buildings[number]){
  if(!dead&&b.hpNow<b.hp*.5)for(let x=x0+40;x<x0+w-40;x+=70)poly([[x,y],[x+6,y+slab],[x+2,y+slab],[x-3,y+2]],'#2f3639');
  ctx.restore();}
 // The east span's towers: two legs with a lintel and cross-braces, standing on the deck (and drawn down to the water: they are piers too).
-function drawBridgeTower(b:typeof buildings[number]){if(b.hpNow<=0&&b.topple!==0)return;const col=b.color&&b.color!=='#8a8f8e'?b.color:'#8a8f8e',hi=col==='#8a8f8e'?'#a9aeac':'#d9603f';const dead=b.hpNow<=0;if(dead&&b.collapse<=0)return;
+function drawBridgeTower(b:typeof buildings[number]){if(b.hpNow<=0&&b.topple!==0)return;const col=b.color&&b.color!=='#8a8f8e'?b.color:'#8a8f8e',hi=col==='#8a8f8e'?'#a9aeac':'#ee6a50';const dead=b.hpNow<=0;if(dead&&b.collapse<=0)return;
  const x0=b.x-camera,top=b.base-b.h,leg=BR.leg,gap=BR.gap,bed=bedAt(b.x+b.w/2),w=b.w;if(x0>viewW()+60||x0+w<-60)return;ctx.save();if(dead)ctx.globalAlpha=Math.max(.1,b.collapse/C.collapseDuration);
  for(const off of [0,leg+gap]){rect(x0+off,top,leg,Math.max(bed,b.base)-top,col);rect(x0+off,top,4,Math.max(bed,b.base)-top,hi);}
  rect(x0-4,top-6,w+8,10,col);rect(x0,top+Math.round(b.h*.28),w,6,col);rect(x0,top+Math.round(b.h*.5),w,5,col);if(b.h>BR.clear*3)for(let yy=top+Math.round(b.h*.1);yy<b.base-40;yy+=Math.round(b.h*.12))rect(x0,yy,w,4,col);
@@ -2491,21 +2491,21 @@ function drawBridgeTower(b:typeof buildings[number]){if(b.hpNow<=0&&b.topple!==0
 // The suspension cables of the Golden Gate: the main cable swoops between the tower tops, side cables run down to the ends, hangers drop to the deck.
 function drawGateCables(y:number){const ts=buildings.filter(b=>b.deco==='btower').sort((p,q)=>p.x-q.x);if(ts.length!==2)return;
  const ty=ts[0].base-ts[0].h+16,c0=ts[0].x+ts[0].w/2,c1=ts[1].x+ts[1].w/2,deck=y-16,cy=2*(deck-24)-ty,cableY=(t:number)=>(1-t)*(1-t)*ty+2*(1-t)*t*cy+t*t*ty;
- ctx.strokeStyle='#b9472b';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(c0-camera,ty);ctx.quadraticCurveTo((c0+c1)/2-camera,cy,c1-camera,ty);ctx.stroke();
+ ctx.strokeStyle='#c0301f';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(c0-camera,ty);ctx.quadraticCurveTo((c0+c1)/2-camera,cy,c1-camera,ty);ctx.stroke();
  ctx.beginPath();ctx.moveTo(c0-camera,ty);ctx.lineTo(spans[0].x0-camera,deck);ctx.moveTo(c1-camera,ty);ctx.lineTo(worldWidth-camera,deck);ctx.stroke();
  ctx.strokeStyle='#8d3a26';ctx.lineWidth=1;const from=Math.max(c0,camera-20),to=Math.min(c1,camera+viewW()+20);
  for(let x=Math.ceil(from/48)*48;x<to;x+=48){const sp=spans[spanAt(x)];if(!sp||!sp.alive)continue;const t=(x-c0)/(c1-c0);ctx.beginPath();ctx.moveTo(x-camera,cableY(t));ctx.lineTo(x-camera,y);ctx.stroke();}
  ctx.lineWidth=1;}
 // A bridge standing BRIDGE.deckRise above the water: deck, truss, a pier at each joint down to the seabed; a falling span swings down about its west end.
-function drawHighBridge(){const y=spans[0].y;
- for(const s of spans.slice(1)){const sx=s.x0-camera;if(sx<-40||sx>viewW()+40)continue;const bed=Math.max(bedAt(s.x0),y+R.deckThick+10);rect(sx-9,y+R.deckThick,18,bed-y-R.deckThick,'#8a8f8e');rect(sx-13,y+R.deckThick,26,7,'#7a807f');}
+function drawHighBridge(){const y=spans[0].y,red=!!block.finale,deckC=red?'#a8322a':'#4d5a5c',topC=red?'#d9503c':'#6b6f66',railC=red?'#8a2620':'#5b6668',pierC=red?'#b53a2e':'#8a8f8e',pierT=red?'#8f2c24':'#7a807f';
+ for(const s of spans.slice(1)){const sx=s.x0-camera;if(sx<-40||sx>viewW()+40)continue;const bed=Math.max(bedAt(s.x0),y+R.deckThick+10);rect(sx-9,y+R.deckThick,18,bed-y-R.deckThick,pierC);rect(sx-13,y+R.deckThick,26,7,pierT);}
  if(block.finale)drawGateCables(y);
  ctx.lineWidth=2;ctx.strokeStyle='#2c3537';
  for(const s of spans){const a=s.x0-camera,z=s.x1-camera;if(z<-40||a>viewW()+40)continue;
-  if(s.alive){rect(a,y,z-a,R.deckThick,'#4d5a5c');rect(a,y,z-a,3,'#6b6f66');for(let x=a;x<z;x+=18){ctx.beginPath();ctx.moveTo(x,y+3);ctx.lineTo(x+9,y+R.deckThick);ctx.lineTo(x+18,y+3);ctx.stroke();}
-   rect(a,y-10,z-a,2,'#5b6668');for(let x=a;x<z;x+=12)rect(x,y-10,2,10,'#5b6668');
+  if(s.alive){ctx.strokeStyle=red?'#7a1f1a':'#2c3537';rect(a,y,z-a,R.deckThick,deckC);rect(a,y,z-a,3,topC);for(let x=a;x<z;x+=18){ctx.beginPath();ctx.moveTo(x,y+3);ctx.lineTo(x+9,y+R.deckThick);ctx.lineTo(x+18,y+3);ctx.stroke();}
+   rect(a,y-10,z-a,2,railC);for(let x=a;x<z;x+=12)rect(x,y-10,2,10,railC);
    if(s.hp<s.max*.5)for(let x=a+20;x<z-20;x+=40)poly([[x,y],[x+6,y+R.deckThick],[x+2,y+R.deckThick],[x-3,y+2]],'#1e2829');}
-  else if(s.fall<1){const ang=Math.min(1,s.fall*1.6)*.9,drop=s.fall*120;ctx.save();ctx.translate(a,y+drop);ctx.rotate(ang);ctx.globalAlpha=1-Math.max(0,s.fall-.6)*2.5;rect(0,0,z-a,R.deckThick,'#4d5a5c');rect(0,0,z-a,3,'#6b6f66');ctx.restore();ctx.globalAlpha=1;}}
+  else if(s.fall<1){const ang=Math.min(1,s.fall*1.6)*.9,drop=s.fall*120;ctx.save();ctx.translate(a,y+drop);ctx.rotate(ang);ctx.globalAlpha=1-Math.max(0,s.fall-.6)*2.5;rect(0,0,z-a,R.deckThick,deckC);rect(0,0,z-a,3,topC);ctx.restore();ctx.globalAlpha=1;}}
  ctx.lineWidth=1;}
 function drawSlab(b:typeof buildings[number]){
  if(b.hpNow<=0)return;const x=b.x-camera+(b.jolt>0?b.joltDir*F.joltPixels*b.jolt/F.joltSeconds:0),t=SFC.pocketThick,wall=SFC.pocketWall,top=C.ground-t,w=b.w,drop=b.base-top,k=b.hpNow/b.hp;
