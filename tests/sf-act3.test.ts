@@ -5,11 +5,15 @@ import {createBuildings,overlaps} from '../src/rules.ts';
 import {checkParts,solidParts,topAt,roofUnder,hitParts} from '../src/hitbox.ts';
 import {profileY} from '../src/terrain.ts';
 import {bootCampaign} from './helpers/game-harness.ts';
+import {CAMPAIGN as CAMP,PERMANENT_KEY,CHECKPOINT_KEY} from '../src/campaign.ts';
+import {GATE} from '../src/config.ts';
+import {createRival,hitRival} from '../src/rival.ts';
 // SF Act 3 (redesign phase 5): The Fault, Bay Bridge, Golden Gate. Data checks first, then real-loop checks of each new mechanic.
 const FAULT=SAN_FRANCISCO.find(b=>b.name==='The Fault')!;
 const boot=async(block:number,x?:number)=>{const h=await bootCampaign(.75,{city:'sfo'});h.test().goto(block,x);h.step(2);return h;};
 const slam=(h:any)=>{h.tap('Space');h.step(14);h.down('KeyS');h.step(30);h.up('KeyS');h.step(20);};
 const faultIndex=SAN_FRANCISCO.indexOf(FAULT);
+const GG=SAN_FRANCISCO.find(b=>b.name==='Golden Gate')!,ggIndex=SAN_FRANCISCO.indexOf(GG);
 
 test('The Fault data: eight screens, destruction, Stage 3 throughout, full military, three cracks in the open street, gas mains beside them',()=>{
  assert.equal(FAULT.screens,8);assert.equal(FAULT.kind,'district');assert.equal(FAULT.startStage,3);assert.equal(FAULT.cap,3);assert.equal(FAULT.tier,4);
@@ -132,7 +136,7 @@ test('Bay Bridge data: eight screens, a target (the carrier, the cutter scaled u
  const bed=profileY(gp,(BAY.bridge!.x1+BAY.water![0][1])/2),depth=bed-BAY.water![0][2];
  assert.ok(depth/(C.playerHeight*2.8)>.25&&depth/(C.playerHeight*2.8)<.65,`chest-deep at Stage 3 (${depth})`);assert.ok(depth/(C.playerHeight*1.4)>.65,'over the head at Stage 2');
  // Nothing else gained the new fields.
- for(const b of LEVELS.flat().filter(x=>x!==BAY)){assert.equal(b.warships,undefined,b.name);assert.equal(b.deckUnits,undefined,b.name);assert.equal(b.bridge?.rise,undefined,b.name);assert.equal(b.bridge?.more,undefined,b.name);assert.ok(!b.buildings.some(x=>x.upperDeck||x.deco==='btower'),b.name);}
+ for(const b of LEVELS.flat().filter(x=>x!==BAY&&x!==GG)){assert.equal(b.warships,undefined,b.name);assert.equal(b.deckUnits,undefined,b.name);assert.equal(b.bridge?.rise,undefined,b.name);assert.equal(b.bridge?.more,undefined,b.name);assert.ok(!b.buildings.some(x=>x.upperDeck||x.deco==='btower'),b.name);}
 });
 
 test('the upper deck uses stacked-tier hit parts at length: two climbable towers and a slab above the lower road',()=>{
@@ -245,4 +249,85 @@ test('real loop: wading the bay at Stage 3: chest-deep, slowed; the gunboat and 
  const fired=new Set<string>();
  for(let n=0;n<60*45;n++){h.step();s=h.state();const ty=new Map(s.unitList.map((u:any)=>[u.id,u.type]));for(const p of s.projectileList){const t=ty.get(p.owner);if(t==='gunboat'||t==='destroyer')fired.add(t);}}
  assert.ok(fired.has('gunboat')&&fired.has('destroyer'),`both fired (${[...fired]})`);
+});
+
+// ---- Level 9: Golden Gate ----
+const ggTowers=GG.buildings.filter(b=>b.deco==='btower').sort((a,b)=>a.x-b.x);
+
+test('Golden Gate data: six screens, boss, Stage 3 throughout, two screens of approach then four of bridge with two towers and Kaiban between them',()=>{
+ assert.equal(GG.screens,6);assert.equal(GG.kind,'boss');assert.equal(GG.startStage,3);assert.equal(GG.cap,3);assert.equal(GG.tier,5);
+ assert.equal(SAN_FRANCISCO[8],GG,'the last level on the route');assert.ok(!GG.secret);
+ const W=levelWidth(GG),dx=GG.bridge!.x0;assert.ok(dx>=C.width*1.9&&dx<=C.width*3,`about two screens of approach (${dx})`);assert.ok(W-dx>=C.width*3.5,'about four of bridge');
+ assert.equal(ggTowers.length,2);const [s0,s1]=ggTowers;assert.ok(s0.x>dx&&s1.x>s0.x+s0.w);
+ assert.ok(GG.finale!.x>s0.x+s0.w&&GG.finale!.x<s1.x,'Kaiban waits on the main span, between the towers');assert.ok(GG.finale!.wake<s0.x);
+ // Approach: Presidio trees, old batteries, a toll plaza, the last military push, fog thickening toward the towers.
+ const app=GG.buildings.filter(b=>b.x<dx);assert.ok(app.filter(b=>b.prop==='palm').length>=5,'trees');assert.ok(app.filter(b=>b.label==='BATTERY').length>=2,'old batteries');
+ assert.ok(app.filter(b=>b.label==='TOLL').length>=2&&app.some(b=>b.label==='BARRIER'),'a toll plaza');
+ const kinds=new Set(GG.units!.map(u=>u[0]));for(const k of ['soldier','apc','tank','artillery','jet','helicopter','emplacement'])assert.ok(kinds.has(k as any),k);
+ assert.ok(GG.units!.every(u=>u[1]<dx),'the military push is on the approach: nothing on the bridge but Kaiban');
+ assert.ok(GG.fog&&GG.fog.max>=.5&&GG.fog.to>GG.fog.from&&GG.fog.from<dx,'fog thickens toward the towers');
+ assert.deepEqual(GG.finale!.breaks,[.66,.33]);
+ // The bay under the bridge is chest-deep at Stage 3.
+ const bed=profileY(GG.ground!,dx+500),depth=bed-GG.water![0][2];assert.ok(depth/(C.playerHeight*2.8)>.25&&depth/(C.playerHeight*2.8)<.65);
+ for(const b of LEVELS.flat().filter(x=>x!==GG))assert.equal(b.finale,undefined,b.name);
+});
+
+test('real loop: Kaiban waits on the span, dormant and untouchable, until the kaiju passes the wake line',async()=>{
+ const h=await boot(ggIndex,300);h.step(10);let s=h.state();
+ assert.ok(s.rivalState.dormant&&s.rivalState.alpha<.5,'a faint silhouette in the fog');assert.equal(s.finaleState.woke,false);
+ assert.ok(Math.abs(s.rivalState.x+s.rivalState.w/2-GG.finale!.x)<2);const hp0=s.rivalState.hp;
+ h.test().hurtRival(500);h.step(2);assert.equal(h.state().rivalState.hp,hp0,'untouchable while it waits');
+ h.test().teleport(GG.finale!.wake+60);h.step(10);s=h.state();assert.ok(s.finaleState.woke);assert.equal(s.rivalState.dormant,false);assert.equal(s.rivalState.alpha,1);
+ h.test().hurtRival(40);assert.equal(h.state().rivalState.hp,hp0-40,'now it can be hurt');
+});
+
+test('real loop: the fog charge: Kaiban vanishes, a roar and silhouette telegraph it, then it charges out and hits',async()=>{
+ const h=await boot(ggIndex,ggTowers[0].x-300);h.step(5);h.test().teleport(GG.finale!.wake+60);h.step(5);
+ const seen:string[]=[];let alphaMin=1,hid=false,roared=false;
+ for(let n=0;n<60*(GATE.chargeEvery+GATE.vanish+GATE.telegraph+6)&&h.state().finaleState.charges<1;n++){h.step();const s=h.state(),ph=s.finaleState.phase;if(seen[seen.length-1]!==ph)seen.push(ph);
+  if(ph==='vanish'||ph==='telegraph'){alphaMin=Math.min(alphaMin,s.rivalState.alpha);if(s.rivalState.hidden)hid=true;}
+  if(ph==='telegraph'){roared=true;const pc=s.playerX;void pc;}}
+ assert.deepEqual(seen.slice(0,4),['idle','vanish','telegraph','charge'],`phases ${seen}`);assert.ok(alphaMin<.5&&hid,'it vanishes into the fog and cannot be hit');assert.ok(roared);
+ assert.ok(h.state().finaleState.charges>=1,'the charge came out of the fog');
+});
+
+test('real loop: a vanished Kaiban cannot be hurt; the charge hits the kaiju once for damage',async()=>{
+ const h=await boot(ggIndex,ggTowers[0].x-300);h.step(5);h.test().teleport(GG.finale!.wake+60);h.step(5);
+ for(let n=0;n<60*30&&h.state().finaleState.phase!=='telegraph';n++)h.step();
+ const hp=h.state().rivalState.hp;h.test().hurtRival(100);assert.equal(h.state().rivalState.hp,hp,'untargetable in the fog');
+ const hp0=h.state().hp??0;void hp0;
+ for(let n=0;n<60*10&&h.state().finaleState.phase!=='charge';n++)h.step();assert.equal(h.state().finaleState.phase,'charge');
+ const before=h.state().damageTaken;for(let n=0;n<60*5&&h.state().finaleState.phase==='charge';n++)h.step();
+ assert.ok(h.state().damageTaken>before,'the charge connected');
+});
+
+test('real loop: at each health break the deck gives way under both kaiju; they end chest-deep in the bay',async()=>{
+ const h=await boot(ggIndex,ggTowers[0].x+ggTowers[0].w+200);h.step(5);h.test().teleport(GG.finale!.wake+60);h.step(5);
+ let s=h.state();const maxHP=s.rivalState.maxHP;assert.equal(s.spans.filter((p:any)=>!p.alive).length,0);
+ h.test().teleport(ggTowers[0].x+ggTowers[0].w+250);h.step(20);
+ h.test().hurtRival(maxHP*.36);h.step(5);s=h.state();assert.equal(s.finaleState.breaks,1,'the first break');assert.equal(s.finaleState.nextBreak,1);
+ for(let n=0;n<120;n++)h.step();s=h.state();assert.ok(s.spans.filter((p:any)=>!p.alive).length>=2,'spans came down');
+ assert.equal(s.band,'wading','the kaiju is chest-deep in the bay');
+ assert.ok(s.rivalState.y+s.rivalState.h>=C.ground,'and so is Kaiban, on the seabed');
+});
+
+test('real loop: at 0 health Kaiban is not KO\'d: it retreats into the fog as the main span comes down, then the city is conquered and Kaiban unlocks',async()=>{
+ const h=await bootCampaign(.75,{city:'sfo',permanent:undefined});h.test().goto(ggIndex,ggTowers[0].x+ggTowers[0].w+200);h.step(5);
+ h.test().teleport(GG.finale!.wake+60);h.step(5);let s=h.state();const maxHP=s.rivalState.maxHP;
+ h.test().hurtRival(maxHP*.6);h.step(5);h.test().hurtRival(maxHP);h.step(2);s=h.state();
+ assert.ok(s.rivalState.retreating&&!s.rivalState.dead&&s.rivalState.hp===0,'beaten but not dead: it retreats');assert.equal(s.modeNow,'playing');
+ for(let n=0;n<30;n++)h.step();s=h.state();assert.ok(s.finaleState.started&&s.finaleState.queued+s.spans.filter((p:any)=>!p.alive).length>=4,'the main span is coming down');
+ const a0=s.rivalState.alpha;h.step(60);assert.ok(h.state().rivalState.alpha<a0,'fading into the fog');
+ for(let n=0;n<60*10&&h.state().modeNow==='playing';n++)h.step();s=h.state();
+ assert.equal(s.modeNow,'conquered');assert.ok(s.rivalState.retreated&&s.rivalState.dead);
+ const towersUp=ggTowers.length;void towersUp;
+ const mainSpans=s.spans.filter((p:any)=>p.x0>=ggTowers[0].x&&p.x1<=ggTowers[1].x+ggTowers[1].w);assert.ok(mainSpans.every((p:any)=>!p.alive),'the whole main span is down');
+ const perm=JSON.parse(h.saved.get(PERMANENT_KEY)!);assert.ok(perm.conquered.includes('sfo'),'San Francisco is conquered');assert.ok(perm.unlocked.includes('Kaiban'),'Kaiban unlocks');
+ const cp=JSON.parse(h.saved.get(CHECKPOINT_KEY)!);assert.equal(CAMP[cp.city],'nyc','the checkpoint points at New York');
+});
+
+test('rival retreat (pure): a retreating boss at 0 health is neither dead nor hittable; an ordinary boss still dies',()=>{
+ const r=createRival(5000,0);r.retreats=true;assert.ok(hitRival(r,r.maxHP*2)>0);assert.equal(r.hp,0);assert.ok(r.retreating&&!r.dead);assert.equal(hitRival(r,50),0,'nothing more to hit');
+ const o=createRival(5000,0);hitRival(o,o.maxHP*2);assert.ok(o.dead&&!o.retreating,'other cities keep the plain defeat');
+ const d=createRival(5000,0);d.dormant=true;assert.equal(hitRival(d,50),0);const v=createRival(5000,0);v.hidden=true;assert.equal(hitRival(v,50),0);
 });

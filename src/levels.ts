@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -80,7 +80,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  buses?:number[],elevatedLook?:'park'|'freeway',ramps?:[number,number][],coastguard?:number[],
  // Phase 5 (SF Act 3), all opt-in. See the notes below.
  cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,
- warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][]};
+ finale?:{x:number,wake:number,breaks:number[]},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][]};
 // Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
 // (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
 // over an underground garage: a slam caves it into a pit of parked cars. `police`: helicopters and soldiers here are drawn as police / SWAT.
@@ -104,6 +104,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // the last is the Big One. `gas`: the level's hydrants are gas mains (a burst is a fire geyser). `fireCap`: how many buildings may burn at
 // once (default FIRE.cap). `elevatedDecks: 2` with `elevatedLook: 'freeway'`: the elevated line is a double-deck freeway that pancakes on the Big One.
 // `bridge.rise`: how far above the street (and the water) the decks stand; `bridge.more`: further [x0, x1, spans] decks at the same height.
+// `finale`: a boss level's Kaiban finale (src/config.ts GATE): `x` where it waits, `wake` the x that wakes it, `breaks` the health fractions at which the deck gives way.
 // `warships`: gunboats and destroyers stationed on the water (under a deck too). `deckUnits`: ground units that stand on an upper deck
 // (building spec `upperDeck`). A target `launch`: the carrier launches jets. See src/config.ts BRIDGE.
 // `elevated`: an elevated railway over [x0, x1] (Tokyo); world units.
@@ -441,6 +442,32 @@ function sfBayBridge():BlockDef{
   deckUnits:[['tank',sc(1900)],['artillery',sc(2400)],['tank',sc(2900)],['soldier',sc(2200)]],
   warships:[['gunboat',sc(2000)],['destroyer',sc(2800)],['gunboat',sc(4000)],['destroyer',sc(4400)],['gunboat',sc(4250)]]};
 }
+// Level 9. Golden Gate: two screens of approach (Presidio trees and old gun batteries, the toll plaza, the last military push, fog thickening ahead
+// of the towers) then four of bridge (south tower, main span, north tower) with Kaiban on the span. The deck stands BRIDGE.deckRise above the bay.
+// The fight is on the deck; the deck gives way (both kaiju end up chest-deep at the tower feet) and Kaiban retreats as the main span comes down.
+function sfGoldenGate():BlockDef{
+ const RAMP=[1400,1900],DECK=[1900,5760],DR=150,BED=-62,SPANS=12;
+ let b=sfLevel('Golden Gate',6,'boss',`r,s,>1180,b,b,b`,[],{startStage:3,cap:3,tier:5});
+ b=terrain(b,[[0,0],[RAMP[0],0],[RAMP[1],DR],[RAMP[1]+6,BED],[8000,BED]]);
+ // Presidio trees (tall, green) along the approach, and the old gun batteries: low concrete bunkers with emplacements on top.
+ const trees=[160,250,340,620,880,925,1130].map((x,i)=>scaled({x,w:22,h:88+(i%3)*14,hp:14,value:30,kind:'tiny' as const,label:'',color:'#4f7d4a',prop:'palm'}));
+ const batteries=[hall(700,150,70,'BATTERY','#7d8278','wall',260),hall(960,150,70,'BATTERY','#7d8278','wall',260)];
+ // The toll plaza: booths in a row under a low canopy, across the approach road.
+ const booths=[1118,1148].map(x=>scaled({x,w:20,h:34,hp:20,value:40,kind:'tiny' as const,label:'TOLL',color:'#c2552b',prop:'stall'}));
+ b={...b,buildings:[...b.buildings.filter(x=>!x.prop),...trees,...batteries,...booths]};
+ b=clearClutter(b,[[RAMP[0],8000]]);
+ // The bridge: spans from the foot of the ramp to the north end; the towers stand at the joints, the main span between them.
+ const x0=sc(DECK[0]),x1=sc(DECK[1]),w=(x1-x0)/SPANS,joint=(k:number)=>Math.round(x0+k*w),TW=2*BRIDGE.leg+BRIDGE.gap,TT=BRIDGE.clear+BRIDGE.slab+GATE.tower;
+ const tower=(x:number):BuildingSpec=>({x,w:TW,h:TT,hp:BRIDGE.towerHP*2,value:900,kind:'large',label:'',color:'#b9472b',deco:'btower',
+  parts:[{x:0,w:BRIDGE.leg,top:TT},{x:BRIDGE.leg+BRIDGE.gap,w:BRIDGE.leg,top:TT},{x:0,w:TW,top:TT,base:TT-BRIDGE.slab*2},{x:0,w:TW,top:Math.round(TT*.6),base:Math.round(TT*.6)-BRIDGE.slab}]});
+ b={...b,buildings:[...b.buildings,tower(joint(2)),tower(joint(10))]};
+ const mid=Math.round((joint(2)+joint(10))/2);
+ return {...b,bridge:{x0,x1,spans:SPANS,rise:BRIDGE.deckRise},water:[[sc(RAMP[1]),sc(8000),CONFIG.ground+6]],bands:true,
+  fog:{from:sc(900),to:sc(3000),max:.6},finale:{x:mid,wake:joint(1),breaks:[.66,.33]},
+  // The last push on the approach: armour, artillery, infantry and air cover; the batteries' guns; nothing on the bridge but Kaiban.
+  units:[['soldier',sc(500)],['apc',sc(800)],['tank',sc(900)],['soldier',sc(950)],['tank',sc(1100)],['artillery',sc(1250)],['emplacement',sc(780)],['emplacement',sc(1040)],
+   ['soldier',sc(1300)],['tank',sc(1350)],['jet',sc(1200)],['helicopter',sc(1000),560],['helicopter',sc(1500),600],['bomber',sc(1700),560]]};
+}
 export const SAN_FRANCISCO:BlockDef[]=[
  sfEmbarcadero(),
  sfUnionSquare(),
@@ -450,7 +477,7 @@ export const SAN_FRANCISCO:BlockDef[]=[
  sfWharf(),
  sfFault(),
  sfBayBridge(),
- sfLevel('Golden Gate',6,'boss',`=,m,=,l,=,s,=,t,=,h,=,l,=,m,=,s`,[],{startStage:3,cap:3,tier:5}),
+ sfGoldenGate(),
  {...sfLevel('Alcatraz',4,'district',`=,s,m:tank,_,L,h,_,l,s,_,L,m`,['CELLHOUSE|tower','LIGHTHOUSE|needle'],{startStage:3,cap:3,tier:5,secret:true}),after:'The Fault'},
 ];
 export const LEVELS:BlockDef[][]=[

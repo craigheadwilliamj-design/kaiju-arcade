@@ -523,3 +523,11 @@ export const GAS = {seconds:7,radius:Math.round(120*CITY_SCALE),ignite:Math.roun
 // every `launchEvery` s while the kaiju is within `range` and fewer than `maxJets` are up, each climbing to cruise over `climb` s.
 export const BRIDGE = {deckRise:Math.round(150*CITY_SCALE),clear:Math.round(165*CITY_SCALE),slab:Math.round(22*CITY_SCALE),leg:Math.round(26*CITY_SCALE),gap:Math.round(120*CITY_SCALE),
  upperHP:900,upperPoints:2500,towerHP:700,carrierScale:2.3,launchEvery:7,maxJets:2,range:1500,climb:1.1,carrierPoints:6000};
+
+// SF Act 3: Golden Gate (Level 9). Kaiban waits (a silhouette in the fog) on the span until the kaiju passes `wake`. The fight uses the shared
+// rival moves (src/rival.ts) and adds the fog charge: every `chargeEvery` s Kaiban vanishes into the fog (`vanish`), a roar and a growing
+// silhouette at the edge of the view telegraph it (`telegraph`), then it charges out at `chargeSpeed` (a hit of `chargeDamage` on contact).
+// As its health falls past each break the deck gives way under both kaiju (they end chest-deep at the tower feet). At 0 health it is not
+// KO'd: it retreats into the fog (`retreatSpeed`, fading over `retreatFade` s) while the main span comes down (`collapseGap` s apart).
+export const GATE = {chargeEvery:13,vanish:.9,telegraph:1.5,chargeSpeed:430,chargeDamage:12,chargeKnock:330,fogDistance:760,chargeOvershoot:380,
+ retreatSpeed:140,retreatFade:3.2,collapseGap:.4,wakeShake:12,tower:Math.round(430*CITY_SCALE)};
