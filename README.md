@@ -1,6 +1,6 @@
 # Kaiju-Geddon! — M7 QA build / M5 combat pending
 
-Browser arcade destruction game, implemented incrementally from the supplied Master Prompt and Final GDD. Current build has a five-city campaign, 25 fixed layouts, military/civilians, local persistence, roster previews, Free Play, intro and ending/gallery flows. **The user requested M6 after M4; M5 was skipped.** All unlocked identities can now be selected with temporary geometric visuals, but they share the existing player combat, stage dimensions/stats and Seismic-style Ultimate preview. Ratings are provisional display data, not implemented per-kaiju tuning. Rivals still use the basic shared M4 preview moveset. Individual kaiju movesets, boss evolution/Ultimates, full knockback interactions and boss introductions remain M5. No claim that M5 is complete.
+Browser arcade destruction game, implemented incrementally from the supplied Master Prompt and Final GDD. Current build has a six-city campaign (San Francisco, then New York, Mexico City, Paris, Hong Kong and Tokyo; 34 route levels), military/civilians, local persistence, roster previews, Free Play, intro and ending/gallery flows. **The user requested M6 after M4; M5 was skipped.** All unlocked identities can now be selected with temporary geometric visuals, but they share the existing player combat, stage dimensions/stats and Seismic-style Ultimate preview. Ratings are provisional display data, not implemented per-kaiju tuning. Rivals still use the basic shared M4 preview moveset. Individual kaiju movesets, boss evolution/Ultimates, full knockback interactions and boss introductions remain M5. No claim that M5 is complete.
 
 ## Launch and checks
 Requires Node.js 24+; no package downloads or runtime dependencies.
@@ -10,7 +10,7 @@ npm run build
 python3 -m http.server 8080 --directory dist
 ```
 
-Open http://localhost:8080. `npm test` builds then runs deterministic rule/state and actual-game-loop tests. `npm run check` checks emitted JavaScript syntax. `npm run qa` runs the complete 25-block keyboard simulation and writes `qa/playthrough.json`. See `QA_REPORT.md` for exact results and release blockers. Native Node TypeScript stripping is used; no TypeScript typechecker or lint tool is configured. Production is a static site. HTTP previews use a non-security-sensitive local ID fallback when crypto.randomUUID is unavailable.
+Open http://localhost:8080. `npm test` builds then runs deterministic rule/state and actual-game-loop tests. `npm run check` checks emitted JavaScript syntax. `npm run qa` runs the complete 34-level keyboard simulation and writes `qa/playthrough.json`. See `QA_REPORT.md` for exact results and release blockers. Native Node TypeScript stripping is used; no TypeScript typechecker or lint tool is configured. Production is a static site. HTTP previews use a non-security-sensitive local ID fallback when crypto.randomUUID is unavailable.
 
 `npm run build:artifact` builds the page for publishing as a claude.ai Artifact: `dist-artifact/index.html` (stylesheet inlined, all modules bundled into one classic script, no outside requests except Google Fonts) plus the sprite sheets in `dist-artifact/assets/` and `dist-artifact/files.json`, the list to pass as the publisher's supporting files. It reads `src/` and `public/` directly, so it does not need `npm run build` first. The Artifact viewer did not render the multi-file `dist/` build, so publish this instead. Any script error shows as a red bar at the bottom of the page. See *Artifact build* below.
 
@@ -37,7 +37,7 @@ Main Menu → New Campaign → skippable 12-second asteroid intro → exactly th
 - Death finalizes the run, removes its checkpoint and records its total once. No campaign retry after death. New campaigns remain available; drills can retry.
 
 ## Local storage and scores
-Two independent versioned keys: `kaiju-arcade:permanent:v1` (unlocks, conquered cities, gallery slots, Top 10) and `kaiju-arcade:campaign:v1` (run ID, initials, kaiju, next city, banked score). Saves occur at the initial pre-city boundary and after a city is conquered. No mid-block writes. Between-city Continue starts the next city at Stage 1. Permanent progress survives death/restart/new campaigns. Corrupt/unsupported saves and blocked storage are handled without crashing; failed storage displays a notice and in-memory play still works.
+Two independent versioned keys: `kaiju-arcade:permanent:v2` (unlocks, conquered city ids, gallery slots, Top 10) and `kaiju-arcade:campaign:v2` (run ID, initials, kaiju, campaign position, banked score). v1 saves from the five-city campaign are discarded at boot, not migrated. Saves occur at the initial pre-city boundary and after a city is conquered. No mid-block writes. Between-city Continue starts the next city at Stage 1. Permanent progress survives death/restart/new campaigns. Corrupt/unsupported saves and blocked storage are handled without crashing; failed storage displays a notice and in-memory play still works.
 
 Score is earned points minus actual HP damage penalty, including healed damage. Current city penalty persists across blocks. Top 10 includes completed and failed campaigns, sorted by total (negative scores allowed), with initials, kaiju, cities and outcome. Run IDs and completion latches prevent duplicate records/rewards. Drills never write records, unlocks or checkpoints.
 
@@ -53,7 +53,8 @@ Score is earned points minus actual HP damage penalty, including healed damage. 
 
 ## Architecture / replacement hooks
 - `src/config.ts`: provisional building, combat, military/weapon and campaign tuning.
-- `src/levels.ts`: city themes, presets expanded into 25 fixed layouts, civilians and parked cars.
+- `src/levels.ts`: city themes (each city has an id, an optional kaiju and a final boss), presets expanded into fixed layouts (San Francisco's 9 + Alcatraz are placeholders built from the presets; the original five cities keep their 25), per-level growth (`startStage`, `cap`, `capLift`), civilians and parked cars.
+- `src/campaign.ts`: the campaign route (`CAMPAIGN`, ordered city ids, variable levels per city), run/checkpoint state and v2 saves.
 - `src/campaign.ts`: pure campaign transitions, versioned persistence, validation and leaderboard.
 - `src/presentation.ts`: roster metadata/provisional ratings, confirmed ending titles, intro timing, selection/Free Play/gallery gating, optional art slots and temporary Canvas presentation.
 - `src/rival.ts`: basic conventional-HP M4 boss preview, isolated for M5 expansion.

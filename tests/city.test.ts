@@ -1,9 +1,11 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {createRampage,feedRampage,tickRampage,rampageLevel,rampageMult,pointsHeat,gridOf,substations,gridPowered,createRoofProps,roofBox,wireSpan} from '../src/city.ts';
 import {createBuildings} from '../src/rules.ts';
-import {LEVELS} from '../src/levels.ts';
+import {LEVELS,cityIndexOf} from '../src/levels.ts';
 import {CITY as Y,CONFIG as C} from '../src/config.ts';
+// The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
+const ORIGINAL=['nyc','mex','par','hkg','tyo'];
 
 test('rampage: heat climbs through the multiplier levels, holds for the grace period, then drains',()=>{
  const r=createRampage();assert.equal(rampageMult(r),1);
@@ -26,7 +28,7 @@ test('power grids: membership by x, a grid is live while its substation stands',
 });
 
 test('Lower Manhattan is the city-systems pilot: two powered grids, depots, radars, water towers, poles',()=>{
- const b=LEVELS[0][0];assert.equal(b.name,'Lower Manhattan');assert.equal(b.grids!.length,2);
+ const b=LEVELS[cityIndexOf('nyc')][0];assert.equal(b.name,'Lower Manhattan');assert.equal(b.grids!.length,2);
  const subs=substations(b.buildings as any,b.grids);assert.ok(subs.every(Boolean),'each grid has a substation');
  assert.equal(b.buildings.filter(x=>x.role==='depot').length,2);
  assert.ok(b.buildings.filter(x=>x.roof==='radar').length>=2&&b.buildings.filter(x=>x.roof==='tank').length>=4);
@@ -34,12 +36,12 @@ test('Lower Manhattan is the city-systems pilot: two powered grids, depots, rada
  assert.ok(b.poles!.length>=10);for(const g of [0,1])assert.ok(b.poles!.filter(x=>gridOf(x,b.grids)===g).length>=5,`grid ${g} has a pole line`);
  for(const x of b.buildings.filter(x=>x.roof))assert.ok(x.kind!=='tiny'&&!x.landmark);
  // Every city's open blocks carry the kit too (East River has its own river works instead).
- assert.deepEqual(LEVELS.map(c=>c.map(x=>!!x.grids)),Array(5).fill(0).map((_,i)=>i===0?[true,true,false,false,false]:[true,true,false,true,false]));
- assert.ok(LEVELS[2].every(x=>!x.poles?.length),'Paris has no overhead lines');
+ assert.deepEqual(ORIGINAL.map(id=>LEVELS[cityIndexOf(id)].map(x=>!!x.grids)),Array(5).fill(0).map((_,i)=>i===0?[true,true,false,false,false]:[true,true,false,true,false]));
+ assert.ok(LEVELS[cityIndexOf('par')].every(x=>!x.poles?.length),'Paris has no overhead lines');
 });
 
-async function manhattan(){const h=await bootGame(.75);
- h.click('#new');h.click('#skip-intro');h.node('#initials').value='CTY';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+async function manhattan(){const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
+ 
  assert.equal(h.state().mode,'playing');return h;}
 
 test('real loop: walking through a power pole on a live grid drops an arcing wire; the rampage gauge fills and drains',async()=>{

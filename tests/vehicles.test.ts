@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {createParked,spawnTraffic,tickDriving,tickFlying,launch} from '../src/vehicles.ts';
 import {CONFIG as C,VEHICLES as V} from '../src/config.ts';
 // Authored world x positions are city-scaled at load.
@@ -23,9 +23,9 @@ test('traffic cruises, brakes when the kaiju is ahead, then U-turns and flees fa
 });
 
 test('real loop: traffic drives by; grab a parked car with H and throw it into a building',async()=>{
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='CAR';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   const s0=h.state(),car=s0.vehicles.find((v:any)=>v.x===S(2000))!;assert.equal(car.state,'parked');
   // Close in until the car is within reach but not underfoot, then grab.
   for(let n=0;n<40&&h.state().x+h.state().width+30<car.x;n++){h.down('KeyD');h.step(1);h.up('KeyD');}
@@ -53,9 +53,9 @@ test('capturing an enemy ground vehicle takes it out of the fight, pays its kill
 });
 
 test('real loop: lift the newsstand whole (it counts as destroyed, leaves no rubble) and throw it',async()=>{
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='NWS';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   const shopIndex=h.state().buildings.findIndex((b:any)=>b.x===S(1600)),standIndex=h.state().buildings.findIndex((b:any)=>b.x===S(1470)&&b.kind==='tiny');assert.ok(standIndex>=0);
   // Face west and smash the shop between the start plaza and the newsstand.
   h.down('KeyA');h.step(30);h.up('KeyA');
@@ -80,9 +80,9 @@ test('lampposts stand at the old backdrop spacing and uproot into a flat javelin
 });
 
 test('real loop: rip a lamppost out with H and throw it point-first',async()=>{
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='LMP';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   const lamp=h.state().vehicles.find((v:any)=>v.kind==='lamp'&&v.x===S(1800)-2)!;assert.equal(lamp.state,'parked');
   for(let n=0;n<60&&h.state().x-30>lamp.x+lamp.w;n++){h.down('KeyA');h.step(1);h.up('KeyA');}
   h.tap('KeyH');h.step(1);assert.equal(h.state().held,'lamp');
@@ -107,9 +107,9 @@ test('only Stage 3 can lift buildings up to mid-rise size; landmarks and towers 
 
 
 test('real loop: a thrown car flies far down an open street and detonates when it lands',async()=>{
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='FAR';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   const car=h.state().vehicles.find((v:any)=>v.x===S(2000))!;
   for(let n=0;n<40&&h.state().x+h.state().width+30<car.x;n++){h.down('KeyD');h.step(1);h.up('KeyD');}
   h.tap('KeyH');h.step(1);assert.equal(h.state().held,'car');
@@ -122,9 +122,9 @@ test('real loop: a thrown car flies far down an open street and detonates when i
 });
 
 test('real loop: punting a parked car hits like a military kill: hit-stop, fire, a burning tumble',async()=>{
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='PNT';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   const car=h.state().vehicles.find((v:any)=>v.x===S(2000))!;
   for(let n=0;n<40&&h.state().x+h.state().width+30<car.x;n++){h.down('KeyD');h.step(1);h.up('KeyD');}
   let hit=false;for(let n=0;n<40&&!hit;n++){h.tap('KeyJ');for(let f=0;f<20&&!hit;f++){h.step();const v=h.state().vehicles.find((v:any)=>v.id===car.id);if(v.state==='flying'){hit=true;assert.ok(v.burn>0,'on fire');}}}
@@ -143,9 +143,9 @@ test('each authored parked spot becomes a bumper-to-bumper row, originals keep t
 
 test('real loop: Stage 3 rips up a whole building and carries it (the carried building draws every frame)',async()=>{
  const {FEEL}=await import('../src/config.ts');
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='LFT';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   const hold=(code:string,frames:number)=>{h.down(code);h.step(frames);h.up(code);};
   for(let n=0;n<160&&h.state().stage<3&&h.state().mode==='playing';n++){hold('KeyD',8);h.tap('KeyK');h.step(40);hold('KeyA',1);h.tap('KeyK');h.step(40);hold('KeyD',3);}
   assert.equal(h.state().stage,3,'reached Stage 3');for(let n=0;n<90;n++)h.step();

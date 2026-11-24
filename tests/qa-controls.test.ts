@@ -1,9 +1,13 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';import {emptyPermanent,KAIJU,PERMANENT_KEY} from '../src/campaign.ts';import {CONFIG as C,COMBAT as B} from '../src/config.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';import {cityIndexOf} from '../src/levels.ts';import {emptyPermanent,KAIJU,PERMANENT_KEY} from '../src/campaign.ts';import {CONFIG as C,COMBAT as B} from '../src/config.ts';
 test('all six shared-combat identities: selection, held input, crouch/jump, frame gaps and focus-loss cancellation',async()=>{
  for(let i=0;i<KAIJU.length;i++){
-  const p=emptyPermanent();p.unlocked=[...KAIJU];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
-  try{h.click('#new');h.click('#skip-intro');h.node('#initials').value='QAA';h.callbacks.get('#initials:input')!();h.click('#launch');h.click(`#kaiju-${i}`);h.step(2);h.click('#confirm-kaiju');assert.equal(h.state().checkpoint.kaiju,KAIJU[i]);h.click('#begin-city');assert.equal(h.state().activeKaiju,KAIJU[i]);assert.equal(h.state().hp,B.startHP);
+  const p=emptyPermanent();p.unlocked=[...KAIJU];
+  // The pick is the run's kaiju; San Francisco is Mogurodon's own city, so the pick takes over from New York on.
+  const pick=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+  try{pick.click('#new');pick.click('#skip-intro');pick.node('#initials').value='QAA';pick.callbacks.get('#initials:input')!();pick.click('#launch');pick.click(`#kaiju-${i}`);pick.step(2);pick.click('#confirm-kaiju');assert.equal(pick.state().checkpoint.kaiju,KAIJU[i]);pick.click('#begin-city');assert.equal(pick.state().activeKaiju,'Mogurodon');assert.equal(pick.state().cityIndex,cityIndexOf('sfo'));}finally{pick.cleanup();}
+  const h=await bootCampaign(.75,{kaiju:KAIJU[i],permanent:p});
+  try{assert.equal(h.state().activeKaiju,KAIJU[i]);assert.equal(h.state().hp,B.startHP);
    const start=h.state().x;h.down('KeyD');h.step(18);h.up('KeyD');assert.ok(h.state().x>start+50);h.tap('KeyJ');assert.equal(h.state().combo,1);h.step(28);h.down('KeyJ');const combo=h.state().combo;for(let n=0;n<5;n++){h.down('KeyJ');h.step(8);}assert.equal(h.state().combo,combo,'holding does not auto-combo');h.up('KeyJ');
    h.down('KeyS');h.step();const x=h.state().x;h.down('KeyA');h.tap('Space');h.step(8);assert.equal(h.state().x,x);assert.equal(h.state().grounded,true);h.up('KeyA');h.up('KeyS');h.step();const standingY=h.state().y;h.tap('Space');h.step(12);assert.ok(h.state().y<standingY-20);const vy=h.state().vy;h.tap('Space');
    // Myrmex's wings give him air jumps and a slow float down (tests/myrmex-jump.test.ts); everyone else has neither.

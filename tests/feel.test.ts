@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {createBuildings,canTopple,toppleSpan,crushDamage} from '../src/rules.ts';
 import {DRILL_BLOCK} from '../src/levels.ts';
 
@@ -41,10 +41,9 @@ test('real loop: hits leave holes/chunks/hitstop; short buildings squash; tall o
 
 test('a street dive freezes the game once: its shockwaves, rocks and punted cars do not re-arm hitstop',async()=>{
  const {emptyPermanent,KAIJU,PERMANENT_KEY}=await import('../src/campaign.ts');const {FEEL}=await import('../src/config.ts');
- const p=emptyPermanent();p.unlocked=[...KAIJU];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+ const p=emptyPermanent();p.unlocked=[...KAIJU];const h=await bootCampaign(.75,{kaiju:'Kaiban',permanent:p});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='TST';h.callbacks.get('#initials:input')!();h.click('#launch');
-  h.click(`#kaiju-${KAIJU.indexOf('Kaiban')}`);h.step(2);h.click('#confirm-kaiju');h.click('#begin-city');h.step(30);
+  h.step(30);
   h.down('KeyD');h.step(55);h.up('KeyD');h.step(20);h.tap('Space');h.step(16);h.tap('KeyS');
   for(let n=0;n<90&&h.state().diving;n++)h.step();
   assert.ok(h.state().hitstop>0,'the landing itself still freezes');assert.ok(h.state().entityCounts.rocks>0,'Meteor Drop threw its rocks');

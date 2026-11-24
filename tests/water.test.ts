@@ -5,7 +5,7 @@ import {waterBand,bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGr
 import type {DrownEvent} from '../src/water.ts';
 import {createCombat,receiveHit} from '../src/combat.ts';
 import {createMilitary,spawnUnit,tickMilitary,hitUnit,captureUnit,spawnSquad,navigable,NAVAL_UNITS} from '../src/military.ts';
-import {WATER_DRILL,WATER_LAKE,WATER_STEPS,DRILL_BLOCK,LEVELS} from '../src/levels.ts';
+import {WATER_DRILL,WATER_LAKE,WATER_STEPS,DRILL_BLOCK,LEVELS,cityIndexOf} from '../src/levels.ts';
 import {CONFIG as C,COMBAT as B,WATER as W,RIVER,UNIT_CONFIG,MILITARY} from '../src/config.ts';
 import {emptyPermanent,PERMANENT_KEY} from '../src/campaign.ts';
 
@@ -114,8 +114,8 @@ test('real loop: the water drill loads its lake, boats and deep tunnel; the comb
   assert.ok(Math.abs(s.depth(3000)-56)<1e-9);}
  finally{h.release();h.cleanup();}
  const d=await bootGame(.75);try{d.click('#drills');d.click('#start');assert.equal(d.state().blockName,'Combat Drills');assert.equal(d.state().pitDepth,RIVER.pitDepth);assert.equal(d.state().band,'dry');}finally{d.release();d.cleanup();}
- const p=emptyPermanent();p.conquered=[0];const e=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
- try{e.click('#freeplay');e.node('#free-kaiju').value='Mogurodon';e.node('#free-city').value='0';e.node('#free-boss').value='Mogurodon';e.node('#free-block').value='3';e.click('#free-start');
+ const p=emptyPermanent();p.conquered=['nyc'];const e=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+ try{e.click('#freeplay');e.node('#free-kaiju').value='Mogurodon';e.node('#free-city').value=String(cityIndexOf('nyc'));e.node('#free-boss').value='Mogurodon';e.node('#free-block').value='3';e.click('#free-start');
   const s=e.state();assert.equal(s.blockName,'East River Offensive');assert.equal(s.pitDepth,RIVER.pitDepth);assert.equal(s.boats.length,0);}
  finally{e.release();e.cleanup();}
 });

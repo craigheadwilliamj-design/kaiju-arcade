@@ -1,8 +1,8 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {setTerrain,groundAt,bedAt,submerged,waterAt,deckAt,addPit,pitAt,pitList,profileFrom} from '../src/terrain.ts';
 import {createMilitary,spawnSquad,spawnUnit,tickMilitary} from '../src/military.ts';
-import {LEVELS} from '../src/levels.ts';
+import {LEVELS,cityIndexOf} from '../src/levels.ts';
 import {CONFIG as C,FEEL,RIVER} from '../src/config.ts';
 import {emptyPermanent,PERMANENT_KEY} from '../src/campaign.ts';
 
@@ -18,7 +18,7 @@ test('terrain: water is only "submerged" where no live deck covers it; pits are 
 });
 
 test('East River: a river under a three-span bridge, a subway line under the west half, an armory at each end',()=>{
- const b=LEVELS[0][3];assert.equal(b.name,'East River Offensive');
+ const b=LEVELS[cityIndexOf('nyc')][3];assert.equal(b.name,'East River Offensive');
  assert.equal(b.water!.length,1);const [wa,wz,wy]=b.water![0];assert.ok(wy>C.ground,'the surface sits a little below the street');
  assert.equal(b.bridge!.spans,3);assert.ok(b.bridge!.x0<=wa&&b.bridge!.x1>=wz,'the bridge spans the whole river');
  for(const x of b.buildings)if(x.kind!=='tiny')assert.ok(x.x+x.w<=b.bridge!.x0||x.x>=b.bridge!.x1,`${x.x}: nothing stands in the river`);
@@ -39,8 +39,8 @@ test('an armory down cuts off squads from its side; troops never walk into open 
  setTerrain(null);
 });
 
-async function eastRiver(){const p=emptyPermanent();p.conquered=[0];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
- h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value='0';h.node('#free-boss').value='Mogurodon';h.node('#free-block').value='3';h.click('#free-start');return h;}
+async function eastRiver(){const p=emptyPermanent();p.conquered=['nyc'];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+ h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value=String(cityIndexOf('nyc'));h.node('#free-boss').value='Mogurodon';h.node('#free-block').value='3';h.click('#free-start');return h;}
 
 test('real loop: Free Play can start on any block; East River opens with the bridge standing and trains already running',async()=>{
  const h=await eastRiver();
@@ -73,10 +73,10 @@ test('real loop: a slam on the street over the subway caves it in; the kaiju lan
 });
 
 test('real loop: a fully charged Stage 3 heavy on a middle floor shears the top off and throws it',async()=>{
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
   // Clear Lower Manhattan (evolving to Stage 3 on the way); evolution carries into Midtown, whose plaza has untouched towers beside it.
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='SHR';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   const hold=(code:string,frames:number)=>{h.down(code);h.step(frames);h.up(code);};
   const sweep=(fwd:string,back:string,limit:number)=>{for(let n=0;n<limit&&h.state().mode==='playing';n++){
    if(h.state().ultimate>=100&&h.state().transform===0)h.tap('KeyU');hold(fwd,8);h.tap('KeyK');h.step(40);hold(back,1);h.tap('KeyK');h.step(40);hold(fwd,3);}};
