@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';import {writeFile} from 'node:fs/promise
 import {bootGame} from './helpers/game-harness.ts';import {MILITARY as M,COMBAT as B,CONFIG as C} from '../src/config.ts';
 import {CHECKPOINT_KEY,PERMANENT_KEY,CAMPAIGN,campaignCityIndex,routeLevels} from '../src/campaign.ts';import {cityIndexOf} from '../src/levels.ts';
 const h=await bootGame(.75),rows:any[]=[],peaks:Record<string,number>={};let polls=0,landingProbe=false,cityStart=0,peakStage=1,evolutions:Record<string,number>={};
-const check=(s:any)=>{assert.ok(Number.isFinite(s.x)&&Number.isFinite(s.y)&&Number.isFinite(s.hp)&&Number.isFinite(s.score));assert.ok(s.x>=-.001&&s.x+s.width<=s.worldWidth+.001);assert.ok(s.hp>=0&&s.hp<=100);for(const [k,v] of Object.entries(s.entityCounts))peaks[k]=Math.max(peaks[k]||0,Number(v));assert.ok(s.entityCounts.units<=M.caps[s.militaryTier-1], 'military cap');assert.ok(s.entityCounts.enemyShots<=M.projectileCap);assert.ok(s.entityCounts.wrecks<=M.wreckCap);assert.ok(s.shards<=B.shardCap);assert.ok(s.particleCount<=C.particleCap);};
+const check=(s:any)=>{assert.ok(Number.isFinite(s.x)&&Number.isFinite(s.y)&&Number.isFinite(s.hp)&&Number.isFinite(s.score));assert.ok(s.x>=-.001&&s.x+s.width<=s.worldWidth+.001);assert.ok(s.hp>=0&&s.hp<=100);for(const [k,v] of Object.entries(s.entityCounts))peaks[k]=Math.max(peaks[k]||0,Number(v));// Police boats are stationed on the water and sit outside the squad cap (src/military.ts fielded()); everything else is under it.
+ assert.ok(s.entityCounts.units-s.military.filter((u:any)=>u.type==='boat').length<=M.caps[s.militaryTier-1], 'military cap');assert.ok(s.entityCounts.enemyShots<=M.projectileCap);assert.ok(s.entityCounts.wrecks<=M.wreckCap);assert.ok(s.shards<=B.shardCap);assert.ok(s.particleCount<=C.particleCap);};
 function fightBlock(){
  const startFrames=h.frames();let lastX=-1,stuck=0;
  for(let n=0;n<4000;n++){
@@ -11,9 +12,14 @@ function fightBlock(){
   if(s.superCharge>=40&&s.hp===100&&s.stage===3&&s.superTime===0)h.tap('KeyI');
   if(s.ultimate>=100&&s.canAct&&(s.blockIndex!==2||landingProbe))h.tap('KeyU');
   const px=s.x+s.width/2;
+  // The Embarcadero starts sealed in a tunnel pocket: jump into the roof until it breaks.
+  if(s.pocketHP>0){h.release();if(s.grounded)h.tap('Space');h.step(20);continue;}
+  // Chinatown's crystal formation lifts the cap to Stage 2: the bot detours to shatter it once it is within a screen or two of the way.
+  const formation=s.formationHP>0&&s.formationX!==null&&!s.exitOpen?{x:s.formationX-66,y:285,w:132,h:150,hp:s.formationHP}:null;
   let target:any=null,goal=s.worldWidth-s.width;
   if(s.rival){target=s.rival;goal=target.x-s.width-25;}
-  else if(s.objectiveHP>0){target={x:s.worldWidth/2-30,y:335,w:60,h:100,hp:s.objectiveHP};goal=target.x-s.width-25;}
+  else if(s.objectiveHP>0){const o=s.objective;target={x:o.x-o.w/2,y:435-o.h,w:o.w,h:o.h,hp:s.objectiveHP};goal=target.x-s.width-25;}
+  else if(formation){target=formation;goal=target.x-s.width-25;}
   else if(!s.exitOpen){target=s.buildings.filter((b:any)=>b.hp>0).sort((a:any,b:any)=>Math.abs(a.x-px)-Math.abs(b.x-px))[0];if(target)goal=target.x>=px?target.x-s.width-25:target.x+target.w+25;}
   // Clear solid obstructions en route, independent of quota/objective targets.
   const blocker=s.buildings.filter((b:any)=>b.hp>0&&b.kind==='large'&&(goal>=s.x?b.x>=s.x+s.width-4&&b.x<goal+s.width:b.x+b.w<=s.x+4&&b.x+b.w>goal)).sort((a:any,b:any)=>goal>=s.x?a.x-b.x:b.x-a.x)[0];
@@ -49,7 +55,7 @@ try{
   for(let k=0;k<route.length;k++){const block=route[k];assert.equal(h.state().blockIndex,block);
    // Per-level growth: San Francisco levels start at their stage, capped; the original cities stay dynamic.
    const level=h.state().level;if(level.startStage){assert.equal(h.state().stage,level.startStage,`${level.name} start stage`);assert.equal(h.state().growthCap,level.cap);}
-   fightBlock();if(level.cap)assert.ok(h.state().stage<=level.cap,`${level.name} never grows past its cap`);
+   fightBlock();if(level.cap)assert.ok(h.state().stage<=(level.capLift??level.cap),`${level.name} never grows past its cap`);
    if(city===0&&k===0){const before=h.state().score;h.click('#back');h.click('#no');assert.equal(h.state().score,before);h.click('#back');h.click('#no');assert.equal(h.state().score,before,'canceling results quit cannot repeat Perfect bonus');}if(k<route.length-1)h.click('#advance');}
   if(city<CAMPAIGN.length-1){const cp=JSON.parse(h.saved.get(CHECKPOINT_KEY)!);assert.equal(cp.city,city+1);assert.equal(Math.round(cp.banked),h.state().score);h.click('#city-next');}
  }

@@ -2,7 +2,7 @@ import type {Part} from './hitbox.ts';
 // `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 // `role`: a structure with a job in the city (src/city.ts). `roof`: a rooftop fixture on an ordinary building.
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant',roof?:'radar'|'tank',shape?:string,prop?:string,parts?:Part[]};
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant',roof?:'radar'|'tank',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean};
 // `parts`: the hitbox silhouette (src/hitbox.ts); omitted means one box, the whole footprint.
 // `prop`: street junk (a walk-through breakable: hot dog cart, trash can, taco stand, advertising column, café table, market stall,
 // vending machine), drawn per kind.
@@ -29,8 +29,9 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF} from './config.ts';
 import {shapeParts} from './hitbox.ts';
+import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
 // Each city's look (phase 4): `mood` is its sky and light (lights 0 = broad day .. 1 = night: lit windows, neon), `style` picks the
 // facade drawing, `material` how its buildings break, `taxi`/`cars` its street colours, `ink` the HUD text colour over its sky.
@@ -70,7 +71,16 @@ export const CITIES:City[]=[
 // the cap after a mid-level lift (liftCap in src/combat.ts; a crystal will trigger it). Absent = today's rule: the stage carries
 // over from the last block, Stage 1 to 3. `tier`: the military response tier (absent = the block's position, 1-5).
 // `secret`: in the city's level list but off the campaign route (reached later by a secret exit).
-export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[]};
+export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
+ target?:{x:number,label:string,art:'clock'|'command'},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
+ guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number}};
+// Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
+// (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
+// over an underground garage: a slam caves it into a pit of parked cars. `police`: helicopters and soldiers here are drawn as police / SWAT.
+// `air` / `swat`: police helicopters and SWAT teams stationed at these x. `guard`: National Guard roll in at the exit once it opens.
+// `lanterns`: lantern strings [x0, x1] across the street (a fire fuse). `crystal`: x of the crystal formation (shatter = lift the cap).
+// `streetcars` / `cablecars` / `trolleys` / `firetrucks`: grabbable vehicles stationed at these x (trolleys are buses under wires).
+// `pier`: the pier deck's x range (it is the block's `bridge` over shallow water).
 // `bands`: the water follows the depth bands (src/water.ts: shallows, wading, over your head, drowning); without it water is the old
 // flat wade. `tunnel: 'deep'`: subway pits are RIVER.deepPitDepth deep (San Francisco). `boats`: police boats stationed on the water at
 // these x positions. All opt-in, for the San Francisco campaign; no existing city sets them.
@@ -79,6 +89,8 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // with a subway line under the street (slams cave it in). All world units.
 // `ground`: the street profile as world [x, y] points (src/terrain.ts); absent = flat.
 // Third entry element: a landmark's name (key 'L'), 'cache', or a rooftop fixture ('radar' / 'tank').
+// Façade decoration tags (the third entry element): drawn by drawDeco in src/game.ts.
+const DECOS=new Set(['shed','brick','fireworks','store','hotel','post']);
 type Entry=[number,keyof typeof BUILDING_PRESETS]|[number,keyof typeof BUILDING_PRESETS,string];
 const LANDMARK_COLORS=['#c3b48d','#b7a37c','#a9a9a0'];
 // Named NYC landmarks: authored tier silhouettes on the 190-wide 'L' footprint, drawn tier by tier from these parts, authored scale, bottom tier first. Every tier is a roof you can stand on
@@ -112,7 +124,7 @@ function district(city:string,name:string,screens:number,entries:Entry[],street:
    if(tiers)return scaled({...BUILDING_PRESETS[key],x,h:Math.max(...tiers.map(p=>p.top)),parts:tiers,label,color,landmark:true});
    const b=scaled({...BUILDING_PRESETS[key],x,label,color,landmark:true,...(shape?{shape}:{})});return {...b,shape:shape||'tower',parts:shapeParts(shape||'tower',theme.style,b.w,b.h)};}
   if(key==='S'||key==='F'||key==='K')return scaled({...BUILDING_PRESETS[key],x,label:key==='K'?'ARMORY':'',color:key==='S'?'#7f8c88':key==='F'?'#c4bea6':'#8a5444',role:key==='S'?'substation':key==='F'?'depot':'armory'});
-  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='radar'||tag==='tank'?{roof:tag}:{})});
+  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='radar'||tag==='tank'?{roof:tag}:tag&&DECOS.has(tag)?{deco:tag,label:'',...(tag==='fireworks'?{explosive:true,label:'FIREWORKS'}:{})}:{})});
  });
  // Water mains: a fire hydrant on the pavement beside every MAINS.every-th street spot (never inside a building), in district and
  // stronghold blocks. Appended after the authored buildings so their order is untouched.
@@ -161,11 +173,12 @@ export function cityIndexOf(id:string){return CITIES.findIndex(c=>c.id===id);}
 // street (240 wide, a street spot and a parked car in it) or `=` an open lot (420). Buildings stand 4 apart. Landmarks ('L') take the
 // next name from `landmarks`. A stronghold keeps its middle clear for the crystal, ringed by barricades; a boss level is an arena.
 type Growth={startStage:1|2|3,cap:1|2|3,capLift?:2|3,tier:number,secret?:boolean};
-function sfLevel(name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth):BlockDef{
- const W=screens*960,mid=W/2,entries:Entry[]=[],street:number[]=[175],cars:number[]=[230];let x=400,l=0;
+function sfLevel(name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts:{target?:number,ring?:number[],from?:number}={}):BlockDef{
+ const W=screens*960,mid=opts.target??W/2,entries:Entry[]=[],street:number[]=[175],cars:number[]=[230];let x=opts.from??400,l=0;
  const clear=kind==='stronghold'?[mid-900,mid+560]:null;
- if(clear)for(const o of [-770,-440,-190,180,460])entries.push([mid+o,'b']);
+ if(clear)for(const o of opts.ring??[-770,-440,-190,180,460])entries.push([mid+o,'b']);
  for(const token of pattern.split(',').map(t=>t.trim())){
+  if(token[0]==='>'){x=Math.max(x,+token.slice(1));continue;}
   if(token==='_'||token==='='){const gap=token==='_'?240:420;if(x+gap<W-130){street.push(x+gap/2-40);cars.push(x+20);}x+=gap;continue;}
   const [key,tag]=token.split(':') as [keyof typeof BUILDING_PRESETS,string|undefined],w=BUILDING_PRESETS[key].w;
   if(clear&&x+w>clear[0]&&x<clear[1]){street.push(clear[0]+60,mid-320,mid+320);cars.push(clear[0]+120);x=clear[1];}
@@ -176,10 +189,92 @@ function sfLevel(name:string,screens:number,kind:BlockDef['kind'],pattern:string
  return {...district('sfo',name,screens,entries,[...new Set(street)].filter(v=>v<W-60).sort((a,b)=>a-b),[...new Set(cars)].filter(v=>v<W-60).sort((a,b)=>a-b),kind),...growth};
 }
 const SF_ROW='s,m:tank,h,_,l,m,s:cache,_,x,n,m,_,h:radar,s,t,_,m,l,_,h,s:tank,m,_';
+
+// ---- San Francisco Act 1 (redesign phase 3): Embarcadero, Union Square, Chinatown ----
+// Authored at the original scale like every other block; fields that are world units on the block are scaled here with sc().
+// A hand-built building (the Ferry Building's halls, pilings): a deco tag picks its drawing.
+function hall(x:number,w:number,h:number,label:string,color:string,deco:string,hp=300):BuildingSpec{return scaled({x,w,h,hp,value:Math.round(hp*.7),kind:'medium',label,color,deco});}
+// Drop the street clutter (hydrants, junk) standing in authored x ranges: open water, the tunnel pocket, a plaza.
+function clearClutter(b:BlockDef,ranges:[number,number][],solids=false):BlockDef{return {...b,buildings:b.buildings.filter(x=>(x.kind!=='tiny'&&!solids)||x.landmark||!ranges.some(([a,z])=>x.x+x.w>sc(a)&&x.x<sc(z)))};}
+// Vehicles stationed in the street (streetcars, cable cars, trolleys, fire trucks): each [x, width] moves to the nearest stretch of street
+// with room (80) either side for the kaiju to stand and grab it, clear of solid buildings and of the other stations. The parked cars whose
+// rows (src/vehicles.ts createParked grows a row eastward of each spot, about 400 wide) would run into a station are dropped.
+function station(b:BlockDef,items:[number,number][]):{xs:number[],cars:number[]}{
+ const solids=b.buildings.filter(x=>x.kind!=='tiny').map(x=>[x.x-6,x.x+x.w+6] as [number,number]),W=levelWidth(b),taken:[number,number][]=[];
+ const free=(x:number,w:number)=>x>=200&&x+w<=W-200&&!solids.some(([a,z])=>x+w+80>a&&x-80<z)&&!taken.some(([o,ow])=>x<o+ow+160&&x+w+160>o);
+ const xs=items.map(([x,w])=>{let at=x;for(let d=0;d<W&&!free(at,w);d+=10)at=free(x+d,w)?x+d:free(x-d,w)?x-d:at;taken.push([at,w]);return at;});
+ return {xs,cars:b.cars.filter(c=>!xs.some((x,i)=>c+400>x-40&&c<x+items[i][1]+40))};}
+// Level 1. Start sealed in a BART tunnel pocket, break out at Rincon Park, work north along the promenade (F-line streetcars, the
+// first police cars), cross the first pier (a deck over shallow water: break it, wade, throw a police boat, climb the pilings), push
+// through the pier sheds and the SFPD line, and smash the Ferry Building's clock tower.
+function sfEmbarcadero():BlockDef{
+ const T=6560,POCKET:[number,number]=[40,440],WATER:[number,number]=[3000,4440],DECK:[number,number]=[3140,4300],W=8*960;
+ let b=sfLevel('Embarcadero',8,'stronghold',
+  `=,L,_,t,s,m,s,_,t,h,m,_,s,m,s,t,_,m,h,>4520,w:shed,w:shed,s,w:shed,_,w:shed`,
+  ['BOW AND ARROW|arch'],{startStage:1,cap:1,tier:1},{target:T,ring:[-840,-680,-520]});
+ b=terrain(b,[[0,0],[WATER[0]-50,0],[WATER[0],-28],[WATER[1],-28],[WATER[1]+50,0],[W,0]]);
+ b=clearClutter(clearClutter(b,[WATER,[0,POCKET[1]+80]]),[[WATER[0]-60,WATER[1]+60]],true);
+ // Pilings: stout posts in the water just beside the deck; the kaiju climbs one to get out of the water.
+ const pilings=[3040,3090,4340,4390].map(x=>hall(x,16,70,'','#5b4a3a','piling',140));
+ // The Ferry Building: a long hall on either side of the clock tower (the target).
+ const halls=[hall(T-380,320,120,'FERRY BUILDING','#c9b99a','ferry',360),hall(T+60,320,120,'','#c9b99a','ferry',360)];
+ // Palms along the promenade stand where the generic street junk would have put hot dog carts.
+ const palms=b.buildings.map(x=>x.prop==='hotdog'?{...x,prop:'palm',w:Math.round(x.w*.8),h:Math.round(x.h*2.3),color:'#4f7d4a'}:x);
+ const bs=[...palms,...pilings,...halls],st=station({...b,buildings:bs},[1500,2380].map(x=>[sc(x),VEHICLE_SPECS.tram.w] as [number,number]));
+ return {...b,buildings:bs,streetcars:st.xs,cars:st.cars,
+  water:[[sc(WATER[0]),sc(WATER[1]),CONFIG.ground+6]],bridge:{x0:sc(DECK[0]),x1:sc(DECK[1]),spans:7},bands:true,boats:[sc(3500),sc(3900),sc(4150)],
+  // BART under the first stretch of promenade: a slam caves it in. The sealed pocket you start in lies west of the line.
+  subway:[[sc(520),sc(2000)]],tunnel:'deep',pocket:{x0:sc(POCKET[0]),x1:sc(POCKET[1]),hp:SF.pocketHP},
+  target:{x:sc(T),label:'FERRY BUILDING CLOCK TOWER',art:'clock'},police:true,pier:{x0:sc(DECK[0]),x1:sc(DECK[1])}};
+}
+// Level 2. Foot of Market (trolleybuses under live overhead wires, a police helicopter to throw things up at), the Powell & Market
+// turntable (a cable car, the tourist queue), Stockton Street's subway cave-ins, then Union Square: the SFPD command post (the target)
+// behind barricades, department stores, a hotel, the victory column, and a garage under the plaza that caves in on a slam.
+function sfUnionSquare():BlockDef{
+ const T=4900,GARAGE:[number,number]=[T-620,T+520];
+ let b=sfLevel('Union Square',7,'stronghold',
+  `s,S,m,_,l,s,_,h,m,_,t,s,r,_,m,s:tank,_,h,t,>2760,s,m,r,_,l,s,m,_,h,m,s,>5480,L,d:store,s,d:store,l:hotel,m,s`,
+  ['VICTORY COLUMN|needle'],{startStage:1,cap:1,tier:1},{target:T,ring:[-860,-740,-620,500]});
+ // The department stores and hotel round the square, outside the barricade ring, plus the column on the east side of the plaza.
+ // The victory column stands on the east side of the plaza (art only: it is a landmark needle).
+ const ring:BuildingSpec[]=[];
+ b=clearClutter(b,[GARAGE,[2300,2700]]);
+ // Powell & Market: the cable car turntable (a flat plate you can walk over) and the tourist queue waiting beside it.
+ const turntable=scaled({x:2400,w:90,h:10,hp:10,value:10,kind:'tiny',label:'',color:'#6a5a48',prop:'turntable'});
+ b={...b,buildings:[...b.buildings,turntable],street:[...b.street,sc(2330),sc(2360),sc(2530),sc(2560),sc(2590)].sort((p,q)=>p-q)};
+ // The power grid for the trolleybus wires: a substation inside it, a line of poles down lower Market.
+ const poles=[220,520,820,1120,1420,1720,2020];
+ b=powered(b,[[0,2800]],poles);
+ const st=station(b,[...[420,1260,1900].map(x=>[sc(x),VEHICLE_SPECS.bus.w] as [number,number]),[sc(2450),VEHICLE_SPECS.cablecar.w]]);
+ return {...b,buildings:[...b.buildings.filter(x=>!(x.role==='substation'&&x.x>sc(2800))),...ring],
+  subway:[[sc(2700),sc(3900)]],garage:[[sc(GARAGE[0]),sc(GARAGE[1])]],tunnel:'deep',
+  target:{x:sc(T),label:'SFPD COMMAND POST',art:'command'},police:true,
+  trolleys:st.xs.slice(0,3),cablecars:st.xs.slice(3),cars:st.cars,air:[sc(1500),sc(T-300)]};
+}
+// Level 3. Through the Dragon Gate, up Grant Avenue: wall-to-wall low-rise brick, fireworks shops that go off and start fires, lantern
+// strings that carry fire like fuses, fire trucks that turn up at the blazes. Waverly Place has SWAT and the police helicopter. The
+// crystal formation under Portsmouth Square lifts the cap and grows the kaiju to Stage 2; the National Guard roll in at the exit.
+// Lantern strings span the side-street gaps (150-300 wide) between two standing buildings, hung from the lower roofline.
+function lanternGaps(b:BlockDef):[number,number,number][]{
+ const s=b.buildings.filter(x=>x.kind!=='tiny'&&!x.landmark).sort((p,q)=>p.x-q.x),out:[number,number,number][]=[];
+ for(let i=1;i<s.length;i++){const a=s[i-1],c=s[i],gap=c.x-(a.x+a.w);if(gap>=sc(150)&&gap<=sc(320))out.push([a.x+a.w-6,c.x+6,Math.min(a.h,c.h)-12]);}
+ return out;}
+function sfChinatown():BlockDef{
+ const CRYSTAL=3900;
+ const row='r:brick,s:brick,r:fireworks,r:brick,s:brick,m:brick,r:brick,s:fireworks,r:brick,r:brick,_',rowB='r:brick,s:brick,r:brick,s:fireworks,m:brick,r:brick,s:brick,r:fireworks,r:brick';
+ let b=sfLevel('Chinatown',7,'district',
+  `L,${row},${rowB},_,r:brick,s:brick,r:brick,s:brick,m:brick,r:fireworks,>4200,${row},r:brick,s:brick,r:brick,L,s:brick,r:fireworks,s:brick,r:brick`,
+  ['DRAGON GATE|arch','CHINATOWN PAGODA|pagoda'],{startStage:1,cap:1,capLift:2,tier:2});
+ b=clearClutter(b,[[CRYSTAL-260,CRYSTAL+260]]);
+ const st=station(b,[900,2600,5400].map(x=>[sc(x),VEHICLE_SPECS.firetruck.w] as [number,number]));
+ return {...b,
+  lanterns:lanternGaps(b),
+  firetrucks:st.xs,cars:st.cars,swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)],crystal:sc(CRYSTAL),guard:true,police:true};
+}
 export const SAN_FRANCISCO:BlockDef[]=[
- sfLevel('Embarcadero',8,'stronghold',`t,s,m,_,h,S,m:tank,_,l,F,_,s,m,h:radar,_,m,s,_,h,m:cache,_,s,m,S,_,l,s,_,L,s,_,m,h`,['FERRY BUILDING|tower'],{startStage:1,cap:1,tier:1}),
- sfLevel('Union Square',7,'stronghold',`m,s:tank,_,h,m,S,_,l,t,_,L,_,${SF_ROW},${SF_ROW}`,['DEWEY MONUMENT|needle'],{startStage:1,cap:1,tier:1}),
- sfLevel('Chinatown',7,'district',`L,s,s:tank,m,s,_,s,m:cache,s,S,_,m,s,h,s,_,s,s:tank,m,F,_,s,m,s,h,_,s,m,s:cache,_,L,s,m,s,_,s,s,m,h,_,s,m,s,_,s,s`,['DRAGON GATE|arch','CHINATOWN PAGODA|pagoda'],{startStage:1,cap:1,capLift:2,tier:2}),
+ sfEmbarcadero(),
+ sfUnionSquare(),
+ sfChinatown(),
  sfLevel('Nob Hill',7,'district',`m,h:tank,_,L,S,_,h,m,_,l,m:cache,_,h,h,F,_,x,m,_,L,s,_,h,m:tank,_,l,h,_,m,s,_`,['GRACE CATHEDRAL|twin','COIT TOWER|tower'],{startStage:2,cap:2,tier:2}),
  sfLevel('Financial District',7,'stronghold',`x,n,_,l,S,_,x:radar,m,_,L,n,x,_,l,n:cache,_,x,F,_,L,n,_,x,l`,['TRANSAMERICA PYRAMID|needle','SALESFORCE TOWER|tower'],{startStage:2,cap:2,tier:3}),
  sfLevel('Fisherman\'s Wharf',8,'stronghold',`s,m:tank,_,K,_,L,s,F,_,m,h,_,s:cache,m,_,L,_,${SF_ROW},m,s,_,K,_,m`,['WHARF CLOCK TOWER|tower','AQUARIUM HALL|dome'],{startStage:2,cap:2,capLift:3,tier:3}),
