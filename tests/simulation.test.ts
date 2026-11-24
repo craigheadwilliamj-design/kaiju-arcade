@@ -1,4 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import {COMBAT as B,MILITARY as M} from '../src/config.ts';
+import {CHECKPOINT_KEY} from '../src/campaign.ts';import {bootCampaign} from './helpers/game-harness.ts';
 test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart',async()=>{
  const callbacks=new Map<string,Function>(),events=new Map<string,Function>();let nextFrame:Function=()=>{},now=performance.now();
  const savedRandom=Math.random;Math.random=()=>.75;
@@ -47,20 +48,30 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
  nodes.get('#initials').value='a1bcd';callbacks.get('#initials:input')!();assert.equal(nodes.get('#initials').value,'ABC');callbacks.get('#launch:click')!();assert.equal(state().mode,'selection');callbacks.get('#confirm-kaiju:click')!();
  assert.equal(state().mode,'progress');assert.equal(state().checkpoint.city,0);assert.equal(state().checkpoint.banked,0);
  callbacks.get('#begin-city:click')!();assert.equal(state().session,'campaign');assert.equal(state().hp,B.startHP);
- // Play the first campaign district through the real input path. It is an open layout: start mid-map,
- // sweep west to the edge, then turn around and smash east until the quota opens and the east exit triggers.
- const cityStart=state().x;assert.ok(cityStart>1700*1.4&&cityStart<2000*1.4,'open district starts mid-map');
- const sweep=(fwd:string,back:string,done:()=>boolean,limit:number)=>{for(let n=0;n<limit&&state().mode==='playing'&&!done();n++){
-  if(state().ultimate>=100&&state().transform===0){key('KeyU');key('KeyU','keyup');}
-  hold(fwd,8);key('KeyK');key('KeyK','keyup');step(40);hold(back,1);key('KeyK');key('KeyK','keyup');step(40);hold(fwd,3);
- }};
- sweep('KeyA','KeyD',()=>state().x<120,110);assert.equal(state().mode,'playing','west sweep alone does not finish the block');
- sweep('KeyD','KeyA',()=>false,170);
- assert.equal(state().mode,'results');const hp=state().hp,energy=state().ultimate,superCharge=state().superCharge;
- callbacks.get('#advance:click')!();assert.equal(state().blockIndex,1);assert.equal(state().worldWidth,Math.round(5760*1.4));assert.equal(state().hp,hp);assert.equal(state().ultimate,energy);assert.equal(state().superCharge,superCharge);assert.equal(state().checkpoint.city,0);assert.equal(state().checkpoint.banked,0);
- key('Escape');callbacks.get('#restart:click')!();assert.equal(state().mode,'confirm');callbacks.get('#no:click')!();assert.equal(state().mode,'paused');assert.equal(state().blockIndex,1);
+ // The campaign opens in San Francisco: the Embarcadero, as Mogurodon, at Stage 1 with its cap at Stage 1 (soft floor at 1).
+ assert.equal(state().cityIndex,0);assert.equal(state().blockIndex,0);assert.equal(state().blockKind,'stronghold');assert.equal(state().activeKaiju,'Mogurodon');
+ assert.equal(state().stage,1);assert.equal(state().growthCap,1);assert.equal(state().growthFloor,1);assert.equal(state().x,110);
+ step(30);
+ key('Escape');callbacks.get('#restart:click')!();assert.equal(state().mode,'confirm');callbacks.get('#no:click')!();assert.equal(state().mode,'paused');assert.equal(state().blockIndex,0);
  callbacks.get('#restart:click')!();callbacks.get('#yes:click')!();assert.equal(state().blockIndex,0);assert.equal(state().hp,B.startHP);assert.equal(state().score,0);assert.equal(state().ultimate,0);assert.equal(state().superCharge,0);
- key('Escape');callbacks.get('#menu:click')!();assert.equal(state().mode,'confirm');callbacks.get('#yes:click')!();assert.equal(state().mode,'title');assert.equal(JSON.parse(savedData.get('kaiju-arcade:campaign:v1')!).city,0);
- callbacks.get('#continue:click')!();assert.equal(state().mode,'progress');callbacks.get('#begin-city:click')!();assert.equal(state().blockIndex,0);step(60*150);assert.equal(state().mode,'gameover');assert.equal(state().checkpoint,null);assert.equal(savedData.has('kaiju-arcade:campaign:v1'),false);assert.equal(state().highScores.length,1);assert.equal(state().highScores[0].initials,'ABC');
+ key('Escape');callbacks.get('#menu:click')!();assert.equal(state().mode,'confirm');callbacks.get('#yes:click')!();assert.equal(state().mode,'title');assert.equal(JSON.parse(savedData.get(CHECKPOINT_KEY)!).city,0);
+ callbacks.get('#continue:click')!();assert.equal(state().mode,'progress');callbacks.get('#begin-city:click')!();assert.equal(state().blockIndex,0);step(60*150);assert.equal(state().mode,'gameover');assert.equal(state().checkpoint,null);assert.equal(savedData.has(CHECKPOINT_KEY),false);assert.equal(state().highScores.length,1);assert.equal(state().highScores[0].initials,'ABC');
  Math.random=savedRandom;
+});
+
+test('real game loop: New York’s open first district, swept by keys; the next block keeps HP and meters; checkpoint untouched',async()=>{
+ const h=await bootCampaign(.75,{city:'nyc'});const hold=(code:string,frames:number)=>{h.down(code);h.step(frames);h.up(code);};
+ try{
+ // Play New York's first district through the real input path. It is an open layout: start mid-map,
+ // sweep west to the edge, then turn around and smash east until the quota opens and the east exit triggers.
+ const cityStart=h.state().x;assert.ok(cityStart>1700*1.4&&cityStart<2000*1.4,'open district starts mid-map');
+ const sweep=(fwd:string,back:string,done:()=>boolean,limit:number)=>{for(let n=0;n<limit&&h.state().mode==='playing'&&!done();n++){
+  if(h.state().ultimate>=100&&h.state().transform===0){h.tap('KeyU');}
+  hold(fwd,8);h.tap('KeyK');h.step(40);hold(back,1);h.tap('KeyK');h.step(40);hold(fwd,3);
+ }};
+ sweep('KeyA','KeyD',()=>h.state().x<120,110);assert.equal(h.state().mode,'playing','west sweep alone does not finish the block');
+ sweep('KeyD','KeyA',()=>false,170);
+ assert.equal(h.state().mode,'results');const hp=h.state().hp,energy=h.state().ultimate,superCharge=h.state().superCharge;
+ h.click('#advance');assert.equal(h.state().blockIndex,1);assert.equal(h.state().worldWidth,Math.round(5760*1.4));assert.equal(h.state().hp,hp);assert.equal(h.state().ultimate,energy);assert.equal(h.state().superCharge,superCharge);assert.equal(h.state().checkpoint.city,1);assert.equal(h.state().checkpoint.banked,0);
+ }finally{h.release();h.cleanup();}
 });

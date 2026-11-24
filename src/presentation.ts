@@ -1,4 +1,4 @@
-import {KAIJU} from './campaign.ts';import type {Permanent} from './campaign.ts';
+import {KAIJU,routeLevels} from './campaign.ts';import {CITIES} from './levels.ts';import type {Permanent} from './campaign.ts';
 export const INTRO_DURATION=12;
 export const INTRO_SCENES=['AN ASTEROID APPROACHES EARTH','IMPACT','PINK CRYSTALS EMERGE','MONSTROUS EVOLUTION'];
 export const ROSTER=[
@@ -16,9 +16,10 @@ export const ART_SLOTS:{menu:string|null,intro:(string|null)[],endings:Record<st
 export function hudScore(n:number,width=6){const v=Math.round(n);const d=String(Math.abs(v));return v<0?'-'+d.padStart(width-1,'0'):d.padStart(width,'0');}
 export function introScene(elapsed:number){return Math.max(0,Math.min(3,Math.floor(elapsed/3)));}
 export function selectable(p:Permanent,name:string){return KAIJU.includes(name)&&p.unlocked.includes(name);}
-// block: which of the city's five blocks to start on (0-4; absent = the first).
+// city: an index into CITIES (it must be conquered). block: which of the city's route levels to start on (absent = the first;
+// secret levels are not offered).
 export type FreePlayChoice={kaiju:string,city:number,boss:string,block?:number};
-export function validFreePlay(p:Permanent,c:FreePlayChoice){return selectable(p,c.kaiju)&&selectable(p,c.boss)&&Number.isInteger(c.city)&&c.city>=0&&c.city<5&&p.conquered.includes(c.city)&&(c.block===undefined||Number.isInteger(c.block)&&c.block>=0&&c.block<5);}
+export function validFreePlay(p:Permanent,c:FreePlayChoice){return selectable(p,c.kaiju)&&selectable(p,c.boss)&&Number.isInteger(c.city)&&!!CITIES[c.city]&&p.conquered.includes(CITIES[c.city].id)&&(c.block===undefined||routeLevels(c.city).includes(c.block));}
 export function unlockEnding(p:Permanent,name:string){if(!KAIJU.includes(name)||p.gallery.includes(name))return false;p.gallery.push(name);return true;}
 export function canViewEnding(p:Permanent,name:string){return KAIJU.includes(name)&&p.gallery.includes(name);}
 export function endingFor(name:string){return ENDINGS.find(e=>e.name===name)||ENDINGS[0];}
