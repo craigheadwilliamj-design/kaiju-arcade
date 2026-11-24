@@ -446,12 +446,12 @@ export const SF = {
  // The crystal formation under Portsmouth Square: a big growth. Shattering it lifts the cap (liftCap) and grows the kaiju to Stage 2.
  formationW:132,formationH:150,formationHP:700,formationShards:40,
  // Garage cave-in: a slam over the garage opens a pit of parked cars (garageCars of them, pitDepth deep like a subway pit).
- garageCars:7,garagePoints:900,
+ garageCars:7,garagePoints:900,garageWidth:560,
  // Fireworks shop: destroyed, it goes off for fireworksSeconds: fireballs and a fire pool, and it lights neighbours within fireworksReach.
  fireworksSeconds:5,fireworksReach:150,fireworksDamage:5,fireworksBlast:70,fireworksPoints:700,
  // Lantern strings: a fuse of lanterns between two rooftops. Fire reaching either end runs along it at lanternSpeed px/s, lighting
  // a flame at each lantern (lanternSpacing apart) that burns lanternBurn s and sets the walls under it alight (FIRE system).
- lanternSpeed:260,lanternSpacing:46,lanternBurn:3.2,lanternHeight:150,lanternPoints:60,
+ lanternSpeed:140,lanternSpacing:46,lanternBurn:.9,lanternHeight:150,lanternPoints:60,
  // Fire trucks: drive to the nearest blaze, park, spray. Spraying douses fire pools in sprayReach and slows building fire spread a little.
  truckSpeed:70,truckSprayReach:170,truckSlow:.6,truckPark:40,
  // Police helicopter (a reskinned helicopter, spawned by a level's `air`), SWAT (reskinned soldiers: `swat`).

@@ -31,6 +31,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
 
 import {CONFIG,BUILDING_PRESETS,MAINS,SF} from './config.ts';
 import {shapeParts} from './hitbox.ts';
+import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
 // Each city's look (phase 4): `mood` is its sky and light (lights 0 = broad day .. 1 = night: lit windows, neon), `style` picks the
 // facade drawing, `material` how its buildings break, `taxi`/`cars` its street colours, `ink` the HUD text colour over its sky.
@@ -195,6 +196,14 @@ const SF_ROW='s,m:tank,h,_,l,m,s:cache,_,x,n,m,_,h:radar,s,t,_,m,l,_,h,s:tank,m,
 function hall(x:number,w:number,h:number,label:string,color:string,deco:string,hp=300):BuildingSpec{return scaled({x,w,h,hp,value:Math.round(hp*.7),kind:'medium',label,color,deco});}
 // Drop the street clutter (hydrants, junk) standing in authored x ranges: open water, the tunnel pocket, a plaza.
 function clearClutter(b:BlockDef,ranges:[number,number][],solids=false):BlockDef{return {...b,buildings:b.buildings.filter(x=>(x.kind!=='tiny'&&!solids)||x.landmark||!ranges.some(([a,z])=>x.x+x.w>sc(a)&&x.x<sc(z)))};}
+// Vehicles stationed in the street (streetcars, cable cars, trolleys, fire trucks): each [x, width] moves to the nearest stretch of street
+// with room (80) either side for the kaiju to stand and grab it, clear of solid buildings and of the other stations. The parked cars whose
+// rows (src/vehicles.ts createParked grows a row eastward of each spot, about 400 wide) would run into a station are dropped.
+function station(b:BlockDef,items:[number,number][]):{xs:number[],cars:number[]}{
+ const solids=b.buildings.filter(x=>x.kind!=='tiny').map(x=>[x.x-6,x.x+x.w+6] as [number,number]),W=levelWidth(b),taken:[number,number][]=[];
+ const free=(x:number,w:number)=>x>=200&&x+w<=W-200&&!solids.some(([a,z])=>x+w+80>a&&x-80<z)&&!taken.some(([o,ow])=>x<o+ow+160&&x+w+160>o);
+ const xs=items.map(([x,w])=>{let at=x;for(let d=0;d<W&&!free(at,w);d+=10)at=free(x+d,w)?x+d:free(x-d,w)?x-d:at;taken.push([at,w]);return at;});
+ return {xs,cars:b.cars.filter(c=>!xs.some((x,i)=>c+400>x-40&&c<x+items[i][1]+40))};}
 // Level 1. Start sealed in a BART tunnel pocket, break out at Rincon Park, work north along the promenade (F-line streetcars, the
 // first police cars), cross the first pier (a deck over shallow water: break it, wade, throw a police boat, climb the pilings), push
 // through the pier sheds and the SFPD line, and smash the Ferry Building's clock tower.
@@ -211,11 +220,12 @@ function sfEmbarcadero():BlockDef{
  const halls=[hall(T-380,320,120,'FERRY BUILDING','#c9b99a','ferry',360),hall(T+60,320,120,'','#c9b99a','ferry',360)];
  // Palms along the promenade stand where the generic street junk would have put hot dog carts.
  const palms=b.buildings.map(x=>x.prop==='hotdog'?{...x,prop:'palm',w:Math.round(x.w*.8),h:Math.round(x.h*2.3),color:'#4f7d4a'}:x);
- return {...b,buildings:[...palms,...pilings,...halls],
+ const bs=[...palms,...pilings,...halls],st=station({...b,buildings:bs},[1500,2380].map(x=>[sc(x),VEHICLE_SPECS.tram.w] as [number,number]));
+ return {...b,buildings:bs,streetcars:st.xs,cars:st.cars,
   water:[[sc(WATER[0]),sc(WATER[1]),CONFIG.ground+6]],bridge:{x0:sc(DECK[0]),x1:sc(DECK[1]),spans:7},bands:true,boats:[sc(3500),sc(3900),sc(4150)],
   // BART under the first stretch of promenade: a slam caves it in. The sealed pocket you start in lies west of the line.
   subway:[[sc(520),sc(2000)]],tunnel:'deep',pocket:{x0:sc(POCKET[0]),x1:sc(POCKET[1]),hp:SF.pocketHP},
-  target:{x:sc(T),label:'FERRY BUILDING CLOCK TOWER',art:'clock'},police:true,streetcars:[sc(1500),sc(2380)],pier:{x0:sc(DECK[0]),x1:sc(DECK[1])}};
+  target:{x:sc(T),label:'FERRY BUILDING CLOCK TOWER',art:'clock'},police:true,pier:{x0:sc(DECK[0]),x1:sc(DECK[1])}};
 }
 // Level 2. Foot of Market (trolleybuses under live overhead wires, a police helicopter to throw things up at), the Powell & Market
 // turntable (a cable car, the tourist queue), Stockton Street's subway cave-ins, then Union Square: the SFPD command post (the target)
@@ -224,7 +234,7 @@ function sfUnionSquare():BlockDef{
  const T=4900,GARAGE:[number,number]=[T-620,T+520];
  let b=sfLevel('Union Square',7,'stronghold',
   `s,S,m,_,l,s,_,h,m,_,t,s,r,_,m,s:tank,_,h,t,>2760,s,m,r,_,l,s,m,_,h,m,s,>5480,L,d:store,s,d:store,l:hotel,m,s`,
-  ['VICTORY COLUMN|needle'],{startStage:1,cap:1,tier:1},{target:T,ring:[-780,-600,-420,-220]});
+  ['VICTORY COLUMN|needle'],{startStage:1,cap:1,tier:1},{target:T,ring:[-860,-740,-620,500]});
  // The department stores and hotel round the square, outside the barricade ring, plus the column on the east side of the plaza.
  // The victory column stands on the east side of the plaza (art only: it is a landmark needle).
  const ring:BuildingSpec[]=[];
@@ -233,12 +243,13 @@ function sfUnionSquare():BlockDef{
  const turntable=scaled({x:2400,w:90,h:10,hp:10,value:10,kind:'tiny',label:'',color:'#6a5a48',prop:'turntable'});
  b={...b,buildings:[...b.buildings,turntable],street:[...b.street,sc(2330),sc(2360),sc(2530),sc(2560),sc(2590)].sort((p,q)=>p-q)};
  // The power grid for the trolleybus wires: a substation inside it, a line of poles down lower Market.
- const poles=[220,520,820,1120,1420,1720,2020,2320,2620];
+ const poles=[220,520,820,1120,1420,1720,2020];
  b=powered(b,[[0,2800]],poles);
+ const st=station(b,[...[420,1260,1900].map(x=>[sc(x),VEHICLE_SPECS.bus.w] as [number,number]),[sc(2450),VEHICLE_SPECS.cablecar.w]]);
  return {...b,buildings:[...b.buildings.filter(x=>!(x.role==='substation'&&x.x>sc(2800))),...ring],
   subway:[[sc(2700),sc(3900)]],garage:[[sc(GARAGE[0]),sc(GARAGE[1])]],tunnel:'deep',
   target:{x:sc(T),label:'SFPD COMMAND POST',art:'command'},police:true,
-  trolleys:[sc(420),sc(1260),sc(1900)],cablecars:[sc(2450)],air:[sc(1500),sc(T-300)]};
+  trolleys:st.xs.slice(0,3),cablecars:st.xs.slice(3),cars:st.cars,air:[sc(1500),sc(T-300)]};
 }
 // Level 3. Through the Dragon Gate, up Grant Avenue: wall-to-wall low-rise brick, fireworks shops that go off and start fires, lantern
 // strings that carry fire like fuses, fire trucks that turn up at the blazes. Waverly Place has SWAT and the police helicopter. The
@@ -255,9 +266,10 @@ function sfChinatown():BlockDef{
   `L,${row},${rowB},_,r:brick,s:brick,r:brick,s:brick,m:brick,r:fireworks,>4200,${row},r:brick,s:brick,r:brick,L,s:brick,r:fireworks,s:brick,r:brick`,
   ['DRAGON GATE|arch','CHINATOWN PAGODA|pagoda'],{startStage:1,cap:1,capLift:2,tier:2});
  b=clearClutter(b,[[CRYSTAL-260,CRYSTAL+260]]);
+ const st=station(b,[900,2600,5400].map(x=>[sc(x),VEHICLE_SPECS.firetruck.w] as [number,number]));
  return {...b,
   lanterns:lanternGaps(b),
-  firetrucks:[sc(900),sc(2600),sc(5400)],swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)],crystal:sc(CRYSTAL),guard:true,police:true};
+  firetrucks:st.xs,cars:st.cars,swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)],crystal:sc(CRYSTAL),guard:true,police:true};
 }
 export const SAN_FRANCISCO:BlockDef[]=[
  sfEmbarcadero(),
