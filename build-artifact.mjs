@@ -68,7 +68,7 @@ if(/assets\/[\w.-]+\.png/.test(js))throw Error('A sprite path was not embedded')
 js=js.replaceAll('</script','<\\/script');
 
 const html=await readFile('public/index.html','utf8'),css=await readFile('public/style.css','utf8');
-const title=html.match(/<title>([^<—]*)/)?.[1].trim()||'Kaiju Arcade';
+const title=html.match(/<title>([^<—]*)/)?.[1].trim()||'Kaiju-Geddon!';
 const body=html.match(/<body>([\s\S]*)<\/body>/)[1].replace(/<script[^>]*src=[^>]*><\/script>/g,'').trim();
 if(css.includes('</style'))throw Error('style.css cannot contain </style');
 // Errors only: a red bar with the message, so a blank page in the viewer still says what went wrong.

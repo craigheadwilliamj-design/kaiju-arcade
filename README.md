@@ -1,4 +1,4 @@
-# Kaiju Arcade — M7 QA build / M5 combat pending
+# Kaiju-Geddon! — M7 QA build / M5 combat pending
 
 Browser arcade destruction game, implemented incrementally from the supplied Master Prompt and Final GDD. Current build has a five-city campaign, 25 fixed layouts, military/civilians, local persistence, roster previews, Free Play, intro and ending/gallery flows. **The user requested M6 after M4; M5 was skipped.** All unlocked identities can now be selected with temporary geometric visuals, but they share the existing player combat, stage dimensions/stats and Seismic-style Ultimate preview. Ratings are provisional display data, not implemented per-kaiju tuning. Rivals still use the basic shared M4 preview moveset. Individual kaiju movesets, boss evolution/Ultimates, full knockback interactions and boss introductions remain M5. No claim that M5 is complete.
 
