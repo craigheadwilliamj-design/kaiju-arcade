@@ -75,8 +75,8 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter',scale?:number},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
  guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
- units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
- exits?:{west?:string,east?:string},after?:string,fog?:{from:number,to:number,max:number},headroom?:number,sealions?:number[],kaiban?:{x:number,wade:[number,number]},
+ units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
+ exits?:{west?:string,east?:string},after?:string,fog?:{from:number,to:number,max:number},sealions?:number[],kaiban?:{x:number,wade:[number,number]},
  buses?:number[],elevatedLook?:'park',ramps?:[number,number][],coastguard?:number[]};
 // Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
 // (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
@@ -88,12 +88,12 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `bands`: the water follows the depth bands (src/water.ts: shallows, wading, over your head, drowning); without it water is the old
 // flat wade. `tunnel: 'deep'`: subway pits are RIVER.deepPitDepth deep (San Francisco). `boats`: police boats stationed on the water at
 // these x positions. All opt-in, for the San Francisco campaign; no existing city sets them.
-// Phase 4 (SF Act 2). `units`: extra stationed units at x (join as the camera nears, like `air`/`swat`); `garrison`: replaces a stronghold's
+// Phase 4 (SF Act 2). `units`: extra stationed units at x, with an altitude (px above the street) for aircraft (join as the camera nears, like `air`/`swat`); `garrison`: replaces a stronghold's
 // default garrison near its target (type, offset from the target). `cableLines`: street stretches [x0, x1] with a cable car shuttling on
 // each (src/rolling.ts); the level's powerhouse (role 'powerhouse') sets them all loose when destroyed. `tumble`: x range where parked
 // cars are let go downhill when the camera nears (Lombard Street). `ramps`: the ramp stretches of a terraced hill (for placing lines).
 // `exits`: a there-and-back level's two exits, each naming the level (by name) it leads to; `after`: where a secret level rejoins the route.
-// `fog`: fog overlay {from, to, max} (src/fog.ts). `headroom`: camera rise above the street for very tall levels (default CONFIG.maxCameraY).
+// `fog`: fog overlay {from, to, max} (src/fog.ts).
 // `sealions`: Pier 39 sea lions at x. `kaiban`: Kaiban's silhouette wading in the bay at x over a wade range. `buses`: bus terminal buses under
 // an `elevatedLook: 'park'` roof (the elevated system drawn as a roof park, no trains). `coastguard`: Coast Guard boats on the water at x.
 // `runaway`: x of cable cars (listed in `cablecars`) that come loose rolling when the camera nears (Jefferson Street).
@@ -331,18 +331,17 @@ function sfFinancial():BlockDef{
   `x,n,x,n,_,n,x,n,x,L,_,m:vault,S,_,>4100,x:helipad,n,x,l,_,x,n,>5900,x,n,x,l`,
   ['CORPORATE TOWER|tower'],{startStage:2,cap:2,tier:3},{target:T,ring:[-840,-700,-560,480]});
  b=clearClutter(b,[DECK]);
+ // Two tall towers flank the pyramid close enough that a toppled one lands on it (toppling damage reaches a target).
+ const flank=[5040,5480].map((x,i)=>scaled({...BUILDING_PRESETS.x,x,label:'',color:cityById('sfo').colors[i+1]}));
+ b={...b,buildings:[...b.buildings,...flank]};
  const buses=[2900,3260,3620].map(sc);
  return {...b,elevated:[sc(DECK[0]),sc(DECK[1])],elevatedLook:'park',buses,
   target:{x:sc(T),label:'PYRAMID TOWER',art:'pyramid'},
   // Montgomery Street's tanks, the Guard in front of the vault, helicopters at the helipad towers, the garrison round the pyramid.
   units:[['tank',sc(1000)],['tank',sc(1600)],['soldier',sc(900)],['soldier',sc(1300)],['soldier',sc(1900)],['apc',sc(2300)],['tank',sc(2500)],
-   ['helicopter',sc(4150)],['helicopter',sc(4500)],['helicopter',sc(4900)]],
-  garrison:[['tank',-420],['tank',-250],['soldier',-130],['soldier',-70],['apc',220],['soldier',340],['tank',420]],
-  headroom:HEADROOM};
+   ['helicopter',sc(4150),560],['helicopter',sc(4500),620],['helicopter',sc(4900),500]],
+  garrison:[['tank',-420],['tank',-250],['soldier',-130],['soldier',-70],['apc',220],['soldier',340],['tank',420]],};
 }
-// Camera rise (px above the street) for the tallest level: CONFIG.maxCameraY is 560; the Financial District's towers need a bit more
-// headroom for a Stage 2 climb to a rooftop helipad. Checked in tests/sf-act2.test.ts against the real towers.
-const HEADROOM=760;
 // Level 6. Fisherman's Wharf: a there-and-back level (open layout, an exit at each end). West to east: the main exit (to The Fault), the
 // chocolate factory, Hyde Street Pier, Jefferson Street (start), Pier 45, Pier 39 (with the crystal), the open bay with the Coast Guard
 // cutter, deep water and the Alcatraz exit. Piers are street-level plateaus between water slips (wading at Stage 2); the bay is too deep
@@ -374,7 +373,7 @@ function sfWharf():BlockDef{
   crystal:sc(CRYSTAL),cablecars:[sc(CAR)],runaway:[sc(CAR)],cars:b.cars.filter(c=>c<sc(2400)),
   // Jefferson Street: the Guard and the first tank squad; the runaway cable car starts on the hill at the east end and careens in.
   units:[['soldier',sc(2950)],['soldier',sc(3050)],['apc',sc(3100)],['tank',sc(3620)],['soldier',sc(3640)],['tank',sc(1800)]],
-  sealions:[5020,5110,5440,5500].map(sc),kaiban:{x:sc(3950),wade:[sc(3500),sc(6900)]},
+  sealions:[5020,5110,5440,5500].map(sc),kaiban:{x:sc(3640),wade:[sc(3500),sc(6900)]},
   fog:{from:sc(2200),to:sc(7000),max:.72},
   exits:{west:'The Fault',east:'Alcatraz'}};
 }

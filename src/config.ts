@@ -469,8 +469,8 @@ export const SF = {
 // speed and has `plows` of them in it), a building left standing wrecks it (it is launched on the careening-car rules, so it goes up
 // when it lands). Troops and vehicles in its way take unitDamage and are shoved.
 export const RUNAWAY = {
- gravity:1500,friction:110,maxSpeed:560,stopSpeed:14,shove:90,cableSpeed:46,
- plows:3,plowKeep:.72,impactDamage:120,impactRef:300,impactMin:.3,impactMax:1.6,crashLift:130,crashSpeed:.35,crashDamage:30,unitDamage:30,
+ gravity:1700,friction:90,maxSpeed:560,stopSpeed:14,shove:110,cableSpeed:46,
+ plows:3,plowKeep:.78,impactDamage:200,impactRef:260,impactMin:.3,impactMax:1.6,crashLift:130,crashSpeed:.35,crashDamage:30,unitDamage:30,
  // Parked cars on a level's `tumble` slope (Lombard Street) are let go when the camera comes within tumbleRange; each is nudged by `shove`.
  tumbleRange:1000,tumbleStagger:.18,points:150,
 };
