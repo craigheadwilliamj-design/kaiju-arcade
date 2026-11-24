@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {LEVELS,landmarkShape} from '../src/levels.ts';
 import {CONFIG as C} from '../src/config.ts';
 import {hitParts,solidParts,partHit,roofUnder,topAt,checkParts,circleHits} from '../src/hitbox.ts';
@@ -56,9 +56,9 @@ test('Citicorp stands on a column: Stages 1-2 walk under it, Stage 3 does not fi
 });
 
 test('a landmark is climbed tier by tier and each setback is a roof',async()=>{
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='HBX';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   assert.equal(h.state().mode,'playing');
   const se=h.state().buildings.find((b:any)=>b.landmark&&b.x>h.state().x),tiers=se.parts.filter((p:any)=>p.solid);
   assert.equal(tiers.length,3);

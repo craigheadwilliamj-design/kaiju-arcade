@@ -1,16 +1,19 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {setTerrain,groundAt,bedAt,addMound,moundAt} from '../src/terrain.ts';
 import {CONFIG as C,TWISTS as TW,RIVER} from '../src/config.ts';
-import {emptyPermanent,PERMANENT_KEY} from '../src/campaign.ts';
+import {emptyPermanent,PERMANENT_KEY,CAMPAIGN} from '../src/campaign.ts';import {cityIndexOf} from '../src/levels.ts';
+// The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
+const ORIGINAL=['nyc','mex','par','hkg','tyo'];
 
 test('rubble mounds raise the ground (not the street under them) with sloped sides',()=>{
  setTerrain(null);addMound(100,200,30,.3);assert.equal(moundAt(150),30);assert.equal(groundAt(150),C.ground-30);assert.equal(bedAt(150),C.ground,'the street is still under it');
  assert.ok(moundAt(105)>0&&moundAt(105)<30,'sloped sides');assert.equal(moundAt(250),0);setTerrain(null);assert.equal(moundAt(150),0,'a new block clears them');
 });
 
-async function free(city:number,block=0){const p=emptyPermanent();p.conquered=[0,1,2,3,4];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
- h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value=String(city);h.node('#free-boss').value='Mogurodon';h.node('#free-block').value=String(block);h.click('#free-start');
+// city: one of the original five, in their old order (0 New York .. 4 Tokyo).
+async function free(city:number,block=0){const p=emptyPermanent();p.conquered=[...CAMPAIGN];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+ h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value=String(cityIndexOf(ORIGINAL[city]));h.node('#free-boss').value='Mogurodon';h.node('#free-block').value=String(block);h.click('#free-start');
  for(let n=0;n<20;n++)h.step();return h;}
 const slam=(h:any)=>{h.tap('Space');h.step(16);h.down('KeyS');h.step(36);h.up('KeyS');h.step(30);};
 
@@ -24,9 +27,9 @@ test('real loop: a collapsed building leaves a climbable rubble heap',async()=>{
 });
 
 test('real loop: Tlézcatl\'s flame washed against a wall sets the building alight, and the fire eats it',async()=>{
- const {KAIJU}=await import('../src/campaign.ts');const p=emptyPermanent();p.unlocked=[...KAIJU];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+ const {KAIJU}=await import('../src/campaign.ts');const p=emptyPermanent();p.unlocked=[...KAIJU];const h=await bootCampaign(.75,{kaiju:'Tlézcatl',permanent:p});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='FIR';h.callbacks.get('#initials:input')!();h.click('#launch');h.click(`#kaiju-${KAIJU.indexOf('Tlézcatl')}`);h.step(2);h.click('#confirm-kaiju');h.click('#begin-city');h.step(20);
+  h.step(20);
   // Walk up to the first building east of the plaza, step back a little, and breathe fire down at the street in front of its wall.
   const s=h.state(),t=s.buildings.filter((b:any)=>b.kind!=='tiny'&&b.x>s.x).sort((a:any,b:any)=>a.x-b.x)[0];
   for(let n=0;n<300&&h.state().x+h.state().width<t.x-60;n++){h.down('KeyD');h.step(1);}h.up('KeyD');

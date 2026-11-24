@@ -1,16 +1,16 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
-import {LEVELS,DRILL_BLOCK} from '../src/levels.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
+import {LEVELS,DRILL_BLOCK,cityIndexOf} from '../src/levels.ts';
 import {CONFIG as C,RESPONSE as RS,ELEVATED as EL,TUNNEL as TN} from '../src/config.ts';
-import {emptyPermanent,PERMANENT_KEY} from '../src/campaign.ts';
+import {emptyPermanent,PERMANENT_KEY,CAMPAIGN} from '../src/campaign.ts';
 
 test('data: hydrants line district streets; Tokyo’s open blocks have an elevated railway',()=>{
- assert.ok(LEVELS[0][0].buildings.some(b=>b.role==='hydrant'),'Lower Manhattan has hydrants');
+ assert.ok(LEVELS[cityIndexOf('nyc')][0].buildings.some(b=>b.role==='hydrant'),'Lower Manhattan has hydrants');
  for(const b of LEVELS.flat())for(const x of b.buildings.filter(x=>x.role==='hydrant'))assert.equal(x.kind,'tiny');
- assert.deepEqual(LEVELS[4].map(b=>!!b.elevated),[true,true,false,true,false]);assert.ok(LEVELS.slice(0,4).flat().every(b=>!b.elevated));
+ assert.deepEqual(LEVELS[cityIndexOf('tyo')].map(b=>!!b.elevated),[true,true,false,true,false]);assert.ok(LEVELS.filter((_,i)=>i!==cityIndexOf('tyo')).flat().every(b=>!b.elevated));
 });
 
-async function campaign(){const h=await bootGame(.75);h.click('#new');h.click('#skip-intro');h.node('#initials').value='RSP';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');return h;}
+async function campaign(){const h=await bootCampaign(.75,{kaiju:'Mogurodon'});return h;}
 const hold=(h:any,code:string,frames:number)=>{h.down(code);h.step(frames);h.up(code);};
 
 test('real loop: the city responds in stages as the block falls (block 1 stops at martial law)',async()=>{
@@ -50,8 +50,8 @@ test('real loop: at Stage 3 a shoulder barge bursts a walk-through tunnel (Comba
  }finally{h.release();h.cleanup();}
 });
 
-async function tokyo(){const p=emptyPermanent();p.conquered=[0,1,2,3,4];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
- h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value='4';h.node('#free-boss').value='Mogurodon';h.node('#free-block').value='0';h.click('#free-start');for(let n=0;n<20;n++)h.step();return h;}
+async function tokyo(){const p=emptyPermanent();p.conquered=[...CAMPAIGN];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+ h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value=String(cityIndexOf('tyo'));h.node('#free-boss').value='Mogurodon';h.node('#free-block').value='0';h.click('#free-start');for(let n=0;n<20;n++)h.step();return h;}
 
 test('real loop: Tokyo’s elevated line: jump onto it, a train smashes into the kaiju and falls off; the span can be pounded down',async()=>{
  const h=await tokyo();

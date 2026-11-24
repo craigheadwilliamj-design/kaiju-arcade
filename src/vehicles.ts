@@ -5,7 +5,7 @@ import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL a
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
 // Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
-export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat';
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck';
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
@@ -16,6 +16,10 @@ export const VEHICLE_SPECS={
  car:{w:48,h:23,mass:1,points:80},
  van:{w:62,h:29,mass:1.6,points:120},
  bus:{w:94,h:35,mass:2.6,points:200},
+ // San Francisco Act 1: an F-line streetcar, a cable car and a fire truck. Grabbable and throwable on the bus's rules.
+ tram:{w:128,h:38,mass:3.2,points:260},
+ cablecar:{w:78,h:36,mass:2.2,points:220},
+ firetruck:{w:88,h:37,mass:3,points:240},
  // Props pay out when lifted (kill points / building value), so points here are 0.
  patrol:{w:U.patrol.w,h:U.patrol.h,mass:U.patrol.mass,points:0},
  apc:{w:U.apc.w,h:U.apc.h,mass:U.apc.mass,points:0},
@@ -34,8 +38,8 @@ export const VEHICLE_SPECS={
 } as const;
 // Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
 // Road vehicles: what explodes when thrown and wrecks with a bang.
-export const EXPLOSIVE=new Set<VehicleKind>(['car','van','bus','patrol','apc','tank','artillery','train','boat']);
-export const CIVILIAN=new Set<VehicleKind>(['car','van','bus']);
+export const EXPLOSIVE=new Set<VehicleKind>(['car','van','bus','patrol','apc','tank','artillery','train','boat','tram','cablecar','firetruck']);
+export const CIVILIAN=new Set<VehicleKind>(['car','van','bus','tram','cablecar','firetruck']);
 const IMPACT:Partial<Record<VehicleKind,number>>={lamp:1.6};
 export function impact(v:Vehicle){return IMPACT[v.kind]??mass(v);}
 let COLORS=['#b16d5b','#70958e','#a09b65','#7d84a6','#c1a06a'],TAXI='';
@@ -109,3 +113,13 @@ export function tickFlying(v:Vehicle,dt:number,worldWidth:number){
    const a=((v.angle%(Math.PI*2))+Math.PI*2)%(Math.PI*2);v.angle=a>Math.PI/2&&a<Math.PI*1.5?Math.PI:0;return true;}}
  return false;
 }
+
+// Authored vehicles stationed at x positions (streetcars, cable cars, fire trucks, trolleybuses, cars on a garage floor). `firstId` must
+// not collide with the parked cars (1..), lamps (500..) or poles (800..): levels use 2000 and up.
+export function createFleet(kind:VehicleKind,xs:number[],firstId:number,color:string,label=''):Vehicle[]{
+ return xs.map((x,i)=>{const v=make(firstId+i,kind,x,0,color);v.label=label;return v;});}
+// Parked cars standing on whatever floor is under them (a garage pit): a mix of cars and vans in the city's colours.
+export function createGarageCars(x0:number,x1:number,n:number,firstId:number):Vehicle[]{
+ const out:Vehicle[]=[],step=(x1-x0)/n;for(let i=0;i<n;i++){const kind:VehicleKind=i%4===3?'van':'car',w=VEHICLE_SPECS[kind].w,x=Math.round(x0+i*step+Math.max(4,(step-w)/2));
+  if(x+w>x1)break;out.push(make(firstId+i,kind,x,(i%2) as 0|1,COLORS[i%COLORS.length]));}
+ return out;}

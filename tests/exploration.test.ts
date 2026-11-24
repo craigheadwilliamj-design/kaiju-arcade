@@ -1,13 +1,15 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
-import {LEVELS,DRILL_BLOCK,levelWidth} from '../src/levels.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
+import {LEVELS,DRILL_BLOCK,levelWidth,cityIndexOf} from '../src/levels.ts';
 import {CONFIG} from '../src/config.ts';
+// The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
+const ORIGINAL=['nyc','mex','par','hkg','tyo'];
 
 test('open districts in every city: mid-map start plaza, named landmarks, hidden caches; drills keep the packed wall',()=>{
- assert.deepEqual(LEVELS[0].filter(b=>b.start!==undefined).map(b=>b.name),['Lower Manhattan','Midtown Corridor','East River Offensive']);
+ assert.deepEqual(LEVELS[cityIndexOf('nyc')].filter(b=>b.start!==undefined).map(b=>b.name),['Lower Manhattan','Midtown Corridor','East River Offensive']);
  // Every city: blocks 1, 2 and 4 are open layouts.
- for(const city of LEVELS)assert.deepEqual(city.map(b=>b.start!==undefined),[true,true,false,true,false]);
- const open=LEVELS.flat().filter(b=>b.start!==undefined);
+ for(const city of ORIGINAL.map(id=>LEVELS[cityIndexOf(id)]))assert.deepEqual(city.map(b=>b.start!==undefined),[true,true,false,true,false]);
+ const open=ORIGINAL.flatMap(id=>LEVELS[cityIndexOf(id)]).filter(b=>b.start!==undefined);
  for(const b of open){
   assert.equal(b.kind,'district');assert.equal(b.start,levelWidth(b)/2);
   for(const x of b.buildings)if(x.kind!=='tiny')assert.ok(x.x>=b.start!+80||x.x+x.w<=b.start!-80,`${b.name}: start plaza clear`);
@@ -23,9 +25,9 @@ test('open districts in every city: mid-map start plaza, named landmarks, hidden
 });
 
 test('open district: roam east then west, leave by the west exit once the quota is met',async()=>{
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='WST';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   assert.equal(h.state().mode,'playing');const start=h.state();
   assert.ok(Math.abs(start.x+start.width/2-start.worldWidth/2)<1,'spawns at the block centre');
   assert.equal(start.buildings.filter((b:any)=>b.landmark).length,2);

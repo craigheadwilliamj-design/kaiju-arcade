@@ -1,11 +1,10 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';import {emptyPermanent,KAIJU,PERMANENT_KEY} from '../src/campaign.ts';import {COMBAT as B} from '../src/config.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';import {emptyPermanent,KAIJU,PERMANENT_KEY} from '../src/campaign.ts';import {COMBAT as B} from '../src/config.ts';
 import {moveList} from '../src/presentation.ts';
 
 async function belialCity(){
- const p=emptyPermanent();p.unlocked=[...KAIJU];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
- h.click('#new');h.click('#skip-intro');h.node('#initials').value='BEL';h.callbacks.get('#initials:input')!();h.click('#launch');
- h.click(`#kaiju-${KAIJU.indexOf('Belial')}`);h.step(2);h.click('#confirm-kaiju');h.click('#begin-city');assert.equal(h.state().activeKaiju,'Belial');
+ const p=emptyPermanent();p.unlocked=[...KAIJU];const h=await bootCampaign(.75,{kaiju:'Belial',permanent:p});
+ assert.equal(h.state().activeKaiju,'Belial');
  return h;
 }
 const until=(h:any,f:()=>boolean,max=300)=>{for(let n=0;n<max&&!f();n++)h.step();return f();};

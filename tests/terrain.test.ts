@@ -1,8 +1,8 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {setTerrain,groundAt,groundUnder,profileFrom,slopeAt} from '../src/terrain.ts';
 import {createBuildings,wearFloor,floorAt,floorHeightOf} from '../src/rules.ts';
-import {LEVELS,DRILL_BLOCK} from '../src/levels.ts';
+import {LEVELS,DRILL_BLOCK,cityIndexOf} from '../src/levels.ts';
 import {CONFIG as C,FLOORS} from '../src/config.ts';
 
 test('terrain: flat by default, piecewise-linear profiles, highest point under a footprint',()=>{
@@ -16,14 +16,14 @@ test('terrain: flat by default, piecewise-linear profiles, highest point under a
 });
 
 test('Midtown has a sunken start plaza and a raised terrace; buildings stay on flat ground',()=>{
- const b=LEVELS[0][1];assert.equal(b.name,'Midtown Corridor');assert.ok(b.ground);setTerrain(b.ground!);
+ const b=LEVELS[cityIndexOf('nyc')][1];assert.equal(b.name,'Midtown Corridor');assert.ok(b.ground);setTerrain(b.ground!);
  assert.ok(groundAt(b.start!)>C.ground+20,'the start plaza is sunken');
  const bs=createBuildings(b.buildings);const raised=bs.filter(x=>x.base<C.ground);assert.ok(raised.length>=3,'a cluster stands on the terrace');
  for(const x of bs)if(x.kind!=='tiny')assert.equal(groundAt(x.x),groundAt(x.x+x.w),`${x.x}: footprint is flat`);
- assert.deepEqual(LEVELS.flat().filter(x=>x.ground).map(x=>x.name),['Midtown Corridor','East River Offensive','Kowloon Streets','Nathan Road','Victoria Assault']);
+ assert.deepEqual(LEVELS.flat().filter(x=>x.ground).map(x=>x.name),['Embarcadero','Midtown Corridor','East River Offensive','Kowloon Streets','Nathan Road','Victoria Assault']);
  // Hong Kong's open blocks climb a hillside; every building still stands on flat ground.
  // Street junk may sit on a gentle slope.
- for(const hk of LEVELS[3].filter(x=>x.ground)){setTerrain(hk.ground!);const bs=createBuildings(hk.buildings);assert.ok(Math.min(...bs.map(x=>x.base))<C.ground-100,`${hk.name} climbs`);
+ for(const hk of LEVELS[cityIndexOf('hkg')].filter(x=>x.ground)){setTerrain(hk.ground!);const bs=createBuildings(hk.buildings);assert.ok(Math.min(...bs.map(x=>x.base))<C.ground-100,`${hk.name} climbs`);
   for(const x of bs.filter(x=>!x.prop))assert.equal(groundAt(x.x+1),groundAt(x.x+x.w-1),`${hk.name} ${x.x}: flat footprint`);}
  setTerrain(b.ground!);assert.ok(!DRILL_BLOCK.ground,'drills stay flat');
  setTerrain(null);
@@ -59,9 +59,9 @@ test('real loop: undercutting a tower pancakes floors on the way down, and it st
 });
 
 test('real loop: Midtown spawns in the sunken plaza and walks up out of it',async()=>{
- const h=await bootGame(.75);
+ const h=await bootCampaign(.75,{kaiju:'Mogurodon'});
  try{
-  h.click('#new');h.click('#skip-intro');h.node('#initials').value='HIL';h.callbacks.get('#initials:input')!();h.click('#launch');h.click('#confirm-kaiju');h.click('#begin-city');
+  
   const hold=(code:string,frames:number)=>{h.down(code);h.step(frames);h.up(code);};
   const sweep=(fwd:string,back:string,limit:number)=>{for(let n=0;n<limit&&h.state().mode==='playing';n++){
    if(h.state().ultimate>=100&&h.state().transform===0)h.tap('KeyU');hold(fwd,8);h.tap('KeyK');h.step(40);hold(back,1);h.tap('KeyK');h.step(40);hold(fwd,3);}};
