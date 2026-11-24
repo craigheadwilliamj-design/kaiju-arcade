@@ -1,4 +1,4 @@
-# Kaiju Arcade — Phase 7 QA report
+# Kaiju-Geddon! — Phase 7 QA report
 
 8 November 2026 · Build 0.7.0
 

@@ -43,7 +43,7 @@ let activeKaiju='Mogurodon',selectedKaiju='Mogurodon',pendingInitials='AAA',free
 let freeChoice:FreePlayChoice={kaiju:'Mogurodon',city:0,boss:'Mogurodon'};
 let introElapsed=0,introCount=0,introIndex=-1,endingName='Mogurodon',endingSource:'gallery'|'completion'='gallery';
 function bossName(){return session==='freeplay'?freeChoice.boss:CITIES[cityIndex].boss;}
-function ultimateLabel(){return activeKaiju==='Mogurodon'?'SEISMIC RUPTURE':activeKaiju==='Kaiban'?'STAMPEDE':activeKaiju==='Tlézcatl'?'ERUPTION':activeKaiju==='Belial'?'ACID DELUGE':'ULTIMATE PREVIEW';}
+function ultimateLabel(){return activeKaiju==='Mogurodon'?'SEISMIC RUPTURE':activeKaiju==='Kaiban'?'STAMPEDE':activeKaiju==='Tlézcatl'?'ERUPTION':activeKaiju==='Belial'?'ACID DELUGE':activeKaiju==='Myrmex'?'THE SWARM':'ULTIMATE PREVIEW';}
 const DISPLAY_KEY='kaiju-arcade:display:v1';let display={integer:false,shake:true};
 try{const saved=JSON.parse(storage?.getItem(DISPLAY_KEY)||'null');if(saved?.version===1)display={integer:!!saved.integer,shake:saved.shake!==false};}catch{}
 function applyDisplay(){const frame=document.querySelector<HTMLElement>('#frame')!;if(display.integer){const space=Math.max(0,Math.min(1160,(window.innerWidth||960)-40)),factor=Math.floor(space/960);frame.style.width=factor>=1?`${960*factor}px`:'';}else frame.style.width='';}
@@ -72,9 +72,19 @@ let rocks:Rock[]=[];
 // burning pools on the street (x = left edge, w wide; `hits` = last burn tick per target).
 // Eruption globs and pools carry `ult`: their hits are Ultimate damage (no meter gain, no hitstop) and an Eruption glob only collides
 // once it is falling.
-type Glob={x:number,y:number,vx:number,vy:number,life:number,damage:number,size:number,ult?:boolean,grav?:number};
-type Pool={x:number,w:number,life:number,max:number,damage:number,hits:Map<object,number>,ult?:boolean,fire?:boolean,acid?:boolean,tick?:number,size?:number};
+type Glob={x:number,y:number,vx:number,vy:number,life:number,damage:number,size:number,ult?:boolean,grav?:number,venom?:number};
+type Pool={x:number,w:number,life:number,max:number,damage:number,hits:Map<object,number>,ult?:boolean,fire?:boolean,acid?:boolean,venom?:boolean,tick?:number,size?:number};
 let globs:Glob[]=[],pools:Pool[]=[];
+// Myrmex's Venom Bomb: `brew` while L is held (seconds brewed), then `spit` waits for the throw's impact frame. The bomb rides the
+// glob machinery (`venom` = its charge 0-1) and bursts into a poison `cloud`; venom puddles ride the pool machinery. `poison` holds
+// every poisoned troop or rival: seconds left and the last damage tick.
+type Cloud={x:number,y:number,r:number,life:number,max:number,vx:number};
+let brew:{t:number}|null=null,spit:{t:number,dir:number,charge:number}|null=null,clouds:Cloud[]=[];const poison=new Map<object,{t:number,tick:number,ult?:boolean}>();
+// Myrmex's Ultimate: `swarm` while it charges (released once the drones are out); `wasps` are the drones, which outlive it. `target` is
+// what each one is chasing, `sting` its cooldown, `seed` its weave.
+type Wasp={x:number,y:number,vx:number,vy:number,life:number,sting:number,target:any,seed:number};
+let swarm:{released:boolean}|null=null,wasps:Wasp[]=[];
+function poisonTarget(o:object,ult=false){const p=poison.get(o);if(p){p.t=MV.poisonSeconds;if(ult)p.ult=true;}else poison.set(o,{t:MV.poisonSeconds,tick:time,ult});}
 // Flame Jet afterburn: a track of fire spots up the wall where the flame touched (x = wall face, y = height above the street, snapped
 // to jetWallCell rows), each burning `t` more seconds. Damage ticks once per building however many spots it has (`burnHits`).
 type Burn={b:typeof buildings[number],x:number,y:number,t:number,size:number,side:number};
@@ -90,6 +100,7 @@ let jet:Jet|null=null,jetFuel=1,jetLocked=false;
 type Spew={pts:number[][],land:number[]|null,landOn:'street'|'building'|'roof'|null};
 let spewState:Spew={pts:[],land:null,landOn:null};
 const isBelial=()=>activeKaiju==='Belial';
+const isMyrmex=()=>activeKaiju==='Myrmex';
 // Corrosion per target (building, unit or the rival): stacks, seconds of stream contact so far, seconds left, last damage tick.
 // `ult`: laid on by the Acid Deluge (or its puddles), so its ticks are Ultimate damage; any contact with the ordinary stream clears it.
 type Corr={stacks:number,expo:number,t:number,tick:number,ult:boolean};
@@ -150,18 +161,24 @@ let roll:{dir:number,t:number,t0:number,power:number,bounced:boolean,hits:Set<ob
 const bargeHits=new Map<object,number>();
 // Run-up for barges: distance covered running one way on the ground; a wall hit spends it, so pushing into a wall can't repeat.
 let runUp=0,runDir=0;
-function jumpVelocity(){return C.jumpVelocity*scale(combat)**MV.jumpStageExp;}
+function jumpVelocity(){return C.jumpVelocity*scale(combat)**MV.jumpStageExp*(isMyrmex()?MV.myrmexJump:1);}
+// Myrmex's wing-beat jumps left in this flight (refilled on the ground or a wall).
+let airJumps=0;
+// Gravity multiplier: Myrmex floats (lighter going up, much lighter coming down) except in a slam dive or roll.
+function gravityScale(){return isMyrmex()&&!dive&&!roll?(player.vy<0?MV.myrmexRiseGravity:MV.myrmexFallGravity):1;}
 function currentAnim():[string,number]{
  if(attack)return [attack.anim,attack.t];
  // A form with an ultSettle strip plays it over the last stretch of the Ultimate, so it comes down from the Ultimate pose and lands on
  // its idle exactly as the Ultimate ends.
  if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultSettle',combat.stage)){const d=animDuration(activeKaiju,'ultSettle',combat.stage);if(combat.ultimateTime<=d)return ['ultSettle',d-combat.ultimateTime];}
- if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar',combat.stage)){const pre=eruption?B.eruptCharge:deluge?B.delugeCharge:0,el=B.ultimateDuration-combat.ultimateTime-pre;if(el<0)return ['ultCharge',el+pre];const roar=animDuration(activeKaiju,'ultRoar',combat.stage);return el<roar?['ultRoar',el]:['ultPound',el-roar];}
+ if(combat.ultimateTime>0&&hasAnim(activeKaiju,'ultRoar',combat.stage)){const pre=eruption?B.eruptCharge:deluge?B.delugeCharge:swarm?B.swarmCharge:0,el=B.ultimateDuration-combat.ultimateTime-pre;if(el<0)return ['ultCharge',el+pre];const roar=animDuration(activeKaiju,'ultRoar',combat.stage);return el<roar?['ultRoar',el]:['ultPound',el-roar];}
 // Diving: the form's dive strip (time since the dive began) when it has one, else the jumpAir loop.
  if(dive&&hasAnim(activeKaiju,'dive',combat.stage))return ['dive',time-dive.t0];
  if(roll&&hasAnim(activeKaiju,'dive',combat.stage))return ['dive',time-roll.t0];
  if(combat.charging){const rear=animDuration(activeKaiju,'heavyRear',combat.stage);return heavyT<rear?['heavyRear',heavyT]:['heavyHold',heavyT-rear];}
  if(jet)return jetPose(jet);
+ // Myrmex brewing a Venom Bomb: the brew strip, then its hold loop until L is released.
+ if(brew){const r=animDuration(activeKaiju,'spitBrew',combat.stage);return brew.t<r?['spitBrew',brew.t]:['spitHold',brew.t-r];}
  const intro=loopIntro?animDuration(activeKaiju,loopIntro,combat.stage):0;
  return loopIntro&&loopT<intro?[loopIntro,loopT]:[loopAnim,loopT-intro];
 }
@@ -461,7 +478,7 @@ function settingsScreen(){mode='settings';panel(`<div class="eyebrow">DISPLAY / 
 }
 async function toggleFullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('#frame')!.requestFullscreen();}catch{action='FULLSCREEN UNAVAILABLE';actionTime=2;const status=document.querySelector('#display-status');if(status)status.textContent='Fullscreen is not available here. Browser-fit display remains active.';}}
 
-function title(){mode='title';keys.clear();panel(`<div class="eyebrow">KAIJU ARCADE / M7</div><h1>FIRST<br><span>IMPACT.</span></h1><div class="menu-grid"><button id="new" class="primary">NEW CAMPAIGN</button><button id="continue" ${checkpoint?'':'disabled'}>CONTINUE CAMPAIGN</button><button id="freeplay">FREE PLAY</button><button id="scores">LOCAL TOP 10</button><button id="settings">SETTINGS</button><button id="gallery">ENDINGS GALLERY</button></div><button id="drills" class="text-button">COMBAT DRILLS</button><p class="note">5 CITIES · 25 FIXED BLOCKS · Keyboard required<br>Phase 5 pending · Shared combat / temporary art<br>${storageOK?'Progress saves locally between cities.':'Local storage unavailable or corrupt. Progress may not survive closing.'}</p>`);
+function title(){mode='title';keys.clear();panel(`<div class="eyebrow">KAIJU-GEDDON! / M7</div><h1>FIRST<br><span>IMPACT.</span></h1><div class="menu-grid"><button id="new" class="primary">NEW CAMPAIGN</button><button id="continue" ${checkpoint?'':'disabled'}>CONTINUE CAMPAIGN</button><button id="freeplay">FREE PLAY</button><button id="scores">LOCAL TOP 10</button><button id="settings">SETTINGS</button><button id="gallery">ENDINGS GALLERY</button></div><button id="drills" class="text-button">COMBAT DRILLS</button><p class="note">5 CITIES · 25 FIXED BLOCKS · Keyboard required<br>Phase 5 pending · Shared combat / temporary art<br>${storageOK?'Progress saves locally between cities.':'Local storage unavailable or corrupt. Progress may not survive closing.'}</p>`);
  document.querySelector('#new')!.addEventListener('click',()=>{if(checkpoint)confirmAction('A new campaign replaces the unfinished run. Permanent unlocks and scores remain.',beginIntro,title);else beginIntro();});
  document.querySelector('#continue')!.addEventListener('click',()=>{if(!checkpoint)return;session='campaign';run=resumeRun(checkpoint);activeKaiju=run.kaiju;score=0;combat=createCombat();citySettled=false;cityIndex=run.city;blockIndex=0;progressScreen();});
  document.querySelector('#scores')!.addEventListener('click',scoresScreen);document.querySelector('#drills')!.addEventListener('click',drills);document.querySelector('#freeplay')!.addEventListener('click',freePlayScreen);document.querySelector('#gallery')!.addEventListener('click',galleryScreen);document.querySelector('#settings')!.addEventListener('click',settingsScreen);
@@ -482,7 +499,7 @@ function loadBlock(drill=false){
  block=drill?DRILL_BLOCK:LEVELS[cityIndex][blockIndex];spans=makeSpans(block);setTerrain(block.ground??null,block.water??[],spans);trains=[];wrecked=0;tunnels=new Set();rails=makeRails(block);railTrains=[];railTimer=EL.trainEvery*.4;blazes=new Map();mounded=new Set();exposure=new Map();alert=0;bombQueue=[];bombTimer=0;reinforced=new Set();geysers=[];trainTimer=R.trainEvery*.5;pitted=new WeakSet();worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:blockIndex+1,cityIndex);resetMilitaryFeel();population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];chunks=[];hitstop=0;echo=false;lastFreeze=-9;setVehicleLook(CITIES[cityIndex].cars,CITIES[cityIndex].taxi);vehicles=[...createParked(block.cars),...createLamps(worldWidth,500).filter(l=>!(block.poles??[]).some(x=>Math.abs(x-l.x)<70))];
   rampage=createRampage();rampFlash=0;wires=[];splashes=[];fired=new Set();ultKill=new Set();
   subs=substations(buildings,block.grids);power=gridPowered(subs);roofs=createRoofProps(buildings,block.grids);roofOf=new Map(roofs.map(p=>[p.b,p]));gridOfB=new Map(buildings.map(b=>[b,gridOf(b.x+b.w/2,block.grids)]));
-  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
+  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];spit=null;brew=null;clouds=[];poison.clear();swarm=null;wasps=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
  cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
  clingTo=null;clingPart=null;grabLock=false;isClimbing=false;climbDir=0;runLatch=false;dashT=0;airRun=false;running=false;bargeT=0;grabWait=0;dive=null;roll=null;runUp=0;runDir=0;bargeHits.clear();oldWidth=bodyWidth();oldHeight=C.playerHeight*scale(combat);player={x:block.start===undefined?110:block.start-oldWidth/2,y:groundAt(block.start===undefined?110:block.start-oldWidth/2)-oldHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
  camera=Math.max(0,Math.min(worldWidth-viewW(),player.x+oldWidth/2-viewW()*.34));
@@ -805,6 +822,27 @@ function launchTremor(){if(!tremor)return;const dir=tremor.dir;tremor=null;if(co
  waves.push({x,vx:dir*B.tremorSpeed,life,max:life,damage:B.tremorDamage*damageMultiplier(combat),hits:new Set(),ult:false,size:B.tremorSize*grow,knockback:B.tremorKnockback*(combat.superTime>0?B.superKnockback:1)});
  shake=Math.max(shake,3+grow);burst(x,groundAt(x)-6,'#c9a77c',10);spawnChunks(x,groundAt(x)-10,dir,'#8d7a66',3);}
 // Debris Shotgun: a fan from flat-and-fast to high-and-lobbed, flung from the tusks low in front of the body.
+// Venom Bomb: the bomb leaves the stinger tip (the throw strip's `mouth` on its impact frame) in a forward arc, faster and bigger the
+// longer it brewed; W lobs it higher.
+function launchSpit(){if(!spit)return;const {dir,charge}=spit;spit=null;if(combat.dead)return;
+ const s=scale(combat),g=Math.sqrt(s),w=bodyWidth(),h=bodyHeight(),m=holdPoint(activeKaiju,'spitThrow',animImpact(activeKaiju,'spitThrow',combat.stage),combat.stage,'mouth')??[28,-118];
+ const x=player.x+w/2+dir*m[0]*s,y=player.y+h+C.spriteDrop+m[1]*s,a=(MV.bombAngle+(keys.has('KeyW')?MV.bombLob:0))*Math.PI/180,v=MV.bombSpeed*(.6+.4*charge)*g,[z0,z1]=MV.bombSize;
+ globs.push({x,y,vx:dir*Math.cos(a)*v,vy:-Math.sin(a)*v,grav:MV.bombGravity*g,life:4,damage:MV.bombDamage*(.5+.5*charge)*damageMultiplier(combat),size:(z0+(z1-z0)*charge)*g,venom:Math.max(.001,charge)});
+ burst(x,y,'#c04bff',6);}
+// The bomb bursts into a poison cloud (and, on or near the street, a venom puddle).
+function burstVenom(x:number,y:number,charge:number,dir:number){const g=Math.sqrt(scale(combat)),[r0,r1]=MV.cloudRadius;
+ clouds.push({x,y:Math.min(y,groundAt(x)-20),r:(r0+(r1-r0)*charge)*g,life:MV.cloudSeconds,max:MV.cloudSeconds,vx:dir*MV.cloudDrift});if(clouds.length>MV.cloudMax)clouds.shift();
+ if(y>=groundAt(x)-30){addPool(x,MV.spitPool*g*(.7+.6*charge),MV.spitPoolDamage*damageMultiplier(combat),false,MV.spitPoolSeconds);pools[pools.length-1].venom=true;}
+ burst(x,y,'#c04bff',14);burst(x,y,'#f0b8ff',6);shake=Math.max(shake,2+charge*2);}
+// Poison clouds drift and swell, and poison every troop (aircraft too) and the rival inside them.
+function tickClouds(dt:number){for(const c of clouds){c.life-=dt;c.x+=c.vx*dt;const r=c.r*(1+MV.cloudGrow*(1-c.life/c.max));
+  for(const u of military.units)if(u.hp>0&&circleRect(c.x,c.y,r,u))poisonTarget(u);if(rival&&!rival.dead&&circleRect(c.x,c.y,r,rival))poisonTarget(rival);}
+ clouds=clouds.filter(c=>c.life>0);}
+// Poison: a damage tick every poisonTick until it wears off or the target dies.
+function tickPoison(dt:number){const dm=damageMultiplier(combat);
+ for(const [o,p] of poison){p.t-=dt;const u=o as any,dead=o===rival?rival!.dead:u.hp<=0;if(p.t<=0||dead){poison.delete(o);continue;}
+  if(time-p.tick>=MV.poisonTick){p.tick=time;if(o===rival)strikeRival(MV.poisonDamage*dm,0,1,!!p.ult);else hitUnit(military,u,MV.poisonDamage*dm,'player',0,1,!!p.ult,p.ult?'ultimate':'ranged');
+   if(particles.length<C.particleCap)particles.push({x:u.x+Math.random()*u.w,y:u.y+Math.random()*u.h*.5,vx:0,vy:-30,life:.4,color:'#b23cf0',size:2});}}}
 function launchDebris(){if(!debris)return;const dir=debris.dir;debris=null;if(combat.dead)return;
  const w=bodyWidth(),h=bodyHeight(),grow=Math.sqrt(scale(combat)),x=player.x+w/2+dir*w*.55,y=player.y+h*.6,[a0,a1]=B.debrisAngle,[s0,s1]=B.debrisSpeed,n=B.debrisCount;
  for(let i=0;i<n;i++){const t=n>1?i/(n-1):.5,a=(a0+(a1-a0)*t+(Math.random()-.5)*6)*Math.PI/180,speed=(s1-(s1-s0)*t)*grow*(.92+Math.random()*.16);
@@ -895,6 +933,9 @@ function slamLand(){
    rocks.push({x:cx+dir*w*.25,y:feet-6*s,vx:dir*Math.cos(a)*sp,vy:-Math.sin(a)*sp,life:B.debrisLife*grow*1.3,damage:MV.meteorDamage*damageMultiplier(combat)*power,knockback:B.debrisKnockback,spin:Math.random()*6,size:(6+Math.random()*5)*grow});}}
  // Tlézcatl's Magma Dive: the crash splashes molten globs both ways and, on the street, leaves a lava pool under him.
  if(activeKaiju==='Tlézcatl')splashLava(cx,feet,w*.3,power,MV.lavaGlobs,street?w*MV.lavaPoolWidth:0,14);
+ // Myrmex's Sting Dive: the stinger stabs in and the impact bursts into a poison cloud, bigger the further he fell (and, on the
+ // street, a venom puddle).
+ if(isMyrmex())burstVenom(cx,feet-10,Math.min(1,(power-1)/MV.diveFallMax),player.face);
  // Belial's Acid Pounce: the impact bursts his gland. Everything the slam struck is soaked to pounceStacks of corrosion (one more on
  // a pounceFullPower drop), applied after the hit so the slam itself isn't boosted; on the street it leaves a row of acid puddles.
  if(isBelial())acidPounce(struck,cx,feet,w,power,street);
@@ -902,7 +943,7 @@ function slamLand(){
  shake=Math.max(shake,6+power*4);freeze(.05+power*.02);
  // A form's own slamLand starts at impact; otherwise borrow heavySlam from its crash frames.
  attack=hasAnim(activeKaiju,'slamLand',combat.stage)?{anim:'slamLand',t:0}:{anim:hasAnim(activeKaiju,'heavySlam',combat.stage)?'heavySlam':'jumpLand',t:hasAnim(activeKaiju,'heavySlam',combat.stage)?animDuration(activeKaiju,'heavySlam',combat.stage)*.35:0};
- combat.cooldown=Math.max(combat.cooldown,MV.diveCooldown);action=broke?'SLAM · CRASHED THROUGH':(activeKaiju==='Kaiban'?'METEOR DROP':activeKaiju==='Tlézcatl'?'MAGMA DIVE':isBelial()?'ACID POUNCE':power>1.8?'MEGA SLAM':'SLAM');actionTime=.9;
+ combat.cooldown=Math.max(combat.cooldown,MV.diveCooldown);action=broke?'SLAM · CRASHED THROUGH':(activeKaiju==='Kaiban'?'METEOR DROP':activeKaiju==='Tlézcatl'?'MAGMA DIVE':isBelial()?'ACID POUNCE':isMyrmex()?'STING DIVE':power>1.8?'MEGA SLAM':'SLAM');actionTime=.9;
  // A cannonball form keeps rolling if a direction was touched at any point in the dive (street or rooftop).
  const steer=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0)||dive.dir;
  if(!broke&&steer&&canRoll()){roll={dir:steer,t:MV.rollSeconds,t0:dive.t0,power,bounced:false,hits:new Set()};player.face=steer;attack=null;action='CANNONBALL';actionTime=1;}
@@ -924,8 +965,9 @@ function splashLava(x0:number,feet:number,spread:number,power:number,n:number,po
 function addPool(cx:number,w:number,damage:number,ult=false,life=MV.lavaPoolSeconds){pools.push({x:cx-w/2,w,life,max:life,damage,hits:new Map(),ult});
  const mine=pools.filter(p=>!p.fire&&!!p.ult===ult);if(mine.length>(ult?24:12))pools.splice(pools.indexOf(mine[0]),1);}
 // Lava pools burn everything standing in them on the street (troops, cars, newsstands, growths, the rival, the objective).
-function tickPools(dt:number){for(const p of pools){p.life-=dt;const zh=16*(p.size??1),zone={x:p.x,y:groundAt(p.x)-zh,w:p.w,h:zh+2},kb=p.fire||p.acid?8:20,every=p.tick??MV.lavaPoolTick;
+function tickPools(dt:number){for(const p of pools){p.life-=dt;const zh=16*(p.size??1),zone={x:p.x,y:groundAt(p.x)-zh,w:p.w,h:zh+2},kb=p.fire||p.acid||p.venom?8:20,every=p.tick??MV.lavaPoolTick;
   if(p.acid){for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&overlaps(zone,u))corrode(u,dt,!!p.ult);if(rival&&!rival.dead&&overlaps(zone,rival))corrode(rival,dt,!!p.ult);}
+  if(p.venom){for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&overlaps(zone,u))poisonTarget(u);if(rival&&!rival.dead&&overlaps(zone,rival))poisonTarget(rival);}
   const tick=(o:object,f:()=>void)=>{if(time-(p.hits.get(o)??-9)<every)return;p.hits.set(o,time);f();};
   for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&overlaps(zone,u))tick(u,()=>hitUnit(military,u,p.damage,'player',kb,Math.sign(u.x+u.w/2-(p.x+p.w/2))||1,p.ult,p.ult?'ultimate':'ranged'));
   for(const v of vehicles)if(loose(v)&&!(v.calm>0)&&overlaps(zone,vehicleBox(v)))tick(v,()=>puntVehicle(v,p.damage*.3,Math.sign(v.x+v.w/2-(p.x+p.w/2))||1,p.ult));
@@ -984,6 +1026,8 @@ function performStrike(strike:Strike|null){
  // Airborne or clinging there is no street to scoop, so he fires the shared single shot like everyone else.
  if(kind==='ranged'&&activeKaiju==='Kaiban'&&player.grounded&&!clingTo){combat.rangedCooldown=B.debrisCooldown;
   debris={t:animImpact(activeKaiju,player.crouched?'rangedCrouch':'rangedStand',combat.stage),dir:player.face};if(debris.t<=0)launchDebris();return;}
+ // Myrmex: L starts brewing a Venom Bomb (thrown on release), on the ground, in the air or on a wall.
+ if(kind==='ranged'&&isMyrmex()){if(!brew&&!spit){attack=null;brew={t:0};}return;}
  if(kind==='ranged'){if(shots.length<B.rangedMax)shots.push({x:player.x+w/2+player.face*w*.52,y,vx:player.face*C.projectileSpeed,life:1.8,damage,knockback:strike.knockback});return;}
  const reach=(C.meleeReach+(kind==='heavy'?20:0))*scale(combat);
  const box={x:player.face===1?player.x+w-10:player.x-reach+10,y:player.y-8,w:reach,h:h+16};
@@ -1131,7 +1175,40 @@ function useUltimate(){if(!activateUltimate(combat))return;attack=null;tremor=nu
  eruptLandings=[];eruption=activeKaiju==='Tlézcatl'?{blasted:false,spat:0,flash:0,boom:0}:null;
  if(eruption)ultimateTimer+=B.eruptCharge;
  delugeLandings=[];deluge=isBelial()?{spout:false,spoutT:0,spoutLen:0,queue:[],spawned:0,mx:0,my:0}:null;
- if(deluge)ultimateTimer+=B.delugeCharge;}
+ if(deluge)ultimateTimer+=B.delugeCharge;
+ swarm=isMyrmex()?{released:false}:null;}
+// The Swarm: planted. He hunches for swarmCharge seconds while his abdomen swells (shudder, purple motes), rears up (the roar strip)
+// and on its impact frame his abdomen bursts open and the drones pour out of it (the roar strip's `mouth`), scattering before they
+// pick targets.
+function tickSwarm(dt:number,w:number,h:number){const sw=swarm!;if(combat.ultimateTime<=0){swarm=null;return;}if(sw.released)return;
+ const el=B.ultimateDuration-combat.ultimateTime,p=Math.min(1,el/B.swarmCharge),g=Math.sqrt(scale(combat));shake=Math.max(shake,1+p*3);
+ if(particles.length<C.particleCap&&Math.random()<dt*(6+18*p))particles.push({x:player.x+w/2-player.face*w*.25+(Math.random()-.5)*w*.4,y:player.y+h*.55+(Math.random()-.5)*h*.3,vx:(Math.random()-.5)*30,vy:-20-Math.random()*40,life:.3+Math.random()*.3,color:Math.random()<.5?'#c04bff':'#f0b8ff',size:2});
+ if(el<B.swarmCharge+animImpact(activeKaiju,'ultRoar',combat.stage))return;
+ sw.released=true;const s=scale(combat),m=holdPoint(activeKaiju,'ultRoar',animImpact(activeKaiju,'ultRoar',combat.stage),combat.stage,'mouth')??[-23,-63];
+ const x=player.x+w/2+player.face*m[0]*s,y=player.y+h+C.spriteDrop+m[1]*s,v=B.swarmSpeed*g;shake=Math.max(shake,10);burst(x,y,'#c04bff',18);burst(x,y,'#ffffff',8);
+ for(let i=0;i<B.swarmCount;i++){const a=-Math.PI*(.05+.9*Math.random()),sp=v*(.6+Math.random()*.8);
+  wasps.push({x,y,vx:Math.cos(a)*sp*(Math.random()<.5?-1:1),vy:Math.sin(a)*sp,life:B.swarmLife*(.8+Math.random()*.4),sting:.3+Math.random()*.4,target:null,seed:Math.random()*100});}}
+// Drones chase the nearest troop, aircraft or the rival in range (else the nearest building), weaving as they fly, and sting what
+// they reach: Ultimate damage plus poison for anything alive, a chunk of damage for a building.
+function tickWasps(dt:number){const g=Math.sqrt(scale(combat)),v=B.swarmSpeed*g,R=B.swarmRange*g,dm=damageMultiplier(combat);
+ for(const wp of wasps){wp.life-=dt;wp.sting-=dt;
+  const alive=(o:any)=>o&&(o===rival?!rival!.dead:o.base!==undefined?o.hpNow>0:o.hp>0);
+  if(!alive(wp.target)||Math.random()<dt*.5){let best:any=null,bd=R*R;
+   for(const u of military.units)if(u.hp>0){const d=(u.x+u.w/2-wp.x)**2+(u.y+u.h/2-wp.y)**2;if(d<bd){bd=d;best=u;}}
+   if(rival&&!rival.dead){const d=(rival.x+rival.w/2-wp.x)**2+(rival.y+rival.h/2-wp.y)**2;if(d<bd){bd=d;best=rival;}}
+   if(!best){bd=R*R;for(const b of buildings)if(solid(b)&&b.hpNow>0){const cx=Math.max(b.x,Math.min(wp.x,b.x+b.w)),cy=Math.max(b.base-b.h,Math.min(wp.y,b.base));const d=(cx-wp.x)**2+(cy-wp.y)**2;if(d<bd){bd=d;best=b;}}}
+   wp.target=best;}
+  const t=wp.target;let tx=wp.x,ty=wp.y-40;
+  if(t){if(t.base!==undefined){tx=Math.max(t.x,Math.min(wp.x,t.x+t.w));ty=Math.max(t.base-t.h,Math.min(wp.y,t.base-8));}else{tx=t.x+t.w/2;ty=t.y+t.h*.4;}}
+  const dx=tx-wp.x,dy=ty-wp.y,d=Math.hypot(dx,dy)||1,wob=Math.sin(time*9+wp.seed)*.6;
+  const ax=(dx/d*Math.cos(wob)-dy/d*Math.sin(wob))*v,ay=(dy/d*Math.cos(wob)+dx/d*Math.sin(wob))*v;
+  wp.vx+=(ax-wp.vx)*Math.min(1,dt*3.5);wp.vy+=(ay-wp.vy)*Math.min(1,dt*3.5);wp.x+=wp.vx*dt;wp.y+=wp.vy*dt;
+  if(t&&d<14*g&&wp.sting<=0){wp.sting=B.swarmSting*(.8+Math.random()*.4);const dir=Math.sign(wp.vx)||1;
+   if(t===rival){strikeRival(B.swarmDamage*dm,10,dir,true);poisonTarget(rival!,true);}
+   else if(t.base!==undefined)hit(t,B.swarmBuilding*dm,true,dir,{x:wp.x,y:wp.y},true);
+   else{hitUnit(military,t,B.swarmDamage*dm,'player',10,dir,true,'ultimate');poisonTarget(t,true);}
+   wp.vx=-wp.vx*.8;wp.vy=-Math.abs(wp.vy)*.6-60;if(particles.length<C.particleCap)particles.push({x:wp.x,y:wp.y,vx:0,vy:-20,life:.25,color:'#c04bff',size:2});}}
+ wasps=wasps.filter(w=>w.life>0&&w.x>-50&&w.x<worldWidth+50);}
 // Acid Deluge: planted. He heaves for delugeCharge seconds while the gland swells, rears up (the roar strip) and on its impact frame
 // retches a geyser of acid straight up out of the jaws (mouth point from the strip). It spouts until the settle strip starts. Every
 // drop of the rain is scheduled the moment it goes up: spread evenly over the spout's length, delayed by delugeDelay (the acid going
@@ -1273,6 +1350,9 @@ window.addEventListener('keydown',e=>{
  if(k==='Space'&&clingTo&&canAct(combat)&&!combat.charging){const away=player.face>0?keys.has('KeyA'):keys.has('KeyD');clingTo=null;clingPart=null;grabLock=true;grabWait=MV.grabCooldown;player.vy=-jumpVelocity();player.grounded=false;
   if(away){airRun=true;player.face=-player.face;player.vy*=MV.runJumpLift;}}
  else if(k==='Space'&&player.grounded&&!jet&&!keys.has('KeyS')&&canAct(combat)&&!combat.charging){if(roll){roll=null;running=true;}airRun=running;player.vy=-jumpVelocity()*(running?MV.runJumpLift:1);player.grounded=false;}
+ // Myrmex: Space in the air spends a wing-beat jump (the flap strip plays over the air loop).
+ else if(k==='Space'&&isMyrmex()&&!player.grounded&&!clingTo&&!dive&&!roll&&!jet&&!held&&airJumps>0&&canAct(combat)&&!combat.charging){airJumps--;player.vy=-jumpVelocity()*MV.myrmexAirJump;
+  if(loopAnim==='jumpAir'&&!attack){loopIntro=animDuration(activeKaiju,'jumpFlap',combat.stage)>0?'jumpFlap':'jumpRise';loopT=0;}action=airJumps?'WING BEAT':'WING BEAT · LAST';actionTime=.5;}
  // S in the air: slam dive.
  if(k==='KeyS'&&!player.grounded&&!clingTo&&startDive())return;
  if((k==='KeyA'||k==='KeyD')&&dive)dive.dir=k==='KeyD'?1:-1;
@@ -1297,6 +1377,11 @@ function update(dt:number){
  if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim,combat.stage))attack=null;}
  if(tremor){tremor.t-=dt;if(tremor.t<=0)launchTremor();}
  if(debris){debris.t-=dt;if(debris.t<=0)launchDebris();}
+ // Venom Bomb: brew while L is held; releasing throws it (a hit or anything that stops him acting drops the brew).
+ if(brew){if(!canAct(combat)||combat.dead)brew=null;else if(keys.has('KeyL'))brew.t+=dt;
+  else{const charge=Math.min(1,brew.t/MV.cloudCharge);brew=null;attack={anim:'spitThrow',t:0};combat.rangedCooldown=MV.spitCooldown;
+   spit={t:animImpact(activeKaiju,'spitThrow',combat.stage),dir:player.face,charge};if(spit.t<=0)launchSpit();}}
+ if(spit){spit.t-=dt;if(spit.t<=0)launchSpit();}
  if(jet)tickJet(dt);
  if(!jet||jet.phase!=='on'){const bel=isBelial();jetFuel=Math.min(1,jetFuel+(bel?B.vomitRegen:B.jetRegen)*dt);if(jetLocked&&jetFuel>=(bel?B.vomitRelight:B.jetRelight))jetLocked=false;}
  heavyT=combat.charging?heavyT+dt:0;
@@ -1316,7 +1401,7 @@ function update(dt:number){
  if(roll&&player.grounded&&steer===-roll.dir)endRoll(false);
  running=!roll&&!jet&&!!steer&&canAct(combat)&&!player.crouched&&!clingTo&&!combat.charging&&!dive&&(player.grounded?keys.has('ShiftLeft')||keys.has('ShiftRight')||runLatch:airRun);
  const gait=dive?MV.diveSteer:running?(dashT>0&&player.grounded?MV.dashSpeed:MV.runSpeed):1;
- let dx=roll?roll.dir*C.moveSpeed*MV.rollSpeed*Math.sqrt(scale(combat))*dt:!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*(jet?(isBelial()?B.vomitSlow:B.jetSlow):1)*(submerged(player.x+bodyWidth()/2)?R.wadeSlow:1)*dt;
+ let dx=roll?roll.dir*C.moveSpeed*MV.rollSpeed*Math.sqrt(scale(combat))*dt:!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*(jet?(isBelial()?B.vomitSlow:B.jetSlow):1)*(brew?MV.cloudSlow:1)*(submerged(player.x+bodyWidth()/2)?R.wadeSlow:1)*dt;
  if(dx)player.face=dx>0?1:-1;
  const inputDx=dx;
  const kb=combat.transform>0||combat.ultimateTime>0?0:combat.knockback*dt;
@@ -1365,7 +1450,9 @@ function update(dt:number){
  climbDir=(keys.has('KeyS')?1:0)-(keys.has('KeyW')||into&&!keys.has('KeyS')?1:0);climbing=true;player.vy=climbDir*C.climbSpeed;player.y+=player.vy*dt;
  if(climbDir<0&&player.y+h<=roof+8&&mantle(b,p,w,h)){climbing=false;prevBottom=roof-.01;}
  }
- if(!climbing){player.vy+=C.gravity*dt;player.y+=player.vy*dt;}
+ if(!climbing){player.vy+=C.gravity*gravityScale()*dt;
+  if(isMyrmex()&&!dive&&!roll&&player.vy>0)player.vy=Math.min(player.vy,(keys.has('Space')?MV.myrmexGlideMax:MV.myrmexFallMax)*Math.sqrt(scale(combat)));
+  player.y+=player.vy*dt;}
  isClimbing=climbing;
  }
  // Raised parts (a body on stilts, an arch's lintel) have an underside: rising into it stops at the ceiling.
@@ -1376,6 +1463,7 @@ function update(dt:number){
  // The elevated railway is a walkway: land on a standing span from above.
  if(!climbing&&player.vy>=0)for(const r of rails){if(!r.alive)continue;if(player.x+w>r.x0&&player.x<r.x1&&prevBottom<=r.y+1&&player.y+h>=r.y){player.y=r.y-h-.01;player.vy=0;player.grounded=true;}}
  {const g=groundAt(player.x+w/2);if(player.y+h>=g||wasGrounded&&!climbing&&player.vy>=0&&player.y+h>=g-Math.max(10,Math.abs(dx)*1.6+4)&&!buildings.some(b=>solid(b)&&roofUnder(b,player.x,player.x+w,player.y+h,2))){player.y=g-h;player.vy=0;player.grounded=true;}}
+ if(player.grounded||clingTo)airJumps=MV.myrmexAirJumps;
  if(player.grounded){clingTo=null;clingPart=null;isClimbing=false;airRun=false;if(dive){if(slamLand())player.vy=MV.diveSpeed*Math.sqrt(scale(combat));else dive=null;}}
  // Dive trail: dust streaming up off the plunging body.
  if(dive&&particles.length<C.particleCap)particles.push({x:player.x+Math.random()*w,y:player.y+Math.random()*h*.4,vx:(Math.random()-.5)*40,vy:-(160+Math.random()*120),life:.25,color:'#e8d8ab',size:2+Math.floor(Math.random()*3)});
@@ -1400,18 +1488,21 @@ function update(dt:number){
  rocks=rocks.filter(r=>r.life>0&&r.x>0&&r.x<worldWidth);
  // Magma Dive globs: ballistic like the rocks; a glob that reaches the street splats into a small lava pool.
  for(const g of globs){const ox=g.x,oy=g.y;g.vy+=(g.grav??B.debrisGravity)*dt;g.x+=g.vx*dt;g.y+=g.vy*dt;g.life-=dt;
- if((!g.ult||g.vy>0)&&projectileStrike(ox,oy,g.x,g.y,g.damage,g.ult?90:40,Math.sign(g.vx)||1,g.y,g.ult,g.ult?{x:g.x,y:g.y}:undefined)){g.life=0;burst(g.x,g.y,'#ff8a1f',g.ult?8:4);if(g.ult)eruptLandings.push(g.x);}
+ if((!g.ult||g.vy>0)&&projectileStrike(ox,oy,g.x,g.y,g.damage,g.ult?90:g.venom?30:40,Math.sign(g.vx)||1,g.y,g.ult,g.ult?{x:g.x,y:g.y}:undefined)){g.life=0;if(g.venom)burstVenom(g.x,g.y,g.venom,Math.sign(g.vx)||1);
+  else burst(g.x,g.y,'#ff8a1f',g.ult?8:4);if(g.ult)eruptLandings.push(g.x);}
  if(g.life>0&&g.y>=groundAt(g.x)-2){g.life=0;const grow=Math.sqrt(scale(combat)),dm=damageMultiplier(combat);
   if(g.ult){eruptLandings.push(g.x);addPool(g.x,B.eruptPool*grow,B.eruptPoolDamage*dm,true,B.eruptPoolSeconds);burst(g.x,groundAt(g.x)-3,'#ffb13b',8);shake=Math.max(shake,3);}
+  else if(g.venom)burstVenom(g.x,groundAt(g.x)-4,g.venom,Math.sign(g.vx)||1);
   else{addPool(g.x,MV.lavaGlobPool*grow,MV.lavaPoolDamage*dm);burst(g.x,groundAt(g.x)-3,'#ff8a1f',4);}}}
- globs=globs.filter(g=>g.life>0&&g.x>0&&g.x<worldWidth);tickRain(dt);tickPools(dt);tickBurns(dt);tickCorrosion(dt);echo=false;
+ globs=globs.filter(g=>g.life>0&&g.x>0&&g.x<worldWidth);tickRain(dt);tickPools(dt);tickBurns(dt);tickCorrosion(dt);tickPoison(dt);tickClouds(dt);echo=false;
 
  shots=shots.filter(s=>s.life>0&&s.x>0&&s.x<worldWidth);
  if(combat.ultimateTime<=0){stampede=null;eruption=null;}
  if(deluge)tickDeluge(dt,w,h);
+ if(swarm)tickSwarm(dt,w,h);if(wasps.length)tickWasps(dt);
  if(combat.ultimateTime>0&&stampede)tickStampede(dt,w,h);
  else if(combat.ultimateTime>0&&eruption)tickEruption(dt,w,h);
- else if(combat.ultimateTime>0&&!deluge&&!isBelial()){ultimateTimer-=dt;if(ultimateTimer<=0){ultimateTimer+=B.ultimatePulse;
+ else if(combat.ultimateTime>0&&!deluge&&!isBelial()&&!isMyrmex()){ultimateTimer-=dt;if(ultimateTimer<=0){ultimateTimer+=B.ultimatePulse;
  for(const direction of [-1,1])waves.push({x:player.x+w/2,vx:direction*B.ultimateSpeed,life:B.ultimateRange/B.ultimateSpeed,max:B.ultimateRange/B.ultimateSpeed,damage:B.ultimateDamage*damageMultiplier(combat),hits:new Set(),ult:true,size:1,knockback:280});shake=Math.max(shake,4);}}
  echo=true;
  for(const wave of waves){const old=wave.x,z=wave.size;wave.x+=wave.vx*dt;wave.life-=dt;for(const b of buildings)if(b.hpNow>0&&!wave.hits.has(b)&&hitParts(b).some(p=>p.y+p.h>=b.base-40*z&&Math.max(old,wave.x)+22*z>=p.x&&Math.min(old,wave.x)-22*z<=p.x+p.w)){wave.hits.add(b);hit(b,wave.damage,wave.ult,Math.sign(wave.vx)||1,{x:wave.x,y:groundAt(wave.x)-18*z});}for(const g of growths)if(g.hp>0&&!wave.hits.has(g)&&Math.abs(g.x-wave.x)<40*z){wave.hits.add(g);hitGrowth(g,wave.damage);}
@@ -2070,7 +2161,10 @@ function render(){
  for(const p of pools){if(!p.acid)continue;const f=Math.min(1,p.life/p.max*2),w=p.w*(.55+.45*f),x=p.x+(p.w-w)/2-camera;if(x>viewW()+40||x+w<-40)continue;
   rect(x-2,groundAt(p.x+p.w/2)-2,w+4,4,'#33410f');rect(x,groundAt(p.x+p.w/2)-3,w,3,f>.5?'#8fbf22':'#6b8c1a');rect(x+w*.2,groundAt(p.x+p.w/2)-3,w*.5,1,'#c8f03a');
   for(let k=0;k<2;k++){const bx=x+w*((k*.47+time*.13+p.x*.01)%1),ph=(time*3+k*1.7+p.x*.05)%1;if(f>.25&&ph<.6)rect(bx,groundAt(p.x+p.w/2)-4-ph*4,2,2,'#e6ff8a');}}
- for(const p of pools){if(p.fire||p.acid)continue;const f=Math.min(1,p.life/p.max*2.2),w=p.w*(.6+.4*f),x=p.x+(p.w-w)/2-camera,fl=Math.sin(time*18+p.x)>0;
+ for(const p of pools){if(!p.venom)continue;const f=Math.min(1,p.life/p.max*2),w=p.w*(.55+.45*f),x=p.x+(p.w-w)/2-camera;if(x>viewW()+40||x+w<-40)continue;
+  rect(x-2,groundAt(p.x+p.w/2)-2,w+4,4,'#2c0f3a');rect(x,groundAt(p.x+p.w/2)-3,w,3,f>.5?'#a12ee0':'#7a22a8');rect(x+w*.2,groundAt(p.x+p.w/2)-3,w*.5,1,'#e08cff');
+  for(let k=0;k<2;k++){const bx=x+w*((k*.47+time*.13+p.x*.01)%1),ph=(time*3+k*1.7+p.x*.05)%1;if(f>.25&&ph<.6)rect(bx,groundAt(p.x+p.w/2)-4-ph*4,2,2,'#f0b8ff');}}
+ for(const p of pools){if(p.fire||p.acid||p.venom)continue;const f=Math.min(1,p.life/p.max*2.2),w=p.w*(.6+.4*f),x=p.x+(p.w-w)/2-camera,fl=Math.sin(time*18+p.x)>0;
   rect(x-3,groundAt(p.x+p.w/2)-3,w+6,5,'#3a1a14');rect(x,groundAt(p.x+p.w/2)-4,w,4,f>.5?'#e8401a':'#a8341c');rect(x+w*.15,groundAt(p.x+p.w/2)-4,w*.7,2,fl?'#ffb13b':'#ff8a1f');
   if(f>.4)rect(x+w*.35,groundAt(p.x+p.w/2)-5,w*.3,2,'#ffe08a');}
  for(const wave of waves){const x=wave.x-camera;
@@ -2092,7 +2186,18 @@ function render(){
  // Debris Shotgun rocks: tumbling slabs of street with a dark rim.
  for(const r of rocks){rect(r.x-camera-Math.sign(r.vx)*r.size*2.2-r.size*.6,r.y-r.size*.3-r.vy*.012,r.size*1.2,r.size*.6,'#c9a77c66');const sx=r.x-camera,z=r.size,c=Math.cos(r.spin),n=Math.sin(r.spin),pts=[[-1,-.6],[.7,-1],[1,.4],[-.3,.85]],at=(k:number)=>pts.map(([px,py])=>[sx+(px*c-py*n)*z*k,r.y+(px*n+py*c)*z*k]);poly(at(1.3),'#3b2f28');poly(at(1),'#9a8670');}
  // Magma Dive globs: a dark crust round a molten core with a short trailing streak.
- for(const g of globs){const sx=g.x-camera,z=g.size;rect(sx-g.vx*.03-z*.5,g.y-g.vy*.03-z*.5,z,z,'#ff8a1f66');rect(sx-z,g.y-z,z*2,z*2,'#5a1d12');rect(sx-z*.7,g.y-z*.7,z*1.4,z*1.4,'#ff6a1a');rect(sx-z*.35,g.y-z*.45,z*.7,z*.6,'#ffd34d');}
+ // Swarm drones: a red body with a dark head, a purple sting at the rear and flickering pale wings.
+ for(const wp of wasps){const sx=wp.x-camera,f=wp.vx>=0?1:-1,fl=Math.sin(time*60+wp.seed)>0;if(sx<-10||sx>viewW()+10)continue;
+  ctx.globalAlpha=Math.min(1,wp.life*2);rect(sx-3,wp.y-1,6,3,'#c2261b');rect(sx+f*3-(f>0?0:1),wp.y-1,2,2,'#3a0a0a');rect(sx-f*4-(f>0?1:0),wp.y,2,1,'#c04bff');
+  rect(sx-2,wp.y-(fl?4:3),4,fl?2:1,'#ffe9c8');ctx.globalAlpha=1;}
+ // Poison clouds: soft purple puffs that churn, swell and thin out as they fade.
+ for(const c of clouds){const sx=c.x-camera,f=Math.min(1,c.life/c.max*2.5),r=c.r*(1+MV.cloudGrow*(1-c.life/c.max));if(sx+r<-20||sx-r>viewW()+20)continue;
+  for(let k=0;k<7;k++){const a=k*0.9+time*.35+c.x*.01,d=r*(.25+.35*((k*37)%10)/10),pr=r*(.45+.15*Math.sin(time*1.7+k));
+   ctx.globalAlpha=.16*f;ctx.fillStyle=k%2?'#9b2fd6':'#c25cf2';ctx.beginPath();ctx.arc(sx+Math.cos(a)*d,c.y+Math.sin(a)*d*.55,pr,0,Math.PI*2);ctx.fill();}
+  ctx.globalAlpha=.22*f;ctx.fillStyle='#e7a6ff';ctx.beginPath();ctx.arc(sx,c.y,r*.35,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+ for(const g of globs){const sx=g.x-camera,z=g.size;
+  if(g.venom){rect(sx-g.vx*.03-z*.5,g.y-g.vy*.03-z*.5,z,z,'#b23cf066');rect(sx-z,g.y-z,z*2,z*2,'#3a0f52');rect(sx-z*.7,g.y-z*.7,z*1.4,z*1.4,'#a12ee0');rect(sx-z*.35,g.y-z*.45,z*.7,z*.6,'#f0b8ff');continue;}
+  rect(sx-g.vx*.03-z*.5,g.y-g.vy*.03-z*.5,z,z,'#ff8a1f66');rect(sx-z,g.y-z,z*2,z*2,'#5a1d12');rect(sx-z*.7,g.y-z*.7,z*1.4,z*1.4,'#ff6a1a');rect(sx-z*.35,g.y-z*.45,z*.7,z*.6,'#ffd34d');}
  for(const s of shots){const sx=s.x-camera,d=Math.sign(s.vx)||1;rect(Math.min(sx-26*d,sx-14*d),s.y-1,12,2,'#efe2ba55');poly([[sx+16*d,s.y],[sx-4*d,s.y-3],[sx-14*d,s.y-2],[sx-14*d,s.y+2],[sx-4*d,s.y+3]],'#efe2ba');poly([[sx-14*d,s.y-2],[sx-9*d,s.y-2.5],[sx-9*d,s.y+2.5],[sx-14*d,s.y+2]],'#6a2f45');}
  for(const p of particles)rect(p.x-camera,p.y,p.size,p.size,p.color);
  drawRain();drawFireballs();drawIncoming();
@@ -2105,4 +2210,4 @@ function render(){
 let last=-1;function frame(now:number){if(last<0)last=now;const dt=Math.max(0,Math.min((now-last)/1000,C.maxDelta));last=now;update(dt);render();requestAnimationFrame(frame);}title();requestAnimationFrame(frame);
 // Read-only inspection hook for smoke tests; no gameplay mutations.
 loadPresentationArt();window.addEventListener('resize',applyDisplay);applyDisplay();
-Object.defineProperty(window,'kaijuDebug',{get:()=>({rails:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,alive:r.alive,hp:r.hp})),railTrains:railTrains.length,tunnels:tunnels.size,alert,geysers:geysers.length,bombs:bombQueue.length,militaryTier:military.tier,ground:(x:number)=>groundAt(x),street:(x:number)=>bedAt(x),blazeList:[...blazes.keys()].map(b=>buildings.indexOf(b as typeof buildings[number])),blazes:blazes.size,mounds:moundList().length,sunk:buildings.filter(b=>b.sink>0).length,swaying:buildings.filter(b=>b.sway>0).length,damageTaken:combat.damageTaken,spans:spans.map(s=>({x0:s.x0,x1:s.x1,hp:s.hp,alive:s.alive})),pits:pitList().map(p=>({...p})),trains:trains.filter(t=>!t.crashed).length,trainsWrecked:wrecked,trainWrecks:trains.filter(t=>t.crashed).length,trainList:trains.map(t=>({x:t.x,dir:t.dir,hp:t.hp,crashed:t.crashed})),cutOff:{...military.cutOff},inWater:submerged(player.x+bodyWidth()/2),rampage:{heat:rampage.heat,mult:rampageMult(rampage),level:rampageLevel(rampage)},power:[...power],roofs:roofs.map(p=>({kind:p.kind,hp:p.hp,dead:p.dead,call:p.call,x:roofBox(p).x,y:roofBox(p).y})),wires:wires.length,poles:poles.map(v=>({x:v.x,upright:upright(v),snapped:!!v.snapped})),creaking:buildings.filter(b=>b.creak>0).length,roles:buildings.filter(b=>b.role).map(b=>({role:b.role,x:b.x,hp:b.hpNow})),barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({role:b.role,prop:b.prop,floors:b.floors.length,base:b.base,x:b.x,y:b.base-b.h,w:b.w,h:b.h,parts:hitParts(b).map(p=>({x:p.x,y:p.y,w:p.w,h:p.h,solid:p.solid})),hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire&&!p.acid).length,acidPools:pools.filter(p=>p.acid).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,delugeSpout:!!deluge?.spout&&deluge.spoutT<deluge.spoutLen,delugeActive:!!deluge,rainDrops:rain.length,delugeSpawned:deluge?.spawned??0,delugeLandings:[...delugeLandings],delugePools:pools.filter(p=>p.acid&&p.ult).length,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,spewLand:spewState.land,spewLandOn:spewState.landOn,spewPts:spewState.pts.length,corrosion:buildings.map(b=>corr.get(b)?.stacks??0),unitCorrosion:military.units.map(u=>corr.get(u)?.stacks??0),jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length})});
+Object.defineProperty(window,'kaijuDebug',{get:()=>({rails:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,alive:r.alive,hp:r.hp})),railTrains:railTrains.length,tunnels:tunnels.size,alert,geysers:geysers.length,bombs:bombQueue.length,militaryTier:military.tier,ground:(x:number)=>groundAt(x),street:(x:number)=>bedAt(x),blazeList:[...blazes.keys()].map(b=>buildings.indexOf(b as typeof buildings[number])),blazes:blazes.size,mounds:moundList().length,sunk:buildings.filter(b=>b.sink>0).length,swaying:buildings.filter(b=>b.sway>0).length,damageTaken:combat.damageTaken,spans:spans.map(s=>({x0:s.x0,x1:s.x1,hp:s.hp,alive:s.alive})),pits:pitList().map(p=>({...p})),trains:trains.filter(t=>!t.crashed).length,trainsWrecked:wrecked,trainWrecks:trains.filter(t=>t.crashed).length,trainList:trains.map(t=>({x:t.x,dir:t.dir,hp:t.hp,crashed:t.crashed})),cutOff:{...military.cutOff},inWater:submerged(player.x+bodyWidth()/2),rampage:{heat:rampage.heat,mult:rampageMult(rampage),level:rampageLevel(rampage)},power:[...power],roofs:roofs.map(p=>({kind:p.kind,hp:p.hp,dead:p.dead,call:p.call,x:roofBox(p).x,y:roofBox(p).y})),wires:wires.length,poles:poles.map(v=>({x:v.x,upright:upright(v),snapped:!!v.snapped})),creaking:buildings.filter(b=>b.creak>0).length,roles:buildings.filter(b=>b.role).map(b=>({role:b.role,x:b.x,hp:b.hpNow})),barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],airJumps,brewing:brew?brew.t:null,swarmReleased:swarm?swarm.released:null,wasps:wasps.length,waspTargets:wasps.filter(w=>w.target&&w.target.hp!==undefined&&!w.target.base).length,face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({role:b.role,prop:b.prop,floors:b.floors.length,base:b.base,x:b.x,y:b.base-b.h,w:b.w,h:b.h,parts:hitParts(b).map(p=>({x:p.x,y:p.y,w:p.w,h:p.h,solid:p.solid})),hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire&&!p.acid&&!p.venom).length,venomGlobs:globs.filter(g=>g.venom).length,venomGlobY:globs.filter(g=>g.venom).map(g=>g.y),venomGlobX:globs.filter(g=>g.venom).map(g=>g.x),venomPools:pools.filter(p=>p.venom).length,clouds:clouds.map(c=>({x:c.x,y:c.y,r:c.r})),venomPoolX:pools.filter(p=>p.venom).map(p=>p.x+p.w/2),poisoned:poison.size,acidPools:pools.filter(p=>p.acid).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,delugeSpout:!!deluge?.spout&&deluge.spoutT<deluge.spoutLen,delugeActive:!!deluge,rainDrops:rain.length,delugeSpawned:deluge?.spawned??0,delugeLandings:[...delugeLandings],delugePools:pools.filter(p=>p.acid&&p.ult).length,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,spewLand:spewState.land,spewLandOn:spewState.landOn,spewPts:spewState.pts.length,corrosion:buildings.map(b=>corr.get(b)?.stacks??0),unitCorrosion:military.units.map(u=>corr.get(u)?.stacks??0),jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length})});
