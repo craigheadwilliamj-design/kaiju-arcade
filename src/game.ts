@@ -2401,6 +2401,14 @@ function drawSwarm(){const g=Math.sqrt(scale(combat)),C2=ctx as any;
   if(t<.3){const z=(1-t/.3);C2.globalCompositeOperation='lighter';ctx.globalAlpha=.7*z;ctx.fillStyle='#c04bff';ctx.beginPath();ctx.arc(sx,hive.y,70*g*(.6+t*3),0,Math.PI*2);ctx.fill();
    ctx.globalAlpha=.9*z;ctx.fillStyle='#fff2ff';ctx.beginPath();ctx.arc(sx,hive.y,28*g*(.6+t*3),0,Math.PI*2);ctx.fill();C2.globalCompositeOperation='source-over';}
   ctx.globalAlpha=1;}
+ // A cloud of little bugs buzzes round him while the swarm is out (looks only), thinning out as the drones die off: each one
+ // circles his body on its own tilted, wobbling orbit, some clockwise and some not, its wings a pale flicker.
+ if(wasps.length){const f=Math.min(1,wasps.length/B.swarmCount),w=bodyWidth(),h=bodyHeight(),cx=player.x-camera+w/2,cy=player.y+h*.5,n=Math.round(170*f),z=Math.max(2,2.6*g);
+  ctx.globalAlpha=.12*f;ctx.fillStyle='#a12ee0';ctx.beginPath();ctx.ellipse(cx,cy-h*.1,w*1.2,h*.85,0,0,Math.PI*2);ctx.fill();
+  for(let i=0;i<n;i++){const u=(i*.618)%1,v=(i*.371)%1,a=time*(1.6+2.2*u)*(i%2?1:-1)+i*2.4,r=.7+1*v*v+.12*Math.sin(time*6+i),
+   x=cx+Math.cos(a)*w*.85*r+Math.sin(time*23+i*3)*4*g,y=cy-h*.1+Math.sin(a)*h*.7*r*(.55+.45*u)+Math.cos(time*19+i)*4*g;
+   ctx.globalAlpha=.9;const q=z*(.8+.5*u);rect(x-q*.7,y-q/2,q*1.4,q,i%5===0?'#c04bff':i%3?'#1e0810':'#4a1020');if(Math.sin(time*70+i*1.3)>0){ctx.globalAlpha=.65;rect(x-q*.6,y-q*1.2,q*1.2,q*.6,'#fff2dc');}}
+  ctx.globalAlpha=1;}
  if(!wasps.length&&!stings.length)return;const vw=viewW(),on=(wp:Wasp)=>wp.x-camera>-40&&wp.x-camera<vw+40;
  // Glow pass.
  C2.globalCompositeOperation='lighter';
@@ -2493,16 +2501,7 @@ function render(){
  ctx.restore();ctx.restore();if(eruption?.blasted){rect(0,0,960,540,`rgba(255,80,20,${(.16+.04*Math.sin(time*9)).toFixed(3)})`);if(eruption.flash>0)rect(0,0,960,540,`rgba(255,236,190,${(eruption.flash*1.1).toFixed(3)})`);}
  // The swarm darkens the sky with a violet cast while it's out, and the abdomen bursting flashes the screen.
  if(wasps.length){const f=Math.min(1,wasps.length/B.swarmCount);rect(0,0,960,540,`rgba(48,6,70,${(f*(.24+.04*Math.sin(time*11))).toFixed(3)})`);
-  // A few drones whip past right in front of the camera, big and out of focus (looks only).
-  const n=Math.round(5*f);for(let i=0;i<n;i++){const per=.9+(i*.37)%0.7,ph=(time/per+i*.618)%1,dir=i%2?1:-1,z=12+(i*7)%10,
-   x=dir>0?-120+ph*1200:1080-ph*1200,y=90+((i*197)%360)+Math.sin(time*4+i)*30,fl=Math.sin(time*50+i*3)>0,tilt=Math.cos(time*4+i)*.15;
-   for(let k=3;k>=0;k--){const ox=x-dir*k*z*1.1;ctx.globalAlpha=k?.12:.5;ctx.fillStyle='#1a0610';
-    // Abdomen, thorax and head in a row, the abdomen trailing.
-    ctx.beginPath();ctx.ellipse(ox-dir*z*1.2,y+z*.15,z*1.1,z*.55,tilt,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.ellipse(ox,y,z*.6,z*.45,tilt,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ox+dir*z*.85,y-z*.1,z*.38,0,Math.PI*2);ctx.fill();}
-   ctx.globalAlpha=.18;ctx.fillStyle='#ffe9c8';ctx.beginPath();ctx.ellipse(x-dir*z*.3,y-z*(fl?.9:.55),z*1.5,z*(fl?.45:.25),-dir*.3,0,Math.PI*2);ctx.fill();
-   ctx.globalAlpha=.6;ctx.fillStyle='#c04bff';ctx.beginPath();ctx.arc(x-dir*z*2.3,y+z*.25,z*.22,0,Math.PI*2);ctx.fill();}
-  ctx.globalAlpha=1;}
+}
  if(hive&&hive.t<.18)rect(0,0,960,540,`rgba(236,170,255,${((.18-hive.t)/.18*.45).toFixed(3)})`);
  // The downpour greens the whole sky while it lasts.
  if(rain.length)rect(0,0,960,540,`rgba(150,210,40,${Math.min(.14,rain.length*.004+.04*Math.sin(time*7)**2).toFixed(3)})`);drawRain2();hud();
