@@ -3,12 +3,13 @@ export type Source='player'|'boss'|'military'|'environment';
 export type CombatState={hp:number,stage:number,transform:number,ultimate:number,ultimateTime:number,
  superCharge:number,superTime:number,damageTaken:number,penalty:number,dead:boolean,
  cooldown:number,rangedCooldown:number,combo:number,comboWindow:number,buffer:number,
- charging:boolean,charge:number,stagger:number,staggerGuard:number,knockback:number,cap:number,floor:number};
-// cap: the highest stage this level allows; floor: the lowest it lets you shrink to (the soft floor). 3 and 1 = fully dynamic.
+ charging:boolean,charge:number,stagger:number,staggerGuard:number,knockback:number,mercy:number,cap:number,floor:number};
+// mercy: seconds of respawn invincibility (after drowning). cap: the highest stage this level allows. floor: the lowest stage the
+// kaiju can be shrunk to (the soft floor, set per level by setGrowth; 1 = none): hits and drownPenalty both honour it. 3 and 1 = fully dynamic.
 export type Strike={kind:'light'|'heavy'|'ranged',damage:number,knockback:number,combo:number,charge:number};
-export function createCombat():CombatState{return {hp:B.startHP,stage:1,transform:0,ultimate:0,ultimateTime:0,superCharge:0,superTime:0,damageTaken:0,penalty:0,dead:false,cooldown:0,rangedCooldown:0,combo:0,comboWindow:0,buffer:0,charging:false,charge:0,stagger:0,staggerGuard:0,knockback:0,cap:3,floor:1};}
+export function createCombat():CombatState{return {hp:B.startHP,stage:1,transform:0,ultimate:0,ultimateTime:0,superCharge:0,superTime:0,damageTaken:0,penalty:0,dead:false,cooldown:0,rangedCooldown:0,combo:0,comboWindow:0,buffer:0,charging:false,charge:0,stagger:0,staggerGuard:0,knockback:0,mercy:0,cap:3,floor:1};}
 export function canAct(s:CombatState){return !s.dead&&s.transform<=0&&s.stagger<=0&&s.ultimateTime<=0;}
-export function invulnerable(s:CombatState){return s.transform>0||s.ultimateTime>0;}
+export function invulnerable(s:CombatState){return s.transform>0||s.ultimateTime>0||s.mercy>0;}
 export function scale(s:CombatState){return B.stageScale[s.stage-1];}
 export function damageMultiplier(s:CombatState){return B.stageDamage[s.stage-1]*(s.superTime>0?B.superDamage:1);}
 export function cancelCharge(s:CombatState){s.charging=false;s.charge=0;s.buffer=0;}
@@ -55,6 +56,10 @@ export function receiveHit(s:CombatState,raw:number,source:Source,strength=0,dir
  if(strength>0&&s.staggerGuard<=0){s.stagger=B.staggerSeconds;s.staggerGuard=B.staggerProtection;s.knockback=strength*direction;cancelCharge(s);}
  reconcileStage(s);return actual;
 }
+// The HP lost for drowning: goes through whatever invincibility is up, never kills, and never shrinks the kaiju below its floor stage.
+export function drownPenalty(s:CombatState,raw:number){
+ if(s.dead||raw<=0)return 0;const min=s.floor>1?B.down[Math.min(3,s.floor)-2]:1,next=Math.min(s.hp,Math.max(min,s.hp-raw)),actual=s.hp-next;
+ s.hp=next;s.damageTaken+=actual;s.penalty+=actual*B.scorePenaltyPerHP;reconcileStage(s);return actual;}
 export function light(s:CombatState):Strike|null{
  if(!canAct(s)||s.charging)return null;
  if(s.cooldown>0){if(s.cooldown<=B.inputBuffer)s.buffer=B.inputBuffer;return null;}
@@ -77,7 +82,7 @@ export function activateUltimate(s:CombatState){if(!canAct(s)||s.ultimate<B.ulti
 export function activateSuper(s:CombatState){if(!canAct(s)||s.superTime>0||s.stage!==3||s.hp!==B.maxHP||s.superCharge<B.superMax)return false;cancelCharge(s);s.superCharge=0;s.superTime=B.superDuration;s.transform=B.transformSeconds;return true;}
 export function tickCombat(s:CombatState,dt:number):Strike|null{
  const superBefore=s.superTime;
- for(const k of ['transform','ultimateTime','superTime','cooldown','rangedCooldown','comboWindow','buffer','stagger','staggerGuard'] as const)s[k]=Math.max(0,s[k]-dt);
+ for(const k of ['transform','ultimateTime','superTime','cooldown','rangedCooldown','comboWindow','buffer','stagger','staggerGuard','mercy'] as const)s[k]=Math.max(0,s[k]-dt);
  if(superBefore>0&&s.superTime===0){s.superCharge=0;s.transform=B.transformSeconds;cancelCharge(s);}
  if(s.charging)s.charge=Math.min(B.maxCharge,s.charge+dt);
  s.knockback*=Math.exp(-B.knockbackFriction*dt);
