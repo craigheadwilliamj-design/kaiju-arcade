@@ -134,6 +134,9 @@ export const UNIT_CONFIG = {
  bomber:{hp:135,w:75,h:20,speed:185,range:800,cooldown:3.6,points:500,air:true,mass:4},
  // Police boat: a naval unit (stays on the water, floats at the surface). Plays like the patrol car: weak, fast, one shot a burst.
  boat:{hp:30,w:50,h:20,speed:125,range:210,cooldown:2.7,points:150,air:false,mass:1.2},
+ // Warships (Bay Bridge): naval units on the water. The gunboat plays like the tank (a telegraphed shell), the destroyer like the artillery (long-range lobbed shells).
+ gunboat:{hp:120,w:92,h:30,speed:46,range:380,cooldown:4.6,points:380,air:false,mass:5},
+ destroyer:{hp:300,w:210,h:50,speed:20,range:1000,cooldown:6.2,points:1000,air:false,mass:14},
 };
 
 export const WEAPON_CONFIG = {
@@ -497,3 +500,34 @@ export const SF2 = {
 // Fog (Fisherman's Wharf; the Golden Gate reuses it): a level's `fog` is {from, to, max}: the overlay is clear before `from`,
 // thickens linearly to `max` (0-1 opacity) at `to`, and holds. `tint` is the fog colour.
 export const FOG = {tint:'#d9dee0',drift:6};
+
+// SF Act 3 (redesign phase 5): The Fault (Level 7). Fault cracks are set off by a slam or a pound within `reach` of them (an Ultimate
+// within `ultReach`); each sets off a district quake: everything within `radius` (`ultRadius` for an Ultimate) shakes (`sway` s),
+// takes damage that falls off with distance, and a shockwave rolls out both ways from the crack. The quake bursts the gas mains
+// within `mainRadius`. The last crack is the Big One: the whole level shakes for `bigSeconds`, every building is hit, and the
+// freeway pancakes: each column's upper deck gives way (a `pancakeGap` s after the one before), the lower deck `pancakeDrop` s later,
+// crushing what is under it for `crushDamage`.
+export const CRACK = {
+ reach:Math.round(260*CITY_SCALE),ultReach:Math.round(620*CITY_SCALE),radius:Math.round(700*CITY_SCALE),ultRadius:Math.round(1150*CITY_SCALE),
+ damage:46,ultDamage:92,sway:2.2,shake:12,ultShake:20,waveDamage:30,mainRadius:Math.round(560*CITY_SCALE),points:1800,shards:14,
+ deckGap:Math.round(80*CITY_SCALE),pancakePoints:700,bigSeconds:6,bigDamage:60,bigShake:16,pancakeGap:.28,pancakeDrop:.55,crushDamage:70,crushKnock:200,unitStun:1.2,unitDamage:20,
+};
+// Gas mains (The Fault): the hydrants of a level with `gas` are gas mains. A burst main is a fire geyser for `seconds`: it burns
+// troops and cars within `radius` (`dps`, ticking every `tick`) and sets every building within `ignite` alight. `fireCap` on the
+// level raises FIRE.cap (how many buildings may burn at once).
+export const GAS = {seconds:7,radius:Math.round(120*CITY_SCALE),ignite:Math.round(150*CITY_SCALE),tick:.5,damage:9,knockback:260,points:400,heat:8,height:190,fireCap:16};
+
+// SF Act 3: Bay Bridge (Level 8). The bridge decks stand `deckRise` above the water's level (a `bridge` with `rise`); the double-deck west span
+// has an upper deck (a long building with stacked-tier hit parts: two climbable towers and a slab `clear` above the lower road, `slab` thick,
+// with a `gap` between each tower's legs wide enough for a Stage 3 kaiju). The carrier is the cutter's hull at `scale`; it launches a jet
+// every `launchEvery` s while the kaiju is within `range` and fewer than `maxJets` are up, each climbing to cruise over `climb` s.
+export const BRIDGE = {deckRise:Math.round(150*CITY_SCALE),clear:Math.round(165*CITY_SCALE),slab:Math.round(22*CITY_SCALE),leg:Math.round(26*CITY_SCALE),gap:Math.round(120*CITY_SCALE),
+ upperHP:900,upperPoints:2500,towerHP:700,carrierScale:2.3,launchEvery:7,maxJets:2,range:1500,climb:1.1,carrierPoints:6000};
+
+// SF Act 3: Golden Gate (Level 9). Kaiban waits (a silhouette in the fog) on the span until the kaiju passes `wake`. The fight uses the shared
+// rival moves (src/rival.ts) and adds the fog charge: every `chargeEvery` s Kaiban vanishes into the fog (`vanish`), a roar and a growing
+// silhouette at the edge of the view telegraph it (`telegraph`), then it charges out at `chargeSpeed` (a hit of `chargeDamage` on contact).
+// As its health falls past each break the deck gives way under both kaiju (they end chest-deep at the tower feet). At 0 health it is not
+// KO'd: it retreats into the fog (`retreatSpeed`, fading over `retreatFade` s) while the main span comes down (`collapseGap` s apart).
+export const GATE = {chargeEvery:13,vanish:.9,telegraph:1.5,chargeSpeed:430,chargeDamage:12,chargeKnock:330,fogDistance:760,chargeOvershoot:380,
+ retreatSpeed:140,retreatFade:3.2,collapseGap:.4,wakeShake:12,tower:Math.round(430*CITY_SCALE)};

@@ -1,8 +1,8 @@
-import {groundAt,submerged,waterAt,depthAt} from './terrain.ts';
+import {groundAt,submerged,waterAt,depthAt,bedAt,platformFloor} from './terrain.ts';
 import {CONFIG as C,MILITARY as M,MILITARY_FEEL as MF,UNIT_CONFIG,WEAPON_CONFIG,WATER as W} from './config.ts';
 import {overlaps} from './rules.ts';
 export type Rect={x:number,y:number,w:number,h:number};
-export type UnitType='police'|'patrol'|'soldier'|'apc'|'tank'|'helicopter'|'artillery'|'emplacement'|'jet'|'bomber'|'boat';
+export type UnitType='police'|'patrol'|'soldier'|'apc'|'tank'|'helicopter'|'artillery'|'emplacement'|'jet'|'bomber'|'boat'|'gunboat'|'destroyer';
 export type Weapon='bullet'|'shell'|'rocket'|'bomb'|'artillery';
 // What landed the blow, so the game can scale the death: thrown and ranged kills get the biggest explosion.
 export type Cause='melee'|'ranged'|'thrown'|'crush'|'ultimate'|'blast';
@@ -11,8 +11,10 @@ export const ROSTERS:UnitType[][]=[['police','patrol'],['police','patrol','soldi
 export const WEAPONS=WEAPON_CONFIG;
 // Naval units live on the water: they float at the surface, never leave water deep enough to carry them, and are stationed (placed
 // by the block, never sent in squads, never despawned off-screen, not counted against the squad cap).
-export const NAVAL_UNITS=new Set<UnitType>(['boat']);
-export function navigable(x:number){return submerged(x)&&depthAt(x)>=W.boatMinDepth;}
+export const NAVAL_UNITS=new Set<UnitType>(['boat','gunboat','destroyer']);
+// Under a bridge deck the water is hidden by the deck (it is the ground there): a level with warships looks at the seabed instead.
+let underDecks=false;export function setNavyUnderDecks(v:boolean){underDecks=v;}
+export function navigable(x:number){if(underDecks){const s=waterAt(x);return s!==null&&bedAt(x)-s>=W.boatMinDepth;}return submerged(x)&&depthAt(x)>=W.boatMinDepth;}
 export function floatY(x:number,h:number){return (waterAt(x)??groundAt(x))-h*(1-W.boatFloat);}
 const fielded=(s:{units:Unit[]})=>s.units.filter(u=>u.hp>0&&!NAVAL_UNITS.has(u.type)).length;
 // windup: seconds until the telegraphed shot (`pending`) fires at aimX/aimY; stun: interrupted, cannot move or fire.
@@ -114,9 +116,9 @@ export function callStrike(s:MilitaryState,u:Unit,tx:number){
 // paints a strafing run. Light guns fire straight away.
 function startBurst(s:MilitaryState,u:Unit,target:Rect){
  const type=u.type,aim=()=>{u.aimX=target.x+target.w/2;u.aimY=target.y+target.h*.65;};
- if(type==='tank'){u.pending='shell';u.windup=u.windTotal=MF.tankWindup;aim();return;}
+ if(type==='tank'||type==='gunboat'){u.pending='shell';u.windup=u.windTotal=MF.tankWindup;aim();return;}
  if(type==='jet'){u.pending='strafe';u.windup=u.windTotal=MF.jetWindup;aim();return;}
- if(type==='artillery'){launch(s,u,'artillery',target);return;}
+ if(type==='artillery'||type==='destroyer'){launch(s,u,'artillery',target);return;}
  u.burst=type==='police'||type==='patrol'||type==='boat'?1:type==='soldier'?3:type==='bomber'?3:type==='helicopter'?MF.heliGunBurst:6;u.gap=0;
 }
 function fire(s:MilitaryState,u:Unit){
@@ -159,12 +161,12 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
   const naval=NAVAL_UNITS.has(u.type);
   {const ox=u.x;u.x+=u.kb*dt;u.kb*=Math.exp(-M.knockbackFriction*dt);if(naval&&!navigable(u.x+u.w/2)){u.x=ox;u.kb=0;}}
   if(naval)u.y=floatY(u.x+u.w/2,u.h);
-  else if(!d.air){const floor=groundAt(u.x+u.w/2)-u.h;if(u.vy!==0||u.y<floor-2){u.vy+=MF.unitGravity*dt;u.y+=u.vy*dt;if(u.y>=floor){u.y=floor;u.vy=0;}}else u.y=floor;}
+  else if(!d.air){const floor=(platformFloor(u.x+u.w/2,u.y+u.h)??groundAt(u.x+u.w/2))-u.h;if(u.vy!==0||u.y<floor-2){u.vy+=MF.unitGravity*dt;u.y+=u.vy*dt;if(u.y>=floor){u.y=floor;u.vy=0;}}else u.y=floor;}
   if(u.type==='jet'||u.type==='bomber')u.x+=u.pass*d.speed*dt;
   if(overlaps(u,player)){
    if(u.type==='police'||u.type==='soldier')hitUnit(s,u,u.hp,contactSource,0,u.face,false,'crush');
    // A grown kaiju flattens the armour it walks into.
-   else if(stage>=MF.crushStage&&(ROAD_UNITS.has(u.type)||naval))hitUnit(s,u,u.hp,contactSource,120,u.x+u.w/2<player.x+player.w/2?-1:1,false,'crush');
+   else if(stage>=MF.crushStage&&(ROAD_UNITS.has(u.type)||u.type==='boat'))hitUnit(s,u,u.hp,contactSource,120,u.x+u.w/2<player.x+player.w/2?-1:1,false,'crush');
   }
   if(u.hp<=0)continue;
   if(u.stun>0){u.stun=Math.max(0,u.stun-dt);continue;}

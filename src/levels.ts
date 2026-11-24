@@ -2,7 +2,7 @@ import type {Part} from './hitbox.ts';
 // `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 // `role`: a structure with a job in the city (src/city.ts). `roof`: a rooftop fixture on an ordinary building.
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant'|'powerhouse',roof?:'radar'|'tank'|'sign'|'crab'|'helipad',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean};
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',upperDeck?:boolean,label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant'|'powerhouse',roof?:'radar'|'tank'|'sign'|'crab'|'helipad',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean};
 // `parts`: the hitbox silhouette (src/hitbox.ts); omitted means one box, the whole footprint.
 // `prop`: street junk (a walk-through breakable: hot dog cart, trash can, taco stand, advertising column, café table, market stall,
 // vending machine), drawn per kind.
@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -71,13 +71,16 @@ export const CITIES:City[]=[
 // the cap after a mid-level lift (liftCap in src/combat.ts; a crystal will trigger it). Absent = today's rule: the stage carries
 // over from the last block, Stage 1 to 3. `tier`: the military response tier (absent = the block's position, 1-5).
 // `secret`: in the city's level list but off the campaign route (reached later by a secret exit).
-export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
- target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter',scale?:number},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
+export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
+ target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
  guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
  units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
  exits?:{west?:string,east?:string},after?:string,fog?:{from:number,to:number,max:number},sealions?:number[],kaiban?:{x:number,wade:[number,number]},
- buses?:number[],elevatedLook?:'park',ramps?:[number,number][],coastguard?:number[]};
+ buses?:number[],elevatedLook?:'park'|'freeway',ramps?:[number,number][],coastguard?:number[],
+ // Phase 5 (SF Act 3), all opt-in. See the notes below.
+ cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,
+ finale?:{x:number,wake:number,breaks:number[]},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][]};
 // Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
 // (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
 // over an underground garage: a slam caves it into a pit of parked cars. `police`: helicopters and soldiers here are drawn as police / SWAT.
@@ -97,6 +100,13 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `sealions`: Pier 39 sea lions at x. `kaiban`: Kaiban's silhouette wading in the bay at x over a wade range. `buses`: bus terminal buses under
 // an `elevatedLook: 'park'` roof (the elevated system drawn as a roof park, no trains). `coastguard`: Coast Guard boats on the water at x.
 // `runaway`: x of cable cars (listed in `cablecars`) that come loose rolling when the camera nears (Jefferson Street).
+// Phase 5 (SF Act 3). `cracks`: x of the fault cracks (src/config.ts CRACK): a slam, pound or Ultimate near one sets off a district quake;
+// the last is the Big One. `gas`: the level's hydrants are gas mains (a burst is a fire geyser). `fireCap`: how many buildings may burn at
+// once (default FIRE.cap). `elevatedDecks: 2` with `elevatedLook: 'freeway'`: the elevated line is a double-deck freeway that pancakes on the Big One.
+// `bridge.rise`: how far above the street (and the water) the decks stand; `bridge.more`: further [x0, x1, spans] decks at the same height.
+// `finale`: a boss level's Kaiban finale (src/config.ts GATE): `x` where it waits, `wake` the x that wakes it, `breaks` the health fractions at which the deck gives way.
+// `warships`: gunboats and destroyers stationed on the water (under a deck too). `deckUnits`: ground units that stand on an upper deck
+// (building spec `upperDeck`). A target `launch`: the carrier launches jets. See src/config.ts BRIDGE.
 // `elevated`: an elevated railway over [x0, x1] (Tokyo); world units.
 // `water`: river spans [from, to, surfaceY]; `bridge`: a deck at street level over [x0, x1] in `spans` breakable spans; `subway`: x ranges
 // with a subway line under the street (slams cave it in). All world units.
@@ -377,6 +387,87 @@ function sfWharf():BlockDef{
   fog:{from:sc(2200),to:sc(7000),max:.72},
   exits:{west:'The Fault',east:'Alcatraz'}};
 }
+// Level 7. The Fault (the 1906 level), west to east: Van Ness (start), Civic Center (the dome, the first crack), Mid-Market (the old
+// mint, the second crack, fire trucks that cannot keep up), SoMa (warehouses, the double-deck freeway, the third crack: the Big One)
+// and the on-ramp at the east end, a climb onto the road that is the exit. The new thing: the fault cracks and the gas mains.
+function sfFault():BlockDef{
+ const CRACKS=[2300,4000,6300],FREEWAY:[number,number]=[5560,7060],RAMP:[number,number]=[7260,7640];
+ let b=sfLevel('The Fault',8,'district',
+  `s,m,r,_,h,s,m,_,l,r,>1900,L,=,>2540,h,m,r,_,m:vault,h,s,_,>3500,r,h,_,s,m,_,>4180,w:brick,r,w:shed,_,w:brick,r,s,_,w:brick,r,_`,
+  ['CITY HALL|dome'],{startStage:3,cap:3,tier:4});
+ b=clearClutter(b,[FREEWAY],true);
+ // The old mint is a granite vault.
+ b={...b,buildings:b.buildings.map(x=>x.deco==='vault'?{...x,label:'OLD MINT',color:'#9a9c97'}:x)};
+ // Gas mains: the generic hydrants, plus a pair either side of every crack (and under the freeway) where the quake will find them.
+ const solids=b.buildings.filter(x=>x.kind!=='tiny'),mw=Math.round(10*CONFIG.cityScale),mh=Math.round(16*CONFIG.cityScale);
+ const mains=CRACKS.flatMap(c=>[-420,-220,220,420].map(o=>c+o)).map(x=>sc(x)).filter(x=>x>sc(240)&&x<sc(RAMP[0])-60&&!solids.some(o=>x+mw>o.x-6&&x<o.x+o.w+6)&&!b.buildings.some(o=>o.role==='hydrant'&&Math.abs(o.x-x)<mw*3))
+  .map(x=>({x,w:mw,h:mh,hp:1,value:5,kind:'tiny' as const,label:'',color:'#c0392b',role:'hydrant' as const}));
+ b={...b,buildings:[...b.buildings,...mains]};
+ b=terrain(b,[[0,0],[RAMP[0],0],[RAMP[1],130],[8000,130]]);
+ const trucks=station(b,[3000,3380,3760].map(x=>[sc(x),VEHICLE_SPECS.firetruck.w] as [number,number]));
+ return {...b,cracks:CRACKS.map(sc),gas:true,fireCap:GAS.fireCap,elevated:[sc(FREEWAY[0]),sc(FREEWAY[1])],elevatedLook:'freeway',elevatedDecks:2,
+  firetrucks:trucks.xs,cars:trucks.cars,
+  // Full military from the start: tanks and artillery down Van Ness and Mid-Market, jets overhead, soldiers at the on-ramp.
+  units:[['soldier',sc(900)],['tank',sc(1300)],['tank',sc(1750)],['artillery',sc(2900)],['soldier',sc(3200)],['tank',sc(3560)],['jet',sc(4300)],
+   ['tank',sc(4700)],['artillery',sc(5100)],['apc',sc(5300)],['soldier',sc(5700)],['tank',sc(6500)],['soldier',sc(6900)],['helicopter',sc(6100),560]]};
+}
+// Level 8. Bay Bridge: the west span (a double-deck bridge: the lower deck is the road, the upper deck a long slab on two climbable towers,
+// gridlock, a roadblock, tanks on both decks, warships on the water below), the open bay (chest-deep at Stage 3: gunboat and destroyer),
+// Treasure Island (hangars and an armory: the breather) and the east span, where the aircraft carrier lies below the deck between two
+// towers, launching jets. The decks stand BRIDGE.deckRise above the water. The one new thing: the carrier.
+function sfBayBridge():BlockDef{
+ const RAMP=[800,1400],WEST=[1400,3600],BAY=[4700,4900],ISLAND_END=5900,RAMP_E=[5900,6400],EAST=[6400,7680],CARRIER=6900,DR=150,BED=-62;
+ let b=sfLevel('Bay Bridge',8,'stronghold',`s,m,>4960,L,K,w:shed,w:shed`,['NAVY COMMAND|tower'],{startStage:3,cap:3,tier:4},{target:CARRIER,ring:[]});
+ b=terrain(b,[[0,0],[RAMP[0],0],[RAMP[1],DR],[RAMP[1]+6,BED],[BAY[0],BED],[BAY[1],0],[ISLAND_END,0],[RAMP_E[1],DR],[RAMP_E[1]+6,BED],[8000,BED]]);
+ // No street clutter on the ramps, the decks or in the bay; the island's sheds are the Navy base's hangars.
+ b=clearClutter(b,[[RAMP[0],BAY[1]],[ISLAND_END,8000]]);
+ b={...b,buildings:b.buildings.map(x=>x.deco==='shed'?{...x,label:'HANGAR',color:'#7e8a82'}:x)};
+ // The upper deck: a slab on two towers over the middle of the west span, climbable at either end.
+ const U0=1700,U1=3300,bd=BRIDGE,T=bd.clear+bd.slab,TW=2*bd.leg+bd.gap,UW=sc(U1)-sc(U0);
+ const legs=(x:number,top=T)=>[{x,w:bd.leg,top},{x:x+bd.leg+bd.gap,w:bd.leg,top}];
+ const upper:BuildingSpec={x:sc(U0),w:UW,h:T,hp:bd.upperHP,value:900,kind:'large',label:'UPPER DECK',color:'#7d8588',upperDeck:true,deco:'updeck',
+  parts:[...legs(0),...legs(UW-TW),{x:0,w:UW,top:T,base:bd.clear}]};
+ // The east span's two towers, either side of the carrier; the climb to the top of the deck road is the way up.
+ const TT=bd.clear+bd.slab+Math.round(150*CONFIG.cityScale),tower=(x:number):BuildingSpec=>({x:sc(x),w:TW,h:TT,hp:bd.towerHP,value:700,kind:'large',label:'',color:'#8a8f8e',deco:'btower',
+  parts:[...legs(0,TT),{x:0,w:TW,top:TT,base:TT-bd.slab*2}]});
+ const roadblock=[1480,1520,1560].map(x=>scaled({...BUILDING_PRESETS.b,x,label:'BARRIER',color:'#8d8f86'}));
+ b={...b,buildings:[...b.buildings,upper,tower(6400),tower(7200),...roadblock]};
+ // Gridlock on the lower deck: parked rows end to end.
+ const cars=[1620,1960,2300,2640,2980,3320].map(sc);
+ return {...b,cars,bridge:{x0:sc(WEST[0]),x1:sc(WEST[1]),spans:8,rise:bd.deckRise,more:[[sc(EAST[0]),sc(EAST[1]),4]]},
+  water:[[sc(RAMP[1]),sc(BAY[1]),CONFIG.ground+6],[sc(RAMP_E[1]),sc(8000),CONFIG.ground+6]],bands:true,
+  target:{x:sc(CARRIER),label:'AIRCRAFT CARRIER',art:'cutter',scale:bd.carrierScale,launch:true},garrison:[],
+  // Tanks and soldiers on the lower deck, tanks and artillery on the upper deck, warships on the water below it and in the bay.
+  units:[['soldier',sc(1000)],['tank',sc(1900)],['tank',sc(2500)],['soldier',sc(2700)],['apc',sc(3100)],['tank',sc(3400)],['soldier',sc(5100)],['soldier',sc(5600)],['tank',sc(5800)],['helicopter',sc(5300),560],['jet',sc(5900)]],
+  deckUnits:[['tank',sc(1900)],['artillery',sc(2400)],['tank',sc(2900)],['soldier',sc(2200)]],
+  warships:[['gunboat',sc(2000)],['destroyer',sc(2800)],['gunboat',sc(4000)],['destroyer',sc(4400)],['gunboat',sc(4250)]]};
+}
+// Level 9. Golden Gate: two screens of approach (Presidio trees and old gun batteries, the toll plaza, the last military push, fog thickening ahead
+// of the towers) then four of bridge (south tower, main span, north tower) with Kaiban on the span. The deck stands BRIDGE.deckRise above the bay.
+// The fight is on the deck; the deck gives way (both kaiju end up chest-deep at the tower feet) and Kaiban retreats as the main span comes down.
+function sfGoldenGate():BlockDef{
+ const RAMP=[1400,1900],DECK=[1900,5760],DR=150,BED=-62,SPANS=12;
+ let b=sfLevel('Golden Gate',6,'boss',`r,s,>1180,b,b,b`,[],{startStage:3,cap:3,tier:5});
+ b=terrain(b,[[0,0],[RAMP[0],0],[RAMP[1],DR],[RAMP[1]+6,BED],[8000,BED]]);
+ // Presidio trees (tall, green) along the approach, and the old gun batteries: low concrete bunkers with emplacements on top.
+ const trees=[160,250,340,620,880,925,1130].map((x,i)=>scaled({x,w:22,h:88+(i%3)*14,hp:14,value:30,kind:'tiny' as const,label:'',color:'#4f7d4a',prop:'palm'}));
+ const batteries=[hall(700,150,70,'BATTERY','#7d8278','wall',260),hall(960,150,70,'BATTERY','#7d8278','wall',260)];
+ // The toll plaza: booths in a row under a low canopy, across the approach road.
+ const booths=[1118,1148].map(x=>scaled({x,w:20,h:34,hp:20,value:40,kind:'tiny' as const,label:'TOLL',color:'#c2552b',prop:'stall'}));
+ b={...b,buildings:[...b.buildings.filter(x=>!x.prop),...trees,...batteries,...booths]};
+ b=clearClutter(b,[[RAMP[0],8000]]);
+ // The bridge: spans from the foot of the ramp to the north end; the towers stand at the joints, the main span between them.
+ const x0=sc(DECK[0]),x1=sc(DECK[1]),w=(x1-x0)/SPANS,joint=(k:number)=>Math.round(x0+k*w),TW=2*BRIDGE.leg+BRIDGE.gap,TT=BRIDGE.clear+BRIDGE.slab+GATE.tower;
+ const tower=(x:number):BuildingSpec=>({x,w:TW,h:TT,hp:BRIDGE.towerHP*2,value:900,kind:'large',label:'',color:'#b9472b',deco:'btower',
+  parts:[{x:0,w:BRIDGE.leg,top:TT},{x:BRIDGE.leg+BRIDGE.gap,w:BRIDGE.leg,top:TT},{x:0,w:TW,top:TT,base:TT-BRIDGE.slab*2},{x:0,w:TW,top:Math.round(TT*.6),base:Math.round(TT*.6)-BRIDGE.slab}]});
+ b={...b,buildings:[...b.buildings,tower(joint(2)),tower(joint(10))]};
+ const mid=Math.round((joint(2)+joint(10))/2);
+ return {...b,bridge:{x0,x1,spans:SPANS,rise:BRIDGE.deckRise},water:[[sc(RAMP[1]),sc(8000),CONFIG.ground+6]],bands:true,
+  fog:{from:sc(900),to:sc(3000),max:.6},finale:{x:mid,wake:joint(1),breaks:[.66,.33]},
+  // The last push on the approach: armour, artillery, infantry and air cover; the batteries' guns; nothing on the bridge but Kaiban.
+  units:[['soldier',sc(500)],['apc',sc(800)],['tank',sc(900)],['soldier',sc(950)],['tank',sc(1100)],['artillery',sc(1250)],['emplacement',sc(780)],['emplacement',sc(1040)],
+   ['soldier',sc(1300)],['tank',sc(1350)],['jet',sc(1200)],['helicopter',sc(1000),560],['helicopter',sc(1500),600],['bomber',sc(1700),560]]};
+}
 export const SAN_FRANCISCO:BlockDef[]=[
  sfEmbarcadero(),
  sfUnionSquare(),
@@ -384,9 +475,9 @@ export const SAN_FRANCISCO:BlockDef[]=[
  sfNobHill(),
  sfFinancial(),
  sfWharf(),
- sfLevel('The Fault',8,'district',`L,h,m,_,l,S,_,x,h:cache,_,l,m:tank,_,${SF_ROW},n,x,_,L,F,_,h,l,_,x,m,_,h,l:radar,_,m,x,_,l`,['CITY HALL|dome','OPERA HOUSE|dome'],{startStage:3,cap:3,tier:4}),
- sfLevel('Bay Bridge',8,'stronghold',`L,K,_,m,h,_,l,F,_,x,m,_,h:tank,l,_,L,m,_,K,_,h,l,_,m,x,_,l`,['BAY BRIDGE WEST TOWER|lattice','BAY BRIDGE EAST TOWER|lattice'],{startStage:3,cap:3,tier:4}),
- sfLevel('Golden Gate',6,'boss',`=,m,=,l,=,s,=,t,=,h,=,l,=,m,=,s`,[],{startStage:3,cap:3,tier:5}),
+ sfFault(),
+ sfBayBridge(),
+ sfGoldenGate(),
  {...sfLevel('Alcatraz',4,'district',`=,s,m:tank,_,L,h,_,l,s,_,L,m`,['CELLHOUSE|tower','LIGHTHOUSE|needle'],{startStage:3,cap:3,tier:5,secret:true}),after:'The Fault'},
 ];
 export const LEVELS:BlockDef[][]=[
