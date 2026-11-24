@@ -1,14 +1,20 @@
-import {groundAt,submerged} from './terrain.ts';
-import {CONFIG as C,MILITARY as M,MILITARY_FEEL as MF,UNIT_CONFIG,WEAPON_CONFIG} from './config.ts';
+import {groundAt,submerged,waterAt,depthAt} from './terrain.ts';
+import {CONFIG as C,MILITARY as M,MILITARY_FEEL as MF,UNIT_CONFIG,WEAPON_CONFIG,WATER as W} from './config.ts';
 import {overlaps} from './rules.ts';
 export type Rect={x:number,y:number,w:number,h:number};
-export type UnitType='police'|'patrol'|'soldier'|'apc'|'tank'|'helicopter'|'artillery'|'emplacement'|'jet'|'bomber';
+export type UnitType='police'|'patrol'|'soldier'|'apc'|'tank'|'helicopter'|'artillery'|'emplacement'|'jet'|'bomber'|'boat';
 export type Weapon='bullet'|'shell'|'rocket'|'bomb'|'artillery';
 // What landed the blow, so the game can scale the death: thrown and ranged kills get the biggest explosion.
 export type Cause='melee'|'ranged'|'thrown'|'crush'|'ultimate'|'blast';
 export const UNITS=UNIT_CONFIG;
 export const ROSTERS:UnitType[][]=[['police','patrol'],['police','patrol','soldier','apc'],['police','soldier','patrol','apc','tank','helicopter','artillery','emplacement'],['police','soldier','apc','tank','helicopter','artillery','emplacement','jet','bomber'],['soldier','tank','helicopter']];
 export const WEAPONS=WEAPON_CONFIG;
+// Naval units live on the water: they float at the surface, never leave water deep enough to carry them, and are stationed (placed
+// by the block, never sent in squads, never despawned off-screen, not counted against the squad cap).
+export const NAVAL_UNITS=new Set<UnitType>(['boat']);
+export function navigable(x:number){return submerged(x)&&depthAt(x)>=W.boatMinDepth;}
+export function floatY(x:number,h:number){return (waterAt(x)??groundAt(x))-h*(1-W.boatFloat);}
+const fielded=(s:{units:Unit[]})=>s.units.filter(u=>u.hp>0&&!NAVAL_UNITS.has(u.type)).length;
 // windup: seconds until the telegraphed shot (`pending`) fires at aimX/aimY; stun: interrupted, cannot move or fire.
 // spotter: carries a radio and calls in a strike after `call` reaches MF.spotterSeconds. vy/flash are presentation physics.
 export type Pending='shell'|'rockets'|'strafe'|null;
@@ -31,7 +37,7 @@ export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Proj
 export function createMilitary(tier=1,city=0,rng=Math.random):MilitaryState{return {tier:Math.max(1,Math.min(5,tier)),city,units:[],projectiles:[],wrecks:[],effects:[],events:[],spawnTimer:M.firstSpawn,sequence:0,nextID:1,rng,squad:[],squadSize:0,squadLabel:'',cutOff:{'1':0,'-1':0}};}
 export function onScreen(r:Rect,camera:number,viewW=C.width){return r.x+r.w>camera&&r.x<camera+viewW;}
 export function spawnUnit(s:MilitaryState,type:UnitType,x:number,side=1,spotter=false):Unit{
- const d=UNITS[type];if(!d.air)for(let k=0;k<80&&submerged(x+d.w/2);k++)x-=side*40;const y=d.air?(type==='helicopter'?285:type==='jet'?267:246):groundAt(x+d.w/2)-d.h;
+ const d=UNITS[type],naval=NAVAL_UNITS.has(type);if(!d.air&&!naval)for(let k=0;k<80&&submerged(x+d.w/2);k++)x-=side*40;const y=d.air?(type==='helicopter'?285:type==='jet'?267:246):naval?floatY(x+d.w/2,d.h):groundAt(x+d.w/2)-d.h;
  const hp=d.hp*(1+s.city*M.cityHP);
  const u:Unit={id:s.nextID++,type,x,y,w:d.w,h:d.h,hp,maxHP:hp,face:side,pass:side,cooldown:1.1,burst:0,gap:0,shots:0,kb:0,
   windup:0,windTotal:0,aimX:0,aimY:0,pending:null,stun:0,spotter,call:0,vy:0,flash:0};s.units.push(u);return u;
@@ -55,8 +61,8 @@ export function hitUnit(s:MilitaryState,u:Unit,damage:number,source:'player'|'mi
  if(u.hp===0){
   s.effects.push({x:cx,y:cy,radius:20,life:M.impactSeconds,harmless:true});
   s.events.push({kind:'death',id:u.id,type:u.type,x:cx,y:cy,w:u.w,h:u.h,lane:roadLane(u),dir:direction,knockback,cause,source,air:d.air});
-  // Road vehicles become physical burning wrecks in the game (the death event); everything else leaves a wreck here.
-  if(u.type!=='police'&&u.type!=='soldier'&&!ROAD_UNITS.has(u.type)){
+  // Road vehicles and boats become physical burning wrecks in the game (the death event); everything else leaves a wreck here.
+  if(u.type!=='police'&&u.type!=='soldier'&&!ROAD_UNITS.has(u.type)&&!NAVAL_UNITS.has(u.type)){
    if(s.wrecks.length>=M.wreckCap)s.wrecks.shift();
    s.wrecks.push({x:u.x,y:u.y,w:u.w,h:u.h,life:M.wreckSeconds,air:d.air,lane:roadLane(u),type:u.type,
     vx:d.air?(u.type==='helicopter'?direction*40:u.pass*d.speed*.45):0,vy:d.air?-40:0,angle:0,spin:d.air?(u.type==='helicopter'?7:1.2)*(u.type==='helicopter'?1:u.pass):0,falling:d.air,credit:source,ultimate});
@@ -71,7 +77,7 @@ export function blast(s:MilitaryState,x:number,y:number,radius:number,damage:num
  for(const o of s.units)if(o!==skip&&o.hp>0&&withinBlast(x,y,radius,o))hitUnit(s,o,damage,source,200,o.x+o.w/2<x?-1:1,ultimate,'blast');
 }
 // The kaiju picks a ground vehicle up: it is out of the fight at once. Pays the kill points (no crystals, no wreck: it becomes a held prop).
-export const GRABBABLE_UNITS=new Set(['patrol','apc','tank','artillery']);
+export const GRABBABLE_UNITS=new Set(['patrol','apc','tank','artillery','boat']);
 export function captureUnit(s:MilitaryState,u:Unit){
  if(u.hp<=0||!GRABBABLE_UNITS.has(u.type))return false;u.hp=0;
  s.events.push({kind:'reward',x:u.x+u.w/2,damage:0,points:UNITS[u.type].points,shards:0,ultimate:false});return true;
@@ -111,7 +117,7 @@ function startBurst(s:MilitaryState,u:Unit,target:Rect){
  if(type==='tank'){u.pending='shell';u.windup=u.windTotal=MF.tankWindup;aim();return;}
  if(type==='jet'){u.pending='strafe';u.windup=u.windTotal=MF.jetWindup;aim();return;}
  if(type==='artillery'){launch(s,u,'artillery',target);return;}
- u.burst=type==='police'||type==='patrol'?1:type==='soldier'?3:type==='bomber'?3:type==='helicopter'?MF.heliGunBurst:6;u.gap=0;
+ u.burst=type==='police'||type==='patrol'||type==='boat'?1:type==='soldier'?3:type==='bomber'?3:type==='helicopter'?MF.heliGunBurst:6;u.gap=0;
 }
 function fire(s:MilitaryState,u:Unit){
  const p=u.pending;u.pending=null;
@@ -127,7 +133,7 @@ export function squadTypes(t:{core:[string,number],escort?:[string,number],extra
 }
 // Spawns the next squad from one side, staggered outward offscreen, one soldier carrying the radio; one announcement.
 export function spawnSquad(s:MilitaryState,camera:number,viewW:number,threat:number){
- const cap=M.caps[s.tier-1],alive=s.units.filter(u=>u.hp>0).length,list=MF.squads[s.tier-1],t=list[s.sequence++%list.length];
+ const cap=M.caps[s.tier-1],alive=fielded(s),list=MF.squads[s.tier-1],t=list[s.sequence++%list.length];
  const full=squadTypes(t,Math.round(Math.max(0,Math.min(1,threat))*MF.squadEscalate)),types=full.slice(0,Math.max(0,cap-alive));
  // A squad that would arrive as a straggler or two waits until there is room for most of it (the template is not used up).
  if(types.length<Math.ceil(full.length*MF.squadMinFit)){s.sequence--;return null;}
@@ -144,25 +150,29 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
  // Squad director: the next squad comes when this one is mostly wrecked (after a breather) or when the long timer runs out.
  if(s.squad.length){const left=s.units.filter(u=>u.hp>0&&s.squad.includes(u.id)).length;
   if(left<=s.squadSize*MF.squadClear){s.squad=[];s.spawnTimer=Math.min(s.spawnTimer,MF.squadBreather);}}
- if(s.spawnTimer<=0&&s.units.filter(u=>u.hp>0).length<M.caps[s.tier-1]){if(!spawnSquad(s,camera,viewW,threat)){s.spawnTimer=MF.squadRetry;}else
+ if(s.spawnTimer<=0&&fielded(s)<M.caps[s.tier-1]){if(!spawnSquad(s,camera,viewW,threat)){s.spawnTimer=MF.squadRetry;}else
   s.spawnTimer=MF.squadMax[s.tier-1]*(1+(s.rng()-.5)*2*M.spawnVariance)/(1+Math.max(0,Math.min(1,threat))*M.threatPressure+s.city*M.cityPressure);}
  const engage=Math.max(camera,Math.min(camera+viewW-C.width,player.x+player.w/2-C.width/2));
  for(const u of s.units){if(u.hp<=0)continue;const d=UNITS[u.type];
   const target=boss&&Math.abs(boss.x-u.x)<Math.abs(player.x-u.x)?boss:player;
   u.flash=Math.max(0,u.flash-dt);
-  u.x+=u.kb*dt;u.kb*=Math.exp(-M.knockbackFriction*dt);
-  if(!d.air){const floor=groundAt(u.x+u.w/2)-u.h;if(u.vy!==0||u.y<floor-2){u.vy+=MF.unitGravity*dt;u.y+=u.vy*dt;if(u.y>=floor){u.y=floor;u.vy=0;}}else u.y=floor;}
+  const naval=NAVAL_UNITS.has(u.type);
+  {const ox=u.x;u.x+=u.kb*dt;u.kb*=Math.exp(-M.knockbackFriction*dt);if(naval&&!navigable(u.x+u.w/2)){u.x=ox;u.kb=0;}}
+  if(naval)u.y=floatY(u.x+u.w/2,u.h);
+  else if(!d.air){const floor=groundAt(u.x+u.w/2)-u.h;if(u.vy!==0||u.y<floor-2){u.vy+=MF.unitGravity*dt;u.y+=u.vy*dt;if(u.y>=floor){u.y=floor;u.vy=0;}}else u.y=floor;}
   if(u.type==='jet'||u.type==='bomber')u.x+=u.pass*d.speed*dt;
   if(overlaps(u,player)){
    if(u.type==='police'||u.type==='soldier')hitUnit(s,u,u.hp,contactSource,0,u.face,false,'crush');
    // A grown kaiju flattens the armour it walks into.
-   else if(stage>=MF.crushStage&&ROAD_UNITS.has(u.type))hitUnit(s,u,u.hp,contactSource,120,u.x+u.w/2<player.x+player.w/2?-1:1,false,'crush');
+   else if(stage>=MF.crushStage&&(ROAD_UNITS.has(u.type)||naval))hitUnit(s,u,u.hp,contactSource,120,u.x+u.w/2<player.x+player.w/2?-1:1,false,'crush');
   }
   if(u.hp<=0)continue;
   if(u.stun>0){u.stun=Math.max(0,u.stun-dt);continue;}
+  // A boat out of sight of its target patrols its stretch of water, turning back at the shore; in sight it closes like a patrol car.
+  if(naval&&Math.abs(target.x+target.w/2-u.x-u.w/2)>W.boatSight){const nx=u.x+u.pass*d.speed*.5*dt;if(navigable(nx+u.w/2)&&navigable(nx+(u.pass>0?u.w:0)))u.x=nx;else u.pass=-u.pass;u.face=u.pass;u.cooldown=Math.max(0,u.cooldown-dt);continue;}
   u.face=target.x+target.w/2>=u.x+u.w/2?1:-1;
   if(u.type!=='jet'&&u.type!=='bomber'&&d.speed>0&&u.windup<=0&&Math.abs(target.x+target.w/2-u.x-u.w/2)>d.range*.7){const nx=u.x+u.face*d.speed*dt,c0=u.x+u.w/2,c1=nx+u.w/2;
-   if(d.air||!(submerged(c1)&&!submerged(c0))&&Math.abs(groundAt(c1)-groundAt(c0))<12)u.x=nx;}
+   if(naval?navigable(c1)&&navigable(nx+(u.face>0?u.w:0)):d.air||!(submerged(c1)&&!submerged(c0))&&Math.abs(groundAt(c1)-groundAt(c0))<12)u.x=nx;}
   u.cooldown=Math.max(0,u.cooldown-dt);
   // Rounds may only be launched inside the engagement window: the native 960 width around the player, kept inside the
   // (possibly zoomed-out) view. Units still spawn beyond the visible edge, but a wider camera does not put more guns in range.
@@ -196,7 +206,7 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
   }
  }
  s.projectiles=s.projectiles.filter(p=>!p.dead&&p.life>0&&p.x>camera-M.despawnDistance&&p.x<camera+viewW+M.despawnDistance);
- s.units=s.units.filter(u=>u.hp>0&&u.x>camera-M.despawnDistance&&u.x<camera+viewW+M.despawnDistance&&(!(u.type==='jet'||u.type==='bomber')||u.x>camera-250&&u.x<camera+viewW+250));
+ s.units=s.units.filter(u=>u.hp>0&&(NAVAL_UNITS.has(u.type)||u.x>camera-M.despawnDistance&&u.x<camera+viewW+M.despawnDistance)&&(!(u.type==='jet'||u.type==='bomber')||u.x>camera-250&&u.x<camera+viewW+250));
  // Downed aircraft fall, spinning, and crash once on the street (a blast that catches other military).
  for(const w of s.wrecks){w.life-=dt;if(!w.falling)continue;w.life=Math.max(w.life,.5);
   w.vy+=MF.airGravity*dt;w.x+=w.vx*dt;w.y+=w.vy*dt;w.angle+=w.spin*dt;
