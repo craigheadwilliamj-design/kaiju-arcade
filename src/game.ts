@@ -1952,15 +1952,17 @@ function background(){
  // Sun (or moon), low in the sky so it reads behind the skyline.
  {const sx=W*.72-camera*.02,sy=m.lights>.6?150:m.lights>.35?250:170,r=m.lights>.35&&m.lights<.6?46:m.lights>.6?18:30;ctx.globalAlpha=m.lights>.6?.9:.75;
   ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();if(!night){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
- farSkyline(th.style,W,m);
+ if(th.id==='sfo')sfBackdrop(W,m);else{farSkyline(th.style,W,m);
  // Two parallax layers of city in the mood's colours; windows light up as the light goes.
  for(let i=-1,n=W/79+1;i<n;i++){const x=i*79-(camera*.13)%79,h=50+((i+22)*47%115);rect(x,315-h,50,h,m.far);rect(x+18,305-h,10,10,m.far);
   if(night)for(let yy=322-h;yy<310;yy+=12)for(let xx=6;xx<44;xx+=11)if(((i*31+yy*7+xx)>>1)%4===0)rect(x+xx,yy,3,4,m.win+'99');}
  for(let i=-1,n=W/102+1;i<n;i++){const x=i*102-(camera*.26)%102,h=80+((i+17)*37%110);rect(x,370-h,65,h,m.mid);rect(x+4,374-h,56,4,m.far);
   for(let yy=390-h;yy<360;yy+=15)for(let xx=8;xx<59;xx+=15){const on=((i*13+yy*3+xx)>>2)%5<m.lights*4;rect(x+xx,yy,5,7,on?m.win:night?'#1d2536':m.far);}}
+ }
  if(m.smog){ctx.globalAlpha=.28;rect(0,250,W,C.ground-250,'#e8b778');ctx.globalAlpha=1;}
  // Dense near-layer towers crowd the street and close in the skyline. Open layouts skip them so plazas read as open ground.
- if(!openLayout())for(let i=-1,n=W/88+1;i<n;i++){const x=i*88-(camera*.5)%88,h=170+((i+31)*53%150);rect(x,C.ground-4-h,78,h,m.near);rect(x+78,C.ground-4-h,10,h,m.near);rect(x-2,C.ground-4-h,82,5,m.mid);for(let yy=C.ground-h+4;yy<C.ground-20;yy+=17)for(let xx=7;xx<72;xx+=16)rect(x+xx,yy,7,9,(i+yy)%5<1+m.lights*2?m.win:'#2a3540');}
+ if(!openLayout()&&th.id==='sfo')sfNearRow(W,m);
+ else if(!openLayout())for(let i=-1,n=W/88+1;i<n;i++){const x=i*88-(camera*.5)%88,h=170+((i+31)*53%150);rect(x,C.ground-4-h,78,h,m.near);rect(x+78,C.ground-4-h,10,h,m.near);rect(x-2,C.ground-4-h,82,5,m.mid);for(let yy=C.ground-h+4;yy<C.ground-20;yy+=17)for(let xx=7;xx<72;xx+=16)rect(x+xx,yy,7,9,(i+yy)%5<1+m.lights*2?m.win:'#2a3540');}
  if(!hasTerrain()){rect(0,C.ground-4,W,10,'#c9c5ab');rect(0,C.ground+6,W,99,'#4c5755');rect(0,C.ground+8,W,3,'#202e31');
  for(let i=-1,n=W/85+1;i<n;i++)rect(i*85-camera%85,487,37,3,'#b4b294');rect(0,513,W,27+C.ground/zoom,'#34413f');}
  else{// Terrain: the curb, road and roadbed follow the ground profile; earth fills down to the bottom of the view.
@@ -2103,6 +2105,13 @@ function drawLandmarkShape(b:typeof buildings[number],x:number,y:number,h:number
   if(tall){poly([[x,y],[x+tw/2,y-30],[x+tw,y]],col);poly([[x+bw-tw,y],[x+bw-tw/2,y-30],[x+bw,y]],col);}else{for(const tx of [x,x+bw-tw]){rect(tx-3,y,tw+6,6,'#9a8f78');for(let k=0;k<3;k++)rect(tx+6+k*(tw-12)/2,y+24,5,h*.3,'#3b3b3b');}
    ctx.fillStyle='#3b3b3b';ctx.beginPath();ctx.arc(cx,y+h*.6,Math.min(18,(bw-tw*2)*.35),0,Math.PI*2);ctx.fill();ctx.fillStyle='#c0405a';ctx.beginPath();ctx.arc(cx,y+h*.6,Math.min(12,(bw-tw*2)*.22),0,Math.PI*2);ctx.fill();}
   for(let yy=y+30;yy<base-40;yy+=18){rect(x+6,yy,tw-12,8,'#2c3a42');rect(x+bw-tw+6,yy,tw-12,8,'#2c3a42');}rect(cx-12,base-34,24,34,'#2b2420');return;}
+ if(sh==='bow'){// Cupid's Span: a giant bow half-buried on its back, the arrow driven into the ground through it, fletching up high.
+  const ry=Math.min(h*.5,bw*.42),thick=Math.max(8,bw*.07);ctx.strokeStyle='#e9e2d0';ctx.lineWidth=thick;ctx.beginPath();ctx.ellipse(cx,base,bw/2-thick/2,ry,0,Math.PI,0);ctx.stroke();
+  ctx.strokeStyle='#c9bfa6';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(cx,base,bw/2-thick,ry-thick/2,0,Math.PI,0);ctx.stroke();
+  ctx.strokeStyle='#3a3530';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+thick*.4,base-2);ctx.lineTo(x+bw*.42,base-ry*.25);ctx.lineTo(x+bw-thick*.4,base-2);ctx.stroke();
+  const ax0=x+bw*.1,ay0=base-ry*1.3,ax1=x+bw*.78,ay1=base;ctx.strokeStyle='#b8433a';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(ax0,ay0);ctx.lineTo(ax1,ay1);ctx.stroke();ctx.lineWidth=1;
+  const dx=(ax1-ax0),dy=(ay1-ay0),L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;for(let k=0;k<3;k++){const px=ax0+ux*(6+k*9),py=ay0+uy*(6+k*9);poly([[px,py],[px-uy*16-ux*10,py+ux*16-uy*10],[px-ux*8,py-uy*8]],'#f2efe6');poly([[px,py],[px+uy*16-ux*10,py-ux*16-uy*10],[px-ux*8,py-uy*8]],'#d9d4c6');}
+  return;}
  if(sh==='arch'){const col=st==='mex'?'#7a6f60':'#d8ccae';rect(x,y+(st==='mex'?h*.3:h*.25),bw,h*(st==='mex'?.7:.75),col);rect(x-3,y+(st==='mex'?h*.3:h*.25),bw+6,10,'#bfb293');
   const ah=h*.42,aw=bw*.42;rect(cx-aw/2,base-ah,aw,ah,'#1e2428');ctx.fillStyle='#1e2428';ctx.beginPath();ctx.arc(cx,base-ah,aw/2,Math.PI,0);ctx.fill();
   if(st==='mex'){ctx.fillStyle='#4f6a5c';ctx.beginPath();ctx.ellipse(cx,y+h*.3,bw*.3,h*.22,0,Math.PI,0);ctx.fill();rect(cx-3,y+h*.02,6,14,'#4f6a5c');}else{rect(x,y+h*.25,bw,h*.12,'#cfc3a5');for(let k=x+6;k<x+bw-6;k+=14)rect(k,y+h*.28,8,10,'#bfb293');}return;}
@@ -2257,6 +2266,62 @@ function farSkyline(style:string,W:number,m:{far:string,mid:string,win:string,li
   const y=px(1,2200);poly([[y-12,base],[y-4,base-250],[y+4,base-250],[y+12,base]],c);rect(y-8,base-190,16,8,c);rect(y-1,base-290,2,40,c);if(Math.sin(time*3)>0)rect(y-2,base-292,4,4,'#ff5a5a');
   const t2=y+520;poly([[t2-40,base],[t2-4,base-160],[t2+4,base-160],[t2+40,base]],'#a8463a');rect(t2-24,base-80,48,5,'#d8d8d8');rect(t2-12,base-130,24,4,'#d8d8d8');}
  ctx.globalAlpha=1;}
+// ---- San Francisco backdrop: the Bay, hills under fog, the downtown landmarks and painted row houses up the slopes ----
+// Blend two #rrggbb colours (t = 0 gives a, 1 gives b): used to fade the house paint into the fog with distance.
+function mixHex(a:string,b:string,t:number){const p=(s:string)=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)),A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');}
+const SF_PAINT=['#c9a9a6','#9fb8ad','#e3d3a8','#a7b4c9','#d8b48f','#b9c6a0','#d6b9c9','#e6e0d0'],sfPaint=(k:number)=>SF_PAINT[((k%8)+8)%8];
+// A rolling hill line in a layer's own scrolled space (wx = screen x + that layer's camera offset).
+const sfHill=(wx:number,amp:number)=>amp*(.55+.25*Math.sin(wx*.0042)+.2*Math.sin(wx*.011+1.3));
+// One row house: a narrow frame with a bay window column, sash windows, a cornice (or a Queen Anne gable) and a stoop.
+function sfHouse(x:number,base:number,w:number,h:number,body:string,trim:string,win:string,gable:boolean,detail:boolean){
+ rect(x,base-h,w,h+40,body);rect(x+w-1,base-h,1,h+40,trim);
+ if(gable)poly([[x-1,base-h],[x+w/2,base-h-w*.42],[x+w+1,base-h]],body);else rect(x-1,base-h-2,w+2,3,trim);
+ if(!detail)return;
+ const bay=Math.round(w*.42),bx=x+2;rect(bx,base-h+5,bay,h-12,mixHex(body,'#ffffff',.12));
+ for(let yy=base-h+8;yy<base-10;yy+=13){rect(bx+2,yy,bay-4,7,win);rect(x+bay+5,yy,Math.max(3,w-bay-9),7,win);}
+ rect(x+bay+4,base-7,w-bay-7,7,trim);}
+function sfBackdrop(W:number,m:{far:string,mid:string,win:string,lights:number,bottom:string}){
+ const base=320,fog=m.bottom,c=m.far,f=-camera*.05;
+ // The far layer barely moves across a block (about 5% of the camera), so the landmarks are laid out once across the view, west to east.
+ // The Bay: a strip of water along the horizon, glinting.
+ rect(0,base-22,W,40,mixHex('#6f8f9c',fog,.35));for(let k=0;k<W;k+=37)rect(k+((time*6)%37),base-14+(k%3)*4,12,1,mixHex('#dfe8e6',fog,.3));
+ ctx.globalAlpha=.85;
+ // Marin headlands far left, with the Golden Gate's orange towers just showing (left out where the bridge itself is the level).
+ const g=f-120;
+ poly([[g-200,base-16],[g-40,base-96],[g+60,base-74],[g+170,base-108],[g+330,base-16]],mixHex('#7c8a7e',fog,.45));
+ if(block.name!=='Golden Gate'){const o=mixHex('#c0362c',fog,.35);for(const tx of [g+250,g+420]){rect(tx,base-120,7,104,o);rect(tx-2,base-120,11,3,o);rect(tx,base-92,7,2,mixHex(o,'#000000',.2));}
+  rect(g+190,base-30,300,4,o);ctx.strokeStyle=o;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(g+180,base-28);ctx.quadraticCurveTo(g+300,base-50,g+253,base-118);ctx.quadraticCurveTo(g+336,base-30,g+423,base-118);ctx.quadraticCurveTo(g+460,base-70,g+500,base-28);ctx.stroke();}
+ // Twin Peaks with Sutro Tower: a three-legged mast with crossbars, red lamps blinking at the tips.
+ const t=f+W*.42;poly([[t-260,base],[t-90,base-120],[t-40,base-108],[t,base-126],[t+60,base-104],[t+260,base]],mixHex('#7d897f',fog,.35));
+ {const sx=t,top=base-126-150,leg=(dx:number)=>poly([[sx+dx-3,base-124],[sx+dx*.25-1,top],[sx+dx*.25+1,top],[sx+dx+3,base-124]],c);leg(-26);leg(26);leg(0);
+  for(const [y,hw] of [[top+40,10],[top+56,12],[top+100,18]])rect(sx-hw,y,hw*2,3,c);for(const dx of [-8,0,8])rect(sx+dx-1,top-22,2,22,c);
+  if(Math.sin(time*2.4)>0)for(const dx of [-8,0,8])rect(sx+dx-1,top-24,3,3,'#ff5a4a');}
+ // Downtown: the Bay Bridge's west span off to the right, then Salesforce Tower, the Transamerica Pyramid and Coit Tower on Telegraph Hill.
+ const d=f+W*.68;
+ if(block.name!=='Bay Bridge'){const b=mixHex('#9aa6aa',fog,.25),deck=base-34;rect(d+300,deck,520,4,b);for(const tx of [d+420,d+600,d+760]){rect(tx,deck-78,5,82,b);rect(tx-4,deck-50,13,2,b);}
+  ctx.strokeStyle=b;ctx.beginPath();ctx.moveTo(d+330,deck);ctx.quadraticCurveTo(d+380,deck-30,d+422,deck-78);ctx.quadraticCurveTo(d+512,deck-10,d+602,deck-78);ctx.quadraticCurveTo(d+682,deck-10,d+762,deck-78);ctx.quadraticCurveTo(d+800,deck-30,d+830,deck);ctx.stroke();}
+ for(const [ox,w,h] of [[-70,26,96],[-40,22,120],[60,30,104],[94,20,82],[150,34,74],[190,24,92],[226,30,60]])rect(d+ox,base-h,w,h,c);
+ {const x=d-12;rect(x,base-218,38,218,c);ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,base-218);ctx.quadraticCurveTo(x+19,base-252,x+38,base-218);ctx.fill();
+  if(m.lights>.4)for(let yy=base-210;yy<base;yy+=9)rect(x+4,yy,30,2,m.win+'77');}
+ {const x=d+32;poly([[x-14,base],[x+4,base-176],[x+6,base-196],[x+8,base-176],[x+26,base]],c);rect(x-10,base-120,6,26,c);rect(x+16,base-120,6,26,c);}
+ {const x=d+300;poly([[x-110,base],[x-30,base-64],[x+30,base-66],[x+110,base]],mixHex('#7f8b80',fog,.3));rect(x-6,base-108,12,44,c);rect(x-8,base-110,16,4,c);for(let k=-4;k<5;k+=3)rect(x+k,base-104,1,38,mixHex(c,'#ffffff',.2));}
+ ctx.globalAlpha=1;
+ // Karl the fog: a soft bank rolling over the ridgelines, drifting slowly.
+ ctx.fillStyle='#eef1ec';for(let k=0;k<9;k++){const fx=((k*190+time*9-camera*.04)%(W+380)+W+380)%(W+380)-190,fy=base-112+(k*37%40);ctx.globalAlpha=.22;ctx.beginPath();ctx.ellipse?.(fx,fy,150,26,0,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+ // Far slopes: a carpet of small pastel houses climbing the hills, faded by the fog.
+ {const off=camera*.13,hb=316;ctx.fillStyle=mixHex('#86948a',fog,.45);ctx.beginPath();ctx.moveTo(-10,hb);for(let x=-10;x<=W+10;x+=10)ctx.lineTo(x,hb-sfHill(x+off,70));ctx.lineTo(W+10,hb);ctx.closePath();ctx.fill();
+  const step=14;for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const wx=i*step,x=wx-off,top=hb-sfHill(wx+step/2,70)+3,hh=8+(i*7%5);
+   const col=mixHex(sfPaint(i*5),fog,.5);rect(x,top-hh,step-2,hh+4,col);rect(x,top-hh-1,step-2,1,mixHex(col,'#ffffff',.3));
+   if(m.lights>.4&&i%3===0)rect(x+4,top-hh+3,3,3,m.win);}}
+ // Middle slopes: rows of Victorians stepping up and down the hills.
+ {const off=camera*.26,hb=372,step=30;ctx.fillStyle=mixHex('#7a877c',fog,.3);ctx.beginPath();ctx.moveTo(-10,hb);for(let x=-10;x<=W+10;x+=10)ctx.lineTo(x,hb-sfHill(x+off+900,95));ctx.lineTo(W+10,hb);ctx.closePath();ctx.fill();
+  for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const wx=i*step,x=wx-off,b=hb-sfHill(wx+step/2+900,95)+4,h=30+((i*13)%4)*7;
+   const body=mixHex(sfPaint(i*3),fog,.28);sfHouse(x,b,step-1,h,body,mixHex(body,'#ffffff',.35),m.lights>.4?m.win:mixHex(body,'#3b4650',.45),i%4===1,true);}}
+}
+// Near row: taller three-storey painted ladies (bay windows, cornices, gables) in place of the midtown towers, darker so playable buildings read in front.
+function sfNearRow(W:number,m:{near:string,win:string,lights:number}){const step=64,off=camera*.5;
+ for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const x=i*step-off,h=76+((i*53)%5)*12,body=mixHex(sfPaint(i*7),m.near,.55);
+  sfHouse(x,C.ground-4,step-2,h,body,mixHex(body,'#ffffff',.25),(i+h)%5<1+m.lights*3?m.win:mixHex(body,'#1f2830',.5),i%3===2,true);}}
 // Rain (Tokyo): streaks across the whole view, drawn in screen space over everything.
 function drawRain2(){if(!CITIES[cityIndex].mood.rain)return;ctx.strokeStyle='#a9c4dd55';ctx.lineWidth=1;ctx.beginPath();
  for(let k=0;k<90;k++){const x=((k*97+time*260)%1000)-20,y=((k*53+time*900)%600)-40;ctx.moveTo(x,y);ctx.lineTo(x-4,y+14);}ctx.stroke();}
@@ -2688,10 +2753,13 @@ function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const b
   case 'hotel':{rect(x,y,bw,h,b.color);rect(x-2,y-6,bw+4,8,'#e8dfc8');for(let yy=y+10;yy<base-34;yy+=22)for(let wx=x+8;wx<x+bw-14;wx+=16)win(wx,yy,9,12);
    rect(x+bw*.3,base-28,bw*.4,28,'#2f3a40');rect(x+bw*.25,base-34,bw*.5,6,'#b9473b');break;}
   case 'piling':{rect(x,y,bw,h,'#5b4a3a');for(let yy=y+8;yy<base;yy+=18)rect(x-1,yy,bw+2,3,'#3f342a');rect(x-2,y,bw+4,4,'#7a6048');break;}
-  case 'ferry':{// The Ferry Building's long hall: arched windows under a hipped roof.
-   rect(x,y+h*.18,bw,h*.82,b.color);poly([[x-6,y+h*.2],[x+14,y],[x+bw-14,y],[x+bw+6,y+h*.2]],'#6a5a48');
-   for(let wx=x+10;wx<x+bw-18;wx+=22){rect(wx,y+h*.36,12,h*.4,'#2a3a42');ctx.fillStyle='#2a3a42';ctx.beginPath();ctx.arc(wx+6,y+h*.36,6,Math.PI,0);ctx.fill();}
-   for(let wx=x+8;wx<x+bw-14;wx+=22)rect(wx,base-h*.16,14,h*.16,'#6a5a48');break;}
+  case 'ferry':{// The Ferry Building's long hall: a ground-floor arcade of big arches, a row of arched windows above, a cornice and a low roof with a skylight.
+   const top=y+h*.14,mid=y+h*.5,dark='#2a3a42',trim='#b3a688',arch=(ax:number,ay:number,aw:number,ah:number,col:string)=>{rect(ax,ay+aw/2,aw,ah-aw/2,col);ctx.fillStyle=col;ctx.beginPath();ctx.arc(ax+aw/2,ay+aw/2,aw/2,Math.PI,0);ctx.fill();};
+   rect(x,top,bw,base-top,b.color);poly([[x-4,top],[x+10,y+2],[x+bw-10,y+2],[x+bw+4,top]],'#7d6f5c');rect(x+bw*.2,y+h*.04,bw*.6,h*.06,'#9fb3b8');
+   rect(x-5,top-3,bw+10,5,trim);rect(x-3,mid-3,bw+6,4,trim);rect(x-3,base-4,bw+6,4,trim);
+   const bays=Math.max(3,Math.round(bw/30)),bayW=bw/bays;
+   for(let k=0;k<bays;k++){const bx=x+k*bayW;arch(bx+bayW*.18,mid+6,bayW*.64,base-mid-10,dark);arch(bx+bayW*.28,top+8,bayW*.44,mid-top-16,dark);rect(bx,top,2,base-top,trim);}
+   break;}
   default:facade(b,x,y,h,false);}}
 // The pier: a plank deck on pilings in place of the suspension bridge. Falling spans swing down about their west end and go under.
 function drawPier(){if(!spans.length)return;const y=spans[0].y;
@@ -2742,15 +2810,21 @@ function drawObjectiveArt(o:NonNullable<typeof objective>){const x=o.x-camera,gy
   ctx.restore();rect(x-w*.55,wl-2,w*1.1,3,'#cfe3ec');
   if(s.sinking&&s.sink<1)for(let k=0;k<4;k++)rect(x-w*.4+k*w*.25+Math.sin(time*5+k)*6,wl-4-((time*40+k*23)%24),4,4,'#e8f4f8');
   text(o.label,x,wl-s.deck-s.deck*2.4,10,'#3b504a','center');return;}
- if(o.art==='clock'){const w=o.w,hp=o.hp/o.maxHP;
-  rect(x-w/2,gy-o.h,w,o.h,'#d8cdb0');rect(x-w/2-5,gy-o.h-6,w+10,8,'#a89c80');rect(x-w/2+8,gy-o.h+30,w-16,3,'#a89c80');rect(x-w/2+8,gy-o.h*.4,w-16,3,'#a89c80');
-  for(let yy=gy-o.h*.55;yy<gy-14;yy+=30)for(const k of [.25,.62]){rect(x-w/2+w*k,yy,12,20,'#2a3a42');ctx.fillStyle='#2a3a42';ctx.beginPath();ctx.arc(x-w/2+w*k+6,yy,6,Math.PI,0);ctx.fill();}
-  poly([[x-w/2-7,gy-o.h-6],[x,gy-o.h-58],[x+w/2+7,gy-o.h-6]],'#6a5a48');rect(x-1,gy-o.h-84,2,28,'#c9a441');
-  ctx.fillStyle='#f4ecd0';ctx.beginPath();ctx.arc(x,gy-o.h+4,w*.3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2b2118';ctx.lineWidth=2;ctx.stroke();
-  const m=time*.8;ctx.beginPath();ctx.moveTo(x,gy-o.h+4);ctx.lineTo(x+Math.cos(m)*w*.22,gy-o.h+4+Math.sin(m)*w*.22);ctx.moveTo(x,gy-o.h+4);ctx.lineTo(x+Math.cos(m*12)*w*.15,gy-o.h+4+Math.sin(m*12)*w*.15);ctx.stroke();ctx.lineWidth=1;
+ if(o.art==='clock'){const w=o.w,hp=o.hp/o.maxHP,top=gy-o.h,stone='#ddd2b5',trim='#b3a688',dark='#2a3a42';
+  // The Ferry Building's campanile: a tall plain shaft with corner pilasters, the clock stage with its big face, an open arched
+  // belfry, a stepped lantern and a pyramid cap with the flagpole.
+  rect(x-w/2,top+o.h*.36,w,o.h*.64,stone);rect(x-w/2,top+o.h*.36,5,o.h*.64,trim);rect(x+w/2-5,top+o.h*.36,5,o.h*.64,trim);
+  for(let yy=top+o.h*.46;yy<gy-24;yy+=o.h*.13){rect(x-5,yy,10,16,dark);ctx.fillStyle=dark;ctx.beginPath();ctx.arc(x,yy,5,Math.PI,0);ctx.fill();}
+  rect(x-w/2-4,top+o.h*.36-4,w+8,6,trim);
+  rect(x-w/2-2,top+o.h*.14,w+4,o.h*.22,stone);rect(x-w/2-5,top+o.h*.14-4,w+10,6,trim);
+  const cy=top+o.h*.25;ctx.fillStyle='#f4ecd0';ctx.beginPath();ctx.arc(x,cy,w*.34,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2b2118';ctx.lineWidth=2;ctx.stroke();
+  const m=time*.8;ctx.beginPath();ctx.moveTo(x,cy);ctx.lineTo(x+Math.cos(m)*w*.24,cy+Math.sin(m)*w*.24);ctx.moveTo(x,cy);ctx.lineTo(x+Math.cos(m*12)*w*.16,cy+Math.sin(m*12)*w*.16);ctx.stroke();ctx.lineWidth=1;
+  rect(x-w/2+4,top,w-8,o.h*.14,stone);for(const k of [-1,0,1]){const ax=x+k*w*.26-5;rect(ax,top+12,10,o.h*.14-14,dark);ctx.fillStyle=dark;ctx.beginPath();ctx.arc(ax+5,top+12,5,Math.PI,0);ctx.fill();}
+  rect(x-w/2+1,top-4,w-2,6,trim);rect(x-w*.32,top-26,w*.64,22,stone);rect(x-w*.36,top-28,w*.72,4,trim);for(const k of [-1,1])rect(x+k*w*.14-3,top-22,6,14,dark);
+  rect(x-w*.2,top-40,w*.4,12,stone);poly([[x-w*.24,top-40],[x,top-78],[x+w*.24,top-40]],'#9a8a6c');rect(x-1,top-102,2,26,'#c9a441');rect(x+1,top-102,10,6,'#e8e2d2');
   if(hp<.66)poly([[x-w*.2,gy-o.h*.9],[x-w*.12,gy-o.h*.6],[x-w*.25,gy-o.h*.45],[x-w*.05,gy-o.h*.3],[x-w*.14,gy-o.h*.7]],'#293e44');
   if(hp<.33)poly([[x+w*.2,gy-o.h*.8],[x+w*.1,gy-o.h*.55],[x+w*.26,gy-o.h*.3],[x+w*.12,gy-o.h*.2]],'#283b3f');
-  text(o.label,x,gy-o.h-96,10,'#3b504a','center');return;}
+  text(o.label,x,gy-o.h-112,10,'#3b504a','center');return;}
  if(o.art==='command'){const w=o.w,hp=o.hp/o.maxHP;
   rect(x-w/2,gy-o.h,w,o.h,'#4d5a68');rect(x-w/2-4,gy-o.h-6,w+8,8,'#394552');for(let wx=x-w/2+10;wx<x+w/2-20;wx+=26)rect(wx,gy-o.h+14,16,12,Math.sin(time*2+wx)>-.8?'#8fb0bd':'#2a3a42');
   for(let k=0;k<5;k++)rect(x-w/2+8+k*(w-24)/4,gy-12,10,12,'#d9b45a');

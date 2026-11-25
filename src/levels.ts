@@ -6,7 +6,7 @@ export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind
 // `parts`: the hitbox silhouette (src/hitbox.ts); omitted means one box, the whole footprint.
 // `prop`: street junk (a walk-through breakable: hot dog cart, trash can, taco stand, advertising column, café table, market stall,
 // vending machine), drawn per kind.
-// `shape`: a landmark's silhouette ('tower' default, 'lattice', 'dome', 'twin', 'arch', 'needle', 'pagoda'); its hitbox parts follow the drawing (shapeParts).
+// `shape`: a landmark's silhouette ('tower' default, 'lattice', 'dome', 'twin', 'arch', 'bow', 'needle', 'pagoda'); its hitbox parts follow the drawing (shapeParts).
 // Fixed New York Block 1: four screen widths, authored positions, never generated.
 const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:295,w:64,h:82,hp:60,value:70,kind:'medium',label:'DELI',color:'#577b84'},
@@ -255,7 +255,7 @@ function sfEmbarcadero():BlockDef{
  const T=6560,POCKET:[number,number]=[40,440],WATER:[number,number]=[3000,4440],DECK:[number,number]=[3140,4300],W=8*960;
  let b=sfLevel('Embarcadero',8,'stronghold',
   `=,L,_,t,s,m,s,_,t,h,m,_,s,m,s,t,_,m,h,>4520,w:shed,w:shed,s,w:shed,_,w:shed`,
-  ['BOW AND ARROW|arch'],{startStage:1,cap:1,tier:1},{target:T,ring:[-840,-680,-520]});
+  ["CUPID'S SPAN|bow"],{startStage:1,cap:1,tier:1},{target:T,ring:[-840,-680,-520]});
  b=terrain(b,[[0,0],[WATER[0]-50,0],[WATER[0],-28],[WATER[1],-28],[WATER[1]+50,0],[W,0]]);
  b=clearClutter(clearClutter(b,[WATER,[0,POCKET[1]+80]]),[[WATER[0]-60,WATER[1]+60]],true);
  // Pilings: stout posts in the water just beside the deck; the kaiju climbs one to get out of the water.
