@@ -20,7 +20,7 @@ test('Embarcadero: a train outside its line neither shows nor hits (the tunnel p
 });
 
 test('Trees come up by the roots and are thrown like a lamppost, at Stage 1 as well as Stage 3',async()=>{
- for(const [block,stage] of [[3,2],[8,3]] as const){
+ for(const [block,stage] of [[3,2],[0,1]] as const){
   const h=await boot(block);let s=h.state();const palm=s.buildings.findIndex((b:any)=>b.prop==='palm');assert.ok(palm>=0,'a tree in the level');
   const b=s.buildings[palm];h.test().teleport(b.x-s.width-12);h.step(3);
   let got=false;for(let n=0;n<6&&!got;n++){h.tap('KeyH');h.step(3);got=h.state().held==='lamp';if(!got&&h.state().held){h.tap('KeyH');h.step(40);}}
@@ -108,7 +108,7 @@ test('The sailing ships: only the hull is a hitbox, the masts and sails are scen
 });
 
 test('Raised roads have a beginning and an end: ramps you can walk up',async()=>{
- const h=await boot(4,FIN.elevated![0]-600);h.step(30);
+ const h=await boot(4,FIN.elevated![0]-FIN.approach!-80);h.step(30);
  h.down('KeyD');for(let n=0;n<60*3;n++)h.step();h.up('KeyD');h.step(10);
  const s=h.state();assert.ok(s.playerFeet<C.ground-40,`walked up the ramp (feet ${Math.round(s.playerFeet)})`);assert.ok(s.playerGrounded);
  assert.ok(FIN.approach!>EL.pillar,'a ramp longer than a span');assert.ok(FAULT.approach!>EL.pillar);assert.ok(BAY.deckApproach!>BRIDGE.clear*3);
@@ -118,7 +118,7 @@ test('Raised roads have a beginning and an end: ramps you can walk up',async()=>
 });
 
 test('Bay Bridge: the upper deck is reached by a ramp from the west',async()=>{
- const h=await boot(7,200);h.step(20);
+ const h=await boot(7,300);h.step(20);
  h.down('KeyD');let best=C.ground;for(let n=0;n<60*14;n++){h.step();best=Math.min(best,h.state().playerFeet);}h.up('KeyD');
  assert.ok(best<C.ground-BRIDGE.deckRise-BRIDGE.clear,`climbed past the lower deck on the way up (${Math.round(best)})`);
 });

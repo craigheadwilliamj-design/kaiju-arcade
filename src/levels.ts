@@ -422,7 +422,7 @@ function sfFault():BlockDef{
 // towers, launching jets. The decks stand BRIDGE.deckRise above the water. The one new thing: the carrier.
 function sfBayBridge():BlockDef{
  const RAMP=[800,1400],WEST=[1400,3600],BAY=[4700,4900],ISLAND_END=5900,RAMP_E=[5900,6400],EAST=[6400,7680],CARRIER=6900,DR=150,BED=-62;
- let b=sfLevel('Bay Bridge',8,'stronghold',`s,m,>4960,L,K,w:shed,w:shed`,['NAVY COMMAND|tower'],{startStage:3,cap:3,tier:4},{target:CARRIER,ring:[]});
+ let b=sfLevel('Bay Bridge',8,'stronghold',`>4960,L,K,w:shed,w:shed`,['NAVY COMMAND|tower'],{startStage:3,cap:3,tier:4},{target:CARRIER,ring:[]});
  b=terrain(b,[[0,0],[RAMP[0],0],[RAMP[1],DR],[RAMP[1]+6,BED],[BAY[0],BED],[BAY[1],0],[ISLAND_END,0],[RAMP_E[1],DR],[RAMP_E[1]+6,BED],[8000,BED]]);
  // No street clutter on the ramps, the decks or in the bay; the island's sheds are the Navy base's hangars.
  b=clearClutter(b,[[RAMP[0],BAY[1]],[ISLAND_END,8000]]);
@@ -439,7 +439,7 @@ function sfBayBridge():BlockDef{
  b={...b,buildings:[...b.buildings,upper,tower(6400),tower(7200),...roadblock]};
  // Gridlock on the lower deck: parked rows end to end.
  const cars=[1620,1960,2300,2640,2980,3320].map(sc);
- return {...b,cars,deckApproach:sc(1500),bridge:{x0:sc(WEST[0]),x1:sc(WEST[1]),spans:8,rise:bd.deckRise,more:[[sc(EAST[0]),sc(EAST[1]),4]]},
+ return {...b,cars,deckApproach:sc(1070),bridge:{x0:sc(WEST[0]),x1:sc(WEST[1]),spans:8,rise:bd.deckRise,more:[[sc(EAST[0]),sc(EAST[1]),4]]},
   water:[[sc(RAMP[1]),sc(BAY[1]),CONFIG.ground+6],[sc(RAMP_E[1]),sc(8000),CONFIG.ground+6]],bands:true,
   target:{x:sc(CARRIER),label:'AIRCRAFT CARRIER',art:'cutter',scale:bd.carrierScale,launch:true},garrison:[],
   // Tanks and soldiers on the lower deck, tanks and artillery on the upper deck, warships on the water below it and in the bay.

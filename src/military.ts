@@ -209,9 +209,9 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
  for(const p of s.projectiles){if(p.dead)continue;const ox=p.x,oy=p.y;p.age+=dt;p.life-=dt;
   if(p.weapon==='artillery'){const t=Math.min(1,p.age/p.flight);p.x=p.startX+(p.targetX-p.startX)*t;p.y=p.startY+(groundAt(p.targetX)-p.startY)*t-Math.sin(t*Math.PI)*170;}
   else {if(p.weapon==='bomb')p.vy+=210*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}
-  const hitsPlayer=segmentHits(ox,oy,p.x,p.y,player,2),hitsBoss=boss&&segmentHits(ox,oy,p.x,p.y,boss,2);
-  // Aerial fire (everything but a lobbed shell) is stopped by a deck over the street, like the street itself.
-  const roof=p.weapon==='artillery'?null:coverFn(p.x,oy,p.y),gy=roof===null?groundAt(p.x):Math.min(groundAt(p.x),roof);
+  // Aerial fire (everything but a lobbed shell) is stopped by a deck over the street, like the street itself: it only reaches what is above the deck.
+  const roof=p.weapon==='artillery'?null:coverFn(p.x,oy,p.y),gy=roof===null?groundAt(p.x):Math.min(groundAt(p.x),roof),ey=roof===null?p.y:roof;
+  const hitsPlayer=segmentHits(ox,oy,p.x,ey,player,2),hitsBoss=boss&&segmentHits(ox,oy,p.x,ey,boss,2);
   if(p.weapon==='artillery'||p.weapon==='bomb'){
    if(p.y>=gy||p.weapon==='artillery'&&p.age>=p.flight){p.y=gy;detonate(s,p,player,boss);}
   }else if(roof!==null&&p.y>=roof&&!hitsPlayer&&!hitsBoss){p.y=roof;if(p.radius>0)detonate(s,p,player,boss);else{p.dead=true;s.events.push({kind:'cosmetic',x:p.x,y:p.y});}
