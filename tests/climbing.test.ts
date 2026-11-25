@@ -73,3 +73,20 @@ test('J while clinging punches the wall one-handed without letting go',async()=>
   h.tap('KeyJ');h.step(1);assert.equal(h.state().anim,'light1');
  }finally{h.cleanup();}
 });
+
+test('the camera follows the kaiju up with no ceiling: the head stays on screen on the tallest tower and above it',async()=>{
+ const {bootCampaign}=await import('./helpers/game-harness.ts');
+ const h=await bootCampaign(.75,{city:'sfo'});
+ try{
+  // Golden Gate (a Stage 3 level): perch on its tallest tower, then jump straight up off the roof.
+  h.test().goto(8);h.step(2);assert.equal(h.state().stage,3);
+  const bs=h.state().buildings,i=bs.reduce((m:number,b:any,k:number)=>b.h>bs[m].h?k:m,0);
+  h.test().perchOn(i);h.step(90);
+  // Screen y of the drawn head (sprites run ~1.4x their hitbox), as src/game.ts screenY works it out.
+  const headY=()=>{const s=h.state();return C.ground+(s.y+s.height-1.4*s.height+s.cameraY-C.ground)*s.zoom;};
+  assert.ok(Math.abs(headY()-130)<4,`head settles at line 130 on the roof (${headY().toFixed(1)})`);
+  let top=0,highest=0;h.tap('Space');for(let k=0;k<80;k++){h.step();top=Math.min(top===0?1e9:top,headY());highest=Math.max(highest,h.state().cameraY);}
+  assert.ok(highest>560,`the camera rises past the old 560 ceiling (${highest.toFixed(0)})`);
+  assert.ok(top>0,`the head never leaves the top of the screen (${top.toFixed(1)})`);
+ }finally{h.cleanup();}
+});

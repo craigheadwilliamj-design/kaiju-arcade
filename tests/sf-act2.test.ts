@@ -84,15 +84,6 @@ test('Financial District data: bank canyon, vault, transit center with buses und
  assert.equal(FIN.garrison!.filter(([k])=>k==='tank').length>=2,true);
 });
 
-test('camera headroom: the camera can rise far enough to follow a Stage 2 kaiju to the top of the tallest tower',()=>{
- // The camera lifts only as far as needed to keep the sprite's head below line 130 (src/game.ts): rise = (height of the head over the
- // street) + (130 - ground) / zoom, up to CONFIG.maxCameraY. A kaiju on the tallest roof, mid-jump, must not need more than that.
- const stage2=BODY(2),tallest=Math.max(...FIN.buildings.map(b=>b.h)),jump=C.jumpVelocity**2/(2*C.gravity)*1.4;
- const head=tallest+1.4*stage2+jump,need=head+(130-C.ground)/C.zoom;
- assert.ok(need<=C.maxCameraY,`needs ${need.toFixed(0)}px of rise, has ${C.maxCameraY}`);
- // And the pyramid itself (the tallest thing in the level) is shorter than the climb the camera supports.
- assert.ok(SF2.pyramidH+1.4*stage2-610<=C.maxCameraY);
-});
 
 test('Wharf data: west to east, there-and-back with two exits, start mid-map, features in order',()=>{
  const W=levelWidth(WHARF),start=WHARF.start!;assert.ok(start>W*.3&&start<W*.45,'the start (Jefferson Street) is mid-map, west of centre');

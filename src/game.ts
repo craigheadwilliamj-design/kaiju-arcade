@@ -1936,8 +1936,9 @@ function update(dt:number){
  // Horizontal lead and vertical follow are worked out in screen space so they hold at any zoom.
  const vw=viewW();
  const target=Math.max(0,Math.min(worldWidth-vw,player.x+bodyWidth()/2-vw*(.42-.08*player.face)));camera+=(target-camera)*Math.min(1,dt*C.cameraSpeed);
- // Lift only as far as needed to keep the drawn sprite's head (sprites run ~1.4x their hitbox) below line 130, so the street stays in view.
- const head=player.y+bodyHeight()-1.4*bodyHeight(),targetY=Math.max(0,Math.min(C.maxCameraY,C.ground-head+(130-C.ground)/zoom));cameraY+=(targetY-cameraY)*Math.min(1,dt*C.cameraSpeed*1.4);
+ // Follow the kaiju up: lift only as far as needed to keep the drawn sprite's head (sprites run ~1.4x their hitbox) below line 130, so
+ // the street stays in view as long as it can. No ceiling: the camera goes as high as the kaiju climbs.
+ const head=player.y+bodyHeight()-1.4*bodyHeight(),targetY=Math.max(0,C.ground-head+(130-C.ground)/zoom);cameraY+=(targetY-cameraY)*Math.min(1,dt*C.cameraSpeed*1.4);
  if(objectiveOpen()&&(player.x>=worldWidth-bodyWidth()-3||(openLayout()&&player.x<=3))){exitSide=player.x<=3?'west':'east';results();}
 }
 function rect(x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
@@ -2191,7 +2192,7 @@ function act3Debug(){return {finaleState:finale?{woke:finale.woke,phase:finale.p
  railDecks:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,deck:r.deck??0,alive:r.alive,fellAt:r.fellAt??null}))};}
 function act2Debug(){return {powerhouseDown,loosed,exitSide,tumbleArmed,pendingTumble:pendingTumble.length,pendingRunaways:pendingRunaways.length,seaLions:lions.map(l=>({x:l.x,state:l.state})),lionsEscaped,
  kaibanState:kaiban?{...kaiban}:null,cutter:objective?.ship?{sink:objective.ship.sink,sinking:objective.ship.sinking,list:objective.ship.list,w:objective.ship.w,h:objective.ship.h,box:hullBox(objective.ship,waterAt(objective.x)??C.ground),deck:deckY(objective.ship,waterAt(objective.x)??C.ground)}:null,
- fogLevel:fogAt(block,player.x+bodyWidth()/2),railSpans:rails.map(r=>({x0:r.x0,x1:r.x1,alive:r.alive,hp:r.hp,y:r.y})),cameraRise:cameraY,cameraRiseMax:C.maxCameraY};}
+ fogLevel:fogAt(block,player.x+bodyWidth()/2),railSpans:rails.map(r=>({x0:r.x0,x1:r.x1,alive:r.alive,hp:r.hp,y:r.y})),cameraRise:cameraY};}
 // Rooftop fixtures, drawn with their building (so they squash and lean with it). x is the building's screen x, h its drawn height.
 function drawRoof(p:RoofProp,x:number,h:number){const r=roofBox(p,h),rx=r.x-p.b.x+x,ry=r.y,w=r.w,hh=r.h;
  if(p.kind==='sign'){// Big rooftop letters on a steel frame.

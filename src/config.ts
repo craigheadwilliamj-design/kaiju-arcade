@@ -6,7 +6,7 @@ export const CITY_SCALE=1.4;
 export const CONFIG = {
  cityScale:CITY_SCALE,
  width:960,height:540,ground:435,screenCount:4,moveSpeed:205,crouchHeight:38,
- playerWidth:48,playerHeight:69,gravity:1250,jumpVelocity:530,climbSpeed:230,maxCameraY:560,
+ playerWidth:48,playerHeight:69,gravity:1250,jumpVelocity:530,climbSpeed:230,
  lightDamage:30,heavyDamage:68,rangedDamage:23,attackCooldown:.28,
  heavyCooldown:.62,rangedCooldown:.48,projectileSpeed:540,
  meleeReach:76,exitThreshold:.75,perfectBonus:1500,
@@ -14,7 +14,7 @@ export const CONFIG = {
  // Kaiju sprites are drawn this far below the physics floor so their feet sit on the road, not the curb line.
  spriteDrop:8,
  // Fixed world zoom (1 = native 960px view), anchored on the street line. Held constant at every stage so growth reads
- // as the kaiju getting bigger against the city, and wide enough that a Stage 3 climb up the tallest tower stays in frame.
+ // as the kaiju getting bigger against the city, and wide enough to show the street around a Stage 3 kaiju; the camera follows a climb up with no ceiling.
  zoom:.5,
 };
 
