@@ -67,7 +67,8 @@ export function exitTarget(cityIndex:number,block:number,side?:ExitSide):number|
  const levels=LEVELS[cityIndex]??[],level=levels[block],named=(name?:string)=>{const i=name?levels.findIndex(b=>b.name===name):-1;return i>=0?i:undefined;};
  return (side?named(level?.exits?.[side]):undefined)??named(level?.after)??routeLevels(cityIndex).find(i=>i>block);}
 // Advance to the level the exit used leads to.
-export function nextBlock(run:Run,cityScore:number,side?:ExitSide){if(run.phase!=='results')return false;const next=exitTarget(campaignCityIndex(run.city),run.block,side);if(next===undefined)return false;run.block=next;run.blockStart=cityScore;run.phase='playing';return true;}
+// `cityIndex`: the city the level belongs to (the run's own, unless a test is inside a fixture city such as 'nyc-classic').
+export function nextBlock(run:Run,cityScore:number,side?:ExitSide,cityIndex=campaignCityIndex(run.city)){if(run.phase!=='results')return false;const next=exitTarget(cityIndex,run.block,side);if(next===undefined)return false;run.block=next;run.blockStart=cityScore;run.phase='playing';return true;}
 export function addRecord(p:Permanent,run:Run,score:number,completed:boolean){if(p.scores.some(r=>r.id===run.id))return;p.scores.push({id:run.id,initials:run.initials,kaiju:run.kaiju,score:Math.round(score),cities:completed?CAMPAIGN.length:run.city,completed});p.scores.sort((a,b)=>b.score-a.score);p.scores=p.scores.slice(0,10);}
 export function conquerCity(p:Permanent,run:Run,cityScore:number,boss:string){
  if(run.phase!=='playing'||run.block!==finalLevel(run))return false;
