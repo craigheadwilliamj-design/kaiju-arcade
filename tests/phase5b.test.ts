@@ -5,7 +5,7 @@ import {CONFIG as C,RESPONSE as RS,ELEVATED as EL,TUNNEL as TN} from '../src/con
 import {emptyPermanent,PERMANENT_KEY,CAMPAIGN} from '../src/campaign.ts';
 
 test('data: hydrants line district streets; Tokyo’s open blocks have an elevated railway',()=>{
- assert.ok(LEVELS[cityIndexOf('nyc')][0].buildings.some(b=>b.role==='hydrant'),'Lower Manhattan has hydrants');
+ assert.ok(LEVELS[cityIndexOf('nyc-classic')][0].buildings.some(b=>b.role==='hydrant'),'Lower Manhattan has hydrants');
  for(const b of LEVELS.flat())for(const x of b.buildings.filter(x=>x.role==='hydrant'))assert.equal(x.kind,'tiny');
  assert.deepEqual(LEVELS[cityIndexOf('tyo')].map(b=>!!b.elevated),[true,true,false,true,false]);assert.ok(LEVELS.filter((_,i)=>i!==cityIndexOf('tyo')).flat().every(b=>!b.elevated||b.elevatedLook==='park'||b.elevatedLook==='freeway'));
 });

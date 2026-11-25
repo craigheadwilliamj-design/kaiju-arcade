@@ -36,7 +36,7 @@ export function readSaves(storage:StorageLike|undefined){
  let permanent=emptyPermanent(),checkpoint:Checkpoint|null=null,available=true;
  try{const p=JSON.parse(storage?.getItem(PERMANENT_KEY)||'null');if(p?.version===SAVE_VERSION){
  permanent.unlocked=[...new Set(['Mogurodon',...(Array.isArray(p.unlocked)?p.unlocked.filter((k:unknown)=>KAIJU.includes(k as string)):[])])] as string[];
- permanent.conquered=Array.isArray(p.conquered)?[...new Set(p.conquered.filter((c:unknown)=>typeof c==='string'&&cityIndexOf(c)>=0))] as string[]:[];
+ permanent.conquered=Array.isArray(p.conquered)?[...new Set(p.conquered.filter((c:unknown)=>typeof c==='string'&&CAMPAIGN.includes(c)))] as string[]:[];
  permanent.secrets=Array.isArray(p.secrets)?[...new Set(p.secrets.filter((k:unknown)=>typeof k==='string'&&!!secretLevelOf(k)))] as string[]:[];
  permanent.gallery=Array.isArray(p.gallery)?p.gallery.filter((k:unknown)=>KAIJU.includes(k as string)):[];
  permanent.scores=Array.isArray(p.scores)?p.scores.filter((r:any)=>typeof r?.id==='string'&&r.id.length<100&&initialsValid(r.initials)&&KAIJU.includes(r.kaiju)&&finite(r.score)&&Number.isInteger(r.cities)&&r.cities>=0&&r.cities<=CAMPAIGN.length&&typeof r.completed==='boolean').sort((a:RecordScore,b:RecordScore)=>b.score-a.score).slice(0,10):[];

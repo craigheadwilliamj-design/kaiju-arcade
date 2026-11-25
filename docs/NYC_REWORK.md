@@ -2,7 +2,7 @@
 
 New York gets the same treatment San Francisco got: an authored route of nine levels plus one secret level, three acts, its own playable kaiju and boss, per-level growth, and one new mechanic per level built as an opt-in `BlockDef` field. Everything SF built is reusable.
 
-Status: **plan**. Work is queued as separate sessions (see "Work cards" at the end). Each card reads this file first.
+Status: **scaffold done (card 1)**. The city entry, `cityLevel`, the nine route levels and Coney Island as placeholders (names, screens, kinds, growth, exits, landmarks), the `nyc-classic` fixture city with `kaijuTest.gotoCity`, the retargeted tests, `tests/nyc-scaffold.test.ts`, the QA playthrough and the README are in. Cards 2 to 7 are still to do. Work is queued as separate sessions (see "Work cards" at the end). Each card reads this file first.
 
 ## Fixed decisions
 
@@ -118,7 +118,7 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 
 ## Work cards (in order)
 
-1. **Scaffold.** City entry, `cityLevel`, nine plus one placeholder levels with growth, exits and `after`, the `nyc-classic` fixture city and harness, test retargeting, QA and README. *Blocks everything else.*
+1. **Scaffold (done).** City entry, `cityLevel`, nine plus one placeholder levels with growth, exits and `after`, the `nyc-classic` fixture city and harness, test retargeting, QA and README. *Blocks everything else.*
 2. **Act 1:** the Battery, Wall Street, SoHo (fort and exchange target art, Charging Bull, steam vents).
 3. **Act 2:** Times Square, Grand Central, Central Park (night mood, grid blackout, terminal art, concourse cave-in, two exits).
 4. **Tlézcatl boss kit:** `TLEZCATL_BOSS`, tested on a flat placeholder arena. Can run alongside cards 2 and 3 once the scaffold has landed.

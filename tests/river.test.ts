@@ -18,7 +18,7 @@ test('terrain: water is only "submerged" where no live deck covers it; pits are 
 });
 
 test('East River: a river under a three-span bridge, a subway line under the west half, an armory at each end',()=>{
- const b=LEVELS[cityIndexOf('nyc')][3];assert.equal(b.name,'East River Offensive');
+ const b=LEVELS[cityIndexOf('nyc-classic')][3];assert.equal(b.name,'East River Offensive');
  assert.equal(b.water!.length,1);const [wa,wz,wy]=b.water![0];assert.ok(wy>C.ground,'the surface sits a little below the street');
  assert.equal(b.bridge!.spans,3);assert.ok(b.bridge!.x0<=wa&&b.bridge!.x1>=wz,'the bridge spans the whole river');
  for(const x of b.buildings)if(x.kind!=='tiny')assert.ok(x.x+x.w<=b.bridge!.x0||x.x>=b.bridge!.x1,`${x.x}: nothing stands in the river`);
@@ -39,8 +39,7 @@ test('an armory down cuts off squads from its side; troops never walk into open 
  setTerrain(null);
 });
 
-async function eastRiver(){const p=emptyPermanent();p.conquered=['nyc'];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
- h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value=String(cityIndexOf('nyc'));h.node('#free-boss').value='Mogurodon';h.node('#free-block').value='3';h.click('#free-start');return h;}
+async function eastRiver(){const h=await bootCampaign(.75,{kaiju:'Mogurodon'});h.test().goto(3);return h;}
 
 test('real loop: Free Play can start on any block; East River opens with the bridge standing and trains already running',async()=>{
  const h=await eastRiver();

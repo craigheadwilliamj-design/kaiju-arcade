@@ -60,7 +60,7 @@ test('real game loop: movement, crouch, jump, attacks, rubble, exit and restart'
 });
 
 test('real game loop: New York’s open first district, swept by keys; the next block keeps HP and meters; checkpoint untouched',async()=>{
- const h=await bootCampaign(.75,{city:'nyc'});const hold=(code:string,frames:number)=>{h.down(code);h.step(frames);h.up(code);};
+ const h=await bootCampaign(.75);const hold=(code:string,frames:number)=>{h.down(code);h.step(frames);h.up(code);};
  try{
  // Play New York's first district through the real input path. It is an open layout: start mid-map,
  // sweep west to the edge, then turn around and smash east until the quota opens and the east exit triggers.
