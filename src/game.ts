@@ -1,4 +1,4 @@
-import {CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT} from './config.ts';
+import {CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB} from './config.ts';
 import {groundAt,groundUnder,setTerrain,terrainPoints,hasTerrain,profileFrom,submerged,waterAt,waterSpans,bedAt,addMound,moundList,deckAt,pitAt,pitList,addPit,depthAt,setPlatforms,platformFloor} from './terrain.ts';
 import {bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from './water.ts';
 import type {Band,Drown} from './water.ts';
@@ -606,6 +606,8 @@ function spanAt(x:number){return spans.findIndex(sp=>x>=sp.x0&&x<sp.x1);}
 function breakDeckUnder(a:number,b:number){const f=finale!,idx=new Set<number>();
  for(const x of [a,b]){const i=spanAt(x);if(i<0)continue;idx.add(i);if(spans[i-1])idx.add(i-1);if(spans[i+1])idx.add(i+1);}
  let k=0;for(const i of [...idx].sort((p,q)=>p-q))if(spans[i].alive)f.queue.push({t:.9+k++*.12,s:spans[i]});
+ // The quake rocks Kaiban too: any move in progress is cancelled and he stays put until the spans have gone, so he goes into the bay with the kaiju.
+ if(rival){rival.rocks=[];rival.charge=null;rival.windup=0;rival.stagger=Math.max(rival.stagger,.9+k*.12+.4);rival.cooldown=Math.max(rival.cooldown,1);}
  f.breaks++;shake=Math.max(shake,8);banner={label:'THE DECK IS GIVING WAY',side:0,life:1.6};action='THE DECK IS GIVING WAY';actionTime=1.4;}
 function tickFinale(dt:number,w:number,h:number){const f=finale,r=rival;if(!f||!r||r.dead)return;void h;
  for(const e of f.queue)if(e.t!==Infinity){e.t-=dt;if(e.t<=0){e.t=Infinity;if(e.s.alive)hitSpan(e.s,1e9,true);}}
@@ -618,10 +620,10 @@ function tickFinale(dt:number,w:number,h:number){const f=finale,r=rival;if(!f||!
    // The main span comes down, south to north, as it goes.
    const ts=buildings.filter(b=>b.deco==='btower').sort((p,q)=>p.x-q.x);let k=0;for(const sp of spans)if(sp.alive&&ts.length===2&&sp.x0>=ts[0].x&&sp.x1<=ts[1].x+ts[1].w)f.queue.push({t:.6+k++*GT.collapseGap,s:sp});
    shake=Math.max(shake,12);banner={label:'KAIBAN RETREATS INTO THE FOG',side:0,life:3};action='KAIBAN RETREATS';actionTime=3;award(P.bossHP);}
-  r.shots=[];r.windup=0;const dir=Math.sign(rc()-pc)||1;r.face=dir;place(r.x+dir*GT.retreatSpeed*dt);r.alpha=Math.max(0,(r.alpha??1)-dt/GT.retreatFade);
+  r.shots=[];r.rocks=[];r.charge=null;r.windup=0;const dir=Math.sign(rc()-pc)||1;r.face=dir;place(r.x+dir*GT.retreatSpeed*dt);r.alpha=Math.max(0,(r.alpha??1)-dt/GT.retreatFade);
   if(r.alpha<=0&&f.queue.every(e=>e.t===Infinity)){r.dead=true;r.retreated=true;}return;}
  // The fog charge.
- if(f.phase==='idle'){r.alpha=1;r.hidden=false;f.cool-=dt;if(f.cool<=0&&r.stagger<=0&&r.windup<=0){f.phase='vanish';f.t=GT.vanish;r.hidden=true;r.shots=[];}return;}
+ if(f.phase==='idle'){r.alpha=1;r.hidden=false;f.cool-=dt;if(f.cool<=0&&r.stagger<=0&&r.windup<=0){f.phase='vanish';f.t=GT.vanish;r.hidden=true;r.shots=[];r.rocks=[];r.charge=null;r.windup=0;}return;}
  f.t-=dt;
  if(f.phase==='vanish'){r.alpha=Math.max(.12,f.t/GT.vanish);if(f.t<=0){
    // Out in the fog on the side with room, facing the kaiju.
@@ -807,7 +809,7 @@ function loadBlock(drill=false){
  camera=Math.max(0,Math.min(worldWidth-viewW(),player.x+oldWidth/2-viewW()*.34));safeX=player.x;
  for(const x of [...(block.boats??[]),...(block.coastguard??[])])spawnUnit(military,'boat',x,-1);
  objective=!drill&&block.kind==='stronghold'?makeObjective():null;
- rival=!drill&&block.kind==='boss'?createRival(worldWidth,CITIES[cityIndex].difficulty):null;setupFinale();
+ rival=!drill&&block.kind==='boss'?createRival(worldWidth,CITIES[cityIndex].difficulty,bossName()):null;setupFinale();
  if(objective){const garrison=block.garrison??(block.target?[['police',-460],['patrol',-330],['police',-200],['police',-80],['police',170],['patrol',300]] as const:[['tank',-390],['emplacement',-180],['emplacement',210],['artillery',510],['helicopter',-650]] as const);
   if(block.target)stations.push(...garrison.map(([type,offset])=>({type,x:objective.x+offset,side:1})));else for(const [type,offset] of garrison)spawnUnit(military,type,objective.x+offset);}
  if(!drill){for(const [type,x] of block.warships??[])spawnUnit(military,type,x,-1);for(const [type,x] of block.deckUnits??[])stations.push({type,x,side:1,perch:true});for(const [type,x,alt] of block.units??[])stations.push({type,x,side:1,alt});for(const x of block.air??[])stations.push({type:'helicopter',x,side:1});for(const x of block.swat??[])stations.push({type:'soldier',x,side:1});}
@@ -2105,7 +2107,7 @@ function drawFog(){const a=fogAt(block,player.x+bodyWidth()/2);if(a<=0.001)retur
 function drawSeaLions(){for(const l of lions){if(l.state==='gone')continue;const x=l.x-camera,dir=l.vx<0?-1:1;if(x<-40||x>viewW()+40)continue;
  ctx.save();ctx.translate(x,l.y);ctx.scale(dir,1);ctx.fillStyle='#6b5a4c';ctx.beginPath();ctx.ellipse(0,0,15,7,-.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(13,-6,6,4,-.4,0,Math.PI*2);ctx.fill();
  poly([[-14,2],[-24,6],[-12,6]],'#4f4034');rect(14,-8,2,2,'#111');rect(1,4,8,3,'#5a493c');ctx.restore();}}
-function act3Debug(){return {finaleState:finale?{woke:finale.woke,phase:finale.phase,charges:finale.charges,nextBreak:finale.nextBreak,breaks:finale.breaks,started:finale.started,queued:finale.queue.filter(e=>e.t!==Infinity).length}:null,rivalState:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,maxHP:rival.maxHP,dead:rival.dead,alpha:rival.alpha??1,dormant:!!rival.dormant,hidden:!!rival.hidden,retreating:!!rival.retreating,retreated:!!rival.retreated}:null,upperDeck:upperPlat[0]?{hp:upperPlat[0].b.hpNow,alive:upperPlat[0].p.alive,y:upperPlat[0].p.y,x0:upperPlat[0].p.x0,x1:upperPlat[0].p.x1,index:buildings.indexOf(upperPlat[0].b)}:null,carrierDeck:carrierDeck?{...carrierDeck}:null,jetsLaunched,jetsUp:carrierJetsUp(),projectileList:military.projectiles.filter(p=>!p.dead).map(p=>({weapon:p.weapon,owner:p.owner})),carrierJetList:[...carrierJets].map(u=>({x:u.x,y:u.y,hp:u.hp})),deckOrder:[...deckOrder],towerIndexes:buildings.map((b,i)=>b.deco==='btower'?i:-1).filter(i=>i>=0),platformFloor:(x:number,feet:number)=>platformFloor(x,feet),playerY:player.y,playerFeet:player.y+bodyHeight(),playerGrounded:player.grounded,modeNow:mode,unitList:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,id:u.id})),cracks:cracks.map(c=>({x:c.x,quaked:c.quaked,open:c.open,big:c.big,ult:c.ult})),quakeCount,bigOne:bigOne?{t:bigOne.t,pending:bigOne.queue.filter(e=>e.t!==Infinity).length}:null,pancaked,fireCap:block.fireCap??FI.cap,fireGeysers:geysers.filter(g=>g.fire).length,
+function act3Debug(){return {finaleState:finale?{woke:finale.woke,phase:finale.phase,charges:finale.charges,nextBreak:finale.nextBreak,breaks:finale.breaks,started:finale.started,queued:finale.queue.filter(e=>e.t!==Infinity).length}:null,rivalState:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,maxHP:rival.maxHP,dead:rival.dead,alpha:rival.alpha??1,dormant:!!rival.dormant,hidden:!!rival.hidden,attack:rival.attack,windup:rival.windup,charging:!!rival.charge,rocks:rival.rocks?.length??0,face:rival.face,retreating:!!rival.retreating,retreated:!!rival.retreated}:null,upperDeck:upperPlat[0]?{hp:upperPlat[0].b.hpNow,alive:upperPlat[0].p.alive,y:upperPlat[0].p.y,x0:upperPlat[0].p.x0,x1:upperPlat[0].p.x1,index:buildings.indexOf(upperPlat[0].b)}:null,carrierDeck:carrierDeck?{...carrierDeck}:null,jetsLaunched,jetsUp:carrierJetsUp(),projectileList:military.projectiles.filter(p=>!p.dead).map(p=>({weapon:p.weapon,owner:p.owner})),carrierJetList:[...carrierJets].map(u=>({x:u.x,y:u.y,hp:u.hp})),deckOrder:[...deckOrder],towerIndexes:buildings.map((b,i)=>b.deco==='btower'?i:-1).filter(i=>i>=0),platformFloor:(x:number,feet:number)=>platformFloor(x,feet),playerY:player.y,playerFeet:player.y+bodyHeight(),playerGrounded:player.grounded,modeNow:mode,unitList:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,id:u.id})),cracks:cracks.map(c=>({x:c.x,quaked:c.quaked,open:c.open,big:c.big,ult:c.ult})),quakeCount,bigOne:bigOne?{t:bigOne.t,pending:bigOne.queue.filter(e=>e.t!==Infinity).length}:null,pancaked,fireCap:block.fireCap??FI.cap,fireGeysers:geysers.filter(g=>g.fire).length,
  railDecks:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,deck:r.deck??0,alive:r.alive,fellAt:r.fellAt??null}))};}
 function act2Debug(){return {powerhouseDown,loosed,exitSide,tumbleArmed,pendingTumble:pendingTumble.length,pendingRunaways:pendingRunaways.length,seaLions:lions.map(l=>({x:l.x,state:l.state})),lionsEscaped,
  kaibanState:kaiban?{...kaiban}:null,cutter:objective?.ship?{sink:objective.ship.sink,sinking:objective.ship.sinking,list:objective.ship.list,w:objective.ship.w,h:objective.ship.h,box:hullBox(objective.ship,waterAt(objective.x)??C.ground),deck:deckY(objective.ship,waterAt(objective.x)??C.ground)}:null,
@@ -2664,6 +2666,9 @@ function drawCampaignObjective(){
  poly([[-36,-16],[-46,-50],[-28,-42],[-32,-82],[-14,-74],[-7,-106],[12,-88],[28,-70],[38,-55],[35,-22]],tint);rect(-25,-75,50,62,'#4e5e59');rect(8,-74,35,27,tint);rect(27,-66,6,4,'#f1a8d4');rect(-26,-14,19,14,'#314b43');rect(10,-14,23,14,'#314b43');if(r.windup>0){rect(12,-48,35,12,'#f2b077');text('!',0,-123,20,'#f0a569','center');}ctx.restore();
  if((r.alpha??1)>=.6)text(bossName().toUpperCase(),x+r.w/2,r.y-15,11,'#324c44','center');
  for(const shot of r.shots){const sx=shot.x-camera;poly([[sx-10,shot.y],[sx-3,shot.y-6],[sx+9,shot.y],[sx+2,shot.y+6]],'#d694bf');}
+ // Kaiban's Debris Shotgun chunks, and the Stampede lane the bellow lights up on the street (the length of the run, in his locked facing).
+ for(const k of r.rocks??[]){const sx=k.x-camera-KB.rockSize/2;rect(sx,k.y-KB.rockSize/2,KB.rockSize,KB.rockSize,'#8b7b6a');rect(sx,k.y+KB.rockSize/2-2,KB.rockSize,2,'#26343a');}
+ if(r.kaiban&&r.windup>0&&r.attack==='stampede'){const x0=r.face>0?r.x+r.w:r.x-KB.stampedeReach;ctx.globalAlpha=.18+.2*Math.abs(Math.sin(time*14));rect(x0-camera,r.y+r.h-16,KB.stampedeReach,16,'#e8401a');ctx.globalAlpha=1;}
  }
 }
 // Afterburn: a cluster of flickering flame tongues licking up the wall where the jet hit, dying down over its last second.
