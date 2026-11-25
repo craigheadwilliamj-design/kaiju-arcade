@@ -447,7 +447,7 @@ export const SF = {
  // Tunnel pocket: a breakable roof box over a sealed pit. Hit it from below (a jump into it, a heavy attack) until it gives.
  pocketHP:240,pocketWall:34,pocketThick:28,pocketPoints:600,pocketJump:60,
  // Targets (stronghold kind): a clock tower is tall and narrow, a command post wide and low. HP is CAMPAIGN.strongholdHP.
- clockW:84,clockH:170,commandW:150,commandH:78,
+ clockW:72,clockH:250,commandW:150,commandH:78,
  // The crystal formation under Portsmouth Square: a big growth. Shattering it lifts the cap (liftCap) and grows the kaiju to Stage 2.
  formationW:132,formationH:150,formationHP:700,formationShards:40,
  // Garage cave-in: a slam over the garage opens a pit of parked cars (garageCars of them, pitDepth deep like a subway pit).

@@ -2037,6 +2037,13 @@ function drawLandmarkShape(b:typeof buildings[number],x:number,y:number,h:number
   if(tall){poly([[x,y],[x+tw/2,y-30],[x+tw,y]],col);poly([[x+bw-tw,y],[x+bw-tw/2,y-30],[x+bw,y]],col);}else{for(const tx of [x,x+bw-tw]){rect(tx-3,y,tw+6,6,'#9a8f78');for(let k=0;k<3;k++)rect(tx+6+k*(tw-12)/2,y+24,5,h*.3,'#3b3b3b');}
    ctx.fillStyle='#3b3b3b';ctx.beginPath();ctx.arc(cx,y+h*.6,Math.min(18,(bw-tw*2)*.35),0,Math.PI*2);ctx.fill();ctx.fillStyle='#c0405a';ctx.beginPath();ctx.arc(cx,y+h*.6,Math.min(12,(bw-tw*2)*.22),0,Math.PI*2);ctx.fill();}
   for(let yy=y+30;yy<base-40;yy+=18){rect(x+6,yy,tw-12,8,'#2c3a42');rect(x+bw-tw+6,yy,tw-12,8,'#2c3a42');}rect(cx-12,base-34,24,34,'#2b2420');return;}
+ if(sh==='bow'){// Cupid's Span: a giant bow half-buried on its back, the arrow driven into the ground through it, fletching up high.
+  const ry=Math.min(h*.5,bw*.42),thick=Math.max(8,bw*.07);ctx.strokeStyle='#e9e2d0';ctx.lineWidth=thick;ctx.beginPath();ctx.ellipse(cx,base,bw/2-thick/2,ry,0,Math.PI,0);ctx.stroke();
+  ctx.strokeStyle='#c9bfa6';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(cx,base,bw/2-thick,ry-thick/2,0,Math.PI,0);ctx.stroke();
+  ctx.strokeStyle='#3a3530';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+thick*.4,base-2);ctx.lineTo(x+bw*.42,base-ry*.25);ctx.lineTo(x+bw-thick*.4,base-2);ctx.stroke();
+  const ax0=x+bw*.1,ay0=base-ry*1.3,ax1=x+bw*.78,ay1=base;ctx.strokeStyle='#b8433a';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(ax0,ay0);ctx.lineTo(ax1,ay1);ctx.stroke();ctx.lineWidth=1;
+  const dx=(ax1-ax0),dy=(ay1-ay0),L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;for(let k=0;k<3;k++){const px=ax0+ux*(6+k*9),py=ay0+uy*(6+k*9);poly([[px,py],[px-uy*16-ux*10,py+ux*16-uy*10],[px-ux*8,py-uy*8]],'#f2efe6');poly([[px,py],[px+uy*16-ux*10,py-ux*16-uy*10],[px-ux*8,py-uy*8]],'#d9d4c6');}
+  return;}
  if(sh==='arch'){const col=st==='mex'?'#7a6f60':'#d8ccae';rect(x,y+(st==='mex'?h*.3:h*.25),bw,h*(st==='mex'?.7:.75),col);rect(x-3,y+(st==='mex'?h*.3:h*.25),bw+6,10,'#bfb293');
   const ah=h*.42,aw=bw*.42;rect(cx-aw/2,base-ah,aw,ah,'#1e2428');ctx.fillStyle='#1e2428';ctx.beginPath();ctx.arc(cx,base-ah,aw/2,Math.PI,0);ctx.fill();
   if(st==='mex'){ctx.fillStyle='#4f6a5c';ctx.beginPath();ctx.ellipse(cx,y+h*.3,bw*.3,h*.22,0,Math.PI,0);ctx.fill();rect(cx-3,y+h*.02,6,14,'#4f6a5c');}else{rect(x,y+h*.25,bw,h*.12,'#cfc3a5');for(let k=x+6;k<x+bw-6;k+=14)rect(k,y+h*.28,8,10,'#bfb293');}return;}
@@ -2638,10 +2645,13 @@ function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const b
   case 'hotel':{rect(x,y,bw,h,b.color);rect(x-2,y-6,bw+4,8,'#e8dfc8');for(let yy=y+10;yy<base-34;yy+=22)for(let wx=x+8;wx<x+bw-14;wx+=16)win(wx,yy,9,12);
    rect(x+bw*.3,base-28,bw*.4,28,'#2f3a40');rect(x+bw*.25,base-34,bw*.5,6,'#b9473b');break;}
   case 'piling':{rect(x,y,bw,h,'#5b4a3a');for(let yy=y+8;yy<base;yy+=18)rect(x-1,yy,bw+2,3,'#3f342a');rect(x-2,y,bw+4,4,'#7a6048');break;}
-  case 'ferry':{// The Ferry Building's long hall: arched windows under a hipped roof.
-   rect(x,y+h*.18,bw,h*.82,b.color);poly([[x-6,y+h*.2],[x+14,y],[x+bw-14,y],[x+bw+6,y+h*.2]],'#6a5a48');
-   for(let wx=x+10;wx<x+bw-18;wx+=22){rect(wx,y+h*.36,12,h*.4,'#2a3a42');ctx.fillStyle='#2a3a42';ctx.beginPath();ctx.arc(wx+6,y+h*.36,6,Math.PI,0);ctx.fill();}
-   for(let wx=x+8;wx<x+bw-14;wx+=22)rect(wx,base-h*.16,14,h*.16,'#6a5a48');break;}
+  case 'ferry':{// The Ferry Building's long hall: a ground-floor arcade of big arches, a row of arched windows above, a cornice and a low roof with a skylight.
+   const top=y+h*.14,mid=y+h*.5,dark='#2a3a42',trim='#b3a688',arch=(ax:number,ay:number,aw:number,ah:number,col:string)=>{rect(ax,ay+aw/2,aw,ah-aw/2,col);ctx.fillStyle=col;ctx.beginPath();ctx.arc(ax+aw/2,ay+aw/2,aw/2,Math.PI,0);ctx.fill();};
+   rect(x,top,bw,base-top,b.color);poly([[x-4,top],[x+10,y+2],[x+bw-10,y+2],[x+bw+4,top]],'#7d6f5c');rect(x+bw*.2,y+h*.04,bw*.6,h*.06,'#9fb3b8');
+   rect(x-5,top-3,bw+10,5,trim);rect(x-3,mid-3,bw+6,4,trim);rect(x-3,base-4,bw+6,4,trim);
+   const bays=Math.max(3,Math.round(bw/30)),bayW=bw/bays;
+   for(let k=0;k<bays;k++){const bx=x+k*bayW;arch(bx+bayW*.18,mid+6,bayW*.64,base-mid-10,dark);arch(bx+bayW*.28,top+8,bayW*.44,mid-top-16,dark);rect(bx,top,2,base-top,trim);}
+   break;}
   default:facade(b,x,y,h,false);}}
 // The pier: a plank deck on pilings in place of the suspension bridge. Falling spans swing down about their west end and go under.
 function drawPier(){if(!spans.length)return;const y=spans[0].y;
@@ -2692,15 +2702,21 @@ function drawObjectiveArt(o:NonNullable<typeof objective>){const x=o.x-camera,gy
   ctx.restore();rect(x-w*.55,wl-2,w*1.1,3,'#cfe3ec');
   if(s.sinking&&s.sink<1)for(let k=0;k<4;k++)rect(x-w*.4+k*w*.25+Math.sin(time*5+k)*6,wl-4-((time*40+k*23)%24),4,4,'#e8f4f8');
   text(o.label,x,wl-s.deck-s.deck*2.4,10,'#3b504a','center');return;}
- if(o.art==='clock'){const w=o.w,hp=o.hp/o.maxHP;
-  rect(x-w/2,gy-o.h,w,o.h,'#d8cdb0');rect(x-w/2-5,gy-o.h-6,w+10,8,'#a89c80');rect(x-w/2+8,gy-o.h+30,w-16,3,'#a89c80');rect(x-w/2+8,gy-o.h*.4,w-16,3,'#a89c80');
-  for(let yy=gy-o.h*.55;yy<gy-14;yy+=30)for(const k of [.25,.62]){rect(x-w/2+w*k,yy,12,20,'#2a3a42');ctx.fillStyle='#2a3a42';ctx.beginPath();ctx.arc(x-w/2+w*k+6,yy,6,Math.PI,0);ctx.fill();}
-  poly([[x-w/2-7,gy-o.h-6],[x,gy-o.h-58],[x+w/2+7,gy-o.h-6]],'#6a5a48');rect(x-1,gy-o.h-84,2,28,'#c9a441');
-  ctx.fillStyle='#f4ecd0';ctx.beginPath();ctx.arc(x,gy-o.h+4,w*.3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2b2118';ctx.lineWidth=2;ctx.stroke();
-  const m=time*.8;ctx.beginPath();ctx.moveTo(x,gy-o.h+4);ctx.lineTo(x+Math.cos(m)*w*.22,gy-o.h+4+Math.sin(m)*w*.22);ctx.moveTo(x,gy-o.h+4);ctx.lineTo(x+Math.cos(m*12)*w*.15,gy-o.h+4+Math.sin(m*12)*w*.15);ctx.stroke();ctx.lineWidth=1;
+ if(o.art==='clock'){const w=o.w,hp=o.hp/o.maxHP,top=gy-o.h,stone='#ddd2b5',trim='#b3a688',dark='#2a3a42';
+  // The Ferry Building's campanile: a tall plain shaft with corner pilasters, the clock stage with its big face, an open arched
+  // belfry, a stepped lantern and a pyramid cap with the flagpole.
+  rect(x-w/2,top+o.h*.36,w,o.h*.64,stone);rect(x-w/2,top+o.h*.36,5,o.h*.64,trim);rect(x+w/2-5,top+o.h*.36,5,o.h*.64,trim);
+  for(let yy=top+o.h*.46;yy<gy-24;yy+=o.h*.13){rect(x-5,yy,10,16,dark);ctx.fillStyle=dark;ctx.beginPath();ctx.arc(x,yy,5,Math.PI,0);ctx.fill();}
+  rect(x-w/2-4,top+o.h*.36-4,w+8,6,trim);
+  rect(x-w/2-2,top+o.h*.14,w+4,o.h*.22,stone);rect(x-w/2-5,top+o.h*.14-4,w+10,6,trim);
+  const cy=top+o.h*.25;ctx.fillStyle='#f4ecd0';ctx.beginPath();ctx.arc(x,cy,w*.34,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2b2118';ctx.lineWidth=2;ctx.stroke();
+  const m=time*.8;ctx.beginPath();ctx.moveTo(x,cy);ctx.lineTo(x+Math.cos(m)*w*.24,cy+Math.sin(m)*w*.24);ctx.moveTo(x,cy);ctx.lineTo(x+Math.cos(m*12)*w*.16,cy+Math.sin(m*12)*w*.16);ctx.stroke();ctx.lineWidth=1;
+  rect(x-w/2+4,top,w-8,o.h*.14,stone);for(const k of [-1,0,1]){const ax=x+k*w*.26-5;rect(ax,top+12,10,o.h*.14-14,dark);ctx.fillStyle=dark;ctx.beginPath();ctx.arc(ax+5,top+12,5,Math.PI,0);ctx.fill();}
+  rect(x-w/2+1,top-4,w-2,6,trim);rect(x-w*.32,top-26,w*.64,22,stone);rect(x-w*.36,top-28,w*.72,4,trim);for(const k of [-1,1])rect(x+k*w*.14-3,top-22,6,14,dark);
+  rect(x-w*.2,top-40,w*.4,12,stone);poly([[x-w*.24,top-40],[x,top-78],[x+w*.24,top-40]],'#9a8a6c');rect(x-1,top-102,2,26,'#c9a441');rect(x+1,top-102,10,6,'#e8e2d2');
   if(hp<.66)poly([[x-w*.2,gy-o.h*.9],[x-w*.12,gy-o.h*.6],[x-w*.25,gy-o.h*.45],[x-w*.05,gy-o.h*.3],[x-w*.14,gy-o.h*.7]],'#293e44');
   if(hp<.33)poly([[x+w*.2,gy-o.h*.8],[x+w*.1,gy-o.h*.55],[x+w*.26,gy-o.h*.3],[x+w*.12,gy-o.h*.2]],'#283b3f');
-  text(o.label,x,gy-o.h-96,10,'#3b504a','center');return;}
+  text(o.label,x,gy-o.h-112,10,'#3b504a','center');return;}
  if(o.art==='command'){const w=o.w,hp=o.hp/o.maxHP;
   rect(x-w/2,gy-o.h,w,o.h,'#4d5a68');rect(x-w/2-4,gy-o.h-6,w+8,8,'#394552');for(let wx=x-w/2+10;wx<x+w/2-20;wx+=26)rect(wx,gy-o.h+14,16,12,Math.sin(time*2+wx)>-.8?'#8fb0bd':'#2a3a42');
   for(let k=0;k<5;k++)rect(x-w/2+8+k*(w-24)/4,gy-12,10,12,'#d9b45a');
