@@ -80,9 +80,11 @@ const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
 // Myrmex Stage 1 strips: the myrmex-s1 base still, a 116x74 young wingless ant (six long clawed legs, wing buds, short purple-tipped
 // stinger) keyed from the user's render with tools/key_render.py, origin at x=70 in a 256x192 frame.
 const MX1_NATIVE={scale:116/256,anchor:70+128*116/256};
-// Myrmex Stage 1 form (just started): idle and walk only. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Myrmex Stage 1 form (just started): idle, walk and run. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
- walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE}}};
+ walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
+ // Run (Shift / double-tap): a low scuttling tripod-gait run, closed on the base. Same timing as Stage 2's run.
+ run:{src:'assets/myrmex-s1-run.png',frames:12,fps:20,...MX1_NATIVE}}};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
