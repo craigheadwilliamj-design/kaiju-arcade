@@ -140,3 +140,15 @@ test('Alcatraz plays: boots, the island has buildings to destroy and the west la
  const h=await boot(9,200);h.step(60);const s=h.state();assert.equal(s.blockName,'Alcatraz');assert.ok(s.buildings.length>=10);assert.ok(s.playerGrounded);
  h.test().goto(9,2400);h.step(30);assert.ok(h.state().playerFeet<C.ground-60,'up on the island terraces');
 });
+
+test('Ramps can be walked down without falling, and break section by section',async()=>{
+ const h=await boot(4,FIN.elevated![0]-FIN.approach!-80);h.step(20);
+ h.down('KeyD');for(let n=0;n<60*5;n++)h.step();h.up('KeyD');h.step(10);
+ const top=h.state().playerFeet;assert.ok(top<C.ground-60,'up on the ramp');
+ // Walk back down: the body never leaves the surface for more than a frame or two.
+ h.down('KeyA');let air=0,worst=0;for(let n=0;n<60*3;n++){h.step();if(!h.state().playerGrounded){air++;worst=Math.max(worst,air);}else air=0;}h.up('KeyA');
+ assert.ok(worst<=2,`walking down a ramp is a walk, not a fall (${worst} frames airborne in a row)`);assert.ok(h.state().playerFeet>top+30,'and it went down');
+ // Sections break: smash the ramp under a section and it is gone as a surface (and the cover with it).
+ const n0=h.state().slopes.filter((s:any)=>s.alive!==false).length;h.test().smashSlope(1);h.step(5);
+ const sl=h.state().slopes;assert.equal(sl.filter((s:any)=>s.alive).length,n0-1,'one section down');assert.ok(sl.length>=4,'a ramp is built of several sections');
+});
