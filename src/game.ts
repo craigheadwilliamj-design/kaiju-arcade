@@ -1,4 +1,4 @@
-import {CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB} from './config.ts';
+import {CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,NYC1,BULL as BL,STEAM as ST} from './config.ts';
 import {groundAt,groundUnder,setTerrain,terrainPoints,hasTerrain,profileFrom,submerged,waterAt,waterSpans,bedAt,addMound,moundList,deckAt,pitAt,pitList,addPit,depthAt,setPlatforms,platformFloor} from './terrain.ts';
 import {bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from './water.ts';
 import type {Band,Drown} from './water.ts';
@@ -21,6 +21,7 @@ import {createMilitary,tickMilitary,spawnUnit,hitUnit as hitUnitBase,intercept,s
 import type {MilitaryEvent} from './military.ts';
 import type {Rect,Unit} from './military.ts';
 import {createPopulation,releaseOccupants,tickPopulation} from './population.ts';
+import type {Permanent} from './campaign.ts';
 import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,initialsValid,KAIJU,CAMPAIGN,campaignCityIndex,routeLevels,freePlayLevels,unlockSecret,secretLevelOf,secretIds,exitTarget,kaijuFor,discardLegacySaves} from './campaign.ts';
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
 import {createRival,hitRival,tickRival} from './rival.ts';
@@ -52,15 +53,19 @@ function bossName(){return session==='freeplay'?freeChoice.boss:CITIES[cityIndex
 function ultimateLabel(){return activeKaiju==='Mogurodon'?'SEISMIC RUPTURE':activeKaiju==='Kaiban'?'STAMPEDE':activeKaiju==='Tlézcatl'?'ERUPTION':activeKaiju==='Belial'?'ACID DELUGE':activeKaiju==='Myrmex'?'THE SWARM':'ULTIMATE PREVIEW';}
 const DISPLAY_KEY='kaiju-arcade:display:v1';let display={integer:false,shake:true};
 try{const saved=JSON.parse(storage?.getItem(DISPLAY_KEY)||'null');if(saved?.version===1)display={integer:!!saved.integer,shake:saved.shake!==false};}catch{}
+const DEV_KEY='kaiju-arcade:dev:v1';let devUnlock=false;try{devUnlock=JSON.parse(storage?.getItem(DEV_KEY)||'null')?.unlockAll===true;}catch{}
+function setDev(v:boolean){devUnlock=v;try{storage?.setItem(DEV_KEY,JSON.stringify({unlockAll:v}));}catch{}}
+// Dev toggle: a view of the save with every kaiju, city and secret unlocked. Never persisted; progress writes still use the real `permanent`.
+function access():Permanent{return devUnlock?{...permanent,unlocked:[...KAIJU],conquered:[...CAMPAIGN],secrets:secretIds(),gallery:[...KAIJU]}:permanent;}
 function applyDisplay(){const frame=document.querySelector<HTMLElement>('#frame')!;if(display.integer){const space=Math.max(0,Math.min(1160,(window.innerWidth||960)-40)),factor=Math.floor(space/960);frame.style.width=factor>=1?`${960*factor}px`:'';}else frame.style.width='';}
 function saveDisplay(){try{storage?.setItem(DISPLAY_KEY,JSON.stringify({version:1,...display}));}catch{}applyDisplay();}
 let cityIndex=0,blockIndex=0,block=LEVELS[0][0],worldWidth=levelWidth(block);
 // The stronghold's target: the central crystal by default; a SF level's `target` makes it a clock tower or a command post (same HP, same hit rules, a taller or wider box).
-let objective:{x:number,hp:number,maxHP:number,shattered:boolean,w:number,h:number,art:'crystal'|'clock'|'command'|'pyramid'|'cutter',label:string,ship?:Ship}|null=null,rival:Rival|null=null;
+let objective:{x:number,hp:number,maxHP:number,shattered:boolean,w:number,h:number,art:'crystal'|'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange',label:string,ship?:Ship}|null=null,rival:Rival|null=null;
 // x ranges of the vehicles a level stations in the street (streetcars, cable cars, trolleys, fire trucks): no street lamp stands in or within 70 px of one, so a station can be walked up to and grabbed.
 function stationBoxes():[number,number][]{return ([['tram',block.streetcars],['cablecar',block.cablecars],['bus',block.trolleys],['firetruck',block.firetrucks]] as const).flatMap(([k,xs])=>(xs??[]).map(x=>[x,x+VEHICLE_SPECS[k].w] as [number,number]));}
 function makeObjective(){const t=block.target,art=t?.art??'crystal',ship=art==='cutter'?createShip(t!.x,t!.scale??1):undefined,
- [w,h]=ship?[ship.w,ship.h+ship.deck]:art==='clock'?[SFC.clockW,SFC.clockH]:art==='command'?[SFC.commandW,SFC.commandH]:art==='pyramid'?[SF2.pyramidW,SF2.pyramidH]:[60,100];
+ [w,h]=ship?[ship.w,ship.h+ship.deck]:art==='clock'?[SFC.clockW,SFC.clockH]:art==='command'?[SFC.commandW,SFC.commandH]:art==='pyramid'?[SF2.pyramidW,SF2.pyramidH]:art==='fort'?[NYC1.fortW,NYC1.fortH]:art==='exchange'?[NYC1.exchangeW,NYC1.exchangeH]:[60,100];
  return {x:t?t.x:worldWidth/2,hp:P.strongholdHP,maxHP:P.strongholdHP,shattered:false,w,h,art,label:t?.label??'CENTRAL CRYSTAL',...(ship?{ship}:{})};}
 // A floating target (the cutter) rides the waterline and goes down with its hull; everything else stands on the street.
 function obox(){const o=objective!;if(o.ship)return hullBox(o.ship,waterAt(o.x)??C.ground);return {x:o.x-o.w/2,y:groundAt(o.x)-o.h,w:o.w,h:o.h};}
@@ -192,6 +197,8 @@ function cityScore(){return score-combat.penalty;}
 function objectiveOpen(){return canExitBlock(block.kind,buildings,objective,block.exitAt);}
 // Open layouts start mid-map and have an exit at each end.
 function openLayout(){return block.start!==undefined;}
+// Where the kaiju starts: a there-and-back level's `start`, or a one-exit level's `spawn` (The Battery starts in the harbour); else the west edge.
+function spawnX(){return block.start??block.spawn;}
 function persist(){storageOK=savePermanent(storage,permanent)&&storageOK;}
 function writeCheckpoint(c:Checkpoint|null){checkpoint=c;storageOK=saveCheckpoint(storage,c)&&storageOK;}
 
@@ -568,6 +575,35 @@ function tickMains(dt:number){for(const g of geysers){g.t-=dt;g.tick-=dt;if(g.fi
  geysers=geysers.filter(g=>g.t>0);}
 function drawGeysers(){for(const g of geysers){const x=g.x-camera,base=groundAt(g.x),k=Math.min(1,g.t),hh=((g.fire?GS.height:140)+30*Math.sin(time*13))*k;if(g.fire){ctx.globalAlpha=.85;poly([[x-12,base],[x-7+Math.sin(time*17)*4,base-hh],[x+7+Math.sin(time*15)*4,base-hh*.95],[x+12,base]],'#e8571c');poly([[x-6,base],[x-2,base-hh*.8],[x+3,base-hh*.78],[x+6,base]],'#ffb83b');poly([[x-3,base],[x,base-hh*.5],[x+3,base]],'#fff1a8');rect(x-GS.radius*k*.6,base-5,GS.radius*1.2*k,5,'#ff8a1f');ctx.globalAlpha=1;continue;}ctx.globalAlpha=.75;
  poly([[x-10,base],[x-5,base-hh],[x+5,base-hh],[x+10,base]],'#a8d8ee');poly([[x-4,base],[x-2,base-hh*.9],[x+2,base-hh*.9],[x+4,base]],'#e2f4fb');rect(x-MN.radius*k,base-6,MN.radius*2*k,6,'#8fc6e0');ctx.globalAlpha=1;}}
+// ---- NYC Act 1: steam vents (SoHo and Canal Street) ----
+// A manhole puffs harmlessly now and then; a slam or pound near it bursts it into a steam jet that scalds troops, launches cars and blinds
+// helicopters in the column. Steam is not fire: nothing here ever sets a building alight (the launched cars do not burn).
+type Vent={x:number,state:'idle'|'puff'|'burst'|'spent',t:number,next:number,tick:number};
+let vents:Vent[]=[],ventBlinded=0,ventScalded=0;
+function setupVents(){vents=(block.vents??[]).map((x,i)=>({x,state:'idle' as const,t:0,next:ST.first+i*ST.stagger,tick:0}));ventBlinded=0;ventScalded=0;}
+function strikeVents(cx:number,ult=false){for(const v of vents)if((v.state==='idle'||v.state==='puff')&&Math.abs(v.x-cx)<=(ult?ST.ultReach:ST.reach))burstVent(v);}
+function burstVent(v:Vent){v.state='burst';v.t=ST.seconds;v.tick=0;award(ST.points);heatUp(ST.heat);shake=Math.max(shake,6);action='STEAM VENT BURST';actionTime=1.2;}
+function scaldAround(v:Vent){
+ for(const u of military.units){if(u.hp<=0)continue;const mid=u.x+u.w/2,d=Math.abs(mid-v.x);
+  if(UNITS[u.type].air){if(u.type==='helicopter'&&d<ST.radius*.7&&u.y+u.h>groundAt(v.x)-ST.height){u.windup=0;u.pending=null;u.burst=0;u.stun=Math.max(u.stun,ST.blind);ventBlinded++;}continue;}
+  if(NAVAL_UNITS.has(u.type)||d>=ST.radius)continue;hitUnit(military,u,ST.damage,'player',ST.knockback,Math.sign(mid-v.x)||1,true,'blast');u.stun=Math.max(u.stun,ST.stun);ventScalded++;}
+ for(const o of vehicles)if(loose(o)&&o.pole===undefined&&!(o.calm>0)&&Math.abs(o.x+o.w/2-v.x)<ST.carRadius){puntVehicle(o,ST.carDamage,Math.sign(o.x+o.w/2-v.x)||1,true,ST.carLift);o.burn=0;}}
+function tickVents(dt:number){for(const v of vents){
+  if(v.state==='idle'){v.next-=dt;if(v.next<=0){v.state='puff';v.t=ST.puff;}}
+  else if(v.state==='puff'){v.t-=dt;steamJet(v,.35);if(v.t<=0){v.state='idle';v.next=ST.every;}}
+  else if(v.state==='burst'){v.t-=dt;v.tick-=dt;steamJet(v,1);if(v.tick<=0){v.tick=ST.tick;scaldAround(v);}if(v.t<=0){v.state='spent';v.t=ST.rearm;}}
+  else{v.t-=dt;if(v.t<=0){v.state='idle';v.next=ST.every*.5;}}}}
+function steamJet(v:Vent,k:number){if(Math.abs(v.x-(camera+viewW()/2))>viewW()||particles.length>=C.particleCap)return;
+ for(let n=0;n<(k>.5?4:1);n++)particles.push({x:v.x+(Math.random()-.5)*14,y:groundAt(v.x)-6,vx:(Math.random()-.5)*70*k,vy:-(200+Math.random()*260)*k*(ST.height/320),life:.5+.5*k,color:Math.random()<.5?'#eef3f4':'#c4d0d4',size:2+Math.floor(Math.random()*3)});}
+function drawVents(){for(const v of vents){const x=v.x-camera;if(x<-200||x>viewW()+200)continue;const base=groundAt(v.x),hot=v.state==='burst';
+  // The manhole cover: a flat iron disc in the street, glowing at the rim before it blows.
+  ctx.fillStyle='#2b2f31';ctx.beginPath();ctx.ellipse(x,base+1,15,3.4,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=v.state==='spent'?'#4a4f50':'#5c6466';ctx.beginPath();ctx.ellipse(x,base,12,2.6,0,0,Math.PI*2);ctx.fill();
+  for(let k=-3;k<=3;k++)rect(x+k*3.4,base-1,1,2,'#3a4042');
+  if(v.state==='idle'&&v.next<.8){ctx.globalAlpha=.5;rect(x-10,base-3,20,2,'#eef3f4');ctx.globalAlpha=1;}
+  if(v.state==='puff'||hot){const k=hot?Math.min(1,v.t/.6):Math.min(1,v.t/.5)*.4,hh=(hot?ST.height:ST.height*.28)*Math.min(1,k+.15)*(.92+.08*Math.sin(time*13));
+   ctx.globalAlpha=hot?.7:.45;poly([[x-8,base],[x-ST.radius*.28*(hot?1:.4),base-hh*.55],[x-ST.radius*.2,base-hh],[x+ST.radius*.22,base-hh*.97],[x+ST.radius*.3*(hot?1:.4),base-hh*.5],[x+8,base]],'#e6eef0');
+   ctx.globalAlpha=hot?.55:.3;poly([[x-4,base],[x-ST.radius*.12,base-hh*.7],[x,base-hh*.95],[x+ST.radius*.12,base-hh*.7],[x+4,base]],'#ffffff');
+   for(let n=0;n<4;n++){const t=((time*1.6+n/4+v.x*.013)%1);ctx.globalAlpha=(hot?.5:.3)*(1-t);ctx.fillStyle='#dfe8ea';ctx.beginPath();ctx.arc(x+Math.sin(t*5+n*2)*ST.radius*.2,base-hh*t,8+t*(hot?26:12),0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}}}
 // ---- SF Act 3: fault cracks, gas mains, the freeway pancake (The Fault) ----
 // Cracks are set off by a slam or pound within reach (an Ultimate within a longer reach); each sets off a district quake. The last
 // crack is the Big One: the level shakes for CK.bigSeconds and the freeway pancakes, column by column, upper deck then lower.
@@ -798,30 +834,30 @@ function focus(){canvas.focus();}
 function beginIntro(){mode='intro';keys.clear();introElapsed=0;introIndex=-1;introCount++;introPanel();focus();}
 function introPanel(){introIndex=introScene(introElapsed);panel(`<div class="intro-copy"><div class="eyebrow">${String(introIndex+1).padStart(2,'0')} / 04 · FIRST IMPACT</div><h2>${INTRO_SCENES[introIndex]}</h2><p class="asset-notice">TEMPORARY SCENE ART</p><button id="skip-intro">SKIP INTRO →</button></div>`);document.querySelector('#skip-intro')!.addEventListener('click',finishIntro);}
 function finishIntro(){if(mode!=='intro')return;setup();}
-function selectionScreen(){mode='selection';if(!selectable(permanent,selectedKaiju))selectedKaiju='Mogurodon';loadKaijuArt(selectedKaiju);
+function selectionScreen(){mode='selection';if(!selectable(access(),selectedKaiju))selectedKaiju='Mogurodon';loadKaijuArt(selectedKaiju);
  const info=ROSTER.find(r=>r.name===selectedKaiju)!;
- panel(`<div class="eyebrow">CAMPAIGN / ${pendingInitials}</div><h1>CHOOSE YOUR <span>KAIJU.</span></h1><div class="roster-grid">${ROSTER.map((r,i)=>{const unlocked=selectable(permanent,r.name);return `<button id="kaiju-${i}" class="roster-card ${r.name===selectedKaiju?'selected':''}" ${unlocked?'':'disabled'} aria-label="${unlocked?r.name:`Locked kaiju slot ${i+1}`}"><span class="char-shadow ${unlocked?'known':'locked'}" style="--char-color:${unlocked?r.color:'#0e191b'}">${unlocked?'◆':'?'}</span><span>${unlocked?r.name:'???'}</span></button>`;}).join('')}</div><div class="stage-grid">${[1,2,3].map(stage=>`<div><canvas id="preview-stage-${stage}" width="240" height="120" aria-label="${selectedKaiju} stage ${stage} temporary idle preview"></canvas><span>STAGE 0${stage}</span></div>`).join('')}</div><div class="rating-grid">${['Damage','Speed','Resistance','Range'].map((label,i)=>`<div><span>${label.toUpperCase()}</span><b>${'●'.repeat(info.ratings[i])}${'○'.repeat(5-info.ratings[i])}</b></div>`).join('')}</div><p class="asset-notice">Temporary sprites / provisional ratings. Shared combat until Phase 5.</p><button id="confirm-kaiju" class="primary">PLAY AS ${selectedKaiju.toUpperCase()} →</button><button id="back">BACK</button>`,true);
- ROSTER.forEach((r,i)=>document.querySelector(`#kaiju-${i}`)!.addEventListener('click',()=>{if(!selectable(permanent,r.name))return;selectedKaiju=r.name;selectionScreen();}));
- document.querySelector('#confirm-kaiju')!.addEventListener('click',()=>{if(!selectable(permanent,selectedKaiju)||!initialsValid(pendingInitials))return;session='campaign';activeKaiju=selectedKaiju;run=newRun(pendingInitials,activeKaiju);score=0;combat=createCombat();cityIndex=campaignCityIndex(0);blockIndex=run.block;citySettled=false;writeCheckpoint(checkpointOf(run));progressScreen();});document.querySelector('#back')!.addEventListener('click',setup);
+ panel(`<div class="eyebrow">CAMPAIGN / ${pendingInitials}</div><h1>CHOOSE YOUR <span>KAIJU.</span></h1><div class="roster-grid">${ROSTER.map((r,i)=>{const unlocked=selectable(access(),r.name);return `<button id="kaiju-${i}" class="roster-card ${r.name===selectedKaiju?'selected':''}" ${unlocked?'':'disabled'} aria-label="${unlocked?r.name:`Locked kaiju slot ${i+1}`}"><span class="char-shadow ${unlocked?'known':'locked'}" style="--char-color:${unlocked?r.color:'#0e191b'}">${unlocked?'◆':'?'}</span><span>${unlocked?r.name:'???'}</span></button>`;}).join('')}</div><div class="stage-grid">${[1,2,3].map(stage=>`<div><canvas id="preview-stage-${stage}" width="240" height="120" aria-label="${selectedKaiju} stage ${stage} temporary idle preview"></canvas><span>STAGE 0${stage}</span></div>`).join('')}</div><div class="rating-grid">${['Damage','Speed','Resistance','Range'].map((label,i)=>`<div><span>${label.toUpperCase()}</span><b>${'●'.repeat(info.ratings[i])}${'○'.repeat(5-info.ratings[i])}</b></div>`).join('')}</div><p class="asset-notice">Temporary sprites / provisional ratings. Shared combat until Phase 5.</p><button id="confirm-kaiju" class="primary">PLAY AS ${selectedKaiju.toUpperCase()} →</button><button id="back">BACK</button>`,true);
+ ROSTER.forEach((r,i)=>document.querySelector(`#kaiju-${i}`)!.addEventListener('click',()=>{if(!selectable(access(),r.name))return;selectedKaiju=r.name;selectionScreen();}));
+ document.querySelector('#confirm-kaiju')!.addEventListener('click',()=>{if(!selectable(access(),selectedKaiju)||!initialsValid(pendingInitials))return;session='campaign';activeKaiju=selectedKaiju;run=newRun(pendingInitials,activeKaiju);score=0;combat=createCombat();cityIndex=campaignCityIndex(0);blockIndex=run.block;citySettled=false;writeCheckpoint(checkpointOf(run));progressScreen();});document.querySelector('#back')!.addEventListener('click',setup);
 }
 function paintPreviews(){for(const stage of [1,2,3]){const preview=document.querySelector<HTMLCanvasElement>(`#preview-stage-${stage}`);if(!preview)return;const c=preview.getContext('2d')!;c.imageSmoothingEnabled=false;c.clearRect(0,0,240,120);c.fillStyle='#1d3031';c.fillRect(0,0,240,120);c.fillStyle='#46604f';c.fillRect(15,106,210,1);drawSilhouette(c,selectedKaiju,120,105,[.85,1.1,1.4][stage-1],time,false,'idle',stage);}}
-function freePlayScreen(){mode='freeplay-select';if(!selectable(permanent,freeChoice.kaiju))freeChoice.kaiju='Mogurodon';if(!selectable(permanent,freeChoice.boss))freeChoice.boss='Mogurodon';const conqueredCities=CITIES.map((_,i)=>i).filter(i=>permanent.conquered.includes(CITIES[i].id));if(!conqueredCities.includes(freeChoice.city))freeChoice.city=conqueredCities[0]??0;
- const unlocked=KAIJU.filter(k=>selectable(permanent,k));
- panel(`<div class="eyebrow">ONE CITY / NO CAMPAIGN SCORE</div><h1>FREE <span>PLAY.</span></h1>${conqueredCities.length?'':'<p>Conquer a campaign city to unlock it here.</p>'}<div class="freeplay-fields"><label for="free-kaiju">PLAYABLE KAIJU</label><select id="free-kaiju">${unlocked.map(k=>`<option ${k===freeChoice.kaiju?'selected':''}>${k}</option>`).join('')}</select><label for="free-city">CONQUERED CITY</label><select id="free-city">${conqueredCities.length?conqueredCities.map(i=>`<option value="${i}" ${i===freeChoice.city?'selected':''}>${CITIES[i].name}</option>`).join(''):'<option value="">NO CITIES UNLOCKED</option>'}</select><label for="free-block">START BLOCK</label><select id="free-block">${freePlayLevels(permanent,freeChoice.city).map(i=>`<option value="${i}" ${i===(freeChoice.block??0)?'selected':''}>${i+1} · ${LEVELS[freeChoice.city][i].name}${LEVELS[freeChoice.city][i].secret?' ★ SECRET':''}</option>`).join('')}</select><label for="free-boss">UNLOCKED RIVAL</label><select id="free-boss">${unlocked.map(k=>`<option ${k===freeChoice.boss?'selected':''}>${k}</option>`).join('')}</select></div><p>Start on any block · Stage 1 start · City difficulty unchanged<br>Mirror matches permitted. Campaign checkpoint stays untouched.</p><p class="asset-notice">All selected kaiju currently use shared combat pending Phase 5.</p><button id="free-start" class="primary" ${validFreePlay(permanent,freeChoice)?'':'disabled'}>ENTER CITY →</button><button id="back">MAIN MENU</button>`);
- const update=()=>{freeChoice={kaiju:document.querySelector<HTMLSelectElement>('#free-kaiju')!.value,city:Number(document.querySelector<HTMLSelectElement>('#free-city')!.value),boss:document.querySelector<HTMLSelectElement>('#free-boss')!.value,block:Number(document.querySelector<HTMLSelectElement>('#free-block')?.value||0)};document.querySelector<HTMLButtonElement>('#free-start')!.disabled=!validFreePlay(permanent,freeChoice);loadKaijuArt(freeChoice.kaiju);};
+function freePlayScreen(){mode='freeplay-select';if(!selectable(access(),freeChoice.kaiju))freeChoice.kaiju='Mogurodon';if(!selectable(access(),freeChoice.boss))freeChoice.boss='Mogurodon';const conqueredCities=CAMPAIGN.map(cityIndexOf).filter(i=>access().conquered.includes(CITIES[i].id));if(!conqueredCities.includes(freeChoice.city))freeChoice.city=conqueredCities[0]??0;
+ const unlocked=KAIJU.filter(k=>selectable(access(),k));
+ panel(`<div class="eyebrow">ONE CITY / NO CAMPAIGN SCORE</div><h1>FREE <span>PLAY.</span></h1>${conqueredCities.length?'':'<p>Conquer a campaign city to unlock it here.</p>'}<div class="freeplay-fields"><label for="free-kaiju">PLAYABLE KAIJU</label><select id="free-kaiju">${unlocked.map(k=>`<option ${k===freeChoice.kaiju?'selected':''}>${k}</option>`).join('')}</select><label for="free-city">CONQUERED CITY</label><select id="free-city">${conqueredCities.length?conqueredCities.map(i=>`<option value="${i}" ${i===freeChoice.city?'selected':''}>${CITIES[i].name}</option>`).join(''):'<option value="">NO CITIES UNLOCKED</option>'}</select><label for="free-block">START BLOCK</label><select id="free-block">${freePlayLevels(access(),freeChoice.city).map(i=>`<option value="${i}" ${i===(freeChoice.block??0)?'selected':''}>${i+1} · ${LEVELS[freeChoice.city][i].name}${LEVELS[freeChoice.city][i].secret?' ★ SECRET':''}</option>`).join('')}</select><label for="free-boss">UNLOCKED RIVAL</label><select id="free-boss">${unlocked.map(k=>`<option ${k===freeChoice.boss?'selected':''}>${k}</option>`).join('')}</select></div><p>Start on any block · Stage 1 start · City difficulty unchanged<br>Mirror matches permitted. Campaign checkpoint stays untouched.</p><p class="asset-notice">All selected kaiju currently use shared combat pending Phase 5.</p><button id="free-start" class="primary" ${validFreePlay(access(),freeChoice)?'':'disabled'}>ENTER CITY →</button><button id="back">MAIN MENU</button>`);
+ const update=()=>{freeChoice={kaiju:document.querySelector<HTMLSelectElement>('#free-kaiju')!.value,city:Number(document.querySelector<HTMLSelectElement>('#free-city')!.value),boss:document.querySelector<HTMLSelectElement>('#free-boss')!.value,block:Number(document.querySelector<HTMLSelectElement>('#free-block')?.value||0)};document.querySelector<HTMLButtonElement>('#free-start')!.disabled=!validFreePlay(access(),freeChoice);loadKaijuArt(freeChoice.kaiju);};
  for(const id of ['free-kaiju','free-city','free-boss','free-block'])document.querySelector(`#${id}`)!.addEventListener('change',update);
  // A different city has different block names: redraw the list from its first block.
  document.querySelector('#free-city')!.addEventListener('change',()=>{freeChoice.block=0;freePlayScreen();});
  document.querySelector('#free-start')!.addEventListener('click',()=>{update();startFreePlay();});document.querySelector('#back')!.addEventListener('click',title);
 }
-function startFreePlay(){if(!validFreePlay(permanent,freeChoice))return;session='freeplay';run=null;activeKaiju=freeChoice.kaiju;cityIndex=freeChoice.city;blockIndex=freeChoice.block??0;freeBlockStart=0;citySettled=false;score=0;combat=createCombat();loadBlock();}
+function startFreePlay(){if(!validFreePlay(access(),freeChoice))return;session='freeplay';run=null;activeKaiju=freeChoice.kaiju;cityIndex=freeChoice.city;blockIndex=freeChoice.block??0;freeBlockStart=0;citySettled=false;score=0;combat=createCombat();loadBlock();}
 function finishFreePlay(){if(cleared)return;cleared=true;mode='conquered';keys.clear();panel(`<div class="eyebrow">FREE PLAY / ${CITIES[cityIndex].name.toUpperCase()}</div><h1>CITY<br><span>CLEARED.</span></h1><p>${activeKaiju.toUpperCase()} / RIVAL ${bossName().toUpperCase()}<br>SESSION SCORE ${netScore().toLocaleString()}<br>No campaign score, checkpoint or unlock changes.</p><button id="free-select" class="primary">CHOOSE CITY →</button><button id="free-again">RETRY SAME CITY</button><button id="back">MAIN MENU</button>`);document.querySelector('#free-select')!.addEventListener('click',freePlayScreen);document.querySelector('#free-again')!.addEventListener('click',startFreePlay);document.querySelector('#back')!.addEventListener('click',title);}
-function galleryScreen(){mode='gallery';panel(`<div class="eyebrow">CAMPAIGN COMPLETION RECORDS</div><h1>ENDINGS <span>GALLERY.</span></h1><div class="gallery-grid">${ENDINGS.map((e,i)=>{const unlocked=canViewEnding(permanent,e.name);return `<button id="ending-${i}" ${unlocked?'':'disabled'}><span>${unlocked?e.name:'???'}</span><b>${unlocked?e.title:'LOCKED'}</b></button>`;}).join('')}</div><p>Complete a campaign with a kaiju to unlock its ending.</p><h2>SECRETS</h2><div class="gallery-grid">${secretIds().map(id=>{const lv=secretLevelOf(id)!,b=LEVELS[lv.city][lv.block],unlocked=permanent.secrets.includes(id);return `<button id="secret-${id}" ${unlocked?'':'disabled'}><span>${unlocked?CITIES[lv.city].name.toUpperCase():'???'}</span><b>${unlocked?`${b.name.toUpperCase()}: ${b.lore??'CLEARED'}`:'LOCKED'}</b></button>`;}).join('')}</div><p class="asset-notice">Original illustrations and epilogues are pending. Titles are preserved.</p><button id="back" class="primary">MAIN MENU</button>`,true);
- ENDINGS.forEach((e,i)=>document.querySelector(`#ending-${i}`)!.addEventListener('click',()=>{if(canViewEnding(permanent,e.name))endingScreen(e.name,'gallery');}));document.querySelector('#back')!.addEventListener('click',title);
+function galleryScreen(){mode='gallery';panel(`<div class="eyebrow">CAMPAIGN COMPLETION RECORDS</div><h1>ENDINGS <span>GALLERY.</span></h1><div class="gallery-grid">${ENDINGS.map((e,i)=>{const unlocked=canViewEnding(access(),e.name);return `<button id="ending-${i}" ${unlocked?'':'disabled'}><span>${unlocked?e.name:'???'}</span><b>${unlocked?e.title:'LOCKED'}</b></button>`;}).join('')}</div><p>Complete a campaign with a kaiju to unlock its ending.</p><h2>SECRETS</h2><div class="gallery-grid">${secretIds().map(id=>{const lv=secretLevelOf(id)!,b=LEVELS[lv.city][lv.block],unlocked=access().secrets.includes(id);return `<button id="secret-${id}" ${unlocked?'':'disabled'}><span>${unlocked?CITIES[lv.city].name.toUpperCase():'???'}</span><b>${unlocked?`${b.name.toUpperCase()}: ${b.lore??'CLEARED'}`:'LOCKED'}</b></button>`;}).join('')}</div><p class="asset-notice">Original illustrations and epilogues are pending. Titles are preserved.</p><button id="back" class="primary">MAIN MENU</button>`,true);
+ ENDINGS.forEach((e,i)=>document.querySelector(`#ending-${i}`)!.addEventListener('click',()=>{if(canViewEnding(access(),e.name))endingScreen(e.name,'gallery');}));document.querySelector('#back')!.addEventListener('click',title);
 }
-function endingScreen(name:string,source:'gallery'|'completion'){if(!canViewEnding(permanent,name))return;mode='ending';endingName=name;endingSource=source;const e=endingFor(name);panel(`<div class="ending-copy"><div class="eyebrow">${name.toUpperCase()} / CAMPAIGN ENDING</div><h1>${e.title}</h1><p>${e.epilogue||'Original epilogue not yet supplied.'}</p><p class="asset-notice">TEMPORARY ILLUSTRATION · FINAL ART PENDING</p><button id="ending-back" class="primary">${source==='gallery'?'BACK TO GALLERY':'LOCAL TOP 10'}</button><button id="back">MAIN MENU</button></div>`,true);document.querySelector('#ending-back')!.addEventListener('click',()=>source==='gallery'?galleryScreen():scoresScreen());document.querySelector('#back')!.addEventListener('click',title);}
-function settingsScreen(){mode='settings';panel(`<div class="eyebrow">DISPLAY / FIXED KEYBOARD CONTROLS</div><h1>SETTINGS.</h1><div class="settings-fields"><label><input id="integer-scale" type="checkbox" ${display.integer?'checked':''}> Integer pixel scaling when space permits</label><label><input id="screen-shake" type="checkbox" ${display.shake?'checked':''}> Screen shake</label></div><button id="settings-fullscreen" class="primary">TOGGLE FULLSCREEN</button><div id="display-status" role="status" aria-live="polite"></div><button id="back">MAIN MENU</button><p>Game always keeps its 16:9 aspect ratio.<br>No audio assets yet; audio controls are deferred.</p>`);
- document.querySelector<HTMLInputElement>('#integer-scale')!.addEventListener('change',e=>{display.integer=(e.target as HTMLInputElement).checked;saveDisplay();});document.querySelector<HTMLInputElement>('#screen-shake')!.addEventListener('change',e=>{display.shake=(e.target as HTMLInputElement).checked;saveDisplay();});document.querySelector('#settings-fullscreen')!.addEventListener('click',toggleFullscreen);document.querySelector('#back')!.addEventListener('click',title);
+function endingScreen(name:string,source:'gallery'|'completion'){if(!canViewEnding(access(),name))return;mode='ending';endingName=name;endingSource=source;const e=endingFor(name);panel(`<div class="ending-copy"><div class="eyebrow">${name.toUpperCase()} / CAMPAIGN ENDING</div><h1>${e.title}</h1><p>${e.epilogue||'Original epilogue not yet supplied.'}</p><p class="asset-notice">TEMPORARY ILLUSTRATION · FINAL ART PENDING</p><button id="ending-back" class="primary">${source==='gallery'?'BACK TO GALLERY':'LOCAL TOP 10'}</button><button id="back">MAIN MENU</button></div>`,true);document.querySelector('#ending-back')!.addEventListener('click',()=>source==='gallery'?galleryScreen():scoresScreen());document.querySelector('#back')!.addEventListener('click',title);}
+function settingsScreen(){mode='settings';panel(`<div class="eyebrow">DISPLAY / FIXED KEYBOARD CONTROLS</div><h1>SETTINGS.</h1><div class="settings-fields"><label><input id="integer-scale" type="checkbox" ${display.integer?'checked':''}> Integer pixel scaling when space permits</label><label><input id="screen-shake" type="checkbox" ${display.shake?'checked':''}> Screen shake</label><label><input id="dev-unlock" type="checkbox" ${devUnlock?'checked':''}> DEV: unlock all kaiju, cities &amp; secrets (Free Play, gallery)</label></div><button id="settings-fullscreen" class="primary">TOGGLE FULLSCREEN</button><div id="display-status" role="status" aria-live="polite"></div><button id="back">MAIN MENU</button><p>Game always keeps its 16:9 aspect ratio.<br>No audio assets yet; audio controls are deferred.</p>`);
+ document.querySelector<HTMLInputElement>('#integer-scale')!.addEventListener('change',e=>{display.integer=(e.target as HTMLInputElement).checked;saveDisplay();});document.querySelector<HTMLInputElement>('#screen-shake')!.addEventListener('change',e=>{display.shake=(e.target as HTMLInputElement).checked;saveDisplay();});document.querySelector<HTMLInputElement>('#dev-unlock')!.addEventListener('change',e=>setDev((e.target as HTMLInputElement).checked));document.querySelector('#settings-fullscreen')!.addEventListener('click',toggleFullscreen);document.querySelector('#back')!.addEventListener('click',title);
 }
 async function toggleFullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('#frame')!.requestFullscreen();}catch{action='FULLSCREEN UNAVAILABLE';actionTime=2;const status=document.querySelector('#display-status');if(status)status.textContent='Fullscreen is not available here. Browser-fit display remains active.';}}
 
@@ -833,7 +869,7 @@ function title(){mode='title';keys.clear();panel(`<div class="eyebrow">KAIJU-GED
 function setup(){mode='setup';panel(`<div class="eyebrow">NEW CAMPAIGN</div><h1>YOUR<br><span>INITIALS.</span></h1><label for="initials">EXACTLY THREE LETTERS</label><input id="initials" maxlength="3" autocomplete="off" spellcheck="false" placeholder="AAA" aria-describedby="initials-help"><p id="initials-help">Choose an unlocked kaiju next.<br>Every campaign begins at Stage 1.</p><button id="launch" class="primary" disabled>CHOOSE KAIJU →</button><button id="back">MAIN MENU</button>`);
  const input=document.querySelector<HTMLInputElement>('#initials')!,launch=document.querySelector<HTMLButtonElement>('#launch')!;
  input.addEventListener('input',()=>{input.value=input.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,3);launch.disabled=!initialsValid(input.value);});
- launch.addEventListener('click',()=>{if(!initialsValid(input.value))return;pendingInitials=input.value;selectedKaiju=selectable(permanent,selectedKaiju)?selectedKaiju:'Mogurodon';selectionScreen();});
+ launch.addEventListener('click',()=>{if(!initialsValid(input.value))return;pendingInitials=input.value;selectedKaiju=selectable(access(),selectedKaiju)?selectedKaiju:'Mogurodon';selectionScreen();});
  document.querySelector('#back')!.addEventListener('click',title);input.focus();
 }
 function progressScreen(){if(run)activeKaiju=kaijuFor(run);loadKaijuArt(activeKaiju);mode='progress';if(!run)return;cityIndex=campaignCityIndex(run.city);const levels=routeLevels(cityIndex).length;panel(`<div class="eyebrow">CAMPAIGN / ${run.initials} / ${run.kaiju.toUpperCase()}</div><h1>${CITIES[cityIndex].name.toUpperCase()}</h1><p>CITY ${run.city+1} / ${CAMPAIGN.length} · BANKED SCORE ${Math.round(run.banked).toLocaleString()}<br>${levels} LEVELS · ${activeKaiju.toUpperCase()} · RIVAL ${bossName().toUpperCase()}</p><div class="city-route">${CAMPAIGN.map((id,i)=>`<span class="${i===run!.city?'current':''}">${i<run!.city?'✓':String(i+1).padStart(2,'0')} ${CITIES[cityIndexOf(id)].name}</span>`).join('')}</div><button id="begin-city" class="primary">BEGIN CITY →</button><button id="back">MAIN MENU</button><p class="note">Checkpoint: ${CITIES[cityIndex].name}, Block 1.<br>Energy, Ultimate and Super reset for each city.</p>`);
@@ -847,11 +883,11 @@ function loadBlock(drill=false){
   if(!drill)setupPocket();else pocketRoof=null;
   stations=[];garageDrops=[];rampage=createRampage();rampFlash=0;wires=[];splashes=[];fired=new Set();ultKill=new Set();
   subs=substations(buildings,block.grids);power=gridPowered(subs);roofs=createRoofProps(buildings,block.grids);roofOf=new Map(roofs.map(p=>[p.b,p]));gridOfB=new Map(buildings.map(b=>[b,gridOf(b.x+b.w/2,block.grids)]));
-  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);for(const [kind,xs,color,label] of [['tram',block.streetcars,'#b9402f',''],['cablecar',block.cablecars,'#8a2f2a',''],['bus',block.trolleys,'#c9c3a2','TROLLEY'],['firetruck',block.firetrucks,'#c0392b',''],['bus',block.buses,'#3d6f8a','TRANSIT']] as const)if(xs&&!drill){vehicles.push(...createFleet(kind,xs,nextVehicle,color,label));nextVehicle+=xs.length;}held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];spit=null;brew=null;clouds=[];poison.clear();swarm=null;wasps=[];hive=null;stings=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
+  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);for(const [kind,xs,color,label] of [['tram',block.streetcars,'#b9402f',''],['cablecar',block.cablecars,'#8a2f2a',''],['bus',block.trolleys,'#c9c3a2','TROLLEY'],['firetruck',block.firetrucks,'#c0392b',''],['bus',block.buses,'#3d6f8a','TRANSIT'],['bull',block.bull===undefined?undefined:[block.bull],'#3b2e24','']] as const)if(xs&&!drill){vehicles.push(...createFleet(kind,xs,nextVehicle,color,label));nextVehicle+=xs.length;}held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];spit=null;brew=null;clouds=[];poison.clear();swarm=null;wasps=[];hive=null;stings=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
  // Campaign levels with their own growth set the stage window; Free Play, drills and the original cities stay fully dynamic.
  if(!drill&&session==='campaign'&&block.startStage)setGrowth(combat,block.startStage,block.cap??3);
  cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
- clingTo=null;clingPart=null;grabLock=false;isClimbing=false;climbDir=0;runLatch=false;dashT=0;airRun=false;running=false;bargeT=0;grabWait=0;dive=null;roll=null;runUp=0;runDir=0;bargeHits.clear();oldWidth=bodyWidth();oldHeight=C.playerHeight*scale(combat);player={x:block.start===undefined?110:block.start-oldWidth/2,y:groundAt(block.start===undefined?110:block.start-oldWidth/2)-oldHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
+ clingTo=null;clingPart=null;grabLock=false;isClimbing=false;climbDir=0;runLatch=false;dashT=0;airRun=false;running=false;bargeT=0;grabWait=0;dive=null;roll=null;runUp=0;runDir=0;bargeHits.clear();oldWidth=bodyWidth();oldHeight=C.playerHeight*scale(combat);player={x:spawnX()===undefined?110:spawnX()!-oldWidth/2,y:groundAt(spawnX()===undefined?110:spawnX()!-oldWidth/2)-oldHeight,vy:0,face:1,grounded:true,crouched:false,cooldown:0,pose:0};
  camera=Math.max(0,Math.min(worldWidth-viewW(),player.x+oldWidth/2-viewW()*.34));safeX=player.x;
  for(const x of [...(block.boats??[]),...(block.coastguard??[])])spawnUnit(military,'boat',x,-1);
  objective=!drill&&block.kind==='stronghold'?makeObjective():null;
@@ -860,7 +896,7 @@ function loadBlock(drill=false){
   if(block.target)stations.push(...garrison.map(([type,offset])=>({type,x:objective.x+offset,side:1})));else for(const [type,offset] of garrison)spawnUnit(military,type,objective.x+offset);}
  if(!drill){for(const [type,x] of block.warships??[])spawnUnit(military,type,x,-1);for(const [type,x] of block.deckUnits??[])stations.push({type,x,side:1,perch:true});for(const [type,x,alt] of block.units??[])stations.push({type,x,side:1,alt});for(const x of block.air??[])stations.push({type:'helicopter',x,side:1});for(const x of block.swat??[])stations.push({type:'soldier',x,side:1});}
  if(openLayout()&&!drill){action=`${block.buildings.filter(b=>b.landmark).length?`${block.buildings.filter(b=>b.landmark).length} LANDMARKS · `:''}EXITS EAST AND WEST`;actionTime=3.5;}
- if(!drill){setupSF();setupAct2();setupCracks();setupBridge();setupSlopes();setCover(coverAt);}else{slopes=[];setCover(()=>null);cracks=[];bigOne=null;setPlatforms([]);upperPlat=[];jetLaunch=[];pendingRunaways=[];pendingTumble=[];tumbleArmed=false;lions=[];kaiban=null;}
+ if(!drill){setupSF();setupAct2();setupCracks();setupVents();setupBridge();setupSlopes();setCover(coverAt);}else{vents=[];slopes=[];setCover(()=>null);cracks=[];bigOne=null;setPlatforms([]);upperPlat=[];jetLaunch=[];pendingRunaways=[];pendingTumble=[];tumbleArmed=false;lions=[];kaiban=null;}
  loadKaijuArt(activeKaiju,combat.stage);
  mode='playing';overlay.innerHTML='';focus();
 }
@@ -884,7 +920,7 @@ function results(){if(cleared)return;if(session==='campaign'&&run&&!latchBlock(r
  // A secret level cleared in the campaign unlocks it for Free Play and the gallery; its lore line shows wherever it is played.
  if(session==='campaign'&&block.secretId&&unlockSecret(permanent,block.secretId))persist();
  panel(`<div class="eyebrow">${CITIES[cityIndex].name.toUpperCase()} · BLOCK ${blockIndex+1}</div><h1>BLOCK<br><span>CLEARED.</span></h1><p>${block.kind==='stronghold'?(block.target?'TARGET DESTROYED':'CENTRAL CRYSTAL SHATTERED'):`DESTRUCTION ${Math.round(destruction(buildings)*100)}%`}<br>BLOCK SCORE ${blockScore.toLocaleString()}<br>${session==='campaign'?'CAMPAIGN':'SESSION'} SCORE ${netScore().toLocaleString()}${bonus?`<br>PERFECT DESTRUCTION +${bonus}`:''}${block.lore?`<br><b class="lore">${block.lore}</b>`:''}${block.secretId&&session==='campaign'?'<br>SECRET LEVEL · ADDED TO FREE PLAY AND THE GALLERY':''}</p><button id="advance" class="primary">${session==='drill'?'PLAY AGAIN →':'NEXT BLOCK →'}</button><button id="back">MAIN MENU</button>`);
- document.querySelector('#advance')!.addEventListener('click',()=>{if(session==='campaign'&&run){if(nextBlock(run,cityScore(),exitSide)){blockIndex=run.block;loadBlock();}}else if(session==='freeplay'){freeBlockStart=cityScore();blockIndex=(LEVELS[cityIndex][blockIndex].secret?exitTarget(cityIndex,blockIndex):undefined)??routeLevels(cityIndex).find(i=>i>blockIndex)??blockIndex+1;loadBlock();}else start();});document.querySelector('#back')!.addEventListener('click',()=>{if(session==='campaign')confirmAction('Quit this city? Continue resumes at Block 1 and current city progress is lost.',title,resultsAgain);else title();});
+ document.querySelector('#advance')!.addEventListener('click',()=>{if(session==='campaign'&&run){if(nextBlock(run,cityScore(),exitSide,cityIndex)){blockIndex=run.block;loadBlock();}}else if(session==='freeplay'){freeBlockStart=cityScore();blockIndex=(LEVELS[cityIndex][blockIndex].secret?exitTarget(cityIndex,blockIndex):undefined)??routeLevels(cityIndex).find(i=>i>blockIndex)??blockIndex+1;loadBlock();}else start();});document.querySelector('#back')!.addEventListener('click',()=>{if(session==='campaign')confirmAction('Quit this city? Continue resumes at Block 1 and current city progress is lost.',title,resultsAgain);else title();});
 }
 function resultsAgain(){cleared=false;if(run)run.phase='playing';resultsNoBonus();}
 function resultsNoBonus(){// Reopen the interstitial without awarding its bonus again.
@@ -1267,7 +1303,7 @@ function pound(strike:Strike){
  for(const s of slopes)if(s.alive&&Math.abs(slopeY(s,cx)-feet)<8&&s.x0<cx&&s.x1>cx){hitSlope(s,damage,false,cx);struck=true;}
  if(objective&&!objective.shattered&&overlaps(wide,obox()))hitObjective(damage);
  if(rival&&!rival.dead&&overlaps(wide,rival))strikeRival(damage,MV.poundKnockback,player.face);
- strikeFault(cx);
+ strikeFault(cx);strikeVents(cx);
  burst(cx,feet-2,'#c9a77c',strike.combo===3?14:7);shake=Math.max(shake,strike.combo===3?6:3);
  if(struck)freeze(Math.min(F.hitstopMax,F.hitstopBase+damage*F.hitstopPerDamage));
  action=`POUND ${strike.combo} / 3`;actionTime=.5;}
@@ -1294,7 +1330,7 @@ function slamLand(){
  for(const s of slopes)if(s.alive&&Math.abs(slopeY(s,cx)-feet)<8&&s.x0<cx&&s.x1>cx){hitSlope(s,damage*MV.diveRoofMult,false,cx);broke=broke||!s.alive;}
  if(street&&!deckAt(cx)&&caveIn(cx,Math.max(R.pitMin,w*1.1)))broke=true;
  if(street&&!broke)sinkAround(cx);
- strikeFault(cx);
+ strikeFault(cx);strikeVents(cx);
  if(objective&&!objective.shattered&&overlaps(zone,obox()))hitObjective(damage);
  if(rival&&!rival.dead&&overlaps(zone,rival)){struck.push(rival);strikeRival(damage,kb,Math.sign(rival.x+rival.w/2-cx)||player.face);}
  // On the street the impact rolls out as a short shockwave both ways.
@@ -1428,11 +1464,12 @@ function performStrike(strike:Strike|null){
 }
 // First player-caused wreck of a vehicle pays out once (traffic pays less, so passing cars can't be farmed). No crystals.
 function rewardVehicle(v:Vehicle,fromUltimate=false){if(v.rewarded)return;v.rewarded=true;award(Math.round(VEHICLE_SPECS[v.kind].points*(v.traffic?VC.trafficPoints:1)));creditDamage(combat,M.carHP,'player',fromUltimate);}
-function flattenVehicle(v:Vehicle,playerCaused=true,fromUltimate=false){if(v===held)held=null;
+function flattenVehicle(v:Vehicle,playerCaused=true,fromUltimate=false){if(v.kind==='bull')return;if(v===held)held=null;
  if(v.kind==='lamp'){if(upright(v)){uproot(v);v.state='wreck';v.angle=player.face>0?0:Math.PI;v.y=groundAt(v.x+v.w/2)-v.h;spawnChunks(v.x+v.w/2,groundAt(v.x+v.w/2)-8,player.face,'#e9d6a2',3);if(playerCaused)rewardVehicle(v,fromUltimate);}return;}if(playerCaused&&!v.rewarded)wreckFeel(v,player.face,false,fromUltimate);v.state='flat';v.angle=0;v.vx=v.vy=0;v.y=groundAt(v.x+v.w/2)-v.h;
  burst(v.x+v.w/2,groundAt(v.x+v.w/2)-6,playerCaused?'#e6b983':'#b5aa8e',playerCaused?8:4);if(playerCaused)rewardVehicle(v,fromUltimate);}
 // Punt: a hit sends the vehicle tumbling as a projectile that damages whatever it crashes into.
 function puntVehicle(v:Vehicle,damage:number,dir:number,fromUltimate=false,lift=1){
+ if(v.kind==='bull')return;
 uproot(v);v.shield=VC.puntShield;v.calm=VC.sustainedCalm;const fresh=!v.rewarded;const m=Math.sqrt(mass(v));launch(v,dir*(VC.kickSpeed+damage*1.4)/m,-(VC.kickLift+damage*.8)*lift/m,fromUltimate?0:damage*VC.kickDamage*mass(v));
  spawnChunks(v.x+v.w/2,v.y+v.h/2,dir,v.color,3);if(fresh)wreckFeel(v,dir,true,fromUltimate);rewardVehicle(v,fromUltimate);}
 // A civilian vehicle's first wreck lands like a military kill: hit-stop, shake, camera kick, fireball, debris, scorch.
@@ -1479,13 +1516,16 @@ function liftBuilding(b:typeof buildings[number]){const r=damageBuilding(b,b.hpN
 const UNIT_COLORS:Record<string,string>={gunboat:'#7f8b8f',destroyer:'#6f7c82',boat:'#e6eaec',patrol:'#557288',apc:'#7b8c61',tank:'#65795b',artillery:'#65795b'};
 // A tree pulled out of the ground is a lamp-kind prop (laid flat, thrown crown first, spears what it hits) drawn as a tree.
 function uprootedTree(b:typeof buildings[number]){const v=makeProp(nextVehicle++,'lamp',b.x,b.color,'tree');v.w=Math.max(12,Math.round(b.w*.55));v.h=Math.round(b.h*.95);v.y=groundAt(b.x+b.w/2)-v.h;v.mass=1;return v;}
+const bullCarrier=()=>(ROSTER.find(r=>r.name===activeKaiju)?.ratings[0]??0)>=BL.minStrength;
 // H grabs the nearest thing in reach: loose vehicles/wrecks, enemy ground vehicles, or small structures.
 function tryGrab(){if(held||!canAct(combat)||combat.charging||clingTo||combat.ultimateTime>0)return false;
  // Ranked by gap from the body's leading edge, so what is directly in front beats props under a wide Stage 3 body.
  const box=grabBox(),front=player.face>0?player.x+bodyWidth():player.x,dist=(r:{x:number,w:number})=>Math.abs(player.face>0?r.x-front:front-(r.x+r.w)),options:{d:number,take:()=>Vehicle}[]=[];
  for(const v of vehicles)if(loose(v)&&overlaps(box,vehicleBox(v)))options.push({d:dist(v),take:()=>v});
+ // The Charging Bull is lifted by a strong kaiju only (src/config.ts BULL); anyone else just bumps into it.
+ for(const v of vehicles)if(v.kind==='bull'&&v.state!=='held'&&v.state!=='flying'&&overlaps(box,vehicleBox(v))){if(bullCarrier())options.push({d:dist(v),take:()=>v});else{action='TOO HEAVY';actionTime=.9;}}
  for(const u of military.units)if(u.hp>0&&GRABBABLE_UNITS.has(u.type)&&overlaps(box,u))options.push({d:dist(u),take:()=>{captureUnit(military,u);drainMilitary();const p=makeProp(nextVehicle++,u.type as Vehicle['kind'],u.x,UNIT_COLORS[u.type]);vehicles.push(p);return p;}});
- for(const b of buildings)if(liftable(b,combat.stage)&&hitsBox(b,box))options.push({d:dist(b),take:()=>{liftBuilding(b);const p=b.prop==='palm'?uprootedTree(b):b.h>F.liftHeight?liftedBuilding(nextVehicle++,b):makeProp(nextVehicle++,b.kind==='tiny'?'stand':'barrier',b.x,b.color,b.label);vehicles.push(p);return p;}});
+ for(const b of buildings)if(liftable(b,combat.stage)&&hitsBox(b,box))options.push({d:dist(b),take:()=>{liftBuilding(b);const p=b.prop==='palm'||b.prop==='tree'?uprootedTree(b):b.h>F.liftHeight?liftedBuilding(nextVehicle++,b):makeProp(nextVehicle++,b.kind==='tiny'?'stand':'barrier',b.x,b.color,b.label);vehicles.push(p);return p;}});
  // Stage 3 reaches down through an open pit and pulls a whole subway train out of the tunnel (running or wrecked).
  if(combat.stage>=3)for(const t of trains){const r={x:t.x,w:R.trainLength};if(r.x+r.w<box.x||r.x>box.x+box.w)continue;
   if(!pitList().some(p=>p.x0<Math.min(box.x+box.w,r.x+r.w)&&p.x1>Math.max(box.x,r.x)))continue;
@@ -1497,7 +1537,9 @@ function tryGrab(){if(held||!canAct(combat)||combat.charging||clingTo||combat.ul
  const pick=options[0].take();uproot(pick);held=pick;pick.state='held';pick.angle=0;pick.vx=pick.vy=0;pick.panic=0;pick.lane=1;attack=animDuration(activeKaiju,'grab',combat.stage)?{anim:'grab',t:0}:null;action=`GRAB · ${pick.kind.toUpperCase()}`;actionTime=.9;return true;}
 // Throw forward, or with W held lob it high (anti-air). Damage scales with the vehicle's mass and the kaiju's stage.
 function throwHeld(){if(!held||!canAct(combat))return;const v=held,m=mass(v),up=keys.has('KeyW');held=null;
- launch(v,player.face*(up?VC.upSpeed:VC.throwSpeed/Math.pow(m,VC.throwMassExp)),-(up?VC.upLift:v.kind==='lamp'?VC.lampLift:VC.throwLift)/(up?Math.sqrt(m):1),VC.throwDamage*impact(v)*damageMultiplier(combat));
+ // The Bull is thrown short and hard: a low flat lob that carries BL.throwDamage.
+ const bull=v.kind==='bull';
+ launch(v,player.face*(up?VC.upSpeed:bull?BL.throwSpeed:VC.throwSpeed/Math.pow(m,VC.throwMassExp)),-(up?VC.upLift:bull?BL.throwLift:v.kind==='lamp'?VC.lampLift:VC.throwLift)/(up?Math.sqrt(m):1),(bull?BL.throwDamage:VC.throwDamage*impact(v))*damageMultiplier(combat));
  v.lane=1;v.thrown=EXPLOSIVE.has(v.kind);rewardVehicle(v);attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,3);action=up?'THROW · UP':'THROW';actionTime=.7;}
 function dropHeld(){if(!held)return;const v=held;held=null;launch(v,0,0,0);v.thrown=false;if(attack?.anim==='grab')attack=null;}
 // Thrown/punted vehicles crash into buildings, troops, the rival, objectives and other vehicles (which get knocked flying too).
@@ -1527,6 +1569,8 @@ function tickVehicles(dt:number){
   if(v.state==='cable')tickCable(v,dt);else if(v.state==='rolling'&&tickRolling(v,dt,worldWidth)==='rolling')rollImpacts(v);
   tickDriving(v,dt,cx);
   const wasFlying=v.state==='flying',settled=tickFlying(v,dt,worldWidth);if(wasFlying)vehicleImpacts(v);if(settled)detonate(v);
+  // A thrown Bull thuds into the street: it breaks spans and caves the street in like a thrown building, then stands there again (never a wreck).
+  if(settled&&v.kind==='bull'){heavyLanding(v);v.state='parked';v.angle=0;v.spin=0;v.y=groundAt(v.x+v.w/2)-v.h;spawnChunks(v.x+v.w/2,groundAt(v.x+v.w/2)-6,Math.sign(v.vx)||player.face,'#5b4a3a',5,1.3);burst(v.x+v.w/2,groundAt(v.x+v.w/2)-6,'#b1ac91',10);shake=Math.max(shake,6);}
   // A thrown building breaks apart where it lands instead of lying around as a wreck.
   if(settled&&v.kind==='building'){heavyLanding(v);v.state='flat';spawnChunks(v.x+v.w/2,groundAt(v.x+v.w/2)-v.h*.4,Math.sign(v.vx)||player.face,v.color,8,1.6);burst(v.x+v.w/2,groundAt(v.x+v.w/2)-8,'#b1ac91',14);shake=Math.max(shake,4);}
  }
@@ -1551,7 +1595,7 @@ function drainMilitary(){
 }
 // First fissure waits for the roar's crash-down so the waves come out of the slam.
 // Kaiban's Stampede bellows on the same impact frame, then charges (tickStampede) instead of sending fissures.
-function useUltimate(){if(!activateUltimate(combat))return;strikeFault(player.x+bodyWidth()/2,true);attack=null;tremor=null;debris=null;jet=null;jet=null;jetFuel=1;jetLocked=false;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;
+function useUltimate(){if(!activateUltimate(combat))return;strikeFault(player.x+bodyWidth()/2,true);strikeVents(player.x+bodyWidth()/2,true);attack=null;tremor=null;debris=null;jet=null;jet=null;jetFuel=1;jetLocked=false;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;
  stampede=activeKaiju==='Kaiban'?{dir:player.face,hits:new Set(),turned:false,bellowed:false,charging:false,start:player.x,reach:B.stampedeReach*scale(combat)}:null;
  eruptLandings=[];eruption=activeKaiju==='Tlézcatl'?{blasted:false,spat:0,flash:0,boom:0}:null;
  if(eruption)ultimateTimer+=B.eruptCharge;
@@ -1914,7 +1958,7 @@ function update(dt:number){
  }
  echo=false;if(rival?.dead){winCity();return;}
  if(rival){tickFinale(dt,w,h);if(!bossFrozen())for(const hit of tickRival(rival,dt,{x:player.x,y:player.y,w,h},worldWidth,buildings))receiveHit(combat,hit.damage,'boss',hit.strength,hit.direction);for(const b of buildings)if(b.hpNow<b.hp)releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);if(endIfDead())return;}
- tickCity(dt,w);tickRiver(dt,w);tickFire(dt);tickSF(dt);tickAct2(dt);tickCracks(dt);tickBridge(dt);tickResponse(dt);tickMains(dt);tickRails(dt,w,h);tickSlopes(dt);
+ tickCity(dt,w);tickRiver(dt,w);tickFire(dt);tickSF(dt);tickAct2(dt);tickCracks(dt);tickBridge(dt);tickResponse(dt);tickMains(dt);tickVents(dt);tickRails(dt,w,h);tickSlopes(dt);
  tickMilitary(military,dt,camera,worldWidth,{x:player.x,y:player.y,w,h},destruction(buildings),rival||undefined,Math.abs(kb)<.01?'player':'military',viewW(),combat.stage);drainMilitary();syncBody();if(endIfDead())return;
  waves=waves.filter(w=>w.life>0&&w.x>0&&w.x<worldWidth);
  // Ambient crystals and growths appear ahead of the kaiju (the way it faces), so heading west still finds them.
@@ -1936,8 +1980,9 @@ function update(dt:number){
  // Horizontal lead and vertical follow are worked out in screen space so they hold at any zoom.
  const vw=viewW();
  const target=Math.max(0,Math.min(worldWidth-vw,player.x+bodyWidth()/2-vw*(.42-.08*player.face)));camera+=(target-camera)*Math.min(1,dt*C.cameraSpeed);
- // Lift only as far as needed to keep the drawn sprite's head (sprites run ~1.4x their hitbox) below line 130, so the street stays in view.
- const head=player.y+bodyHeight()-1.4*bodyHeight(),targetY=Math.max(0,Math.min(C.maxCameraY,C.ground-head+(130-C.ground)/zoom));cameraY+=(targetY-cameraY)*Math.min(1,dt*C.cameraSpeed*1.4);
+ // Follow the kaiju up: lift only as far as needed to keep the drawn sprite's head (sprites run ~1.4x their hitbox) below line 130, so
+ // the street stays in view as long as it can. No ceiling: the camera goes as high as the kaiju climbs.
+ const head=player.y+bodyHeight()-1.4*bodyHeight(),targetY=Math.max(0,C.ground-head+(130-C.ground)/zoom);cameraY+=(targetY-cameraY)*Math.min(1,dt*C.cameraSpeed*1.4);
  if(objectiveOpen()&&(player.x>=worldWidth-bodyWidth()-3||(openLayout()&&player.x<=3))){exitSide=player.x<=3?'west':'east';results();}
 }
 function rect(x:number,y:number,w:number,h:number,color:string){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
@@ -1952,15 +1997,17 @@ function background(){
  // Sun (or moon), low in the sky so it reads behind the skyline.
  {const sx=W*.72-camera*.02,sy=m.lights>.6?150:m.lights>.35?250:170,r=m.lights>.35&&m.lights<.6?46:m.lights>.6?18:30;ctx.globalAlpha=m.lights>.6?.9:.75;
   ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();if(!night){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
- farSkyline(th.style,W,m);
+ if(th.id==='sfo')sfBackdrop(W,m);else{farSkyline(th.style,W,m);
  // Two parallax layers of city in the mood's colours; windows light up as the light goes.
  for(let i=-1,n=W/79+1;i<n;i++){const x=i*79-(camera*.13)%79,h=50+((i+22)*47%115);rect(x,315-h,50,h,m.far);rect(x+18,305-h,10,10,m.far);
   if(night)for(let yy=322-h;yy<310;yy+=12)for(let xx=6;xx<44;xx+=11)if(((i*31+yy*7+xx)>>1)%4===0)rect(x+xx,yy,3,4,m.win+'99');}
  for(let i=-1,n=W/102+1;i<n;i++){const x=i*102-(camera*.26)%102,h=80+((i+17)*37%110);rect(x,370-h,65,h,m.mid);rect(x+4,374-h,56,4,m.far);
   for(let yy=390-h;yy<360;yy+=15)for(let xx=8;xx<59;xx+=15){const on=((i*13+yy*3+xx)>>2)%5<m.lights*4;rect(x+xx,yy,5,7,on?m.win:night?'#1d2536':m.far);}}
+ }
  if(m.smog){ctx.globalAlpha=.28;rect(0,250,W,C.ground-250,'#e8b778');ctx.globalAlpha=1;}
  // Dense near-layer towers crowd the street and close in the skyline. Open layouts skip them so plazas read as open ground.
- if(!openLayout())for(let i=-1,n=W/88+1;i<n;i++){const x=i*88-(camera*.5)%88,h=170+((i+31)*53%150);rect(x,C.ground-4-h,78,h,m.near);rect(x+78,C.ground-4-h,10,h,m.near);rect(x-2,C.ground-4-h,82,5,m.mid);for(let yy=C.ground-h+4;yy<C.ground-20;yy+=17)for(let xx=7;xx<72;xx+=16)rect(x+xx,yy,7,9,(i+yy)%5<1+m.lights*2?m.win:'#2a3540');}
+ if(!openLayout()&&th.id==='sfo')sfNearRow(W,m);
+ else if(!openLayout())for(let i=-1,n=W/88+1;i<n;i++){const x=i*88-(camera*.5)%88,h=170+((i+31)*53%150);rect(x,C.ground-4-h,78,h,m.near);rect(x+78,C.ground-4-h,10,h,m.near);rect(x-2,C.ground-4-h,82,5,m.mid);for(let yy=C.ground-h+4;yy<C.ground-20;yy+=17)for(let xx=7;xx<72;xx+=16)rect(x+xx,yy,7,9,(i+yy)%5<1+m.lights*2?m.win:'#2a3540');}
  if(!hasTerrain()){rect(0,C.ground-4,W,10,'#c9c5ab');rect(0,C.ground+6,W,99,'#4c5755');rect(0,C.ground+8,W,3,'#202e31');
  for(let i=-1,n=W/85+1;i<n;i++)rect(i*85-camera%85,487,37,3,'#b4b294');rect(0,513,W,27+C.ground/zoom,'#34413f');}
  else{// Terrain: the curb, road and roadbed follow the ground profile; earth fills down to the bottom of the view.
@@ -2103,6 +2150,13 @@ function drawLandmarkShape(b:typeof buildings[number],x:number,y:number,h:number
   if(tall){poly([[x,y],[x+tw/2,y-30],[x+tw,y]],col);poly([[x+bw-tw,y],[x+bw-tw/2,y-30],[x+bw,y]],col);}else{for(const tx of [x,x+bw-tw]){rect(tx-3,y,tw+6,6,'#9a8f78');for(let k=0;k<3;k++)rect(tx+6+k*(tw-12)/2,y+24,5,h*.3,'#3b3b3b');}
    ctx.fillStyle='#3b3b3b';ctx.beginPath();ctx.arc(cx,y+h*.6,Math.min(18,(bw-tw*2)*.35),0,Math.PI*2);ctx.fill();ctx.fillStyle='#c0405a';ctx.beginPath();ctx.arc(cx,y+h*.6,Math.min(12,(bw-tw*2)*.22),0,Math.PI*2);ctx.fill();}
   for(let yy=y+30;yy<base-40;yy+=18){rect(x+6,yy,tw-12,8,'#2c3a42');rect(x+bw-tw+6,yy,tw-12,8,'#2c3a42');}rect(cx-12,base-34,24,34,'#2b2420');return;}
+ if(sh==='bow'){// Cupid's Span: a giant bow half-buried on its back, the arrow driven into the ground through it, fletching up high.
+  const ry=Math.min(h*.5,bw*.42),thick=Math.max(8,bw*.07);ctx.strokeStyle='#e9e2d0';ctx.lineWidth=thick;ctx.beginPath();ctx.ellipse(cx,base,bw/2-thick/2,ry,0,Math.PI,0);ctx.stroke();
+  ctx.strokeStyle='#c9bfa6';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(cx,base,bw/2-thick,ry-thick/2,0,Math.PI,0);ctx.stroke();
+  ctx.strokeStyle='#3a3530';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+thick*.4,base-2);ctx.lineTo(x+bw*.42,base-ry*.25);ctx.lineTo(x+bw-thick*.4,base-2);ctx.stroke();
+  const ax0=x+bw*.1,ay0=base-ry*1.3,ax1=x+bw*.78,ay1=base;ctx.strokeStyle='#b8433a';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(ax0,ay0);ctx.lineTo(ax1,ay1);ctx.stroke();ctx.lineWidth=1;
+  const dx=(ax1-ax0),dy=(ay1-ay0),L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;for(let k=0;k<3;k++){const px=ax0+ux*(6+k*9),py=ay0+uy*(6+k*9);poly([[px,py],[px-uy*16-ux*10,py+ux*16-uy*10],[px-ux*8,py-uy*8]],'#f2efe6');poly([[px,py],[px+uy*16-ux*10,py-ux*16-uy*10],[px-ux*8,py-uy*8]],'#d9d4c6');}
+  return;}
  if(sh==='arch'){const col=st==='mex'?'#7a6f60':'#d8ccae';rect(x,y+(st==='mex'?h*.3:h*.25),bw,h*(st==='mex'?.7:.75),col);rect(x-3,y+(st==='mex'?h*.3:h*.25),bw+6,10,'#bfb293');
   const ah=h*.42,aw=bw*.42;rect(cx-aw/2,base-ah,aw,ah,'#1e2428');ctx.fillStyle='#1e2428';ctx.beginPath();ctx.arc(cx,base-ah,aw/2,Math.PI,0);ctx.fill();
   if(st==='mex'){ctx.fillStyle='#4f6a5c';ctx.beginPath();ctx.ellipse(cx,y+h*.3,bw*.3,h*.22,0,Math.PI,0);ctx.fill();rect(cx-3,y+h*.02,6,14,'#4f6a5c');}else{rect(x,y+h*.25,bw,h*.12,'#cfc3a5');for(let k=x+6;k<x+bw-6;k+=14)rect(k,y+h*.28,8,10,'#bfb293');}return;}
@@ -2126,6 +2180,8 @@ function drawProp(b:typeof buildings[number],x:number,h:number){const y=b.base-h
    rect(x,y+h*.35,w,4,'#8a7a58');rect(x+2,y+h*.35+4,3,h*.65-4,'#4a4236');rect(x+w-5,y+h*.35+4,3,h*.65-4,'#4a4236');rect(x+3,y+h*.1,5,h*.25,'#9aa3a8');rect(x+w*.5,y+h*.18,3,h*.17,'#c9a91f');
    poly([[x+w*.68,y+h*.35],[x+w*.74,y+h*.02],[x+w*.84,y+h*.35]],Math.sin(time*3+x)>0?'#f291ca':'#d46fae');break;}
   case 'stall':{rect(x,y+h*.45,w,h*.55,'#7a5a3a');for(let k=0;k<4;k++)rect(x+3+k*(w-6)/4,y+h*.47,(w-6)/4-2,6,['#e8d26a','#d94f4f','#6fb36a','#e89a3a'][k]);poly([[x-4,y+h*.42],[x+2,y],[x+w-2,y],[x+w+4,y+h*.42]],'#c2312b');for(let k=0;k<4;k++)rect(x+4+k*w/4,y+2,w/8,h*.38,'#f2ead8');break;}
+  case 'tree':{// A park tree: a trunk and a round, layered crown.
+   rect(x+w*.43,y+h*.42,w*.14,h*.58,'#6b4f33');ctx.fillStyle=b.color||'#4f7d4a';for(const [dx,dy,r] of [[.5,.26,.34],[.28,.4,.24],[.72,.4,.24],[.5,.12,.22]]){ctx.beginPath();ctx.arc(x+w*dx,y+h*dy,w*r+4,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#00000018';ctx.beginPath();ctx.arc(x+w*.6,y+h*.34,w*.3,0,Math.PI*2);ctx.fill();break;}
   case 'palm':{rect(x+w*.44,y+h*.28,w*.12,h*.72,'#7a5a3a');for(let k=0;k<5;k++)rect(x+w*.44,y+h*.34+k*h*.12,w*.12,2,'#5a4028');
    for(const [dx,dy] of [[-1,.1],[1,.1],[-.8,-.08],[.8,-.08],[0,-.16]])poly([[x+w*.5,y+h*.26],[x+w*.5+dx*w*.7,y+h*(.2+dy)],[x+w*.5+dx*w*.5,y+h*(.34+dy)]],'#4f7d4a');break;}
   case 'turntable':{ctx.fillStyle='#5d564a';ctx.beginPath();ctx.ellipse(x+w/2,base-3,w/2,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8a8272';ctx.beginPath();ctx.ellipse(x+w/2,base-4,w/2-5,3.5,0,0,Math.PI*2);ctx.fill();rect(x+w*.1,base-5,w*.8,2,'#3b3730');rect(x+w/2-1,base-7,2,6,'#3b3730');break;}
@@ -2182,7 +2238,7 @@ function act3Debug(){return {finaleState:finale?{woke:finale.woke,phase:finale.p
  railDecks:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,deck:r.deck??0,alive:r.alive,fellAt:r.fellAt??null}))};}
 function act2Debug(){return {powerhouseDown,loosed,exitSide,tumbleArmed,pendingTumble:pendingTumble.length,pendingRunaways:pendingRunaways.length,seaLions:lions.map(l=>({x:l.x,state:l.state})),lionsEscaped,
  kaibanState:kaiban?{...kaiban}:null,cutter:objective?.ship?{sink:objective.ship.sink,sinking:objective.ship.sinking,list:objective.ship.list,w:objective.ship.w,h:objective.ship.h,box:hullBox(objective.ship,waterAt(objective.x)??C.ground),deck:deckY(objective.ship,waterAt(objective.x)??C.ground)}:null,
- fogLevel:fogAt(block,player.x+bodyWidth()/2),railSpans:rails.map(r=>({x0:r.x0,x1:r.x1,alive:r.alive,hp:r.hp,y:r.y})),cameraRise:cameraY,cameraRiseMax:C.maxCameraY};}
+ fogLevel:fogAt(block,player.x+bodyWidth()/2),railSpans:rails.map(r=>({x0:r.x0,x1:r.x1,alive:r.alive,hp:r.hp,y:r.y})),cameraRise:cameraY};}
 // Rooftop fixtures, drawn with their building (so they squash and lean with it). x is the building's screen x, h its drawn height.
 function drawRoof(p:RoofProp,x:number,h:number){const r=roofBox(p,h),rx=r.x-p.b.x+x,ry=r.y,w=r.w,hh=r.h;
  if(p.kind==='sign'){// Big rooftop letters on a steel frame.
@@ -2239,7 +2295,14 @@ function drawCityFx(){
 // Far skyline: each city's signature silhouettes on the horizon, parallaxing slowly so they stay in view across the block.
 function farSkyline(style:string,W:number,m:{far:string,mid:string,win:string,lights:number}){const base=320,c=m.far,night=m.lights>.6,px=(k:number,period=1500)=>((k*period-camera*.05)%(period*2)+period*2)%(period*2)-200;
  ctx.globalAlpha=.8;
- if(style==='nyc'){for(const k of [0,1]){const x=px(k);rect(x,base-150,26,150,c);rect(x+5,base-172,16,22,c);rect(x+9,base-190,8,18,c);rect(x+12,base-215,2,25,c);
+ if(style==='nyc'){
+  // Lower Manhattan looks out over the harbour to the Statue of Liberty, on her island: a fixed spot just off the west edge of the view that drifts with the far parallax.
+  if(block.name==='The Battery'||block.name==='Wall Street'){const sx=(block.name==='The Battery'?640:330)-camera*.05;
+   rect(sx-26,base-8,52,8,c);rect(sx-14,base-34,28,26,c);rect(sx-9,base-50,18,16,c);poly([[sx-9,base-50],[sx-7,base-92],[sx+8,base-92],[sx+9,base-50]],c);
+   rect(sx-4,base-104,8,13,c);for(const k of [-9,-5,-1,3,7])poly([[sx+k-1,base-104],[sx+k*1.7,base-117],[sx+k+2,base-104]],c);
+   poly([[sx+5,base-90],[sx+13,base-118],[sx+17,base-136],[sx+14,base-136],[sx+9,base-116],[sx+3,base-88]],c);rect(sx+11,base-148,7,12,c);poly([[sx+11,base-148],[sx+14.5,base-158],[sx+18,base-148]],c);
+   poly([[sx-9,base-80],[sx-18,base-70],[sx-14,base-64],[sx-8,base-72]],c);}
+  for(const k of [0,1]){const x=px(k);rect(x,base-150,26,150,c);rect(x+5,base-172,16,22,c);rect(x+9,base-190,8,18,c);rect(x+12,base-215,2,25,c);
    const y=px(k,1500)+620;rect(y,base-130,22,130,c);poly([[y,base-130],[y+11,base-175],[y+22,base-130]],c);rect(y+10,base-195,2,20,c);}}
  else if(style==='mex'){// Popocatépetl, smoking, with Iztaccíhuatl beside it, and the Torre Latinoamericana.
   const x=px(0,2000)+200;poly([[x-260,base],[x-40,base-190],[x+30,base-190],[x+250,base]],c);poly([[x-58,base-172],[x-40,base-190],[x+30,base-190],[x+48,base-172],[x+20,base-176],[x-10,base-168],[x-30,base-176]],'#efe6d8');
@@ -2257,6 +2320,62 @@ function farSkyline(style:string,W:number,m:{far:string,mid:string,win:string,li
   const y=px(1,2200);poly([[y-12,base],[y-4,base-250],[y+4,base-250],[y+12,base]],c);rect(y-8,base-190,16,8,c);rect(y-1,base-290,2,40,c);if(Math.sin(time*3)>0)rect(y-2,base-292,4,4,'#ff5a5a');
   const t2=y+520;poly([[t2-40,base],[t2-4,base-160],[t2+4,base-160],[t2+40,base]],'#a8463a');rect(t2-24,base-80,48,5,'#d8d8d8');rect(t2-12,base-130,24,4,'#d8d8d8');}
  ctx.globalAlpha=1;}
+// ---- San Francisco backdrop: the Bay, hills under fog, the downtown landmarks and painted row houses up the slopes ----
+// Blend two #rrggbb colours (t = 0 gives a, 1 gives b): used to fade the house paint into the fog with distance.
+function mixHex(a:string,b:string,t:number){const p=(s:string)=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)),A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');}
+const SF_PAINT=['#c9a9a6','#9fb8ad','#e3d3a8','#a7b4c9','#d8b48f','#b9c6a0','#d6b9c9','#e6e0d0'],sfPaint=(k:number)=>SF_PAINT[((k%8)+8)%8];
+// A rolling hill line in a layer's own scrolled space (wx = screen x + that layer's camera offset).
+const sfHill=(wx:number,amp:number)=>amp*(.55+.25*Math.sin(wx*.0042)+.2*Math.sin(wx*.011+1.3));
+// One row house: a narrow frame with a bay window column, sash windows, a cornice (or a Queen Anne gable) and a stoop.
+function sfHouse(x:number,base:number,w:number,h:number,body:string,trim:string,win:string,gable:boolean,detail:boolean){
+ rect(x,base-h,w,h+40,body);rect(x+w-1,base-h,1,h+40,trim);
+ if(gable)poly([[x-1,base-h],[x+w/2,base-h-w*.42],[x+w+1,base-h]],body);else rect(x-1,base-h-2,w+2,3,trim);
+ if(!detail)return;
+ const bay=Math.round(w*.42),bx=x+2;rect(bx,base-h+5,bay,h-12,mixHex(body,'#ffffff',.12));
+ for(let yy=base-h+8;yy<base-10;yy+=13){rect(bx+2,yy,bay-4,7,win);rect(x+bay+5,yy,Math.max(3,w-bay-9),7,win);}
+ rect(x+bay+4,base-7,w-bay-7,7,trim);}
+function sfBackdrop(W:number,m:{far:string,mid:string,win:string,lights:number,bottom:string}){
+ const base=320,fog=m.bottom,c=m.far,f=-camera*.05;
+ // The far layer barely moves across a block (about 5% of the camera), so the landmarks are laid out once across the view, west to east.
+ // The Bay: a strip of water along the horizon, glinting.
+ rect(0,base-22,W,40,mixHex('#6f8f9c',fog,.35));for(let k=0;k<W;k+=37)rect(k+((time*6)%37),base-14+(k%3)*4,12,1,mixHex('#dfe8e6',fog,.3));
+ ctx.globalAlpha=.85;
+ // Marin headlands far left, with the Golden Gate's orange towers just showing (left out where the bridge itself is the level).
+ const g=f-120;
+ poly([[g-200,base-16],[g-40,base-96],[g+60,base-74],[g+170,base-108],[g+330,base-16]],mixHex('#7c8a7e',fog,.45));
+ if(block.name!=='Golden Gate'){const o=mixHex('#c0362c',fog,.35);for(const tx of [g+250,g+420]){rect(tx,base-120,7,104,o);rect(tx-2,base-120,11,3,o);rect(tx,base-92,7,2,mixHex(o,'#000000',.2));}
+  rect(g+190,base-30,300,4,o);ctx.strokeStyle=o;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(g+180,base-28);ctx.quadraticCurveTo(g+300,base-50,g+253,base-118);ctx.quadraticCurveTo(g+336,base-30,g+423,base-118);ctx.quadraticCurveTo(g+460,base-70,g+500,base-28);ctx.stroke();}
+ // Twin Peaks with Sutro Tower: a three-legged mast with crossbars, red lamps blinking at the tips.
+ const t=f+W*.42;poly([[t-260,base],[t-90,base-120],[t-40,base-108],[t,base-126],[t+60,base-104],[t+260,base]],mixHex('#7d897f',fog,.35));
+ {const sx=t,top=base-126-150,leg=(dx:number)=>poly([[sx+dx-3,base-124],[sx+dx*.25-1,top],[sx+dx*.25+1,top],[sx+dx+3,base-124]],c);leg(-26);leg(26);leg(0);
+  for(const [y,hw] of [[top+40,10],[top+56,12],[top+100,18]])rect(sx-hw,y,hw*2,3,c);for(const dx of [-8,0,8])rect(sx+dx-1,top-22,2,22,c);
+  if(Math.sin(time*2.4)>0)for(const dx of [-8,0,8])rect(sx+dx-1,top-24,3,3,'#ff5a4a');}
+ // Downtown: the Bay Bridge's west span off to the right, then Salesforce Tower, the Transamerica Pyramid and Coit Tower on Telegraph Hill.
+ const d=f+W*.68;
+ if(block.name!=='Bay Bridge'){const b=mixHex('#9aa6aa',fog,.25),deck=base-34;rect(d+300,deck,520,4,b);for(const tx of [d+420,d+600,d+760]){rect(tx,deck-78,5,82,b);rect(tx-4,deck-50,13,2,b);}
+  ctx.strokeStyle=b;ctx.beginPath();ctx.moveTo(d+330,deck);ctx.quadraticCurveTo(d+380,deck-30,d+422,deck-78);ctx.quadraticCurveTo(d+512,deck-10,d+602,deck-78);ctx.quadraticCurveTo(d+682,deck-10,d+762,deck-78);ctx.quadraticCurveTo(d+800,deck-30,d+830,deck);ctx.stroke();}
+ for(const [ox,w,h] of [[-70,26,96],[-40,22,120],[60,30,104],[94,20,82],[150,34,74],[190,24,92],[226,30,60]])rect(d+ox,base-h,w,h,c);
+ {const x=d-12;rect(x,base-218,38,218,c);ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,base-218);ctx.quadraticCurveTo(x+19,base-252,x+38,base-218);ctx.fill();
+  if(m.lights>.4)for(let yy=base-210;yy<base;yy+=9)rect(x+4,yy,30,2,m.win+'77');}
+ {const x=d+32;poly([[x-14,base],[x+4,base-176],[x+6,base-196],[x+8,base-176],[x+26,base]],c);rect(x-10,base-120,6,26,c);rect(x+16,base-120,6,26,c);}
+ {const x=d+300;poly([[x-110,base],[x-30,base-64],[x+30,base-66],[x+110,base]],mixHex('#7f8b80',fog,.3));rect(x-6,base-108,12,44,c);rect(x-8,base-110,16,4,c);for(let k=-4;k<5;k+=3)rect(x+k,base-104,1,38,mixHex(c,'#ffffff',.2));}
+ ctx.globalAlpha=1;
+ // Karl the fog: a soft bank rolling over the ridgelines, drifting slowly.
+ ctx.fillStyle='#eef1ec';for(let k=0;k<9;k++){const fx=((k*190+time*9-camera*.04)%(W+380)+W+380)%(W+380)-190,fy=base-112+(k*37%40);ctx.globalAlpha=.22;ctx.beginPath();ctx.ellipse?.(fx,fy,150,26,0,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+ // Far slopes: a carpet of small pastel houses climbing the hills, faded by the fog.
+ {const off=camera*.13,hb=316;ctx.fillStyle=mixHex('#86948a',fog,.45);ctx.beginPath();ctx.moveTo(-10,hb);for(let x=-10;x<=W+10;x+=10)ctx.lineTo(x,hb-sfHill(x+off,70));ctx.lineTo(W+10,hb);ctx.closePath();ctx.fill();
+  const step=14;for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const wx=i*step,x=wx-off,top=hb-sfHill(wx+step/2,70)+3,hh=8+(i*7%5);
+   const col=mixHex(sfPaint(i*5),fog,.5);rect(x,top-hh,step-2,hh+4,col);rect(x,top-hh-1,step-2,1,mixHex(col,'#ffffff',.3));
+   if(m.lights>.4&&i%3===0)rect(x+4,top-hh+3,3,3,m.win);}}
+ // Middle slopes: rows of Victorians stepping up and down the hills.
+ {const off=camera*.26,hb=372,step=30;ctx.fillStyle=mixHex('#7a877c',fog,.3);ctx.beginPath();ctx.moveTo(-10,hb);for(let x=-10;x<=W+10;x+=10)ctx.lineTo(x,hb-sfHill(x+off+900,95));ctx.lineTo(W+10,hb);ctx.closePath();ctx.fill();
+  for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const wx=i*step,x=wx-off,b=hb-sfHill(wx+step/2+900,95)+4,h=30+((i*13)%4)*7;
+   const body=mixHex(sfPaint(i*3),fog,.28);sfHouse(x,b,step-1,h,body,mixHex(body,'#ffffff',.35),m.lights>.4?m.win:mixHex(body,'#3b4650',.45),i%4===1,true);}}
+}
+// Near row: taller three-storey painted ladies (bay windows, cornices, gables) in place of the midtown towers, darker so playable buildings read in front.
+function sfNearRow(W:number,m:{near:string,win:string,lights:number}){const step=64,off=camera*.5;
+ for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const x=i*step-off,h=76+((i*53)%5)*12,body=mixHex(sfPaint(i*7),m.near,.55);
+  sfHouse(x,C.ground-4,step-2,h,body,mixHex(body,'#ffffff',.25),(i+h)%5<1+m.lights*3?m.win:mixHex(body,'#1f2830',.5),i%3===2,true);}}
 // Rain (Tokyo): streaks across the whole view, drawn in screen space over everything.
 function drawRain2(){if(!CITIES[cityIndex].mood.rain)return;ctx.strokeStyle='#a9c4dd55';ctx.lineWidth=1;ctx.beginPath();
  for(let k=0;k<90;k++){const x=((k*97+time*260)%1000)-20,y=((k*53+time*900)%600)-40;ctx.moveTo(x,y);ctx.lineTo(x-4,y+14);}ctx.stroke();}
@@ -2416,6 +2535,12 @@ function drawVehicle(v:Vehicle){
   ctx.save();ctx.beginPath();ctx.rect(L-14,T-260,w+28,h+260);ctx.clip();ctx.translate(0,h/2-C.ground);
   drawStructure({x:0,w,h:v.chunk.H,base:C.ground+v.chunk.cut,color:v.color,label:'',landmark:true,shape:v.chunk.shape,cache:false,hpNow:1,hp:1,holes:[],floors:[],floorMax:0} as unknown as typeof buildings[number],L,v.chunk.H);ctx.restore();}
  else if(v.kind==='building'){ctx.translate(0,h/2-C.ground);drawStructure({x:0,w,h,base:C.ground,color:v.color,label:v.label,landmark:false,cache:false,hpNow:1,hp:1,holes:[],floors:[],floorMax:0} as unknown as typeof buildings[number],L,h);ctx.translate(0,C.ground-h/2);}
+ else if(v.kind==='bull'){// The Charging Bull: bronze, head down and horns forward, on a low plinth (facing the way it was set down, forward = +x).
+  const bronze='#4b3a2a',hi='#7a5f3c';rect(L-2,T+h*.86,w+4,h*.14,'#6e695c');
+  ctx.fillStyle=bronze;ctx.beginPath();ctx.ellipse(-w*.1,T+h*.46,w*.38,h*.3,0,0,Math.PI*2);ctx.fill();
+  poly([[w*.18,T+h*.3],[w*.46,T+h*.34],[w*.5,T+h*.6],[w*.3,T+h*.66],[w*.2,T+h*.52]],bronze);
+  poly([[w*.34,T+h*.34],[w*.46,T+h*.12],[w*.52,T+h*.18],[w*.44,T+h*.38]],hi);poly([[w*.2,T+h*.28],[w*.14,T+h*.1],[w*.22,T+h*.14],[w*.28,T+h*.3]],hi);
+  for(const lx of [-.34,-.2,.04,.18])rect(w*lx-3,T+h*.62,6,h*.26,bronze);rect(-w*.5,T+h*.36,w*.12,4,bronze);ctx.fillStyle=hi;ctx.fillRect(-w*.16,T+h*.26,w*.3,3);}
  else if(v.kind==='barrier'){rect(L,T+h*.12,w,h*.88,'#8d8f86');rect(L-2,T,w+4,h*.14,'#a5a69c');for(let k=0;k<3;k++)rect(L+3+k*w/3,T+h*.4,w/6,h*.2,'#d9b45a');}
  else{rect(L,T,w,h*.84,v.color);rect(L,T+h*.56,w,h*.08,'#e8e2c8');for(let k=0;k<5;k++)rect(L+4+k*(w-8)/5,T+h*.14,(w-8)/5-3,h*.3,glass);rect(L+w*.1,T+h*.76,w*.12,h*.24,tire);rect(L+w*.76,T+h*.76,w*.12,h*.24,tire);if(v.label==='TROLLEY'){rect(L+w*.3,T-16,2,16,'#2b2b2b');rect(L+w*.6,T-16,2,16,'#2b2b2b');}}
  if(v.state==='wreck'){ctx.globalAlpha=.38;rect(L,T,w,h,'#1c2629');ctx.globalAlpha=1;rect(L+w*.35,T+h*.1,3,h*.6,'#2b3538');}
@@ -2658,6 +2783,16 @@ function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const b
    poly([[x,y+h*.3],[x+bw,y+h*.3],[x+bw*.92,base],[x+bw*.06,base]],'#7a3a34');rect(x,y+h*.3,bw,4,'#2c2422');
    for(let k=0;k<5;k++)for(let r=0;r<2;r++)rect(x+bw*.1+k*bw*.13,y+h*.05+r*h*.12,bw*.12,h*.12,['#c0392b','#2f6f8f','#c9a441','#4f7d4a'][(k+r)%4]);
    rect(x+bw*.78,y-h*.25,bw*.16,h*.55,'#dcd7c4');rect(x+bw*.82,y-h*.45,bw*.07,h*.22,'#c0392b');break;}
+  case 'sifery':{// The Staten Island Ferry, moored: a squat orange hull with a white double-decker house, a funnel and rows of windows.
+   const wl=y+h*.58;poly([[x,wl-h*.3],[x+bw,wl-h*.3],[x+bw*.95,base],[x+bw*.05,base]],'#d9822b');rect(x,wl-h*.3,bw,5,'#2c2422');rect(x+bw*.05,base-h*.2,bw*.9,3,'#a85f19');
+   rect(x+bw*.1,y+h*.1,bw*.8,wl-h*.3-y-h*.1,'#efe9d8');rect(x+bw*.16,y-h*.04,bw*.58,h*.16,'#efe9d8');
+   for(let wx=x+bw*.13;wx<x+bw*.88;wx+=14)rect(wx,y+h*.24,8,7,'#3a5a68');for(let wx=x+bw*.19;wx<x+bw*.7;wx+=14)rect(wx,y+h*.02,8,6,'#3a5a68');
+   rect(x+bw*.42,y-h*.3,bw*.1,h*.28,'#d9822b');rect(x+bw*.42,y-h*.3,bw*.1,5,'#2c2422');text('STATEN ISLAND FERRY',x+bw/2,wl-h*.33,8,'#f6efe0','center');break;}
+  case 'portal':{// The Holland Tunnel's portal: a stone ventilation block with the arched mouth of the tunnel.
+   rect(x,y,bw,h,'#8a8478');rect(x-4,y-4,bw+8,8,'#a39d8f');for(let yy=y+10;yy<base-6;yy+=11)rect(x,yy,bw,1,'#6f6a5f');
+   ctx.fillStyle='#1c1a18';ctx.beginPath();ctx.moveTo(x+bw*.2,base);ctx.lineTo(x+bw*.2,base-h*.42);ctx.arc(x+bw/2,base-h*.42,bw*.3,Math.PI,0);ctx.lineTo(x+bw*.8,base);ctx.fill();
+   ctx.strokeStyle='#d9cfae';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+bw/2,base-h*.42,bw*.3+3,Math.PI,0);ctx.stroke();ctx.lineWidth=1;rect(x+bw*.5-1,base-h*.5,2,h*.5,'#e7b932');
+   text('HOLLAND TUNNEL',x+bw/2,y+h*.16,8,'#efe9d8','center');break;}
   case 'crabshack':{// A seafood restaurant: shingled roof, striped awning, a crab on the sign.
    rect(x,y+h*.25,bw,h*.75,b.color);poly([[x-5,y+h*.28],[x+bw/2,y-4],[x+bw+5,y+h*.28]],'#4a5e66');
    for(let k=0;k<6;k++)rect(x+bw*k/6,base-h*.5,bw/6,10,k%2?'#f2f0e8':'#c0392b');rect(x+bw*.3,base-h*.34,bw*.4,h*.34,'#2c2422');rect(x+bw*.36,y+h*.3,bw*.28,h*.14,'#e8dfc4');break;}
@@ -2688,10 +2823,13 @@ function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const b
   case 'hotel':{rect(x,y,bw,h,b.color);rect(x-2,y-6,bw+4,8,'#e8dfc8');for(let yy=y+10;yy<base-34;yy+=22)for(let wx=x+8;wx<x+bw-14;wx+=16)win(wx,yy,9,12);
    rect(x+bw*.3,base-28,bw*.4,28,'#2f3a40');rect(x+bw*.25,base-34,bw*.5,6,'#b9473b');break;}
   case 'piling':{rect(x,y,bw,h,'#5b4a3a');for(let yy=y+8;yy<base;yy+=18)rect(x-1,yy,bw+2,3,'#3f342a');rect(x-2,y,bw+4,4,'#7a6048');break;}
-  case 'ferry':{// The Ferry Building's long hall: arched windows under a hipped roof.
-   rect(x,y+h*.18,bw,h*.82,b.color);poly([[x-6,y+h*.2],[x+14,y],[x+bw-14,y],[x+bw+6,y+h*.2]],'#6a5a48');
-   for(let wx=x+10;wx<x+bw-18;wx+=22){rect(wx,y+h*.36,12,h*.4,'#2a3a42');ctx.fillStyle='#2a3a42';ctx.beginPath();ctx.arc(wx+6,y+h*.36,6,Math.PI,0);ctx.fill();}
-   for(let wx=x+8;wx<x+bw-14;wx+=22)rect(wx,base-h*.16,14,h*.16,'#6a5a48');break;}
+  case 'ferry':{// The Ferry Building's long hall: a ground-floor arcade of big arches, a row of arched windows above, a cornice and a low roof with a skylight.
+   const top=y+h*.14,mid=y+h*.5,dark='#2a3a42',trim='#b3a688',arch=(ax:number,ay:number,aw:number,ah:number,col:string)=>{rect(ax,ay+aw/2,aw,ah-aw/2,col);ctx.fillStyle=col;ctx.beginPath();ctx.arc(ax+aw/2,ay+aw/2,aw/2,Math.PI,0);ctx.fill();};
+   rect(x,top,bw,base-top,b.color);poly([[x-4,top],[x+10,y+2],[x+bw-10,y+2],[x+bw+4,top]],'#7d6f5c');rect(x+bw*.2,y+h*.04,bw*.6,h*.06,'#9fb3b8');
+   rect(x-5,top-3,bw+10,5,trim);rect(x-3,mid-3,bw+6,4,trim);rect(x-3,base-4,bw+6,4,trim);
+   const bays=Math.max(3,Math.round(bw/30)),bayW=bw/bays;
+   for(let k=0;k<bays;k++){const bx=x+k*bayW;arch(bx+bayW*.18,mid+6,bayW*.64,base-mid-10,dark);arch(bx+bayW*.28,top+8,bayW*.44,mid-top-16,dark);rect(bx,top,2,base-top,trim);}
+   break;}
   default:facade(b,x,y,h,false);}}
 // The pier: a plank deck on pilings in place of the suspension bridge. Falling spans swing down about their west end and go under.
 function drawPier(){if(!spans.length)return;const y=spans[0].y;
@@ -2742,15 +2880,21 @@ function drawObjectiveArt(o:NonNullable<typeof objective>){const x=o.x-camera,gy
   ctx.restore();rect(x-w*.55,wl-2,w*1.1,3,'#cfe3ec');
   if(s.sinking&&s.sink<1)for(let k=0;k<4;k++)rect(x-w*.4+k*w*.25+Math.sin(time*5+k)*6,wl-4-((time*40+k*23)%24),4,4,'#e8f4f8');
   text(o.label,x,wl-s.deck-s.deck*2.4,10,'#3b504a','center');return;}
- if(o.art==='clock'){const w=o.w,hp=o.hp/o.maxHP;
-  rect(x-w/2,gy-o.h,w,o.h,'#d8cdb0');rect(x-w/2-5,gy-o.h-6,w+10,8,'#a89c80');rect(x-w/2+8,gy-o.h+30,w-16,3,'#a89c80');rect(x-w/2+8,gy-o.h*.4,w-16,3,'#a89c80');
-  for(let yy=gy-o.h*.55;yy<gy-14;yy+=30)for(const k of [.25,.62]){rect(x-w/2+w*k,yy,12,20,'#2a3a42');ctx.fillStyle='#2a3a42';ctx.beginPath();ctx.arc(x-w/2+w*k+6,yy,6,Math.PI,0);ctx.fill();}
-  poly([[x-w/2-7,gy-o.h-6],[x,gy-o.h-58],[x+w/2+7,gy-o.h-6]],'#6a5a48');rect(x-1,gy-o.h-84,2,28,'#c9a441');
-  ctx.fillStyle='#f4ecd0';ctx.beginPath();ctx.arc(x,gy-o.h+4,w*.3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2b2118';ctx.lineWidth=2;ctx.stroke();
-  const m=time*.8;ctx.beginPath();ctx.moveTo(x,gy-o.h+4);ctx.lineTo(x+Math.cos(m)*w*.22,gy-o.h+4+Math.sin(m)*w*.22);ctx.moveTo(x,gy-o.h+4);ctx.lineTo(x+Math.cos(m*12)*w*.15,gy-o.h+4+Math.sin(m*12)*w*.15);ctx.stroke();ctx.lineWidth=1;
+ if(o.art==='clock'){const w=o.w,hp=o.hp/o.maxHP,top=gy-o.h,stone='#ddd2b5',trim='#b3a688',dark='#2a3a42';
+  // The Ferry Building's campanile: a tall plain shaft with corner pilasters, the clock stage with its big face, an open arched
+  // belfry, a stepped lantern and a pyramid cap with the flagpole.
+  rect(x-w/2,top+o.h*.36,w,o.h*.64,stone);rect(x-w/2,top+o.h*.36,5,o.h*.64,trim);rect(x+w/2-5,top+o.h*.36,5,o.h*.64,trim);
+  for(let yy=top+o.h*.46;yy<gy-24;yy+=o.h*.13){rect(x-5,yy,10,16,dark);ctx.fillStyle=dark;ctx.beginPath();ctx.arc(x,yy,5,Math.PI,0);ctx.fill();}
+  rect(x-w/2-4,top+o.h*.36-4,w+8,6,trim);
+  rect(x-w/2-2,top+o.h*.14,w+4,o.h*.22,stone);rect(x-w/2-5,top+o.h*.14-4,w+10,6,trim);
+  const cy=top+o.h*.25;ctx.fillStyle='#f4ecd0';ctx.beginPath();ctx.arc(x,cy,w*.34,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#2b2118';ctx.lineWidth=2;ctx.stroke();
+  const m=time*.8;ctx.beginPath();ctx.moveTo(x,cy);ctx.lineTo(x+Math.cos(m)*w*.24,cy+Math.sin(m)*w*.24);ctx.moveTo(x,cy);ctx.lineTo(x+Math.cos(m*12)*w*.16,cy+Math.sin(m*12)*w*.16);ctx.stroke();ctx.lineWidth=1;
+  rect(x-w/2+4,top,w-8,o.h*.14,stone);for(const k of [-1,0,1]){const ax=x+k*w*.26-5;rect(ax,top+12,10,o.h*.14-14,dark);ctx.fillStyle=dark;ctx.beginPath();ctx.arc(ax+5,top+12,5,Math.PI,0);ctx.fill();}
+  rect(x-w/2+1,top-4,w-2,6,trim);rect(x-w*.32,top-26,w*.64,22,stone);rect(x-w*.36,top-28,w*.72,4,trim);for(const k of [-1,1])rect(x+k*w*.14-3,top-22,6,14,dark);
+  rect(x-w*.2,top-40,w*.4,12,stone);poly([[x-w*.24,top-40],[x,top-78],[x+w*.24,top-40]],'#9a8a6c');rect(x-1,top-102,2,26,'#c9a441');rect(x+1,top-102,10,6,'#e8e2d2');
   if(hp<.66)poly([[x-w*.2,gy-o.h*.9],[x-w*.12,gy-o.h*.6],[x-w*.25,gy-o.h*.45],[x-w*.05,gy-o.h*.3],[x-w*.14,gy-o.h*.7]],'#293e44');
   if(hp<.33)poly([[x+w*.2,gy-o.h*.8],[x+w*.1,gy-o.h*.55],[x+w*.26,gy-o.h*.3],[x+w*.12,gy-o.h*.2]],'#283b3f');
-  text(o.label,x,gy-o.h-96,10,'#3b504a','center');return;}
+  text(o.label,x,gy-o.h-112,10,'#3b504a','center');return;}
  if(o.art==='command'){const w=o.w,hp=o.hp/o.maxHP;
   rect(x-w/2,gy-o.h,w,o.h,'#4d5a68');rect(x-w/2-4,gy-o.h-6,w+8,8,'#394552');for(let wx=x-w/2+10;wx<x+w/2-20;wx+=26)rect(wx,gy-o.h+14,16,12,Math.sin(time*2+wx)>-.8?'#8fb0bd':'#2a3a42');
   for(let k=0;k<5;k++)rect(x-w/2+8+k*(w-24)/4,gy-12,10,12,'#d9b45a');
@@ -2760,6 +2904,26 @@ function drawObjectiveArt(o:NonNullable<typeof objective>){const x=o.x-camera,gy
   if(hp<.66)poly([[x-w*.3,gy-o.h],[x-w*.24,gy-o.h*.5],[x-w*.33,gy-o.h*.3],[x-w*.18,gy-o.h*.1],[x-w*.22,gy-o.h*.6]],'#1f2a30');
   if(hp<.33)for(let n=0;n<3;n++)rect(x-w*.2+n*w*.2+Math.sin(time*2+n)*4,gy-o.h-8-n*10-(time*9%10),12,10,'#69736c');
   text(o.label,x,gy-o.h-52,10,'#3b504a','center');return;}
+ if(o.art==='fort'){const w=o.w,hp=o.hp/o.maxHP,top=gy-o.h,sand='#c8aa7d',dark='#8c7352',shade='#a98d62';
+  // Castle Clinton: a low round sandstone fort, its walls battered (sloped) with a row of embrasures and a crenellated parapet, an arched gate on the landward side.
+  poly([[x-w/2,gy],[x-w/2+10,top+8],[x+w/2-10,top+8],[x+w/2,gy]],sand);poly([[x+w*.18,gy],[x+w*.18+4,top+8],[x+w/2-10,top+8],[x+w/2,gy]],shade);
+  rect(x-w/2+6,top,w-12,10,dark);for(let cx=x-w/2+8;cx<x+w/2-16;cx+=18){if(hp<.4&&Math.sin(cx*.31)>.2)continue;rect(cx,top-9,11,10,sand);}
+  for(let ex=x-w/2+24;ex<x+w/2-30;ex+=34)rect(ex,top+22,8,14,'#4a3d2a');
+  rect(x-13,gy-o.h*.52,26,o.h*.52,'#2b2118');ctx.fillStyle='#2b2118';ctx.beginPath();ctx.arc(x,gy-o.h*.52,13,Math.PI,0);ctx.fill();
+  rect(x-1,top-44,2,36,'#c9c9c0');poly([[x+1,top-44],[x+22,top-38],[x+1,top-31]],'#3a5a8a');
+  if(hp<.66)poly([[x-w*.3,top+8],[x-w*.25,top+o.h*.5],[x-w*.34,top+o.h*.7],[x-w*.2,gy-4],[x-w*.22,top+o.h*.4]],'#6e5a3c');
+  if(hp<.33)for(let n=0;n<3;n++)rect(x-w*.2+n*w*.2+Math.sin(time*2+n)*4,top-14-n*10-(time*9%10),12,10,'#69736c');
+  text(o.label,x,top-52,10,'#3b504a','center');return;}
+ if(o.art==='exchange'){const w=o.w,hp=o.hp/o.maxHP,top=gy-o.h,stone='#d9d4c6',trim='#a9a493',dark='#2f3a40';
+  // The NYSE: a columned temple front under a pediment, a flag on the roof; the NYPD command post (a van with a light bar, cones) parked in front.
+  rect(x-w/2,top+o.h*.28,w,o.h*.72,stone);rect(x-w/2-6,top+o.h*.28-5,w+12,8,trim);poly([[x-w/2-4,top+o.h*.28-5],[x,top-2],[x+w/2+4,top+o.h*.28-5]],trim);poly([[x-w/2+14,top+o.h*.28-9],[x,top+8],[x+w/2-14,top+o.h*.28-9]],'#c5bfae');
+  for(let k=0;k<6;k++){const cx=x-w/2+12+k*(w-30)/5;rect(cx,top+o.h*.28,10,o.h*.62,'#efe9d8');rect(cx-2,top+o.h*.28,14,5,trim);rect(cx-2,gy-o.h*.12,14,5,trim);}
+  rect(x-w/2-4,gy-o.h*.1,w+8,o.h*.1,trim);for(let k=0;k<4;k++)rect(x-w/2-8+k*3,gy-k*3-4,w+16-k*6,3,'#bdb7a6');
+  rect(x-1,top-40,2,38,'#c9c9c0');poly([[x+1,top-40],[x+22,top-34],[x+1,top-27]],'#b9402f');text('NYSE',x,top+o.h*.28+16,10,'#3b3b36','center');
+  const px=x+w/2+10;rect(px,gy-18,40,14,'#2f4f78');rect(px+4,gy-26,22,9,'#2f4f78');rect(px+6,gy-24,8,6,'#9cc4d6');rect(px+16,gy-24,8,6,'#9cc4d6');const bl=Math.sin(time*6)>0;rect(px+8,gy-30,6,4,bl?'#e8401a':'#3a5a8a');rect(px+16,gy-30,6,4,bl?'#3a5a8a':'#e8401a');rect(px+2,gy-6,6,6,'#1a1a1a');rect(px+30,gy-6,6,6,'#1a1a1a');text('NYPD',px+20,gy-10,6,'#e8e2d2','center');
+  if(hp<.66)poly([[x-w*.3,top+o.h*.28],[x-w*.24,top+o.h*.6],[x-w*.33,top+o.h*.72],[x-w*.18,gy-6],[x-w*.22,top+o.h*.5]],'#4f5a60');
+  if(hp<.33)for(let n=0;n<3;n++)rect(x-w*.2+n*w*.2+Math.sin(time*2+n)*4,top-10-n*10-(time*9%10),12,10,'#69736c');
+  text(o.label,x,top-48,10,'#3b504a','center');return;}
  poly([[x-38,gy],[x-28,gy-64],[x-10,gy-40],[x+2,gy-110],[x+30,gy-74],[x+40,gy]],'#c96ea8');poly([[x-5,gy-8],[x+2,gy-98],[x+17,gy-56]],'#ffd0ed');text(o.label,x,gy-126,10,'#3b504a','center');}
 // The crystal formation under Portsmouth Square: a big growth, a cluster of tall faceted crystals.
 function drawFormation(g:{x:number,hp:number}){const x=g.x-camera,gy=groundAt(g.x),w=SFC.formationW,h=SFC.formationH,k=g.hp/SFC.formationHP;
@@ -2939,7 +3103,7 @@ function render(){
   rect(x+d*6*z-3*z,groundAt(wave.x)-(62*z+j*2),6*z,6*z,'#c9a77c');rect(x-d*8*z-2*z,groundAt(wave.x)-(48*z-j*2),4*z,4*z,'#8d7a66');
   rect(Math.min(x,x+d*40*z),groundAt(wave.x),40*z,3,'#ffe0a8');}
  if(combat.superTime>0){const x=player.x-camera;rect(x-7,player.y-7,bodyWidth()+14,bodyHeight()+10,Math.sin(time*10)>0?'#c47cab':'#8d799e');}
- drawEruptionGlow();drawTornado(false);if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawSlopes();drawVehicles(1);drawMilitary(1);drawGeysers();drawRiverFront();drawTelegraphs();drawCityFx();
+ drawEruptionGlow();drawTornado(false);if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawSlopes();drawVehicles(1);drawMilitary(1);drawGeysers();drawVents();drawRiverFront();drawTelegraphs();drawCityFx();
  if(combat.transform>0){const x=player.x-camera+bodyWidth()/2,y=player.y+bodyHeight()/2;const radius=bodyHeight()*.75;poly([[x,y-radius],[x+radius*.6,y],[x,y+radius],[x-radius*.6,y]],'#f4b0d8');poly([[x,y-radius*.85],[x+radius*.35,y],[x,y+radius*.8],[x-radius*.35,y]],'#ffe0f1');}
  if(combat.ultimateTime>0)text(ultimateLabel(),player.x-camera+bodyWidth()/2,player.y-24,10,'#fff1d8','center');
  // Launched tail quill: bone-white spike pointing along its flight, dark base, faint motion streak.
@@ -2974,8 +3138,12 @@ loadPresentationArt();window.addEventListener('resize',applyDisplay);applyDispla
 // Test hook: tests/helpers/game-harness.ts sets window.__kaijuTest before importing the game. It jumps a running campaign to a block of the
 // current city and moves the kaiju, so level tests can play any block without clearing the ones before it. Absent in the shipped page.
 if((window as any).__kaijuTest)Object.defineProperty(window,'kaijuTest',{value:{
+ // Jump into an off-route fixture city (CITIES 'nyc-classic'): the run's own kaiju plays there, as it did before the NYC rework.
+ gotoCity:(id:string,bi:number,px?:number)=>{if(!run||cityIndexOf(id)<0)return false;cityIndex=cityIndexOf(id);activeKaiju=run.kaiju;score=0;citySettled=false;combat=createCombat();blockIndex=bi;run.block=bi;run.phase='playing';cleared=false;loadBlock(false);if(px!==undefined)teleport(px);return true;},
  goto:(bi:number,px?:number)=>{if(!run)return false;blockIndex=bi;run.block=bi;run.phase='playing';cleared=false;loadBlock(false);if(px!==undefined)teleport(px);return true;},
  teleport:(px:number)=>teleport(px),
+ // Play as another kaiju (the campaign forces Kaiban in New York; tests that need a weaker carrier switch here).
+ setKaiju:(k:string)=>{activeKaiju=k;},
  // Set building i alight, or smash the most valuable buildings until the block is `frac` destroyed.
  torch:(i:number)=>!!buildings[i]&&setAlight(buildings[i]),smash:(i:number)=>{const b=buildings[i];if(b&&b.hpNow>0)hit(b,b.hpNow,false,1);},
  spawnUnit:(type:string,x:number)=>{spawnUnit(military,type as any,x);},spawnUnitOn:(type:string,x:number,y:number)=>{const u=spawnUnit(military,type as any,x);u.y=y-u.h;},perchOn:(i:number)=>{const b=buildings[i];if(!b)return;player.x=b.x+b.w/2-bodyWidth()/2;player.y=b.base-b.h-bodyHeight()-2;player.vy=0;},smashSpan:(i:number)=>{const sp=spans[i];if(sp&&sp.alive)hitSpan(sp,1e9);},hurtRival:(d:number)=>strikeRival(d,0,1),fillUltimate:()=>{combat.ultimate=B.ultimateMax;},smashRail:(i:number)=>{const r=rails[i];if(r&&r.alive)hitRail(r,1e9);},sinkCutter:()=>hitObjective(1e9),
@@ -2983,4 +3151,4 @@ if((window as any).__kaijuTest)Object.defineProperty(window,'kaijuTest',{value:{
  shear:(i:number,frac:number)=>{const b=buildings[i];return !!b&&tryShear(b,1e6,{x:b.x+b.w/2,y:b.base-b.h*frac},false,1);},place:(px:number,py:number)=>{player.x=px;player.y=py-bodyHeight();player.vy=0;player.grounded=false;},
  demolish:(frac:number)=>{for(const b of [...buildings].sort((p,q)=>q.value-p.value)){if(destruction(buildings)>=frac)break;if(b.hpNow>0)hit(b,b.hpNow,false,1);}}}});
 function teleport(px:number){player.x=px;player.y=groundAt(px+bodyWidth()/2)-bodyHeight();player.vy=0;camera=Math.max(0,Math.min(worldWidth-viewW(),px-viewW()*.34));safeX=px;}
-Object.defineProperty(window,'kaijuDebug',{get:()=>({band:footBand(),drowning:drown?drown.phase:null,safeX,mercy:combat.mercy,floor:combat.floor,pitDepth:pitDepth(),blockName:block.name,pocketHP:pocketRoof?pocketRoof.hpNow:null,pocketMax:pocketRoof?pocketRoof.hp:null,shows:shows.length,lanterns:strings.map(q=>({x0:q.x0,x1:q.x1,n:q.n,lit:q.lit.filter(Boolean).length,burning:q.burn.filter(v=>v>0).length,fall:q.fall??null})),slopes:slopes.map(s=>({x0:s.x0,y0:s.y0,x1:s.x1,y1:s.y1,alive:s.alive})),trucks:[...trucks].map(([v,t])=>({x:v.x,mode:t.mode})),guardCalled,formationHP:growths.find(g=>g.big)?.hp??null,formationX:growths.find(g=>g.big)?.x??null,capNow:combat.cap,objective:objective?{x:objective.x,w:objective.w,h:objective.h,art:objective.art,hp:objective.hp,shattered:objective.shattered}:null,depth:(x:number)=>depthAt(x),boats:military.units.filter(u=>u.type==='boat').map(u=>({id:u.id,x:u.x,y:u.y,hp:u.hp})),sinking:sinkers.length,rails:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,alive:r.alive,hp:r.hp})),railTrains:railTrains.length,tunnels:tunnels.size,alert,geysers:geysers.length,bombs:bombQueue.length,militaryTier:military.tier,ground:(x:number)=>groundAt(x),street:(x:number)=>bedAt(x),blazeList:[...blazes.keys()].map(b=>buildings.indexOf(b as typeof buildings[number])),blazes:blazes.size,mounds:moundList().length,sunk:buildings.filter(b=>b.sink>0).length,swaying:buildings.filter(b=>b.sway>0).length,damageTaken:combat.damageTaken,spans:spans.map(s=>({x0:s.x0,x1:s.x1,hp:s.hp,alive:s.alive})),pits:pitList().map(p=>({...p})),trains:trains.filter(t=>!t.crashed).length,trainsWrecked:wrecked,trainWrecks:trains.filter(t=>t.crashed).length,trainList:trains.map(t=>({x:t.x,dir:t.dir,hp:t.hp,crashed:t.crashed})),cutOff:{...military.cutOff},inWater:submerged(player.x+bodyWidth()/2),rampage:{heat:rampage.heat,mult:rampageMult(rampage),level:rampageLevel(rampage)},power:[...power],roofs:roofs.map(p=>({kind:p.kind,hp:p.hp,dead:p.dead,call:p.call,x:roofBox(p).x,y:roofBox(p).y})),wires:wires.length,poles:poles.map(v=>({x:v.x,upright:upright(v),snapped:!!v.snapped})),creaking:buildings.filter(b=>b.creak>0).length,roles:buildings.filter(b=>b.role).map(b=>({role:b.role,x:b.x,hp:b.hpNow})),barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],airJumps,brewing:brew?brew.t:null,swarmReleased:swarm?swarm.released:null,wasps:wasps.length,waspTargets:wasps.filter(w=>w.target&&w.target.hp!==undefined&&!w.target.base).length,face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({role:b.role,prop:b.prop,deco:b.deco,explosive:!!b.explosive,floors:b.floors.length,base:b.base,x:b.x,y:b.base-b.h,w:b.w,h:b.h,parts:hitParts(b).map(p=>({x:p.x,y:p.y,w:p.w,h:p.h,solid:p.solid})),hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown,vx:v.vx,plows:v.plows})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire&&!p.acid&&!p.venom).length,venomGlobs:globs.filter(g=>g.venom).length,venomGlobY:globs.filter(g=>g.venom).map(g=>g.y),venomGlobX:globs.filter(g=>g.venom).map(g=>g.x),venomPools:pools.filter(p=>p.venom).length,clouds:clouds.map(c=>({x:c.x,y:c.y,r:c.r})),venomPoolX:pools.filter(p=>p.venom).map(p=>p.x+p.w/2),poisoned:poison.size,acidPools:pools.filter(p=>p.acid).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,delugeSpout:!!deluge?.spout&&deluge.spoutT<deluge.spoutLen,delugeActive:!!deluge,rainDrops:rain.length,delugeSpawned:deluge?.spawned??0,delugeLandings:[...delugeLandings],delugePools:pools.filter(p=>p.acid&&p.ult).length,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,spewLand:spewState.land,spewLandOn:spewState.landOn,spewPts:spewState.pts.length,corrosion:buildings.map(b=>corr.get(b)?.stacks??0),unitCorrosion:military.units.map(u=>corr.get(u)?.stacks??0),jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,growthCap:combat.cap,growthFloor:combat.floor,cityCode:CITIES[cityIndex].code,level:{name:block.name,startStage:block.startStage,cap:block.cap,capLift:block.capLift,police:!!block.police},hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length,...act2Debug(),...act3Debug()})});
+Object.defineProperty(window,'kaijuDebug',{get:()=>({ventList:vents.map(v=>({x:v.x,state:v.state,t:v.t})),ventBlinded,ventScalded,bull:(()=>{const v=vehicles.find(o=>o.kind==='bull');return v?{x:v.x,y:v.y,w:v.w,h:v.h,state:v.state,vx:v.vx,vy:v.vy}:null;})(),band:footBand(),drowning:drown?drown.phase:null,safeX,mercy:combat.mercy,floor:combat.floor,pitDepth:pitDepth(),blockName:block.name,pocketHP:pocketRoof?pocketRoof.hpNow:null,pocketMax:pocketRoof?pocketRoof.hp:null,shows:shows.length,lanterns:strings.map(q=>({x0:q.x0,x1:q.x1,n:q.n,lit:q.lit.filter(Boolean).length,burning:q.burn.filter(v=>v>0).length,fall:q.fall??null})),slopes:slopes.map(s=>({x0:s.x0,y0:s.y0,x1:s.x1,y1:s.y1,alive:s.alive})),trucks:[...trucks].map(([v,t])=>({x:v.x,mode:t.mode})),guardCalled,formationHP:growths.find(g=>g.big)?.hp??null,formationX:growths.find(g=>g.big)?.x??null,capNow:combat.cap,objective:objective?{x:objective.x,w:objective.w,h:objective.h,art:objective.art,hp:objective.hp,shattered:objective.shattered}:null,depth:(x:number)=>depthAt(x),boats:military.units.filter(u=>u.type==='boat').map(u=>({id:u.id,x:u.x,y:u.y,hp:u.hp})),sinking:sinkers.length,rails:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,alive:r.alive,hp:r.hp})),railTrains:railTrains.length,tunnels:tunnels.size,alert,geysers:geysers.length,bombs:bombQueue.length,militaryTier:military.tier,ground:(x:number)=>groundAt(x),street:(x:number)=>bedAt(x),blazeList:[...blazes.keys()].map(b=>buildings.indexOf(b as typeof buildings[number])),blazes:blazes.size,mounds:moundList().length,sunk:buildings.filter(b=>b.sink>0).length,swaying:buildings.filter(b=>b.sway>0).length,damageTaken:combat.damageTaken,spans:spans.map(s=>({x0:s.x0,x1:s.x1,hp:s.hp,alive:s.alive})),pits:pitList().map(p=>({...p})),trains:trains.filter(t=>!t.crashed).length,trainsWrecked:wrecked,trainWrecks:trains.filter(t=>t.crashed).length,trainList:trains.map(t=>({x:t.x,dir:t.dir,hp:t.hp,crashed:t.crashed})),cutOff:{...military.cutOff},inWater:submerged(player.x+bodyWidth()/2),rampage:{heat:rampage.heat,mult:rampageMult(rampage),level:rampageLevel(rampage)},power:[...power],roofs:roofs.map(p=>({kind:p.kind,hp:p.hp,dead:p.dead,call:p.call,x:roofBox(p).x,y:roofBox(p).y})),wires:wires.length,poles:poles.map(v=>({x:v.x,upright:upright(v),snapped:!!v.snapped})),creaking:buildings.filter(b=>b.creak>0).length,roles:buildings.filter(b=>b.role).map(b=>({role:b.role,x:b.x,hp:b.hpNow})),barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],airJumps,brewing:brew?brew.t:null,swarmReleased:swarm?swarm.released:null,wasps:wasps.length,waspTargets:wasps.filter(w=>w.target&&w.target.hp!==undefined&&!w.target.base).length,face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({role:b.role,prop:b.prop,deco:b.deco,explosive:!!b.explosive,floors:b.floors.length,base:b.base,x:b.x,y:b.base-b.h,w:b.w,h:b.h,parts:hitParts(b).map(p=>({x:p.x,y:p.y,w:p.w,h:p.h,solid:p.solid})),hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown,vx:v.vx,plows:v.plows})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire&&!p.acid&&!p.venom).length,venomGlobs:globs.filter(g=>g.venom).length,venomGlobY:globs.filter(g=>g.venom).map(g=>g.y),venomGlobX:globs.filter(g=>g.venom).map(g=>g.x),venomPools:pools.filter(p=>p.venom).length,clouds:clouds.map(c=>({x:c.x,y:c.y,r:c.r})),venomPoolX:pools.filter(p=>p.venom).map(p=>p.x+p.w/2),poisoned:poison.size,acidPools:pools.filter(p=>p.acid).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,delugeSpout:!!deluge?.spout&&deluge.spoutT<deluge.spoutLen,delugeActive:!!deluge,rainDrops:rain.length,delugeSpawned:deluge?.spawned??0,delugeLandings:[...delugeLandings],delugePools:pools.filter(p=>p.acid&&p.ult).length,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,spewLand:spewState.land,spewLandOn:spewState.landOn,spewPts:spewState.pts.length,corrosion:buildings.map(b=>corr.get(b)?.stacks??0),unitCorrosion:military.units.map(u=>corr.get(u)?.stacks??0),jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,growthCap:combat.cap,growthFloor:combat.floor,cityCode:CITIES[cityIndex].code,level:{name:block.name,startStage:block.startStage,cap:block.cap,capLift:block.capLift,police:!!block.police},hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,stun:u.stun})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length,...act2Debug(),...act3Debug()})});

@@ -40,8 +40,8 @@ test('Act 2 layout: everything inside the world, solid buildings never overlap, 
   if(b.ground)for(const x of b.buildings.filter(x=>!x.prop&&x.role!=='hydrant'))assert.equal(Math.round(profileY(b.ground,x.x+1)),Math.round(profileY(b.ground,x.x+x.w-1)),`${b.name}: ${x.deco||x.label||x.kind} at ${x.x} stands on a flat`);}
  // No other level was touched: the original cities, Act 1 and the later SF slots still have none of the Act 2 fields.
  const fields=['units','garrison','cableLines','tumble','exits','after','fog','sealions','kaiban','buses','elevatedLook','ramps','coastguard','runaway'];
- for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)&&!SAN_FRANCISCO.slice(6,9).includes(x)&&x.name!=='Alcatraz'))for(const k of fields)assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
- for(const city of LEVELS.filter((_,i)=>i!==cityIndexOf('sfo')))for(const b of city)assert.equal(b.startStage,undefined);
+ for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)&&!SAN_FRANCISCO.slice(6,9).includes(x)&&!LEVELS[cityIndexOf('nyc')].includes(x)&&x.name!=='Alcatraz'))for(const k of fields)assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
+ for(const city of LEVELS.filter((_,i)=>i!==cityIndexOf('sfo')&&i!==cityIndexOf('nyc')))for(const b of city)assert.equal(b.startStage,undefined);
 });
 
 test('Nob Hill data: a terraced hill with the summit in the middle; stair-stepped Victorian rows; powerhouse, cable lines, Lombard',()=>{
@@ -84,15 +84,6 @@ test('Financial District data: bank canyon, vault, transit center with buses und
  assert.equal(FIN.garrison!.filter(([k])=>k==='tank').length>=2,true);
 });
 
-test('camera headroom: the camera can rise far enough to follow a Stage 2 kaiju to the top of the tallest tower',()=>{
- // The camera lifts only as far as needed to keep the sprite's head below line 130 (src/game.ts): rise = (height of the head over the
- // street) + (130 - ground) / zoom, up to CONFIG.maxCameraY. A kaiju on the tallest roof, mid-jump, must not need more than that.
- const stage2=BODY(2),tallest=Math.max(...FIN.buildings.map(b=>b.h)),jump=C.jumpVelocity**2/(2*C.gravity)*1.4;
- const head=tallest+1.4*stage2+jump,need=head+(130-C.ground)/C.zoom;
- assert.ok(need<=C.maxCameraY,`needs ${need.toFixed(0)}px of rise, has ${C.maxCameraY}`);
- // And the pyramid itself (the tallest thing in the level) is shorter than the climb the camera supports.
- assert.ok(SF2.pyramidH+1.4*stage2-610<=C.maxCameraY);
-});
 
 test('Wharf data: west to east, there-and-back with two exits, start mid-map, features in order',()=>{
  const W=levelWidth(WHARF),start=WHARF.start!;assert.ok(start>W*.3&&start<W*.45,'the start (Jefferson Street) is mid-map, west of centre');

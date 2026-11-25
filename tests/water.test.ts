@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {setTerrain,depthAt} from '../src/terrain.ts';
 import {waterBand,bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from '../src/water.ts';
 import type {DrownEvent} from '../src/water.ts';
@@ -43,8 +43,8 @@ test('water drill block: opt-in bands, the deep tunnel and boats; no other block
  const [la,lz]=WATER_LAKE;assert.ok(b.buildings.every(x=>x.x>lz),'nothing stands in or west of the lake');
  assert.ok(b.subway![0][1]<la,'the subway line runs under the open street west of the lake');
  loadDrill();try{for(const x of b.boats!)assert.ok(navigable(x+UNIT_CONFIG.boat.w/2),`boat at ${x} is on water deep enough`);}finally{setTerrain(null);}
- // The SF Act 1 levels opt in to the water/tunnel systems (phase 3); every other block is unchanged.
- for(const blk of [DRILL_BLOCK,...LEVELS.flat().filter(b=>!SF_ACT1.includes(b.name)&&!['Bay Bridge','Golden Gate','Alcatraz'].includes(b.name))]){assert.ok(!blk.bands&&!blk.tunnel&&!blk.boats,`${blk.name} is unchanged`);}
+ // The SF Act 1 levels opt in to the water/tunnel systems (phase 3), and so does New York's Battery (NYC Act 1: it starts in the harbour); every other block is unchanged.
+ for(const blk of [DRILL_BLOCK,...LEVELS.flat().filter(b=>!SF_ACT1.includes(b.name)&&!['Bay Bridge','Golden Gate','Alcatraz','The Battery'].includes(b.name))]){assert.ok(!blk.bands&&!blk.tunnel&&!blk.boats,`${blk.name} is unchanged`);}
  assert.equal(RIVER.deepPitDepth-RIVER.deepTunnelRoof,80,'about 80px inside the deep tunnel');
  assert.ok(RIVER.deepPitDepth-RIVER.deepTunnelRoof>height(1),'a Stage 1 kaiju stands up in it');
  assert.ok(C.jumpVelocity**2/(2*C.gravity)>=RIVER.deepPitDepth,'and can jump back out of a deep pit');
@@ -116,8 +116,8 @@ test('real loop: the water drill loads its lake, boats and deep tunnel; the comb
   assert.ok(Math.abs(s.depth(3000)-56)<1e-9);}
  finally{h.release();h.cleanup();}
  const d=await bootGame(.75);try{d.click('#drills');d.click('#start');assert.equal(d.state().blockName,'Combat Drills');assert.equal(d.state().pitDepth,RIVER.pitDepth);assert.equal(d.state().band,'dry');}finally{d.release();d.cleanup();}
- const p=emptyPermanent();p.conquered=['nyc'];const e=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
- try{e.click('#freeplay');e.node('#free-kaiju').value='Mogurodon';e.node('#free-city').value=String(cityIndexOf('nyc'));e.node('#free-boss').value='Mogurodon';e.node('#free-block').value='3';e.click('#free-start');
+ const e=await bootCampaign(.75,{kaiju:'Mogurodon'});
+ try{e.test().goto(3);
   const s=e.state();assert.equal(s.blockName,'East River Offensive');assert.equal(s.pitDepth,RIVER.pitDepth);assert.equal(s.boats.length,0);}
  finally{e.release();e.cleanup();}
 });

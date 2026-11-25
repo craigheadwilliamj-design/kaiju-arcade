@@ -6,7 +6,7 @@ export const CITY_SCALE=1.4;
 export const CONFIG = {
  cityScale:CITY_SCALE,
  width:960,height:540,ground:435,screenCount:4,moveSpeed:205,crouchHeight:38,
- playerWidth:48,playerHeight:69,gravity:1250,jumpVelocity:530,climbSpeed:230,maxCameraY:560,
+ playerWidth:48,playerHeight:69,gravity:1250,jumpVelocity:530,climbSpeed:230,
  lightDamage:30,heavyDamage:68,rangedDamage:23,attackCooldown:.28,
  heavyCooldown:.62,rangedCooldown:.48,projectileSpeed:540,
  meleeReach:76,exitThreshold:.75,perfectBonus:1500,
@@ -14,7 +14,7 @@ export const CONFIG = {
  // Kaiju sprites are drawn this far below the physics floor so their feet sit on the road, not the curb line.
  spriteDrop:8,
  // Fixed world zoom (1 = native 960px view), anchored on the street line. Held constant at every stage so growth reads
- // as the kaiju getting bigger against the city, and wide enough that a Stage 3 climb up the tallest tower stays in frame.
+ // as the kaiju getting bigger against the city, and wide enough to show the street around a Stage 3 kaiju; the camera follows a climb up with no ceiling.
  zoom:.5,
 };
 
@@ -447,7 +447,7 @@ export const SF = {
  // Tunnel pocket: a breakable roof box over a sealed pit. Hit it from below (a jump into it, a heavy attack) until it gives.
  pocketHP:240,pocketWall:34,pocketThick:28,pocketPoints:600,pocketJump:60,
  // Targets (stronghold kind): a clock tower is tall and narrow, a command post wide and low. HP is CAMPAIGN.strongholdHP.
- clockW:84,clockH:170,commandW:150,commandH:78,
+ clockW:72,clockH:250,commandW:150,commandH:78,
  // The crystal formation under Portsmouth Square: a big growth. Shattering it lifts the cap (liftCap) and grows the kaiju to Stage 2.
  formationW:132,formationH:150,formationHP:700,formationShards:40,
  // Garage cave-in: a slam over the garage opens a pit of parked cars (garageCars of them, pitDepth deep like a subway pit).
@@ -463,6 +463,26 @@ export const SF = {
  // National Guard: when Chinatown's exit opens, guardSoldiers soldiers and an APC roll in from the east edge.
  guardSoldiers:4,guardApc:1,
 };
+
+// New York Act 1 (NYC rework card 2): the Battery, Wall Street and SoHo. All opt-in per level (src/levels.ts).
+// Targets: Castle Clinton (`fort`) is a low round sandstone wall; the NYSE command post (`exchange`) is a wide columned facade with the NYPD
+// post in front of it. HP is CAMPAIGN.strongholdHP.
+export const NYC1 = {fortW:176,fortH:70,exchangeW:184,exchangeH:132};
+// The Charging Bull (Wall Street, a level's `bull` x): a bronze prop. Heavy: only a kaiju with a strength rating of `minStrength` or more
+// (src/presentation.ts ROSTER ratings[0]) can lift it. It is not a loose street object (stomps, waves, blasts, steam and rubble leave it
+// alone, and a thrown one is never wrecked or exploded). It is thrown short and hard: `throwSpeed` and `throwLift` replace the usual
+// throw, `throwDamage` is the damage of the flying body, and where it lands it breaks the street (spans, a cave-in)
+// like a thrown building. Lifting it pays `points` once.
+export const BULL = {w:70,h:40,mass:5,points:600,minStrength:4,throwSpeed:420,throwLift:260,throwDamage:150};
+// Steam vents (SoHo and Canal Street, a level's `vents`): the foreshadowing hazard. A manhole puffs harmlessly for `puff` s every
+// `every` s (the first after `first` s, staggered by `stagger` s a vent). A slam or pound within `reach` of it (an Ultimate within
+// `ultReach`) bursts it: a steam jet `height` tall for `seconds` s that, every `tick` s, scalds ground troops within `radius` (`damage`,
+// `knockback`, `stun`), launches loose vehicles within `carRadius` (`carDamage`, lifted `carLift` x) and blinds any helicopter in the
+// column (`blind` s: its wind-up is cancelled and it cannot fire or move). A spent vent stays quiet for `rearm` s, then puffs again.
+// Steam is not fire: it never sets a building alight.
+export const STEAM = {first:3,every:7,stagger:2.3,puff:1.4,reach:Math.round(220*CITY_SCALE),ultReach:Math.round(520*CITY_SCALE),
+ seconds:4.5,height:Math.round(230*CITY_SCALE),radius:Math.round(110*CITY_SCALE),carRadius:Math.round(90*CITY_SCALE),tick:.4,damage:7,knockback:320,stun:1,
+ carDamage:14,carLift:2.6,blind:3,rearm:12,points:300,heat:6};
 
 // Runaway cable cars (SF Act 2, Nob Hill). A vehicle in the `rolling` state is driven by the street's slope alone: it picks up
 // `gravity` px/s² per unit of slope (rise over run) toward downhill, loses `friction` px/s² to rolling resistance (so on flat

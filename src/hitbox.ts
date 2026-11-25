@@ -58,7 +58,7 @@ export function checkParts(b:Shape):string[]{if(!b.parts?.length)return [];const
  return out;
 }
 
-// Parts for the drawn landmark silhouettes ('tower', 'lattice', 'dome', 'twin', 'arch', 'needle', 'pagoda'), sized to the
+// Parts for the drawn landmark silhouettes ('tower', 'lattice', 'dome', 'twin', 'arch', 'bow', 'needle', 'pagoda'), sized to the
 // building's world w and h and matching what drawLandmarkShape (src/game.ts) paints for that city style. Change one, change both.
 // Lattices and arches keep their openings: small kaiju can walk through the gap under the Eiffel Tower or an arch.
 export function shapeParts(shape:string,style:string,w:number,h:number):Part[]{
@@ -71,6 +71,8 @@ export function shapeParts(shape:string,style:string,w:number,h:number):Part[]{
    if(style==='tyo')parts.push(P(tw/2-3,6,h+30,h-4,true),P(bw-tw/2-3,6,h+30,h-4,true));return parts;}
   case 'arch':{const top=style==='mex'?.7*h:.75*h,aw=bw*.42,open=.42*h+aw/2,parts=[P(0,c-aw/2,top),P(c+aw/2,bw-c-aw/2,top),P(0,bw,top,open)];
    if(style==='mex')parts.push(P(c-bw*.22,bw*.44,.86*h,top-2),P(c-3,6,h,.86*h-2,true));return parts;}
+  // Cupid's Span: the bow's two buried ends stand on the street and its curve spans over an opening; the arrow is trim.
+  case 'bow':{const ry=Math.min(.5*h,bw*.42);return [P(0,bw*.2,.8*ry),P(bw*.8,bw*.2,.8*ry),P(bw*.08,bw*.84,ry,.78*ry)];}
   case 'needle':if(style==='tyo')return [P(bw*.2,bw*.6,.4*h),P(c-bw*.18,bw*.36,.7*h),P(c-18,36,.72*h),P(c-14,28,.85*h),P(c-7,14,h-30),P(c-2,4,h+40,h-34,true)];
    {// The drawn lattice is a polygon: straight up the left edge to 0.7h, rising to the peak over the middle and falling to 0.85h on the right.
     // Narrow columns follow its outline (each as tall as the outline at its centre), so the hitbox is the silhouette rather than a block.
