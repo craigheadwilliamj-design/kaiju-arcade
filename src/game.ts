@@ -21,7 +21,7 @@ import {createMilitary,tickMilitary,spawnUnit,hitUnit as hitUnitBase,intercept,s
 import type {MilitaryEvent} from './military.ts';
 import type {Rect,Unit} from './military.ts';
 import {createPopulation,releaseOccupants,tickPopulation} from './population.ts';
-import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,initialsValid,KAIJU,CAMPAIGN,campaignCityIndex,routeLevels,kaijuFor,discardLegacySaves} from './campaign.ts';
+import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,initialsValid,KAIJU,CAMPAIGN,campaignCityIndex,routeLevels,freePlayLevels,unlockSecret,secretLevelOf,secretIds,exitTarget,kaijuFor,discardLegacySaves} from './campaign.ts';
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
 import {createRival,hitRival,tickRival} from './rival.ts';
 import type {Rival} from './rival.ts';
@@ -187,7 +187,7 @@ function tickSF(dt:number){
   banner={label:'NATIONAL GUARD INBOUND',side:0,life:3};action='THE ARMY IS HERE';actionTime=2.4;}
 }
 function cityScore(){return score-combat.penalty;}
-function objectiveOpen(){return canExitBlock(block.kind,buildings,objective);}
+function objectiveOpen(){return canExitBlock(block.kind,buildings,objective,block.exitAt);}
 // Open layouts start mid-map and have an exit at each end.
 function openLayout(){return block.start!==undefined;}
 function persist(){storageOK=savePermanent(storage,permanent)&&storageOK;}
@@ -219,7 +219,7 @@ let brew:{t:number}|null=null,spit:{t:number,dir:number,charge:number}|null=null
 // Myrmex's Ultimate: `swarm` while it charges (released once the drones are out); `wasps` are the drones, which outlive it. `target` is
 // what each one is chasing, `sting` its cooldown, `seed` its weave.
 type Wasp={x:number,y:number,vx:number,vy:number,life:number,sting:number,target:any,seed:number,tr:number[]};
-// Swarm effects (looks only): `hive` is the abdomen bursting open (shockwave ring and flash, `t` seconds since), `stings` the sparks
+// Swarm effects (looks only; see also drawTornado): `hive` is the abdomen bursting open (shockwave ring and flash, `t` seconds since), `stings` the sparks
 // where drones strike.
 let swarm:{released:boolean}|null=null,wasps:Wasp[]=[],hive:{x:number,y:number,t:number}|null=null,stings:{x:number,y:number,t:number}[]=[];
 function poisonTarget(o:object,ult=false){const p=poison.get(o);if(p){p.t=MV.poisonSeconds;if(ult)p.ult=true;}else poison.set(o,{t:MV.poisonSeconds,tick:time,ult});}
@@ -759,7 +759,7 @@ function selectionScreen(){mode='selection';if(!selectable(permanent,selectedKai
 function paintPreviews(){for(const stage of [1,2,3]){const preview=document.querySelector<HTMLCanvasElement>(`#preview-stage-${stage}`);if(!preview)return;const c=preview.getContext('2d')!;c.imageSmoothingEnabled=false;c.clearRect(0,0,240,120);c.fillStyle='#1d3031';c.fillRect(0,0,240,120);c.fillStyle='#46604f';c.fillRect(15,106,210,1);drawSilhouette(c,selectedKaiju,120,105,[.85,1.1,1.4][stage-1],time,false,'idle',stage);}}
 function freePlayScreen(){mode='freeplay-select';if(!selectable(permanent,freeChoice.kaiju))freeChoice.kaiju='Mogurodon';if(!selectable(permanent,freeChoice.boss))freeChoice.boss='Mogurodon';const conqueredCities=CITIES.map((_,i)=>i).filter(i=>permanent.conquered.includes(CITIES[i].id));if(!conqueredCities.includes(freeChoice.city))freeChoice.city=conqueredCities[0]??0;
  const unlocked=KAIJU.filter(k=>selectable(permanent,k));
- panel(`<div class="eyebrow">ONE CITY / NO CAMPAIGN SCORE</div><h1>FREE <span>PLAY.</span></h1>${conqueredCities.length?'':'<p>Conquer a campaign city to unlock it here.</p>'}<div class="freeplay-fields"><label for="free-kaiju">PLAYABLE KAIJU</label><select id="free-kaiju">${unlocked.map(k=>`<option ${k===freeChoice.kaiju?'selected':''}>${k}</option>`).join('')}</select><label for="free-city">CONQUERED CITY</label><select id="free-city">${conqueredCities.length?conqueredCities.map(i=>`<option value="${i}" ${i===freeChoice.city?'selected':''}>${CITIES[i].name}</option>`).join(''):'<option value="">NO CITIES UNLOCKED</option>'}</select><label for="free-block">START BLOCK</label><select id="free-block">${routeLevels(freeChoice.city).map(i=>`<option value="${i}" ${i===(freeChoice.block??0)?'selected':''}>${i+1} · ${LEVELS[freeChoice.city][i].name}</option>`).join('')}</select><label for="free-boss">UNLOCKED RIVAL</label><select id="free-boss">${unlocked.map(k=>`<option ${k===freeChoice.boss?'selected':''}>${k}</option>`).join('')}</select></div><p>Start on any block · Stage 1 start · City difficulty unchanged<br>Mirror matches permitted. Campaign checkpoint stays untouched.</p><p class="asset-notice">All selected kaiju currently use shared combat pending Phase 5.</p><button id="free-start" class="primary" ${validFreePlay(permanent,freeChoice)?'':'disabled'}>ENTER CITY →</button><button id="back">MAIN MENU</button>`);
+ panel(`<div class="eyebrow">ONE CITY / NO CAMPAIGN SCORE</div><h1>FREE <span>PLAY.</span></h1>${conqueredCities.length?'':'<p>Conquer a campaign city to unlock it here.</p>'}<div class="freeplay-fields"><label for="free-kaiju">PLAYABLE KAIJU</label><select id="free-kaiju">${unlocked.map(k=>`<option ${k===freeChoice.kaiju?'selected':''}>${k}</option>`).join('')}</select><label for="free-city">CONQUERED CITY</label><select id="free-city">${conqueredCities.length?conqueredCities.map(i=>`<option value="${i}" ${i===freeChoice.city?'selected':''}>${CITIES[i].name}</option>`).join(''):'<option value="">NO CITIES UNLOCKED</option>'}</select><label for="free-block">START BLOCK</label><select id="free-block">${freePlayLevels(permanent,freeChoice.city).map(i=>`<option value="${i}" ${i===(freeChoice.block??0)?'selected':''}>${i+1} · ${LEVELS[freeChoice.city][i].name}${LEVELS[freeChoice.city][i].secret?' ★ SECRET':''}</option>`).join('')}</select><label for="free-boss">UNLOCKED RIVAL</label><select id="free-boss">${unlocked.map(k=>`<option ${k===freeChoice.boss?'selected':''}>${k}</option>`).join('')}</select></div><p>Start on any block · Stage 1 start · City difficulty unchanged<br>Mirror matches permitted. Campaign checkpoint stays untouched.</p><p class="asset-notice">All selected kaiju currently use shared combat pending Phase 5.</p><button id="free-start" class="primary" ${validFreePlay(permanent,freeChoice)?'':'disabled'}>ENTER CITY →</button><button id="back">MAIN MENU</button>`);
  const update=()=>{freeChoice={kaiju:document.querySelector<HTMLSelectElement>('#free-kaiju')!.value,city:Number(document.querySelector<HTMLSelectElement>('#free-city')!.value),boss:document.querySelector<HTMLSelectElement>('#free-boss')!.value,block:Number(document.querySelector<HTMLSelectElement>('#free-block')?.value||0)};document.querySelector<HTMLButtonElement>('#free-start')!.disabled=!validFreePlay(permanent,freeChoice);loadKaijuArt(freeChoice.kaiju);};
  for(const id of ['free-kaiju','free-city','free-boss','free-block'])document.querySelector(`#${id}`)!.addEventListener('change',update);
  // A different city has different block names: redraw the list from its first block.
@@ -768,7 +768,7 @@ function freePlayScreen(){mode='freeplay-select';if(!selectable(permanent,freeCh
 }
 function startFreePlay(){if(!validFreePlay(permanent,freeChoice))return;session='freeplay';run=null;activeKaiju=freeChoice.kaiju;cityIndex=freeChoice.city;blockIndex=freeChoice.block??0;freeBlockStart=0;citySettled=false;score=0;combat=createCombat();loadBlock();}
 function finishFreePlay(){if(cleared)return;cleared=true;mode='conquered';keys.clear();panel(`<div class="eyebrow">FREE PLAY / ${CITIES[cityIndex].name.toUpperCase()}</div><h1>CITY<br><span>CLEARED.</span></h1><p>${activeKaiju.toUpperCase()} / RIVAL ${bossName().toUpperCase()}<br>SESSION SCORE ${netScore().toLocaleString()}<br>No campaign score, checkpoint or unlock changes.</p><button id="free-select" class="primary">CHOOSE CITY →</button><button id="free-again">RETRY SAME CITY</button><button id="back">MAIN MENU</button>`);document.querySelector('#free-select')!.addEventListener('click',freePlayScreen);document.querySelector('#free-again')!.addEventListener('click',startFreePlay);document.querySelector('#back')!.addEventListener('click',title);}
-function galleryScreen(){mode='gallery';panel(`<div class="eyebrow">CAMPAIGN COMPLETION RECORDS</div><h1>ENDINGS <span>GALLERY.</span></h1><div class="gallery-grid">${ENDINGS.map((e,i)=>{const unlocked=canViewEnding(permanent,e.name);return `<button id="ending-${i}" ${unlocked?'':'disabled'}><span>${unlocked?e.name:'???'}</span><b>${unlocked?e.title:'LOCKED'}</b></button>`;}).join('')}</div><p>Complete a campaign with a kaiju to unlock its ending.</p><p class="asset-notice">Original illustrations and epilogues are pending. Titles are preserved.</p><button id="back" class="primary">MAIN MENU</button>`,true);
+function galleryScreen(){mode='gallery';panel(`<div class="eyebrow">CAMPAIGN COMPLETION RECORDS</div><h1>ENDINGS <span>GALLERY.</span></h1><div class="gallery-grid">${ENDINGS.map((e,i)=>{const unlocked=canViewEnding(permanent,e.name);return `<button id="ending-${i}" ${unlocked?'':'disabled'}><span>${unlocked?e.name:'???'}</span><b>${unlocked?e.title:'LOCKED'}</b></button>`;}).join('')}</div><p>Complete a campaign with a kaiju to unlock its ending.</p><h2>SECRETS</h2><div class="gallery-grid">${secretIds().map(id=>{const lv=secretLevelOf(id)!,b=LEVELS[lv.city][lv.block],unlocked=permanent.secrets.includes(id);return `<button id="secret-${id}" ${unlocked?'':'disabled'}><span>${unlocked?CITIES[lv.city].name.toUpperCase():'???'}</span><b>${unlocked?`${b.name.toUpperCase()}: ${b.lore??'CLEARED'}`:'LOCKED'}</b></button>`;}).join('')}</div><p class="asset-notice">Original illustrations and epilogues are pending. Titles are preserved.</p><button id="back" class="primary">MAIN MENU</button>`,true);
  ENDINGS.forEach((e,i)=>document.querySelector(`#ending-${i}`)!.addEventListener('click',()=>{if(canViewEnding(permanent,e.name))endingScreen(e.name,'gallery');}));document.querySelector('#back')!.addEventListener('click',title);
 }
 function endingScreen(name:string,source:'gallery'|'completion'){if(!canViewEnding(permanent,name))return;mode='ending';endingName=name;endingSource=source;const e=endingFor(name);panel(`<div class="ending-copy"><div class="eyebrow">${name.toUpperCase()} / CAMPAIGN ENDING</div><h1>${e.title}</h1><p>${e.epilogue||'Original epilogue not yet supplied.'}</p><p class="asset-notice">TEMPORARY ILLUSTRATION · FINAL ART PENDING</p><button id="ending-back" class="primary">${source==='gallery'?'BACK TO GALLERY':'LOCAL TOP 10'}</button><button id="back">MAIN MENU</button></div>`,true);document.querySelector('#ending-back')!.addEventListener('click',()=>source==='gallery'?galleryScreen():scoresScreen());document.querySelector('#back')!.addEventListener('click',title);}
@@ -811,7 +811,7 @@ function loadBlock(drill=false){
  if(objective){const garrison=block.garrison??(block.target?[['police',-460],['patrol',-330],['police',-200],['police',-80],['police',170],['patrol',300]] as const:[['tank',-390],['emplacement',-180],['emplacement',210],['artillery',510],['helicopter',-650]] as const);
   if(block.target)stations.push(...garrison.map(([type,offset])=>({type,x:objective.x+offset,side:1})));else for(const [type,offset] of garrison)spawnUnit(military,type,objective.x+offset);}
  if(!drill){for(const [type,x] of block.warships??[])spawnUnit(military,type,x,-1);for(const [type,x] of block.deckUnits??[])stations.push({type,x,side:1,perch:true});for(const [type,x,alt] of block.units??[])stations.push({type,x,side:1,alt});for(const x of block.air??[])stations.push({type:'helicopter',x,side:1});for(const x of block.swat??[])stations.push({type:'soldier',x,side:1});}
- if(openLayout()&&!drill){action=`${block.buildings.filter(b=>b.landmark).length} LANDMARKS · EXITS EAST AND WEST`;actionTime=3.5;}
+ if(openLayout()&&!drill){action=`${block.buildings.filter(b=>b.landmark).length?`${block.buildings.filter(b=>b.landmark).length} LANDMARKS · `:''}EXITS EAST AND WEST`;actionTime=3.5;}
  if(!drill){setupSF();setupAct2();setupCracks();setupBridge();}else{cracks=[];bigOne=null;setPlatforms([]);upperPlat=[];jetLaunch=[];pendingRunaways=[];pendingTumble=[];tumbleArmed=false;lions=[];kaiban=null;}
  loadKaijuArt(activeKaiju,combat.stage);
  mode='playing';overlay.innerHTML='';focus();
@@ -832,8 +832,11 @@ function movesPanel(tab:'moves'|'controls'){const list=moveList(activeKaiju)[tab
  document.querySelector('#moves-back')!.addEventListener('click',pauseAgain);}
 function resume(){mode='playing';overlay.innerHTML='';keys.clear();focus();}
 function confirmAction(message:string,callback:()=>void,cancel=title){mode='confirm';panel(`<div class="eyebrow">CONFIRM</div><h1>ARE YOU<br><span>SURE?</span></h1><p>${message}</p><button id="yes" class="primary">CONFIRM</button><button id="no">CANCEL</button>`);document.querySelector('#yes')!.addEventListener('click',callback);document.querySelector('#no')!.addEventListener('click',cancel);}
-function results(){if(cleared)return;if(session==='campaign'&&run&&!latchBlock(run))return;cleared=true;mode='results';keys.clear();const bonus=block.kind==='district'?perfectBonus(buildings):0;score+=bonus;const blockScore=Math.round(cityScore()-(session==='freeplay'?freeBlockStart:run?.blockStart||0));panel(`<div class="eyebrow">${CITIES[cityIndex].name.toUpperCase()} · BLOCK ${blockIndex+1}</div><h1>BLOCK<br><span>CLEARED.</span></h1><p>${block.kind==='stronghold'?(block.target?'TARGET DESTROYED':'CENTRAL CRYSTAL SHATTERED'):`DESTRUCTION ${Math.round(destruction(buildings)*100)}%`}<br>BLOCK SCORE ${blockScore.toLocaleString()}<br>${session==='campaign'?'CAMPAIGN':'SESSION'} SCORE ${netScore().toLocaleString()}${bonus?`<br>PERFECT DESTRUCTION +${bonus}`:''}</p><button id="advance" class="primary">${session==='drill'?'PLAY AGAIN →':'NEXT BLOCK →'}</button><button id="back">MAIN MENU</button>`);
- document.querySelector('#advance')!.addEventListener('click',()=>{if(session==='campaign'&&run){if(nextBlock(run,cityScore(),exitSide)){blockIndex=run.block;loadBlock();}}else if(session==='freeplay'){freeBlockStart=cityScore();blockIndex=routeLevels(cityIndex).find(i=>i>blockIndex)??blockIndex+1;loadBlock();}else start();});document.querySelector('#back')!.addEventListener('click',()=>{if(session==='campaign')confirmAction('Quit this city? Continue resumes at Block 1 and current city progress is lost.',title,resultsAgain);else title();});
+function results(){if(cleared)return;if(session==='campaign'&&run&&!latchBlock(run))return;cleared=true;mode='results';keys.clear();const bonus=block.kind==='district'?perfectBonus(buildings):0;score+=bonus;const blockScore=Math.round(cityScore()-(session==='freeplay'?freeBlockStart:run?.blockStart||0));
+ // A secret level cleared in the campaign unlocks it for Free Play and the gallery; its lore line shows wherever it is played.
+ if(session==='campaign'&&block.secretId&&unlockSecret(permanent,block.secretId))persist();
+ panel(`<div class="eyebrow">${CITIES[cityIndex].name.toUpperCase()} · BLOCK ${blockIndex+1}</div><h1>BLOCK<br><span>CLEARED.</span></h1><p>${block.kind==='stronghold'?(block.target?'TARGET DESTROYED':'CENTRAL CRYSTAL SHATTERED'):`DESTRUCTION ${Math.round(destruction(buildings)*100)}%`}<br>BLOCK SCORE ${blockScore.toLocaleString()}<br>${session==='campaign'?'CAMPAIGN':'SESSION'} SCORE ${netScore().toLocaleString()}${bonus?`<br>PERFECT DESTRUCTION +${bonus}`:''}${block.lore?`<br><b class="lore">${block.lore}</b>`:''}${block.secretId&&session==='campaign'?'<br>SECRET LEVEL · ADDED TO FREE PLAY AND THE GALLERY':''}</p><button id="advance" class="primary">${session==='drill'?'PLAY AGAIN →':'NEXT BLOCK →'}</button><button id="back">MAIN MENU</button>`);
+ document.querySelector('#advance')!.addEventListener('click',()=>{if(session==='campaign'&&run){if(nextBlock(run,cityScore(),exitSide)){blockIndex=run.block;loadBlock();}}else if(session==='freeplay'){freeBlockStart=cityScore();blockIndex=(LEVELS[cityIndex][blockIndex].secret?exitTarget(cityIndex,blockIndex):undefined)??routeLevels(cityIndex).find(i=>i>blockIndex)??blockIndex+1;loadBlock();}else start();});document.querySelector('#back')!.addEventListener('click',()=>{if(session==='campaign')confirmAction('Quit this city? Continue resumes at Block 1 and current city progress is lost.',title,resultsAgain);else title();});
 }
 function resultsAgain(){cleared=false;if(run)run.phase='playing';resultsNoBonus();}
 function resultsNoBonus(){// Reopen the interstitial without awarding its bonus again.
@@ -852,7 +855,7 @@ function dropShards(x:number,count:number){
 // dir: direction of the blow (away from the attacker); at: world point struck, for the hole and debris.
 // `quiet`: a rapid damage tick (the Flame Jet), so no hole, hitstop or shake per tick unless it brings the building down.
 function hit(b:typeof buildings[number],damage:number,fromUltimate=false,dir=player.face,at?:{x:number,y:number},quiet=false){
- if(b.prop&&b.hpNow>0&&damage>=b.hpNow){const c=({vending:'#d94f4f',trash:'#6d7a52',hotdog:'#e9b44c',taco:'#2f8f6a',morris:'#2f5a45',cafe:'#b9473b',stall:'#c2312b'} as Record<string,string>)[b.prop]??'#888';spawnChunks(b.x+b.w/2,b.base-b.h/2,dir,c,8,1.2);burst(b.x+b.w/2,b.base-b.h/2,c,8);}
+ if(b.prop&&b.hpNow>0&&damage>=b.hpNow){const c=({vending:'#d94f4f',trash:'#6d7a52',hotdog:'#e9b44c',taco:'#2f8f6a',morris:'#2f5a45',cafe:'#b9473b',stall:'#c2312b',workbench:'#7a6a4a'} as Record<string,string>)[b.prop]??'#888';spawnChunks(b.x+b.w/2,b.base-b.h/2,dir,c,8,1.2);burst(b.x+b.w/2,b.base-b.h/2,c,8);}
  if(style()==='tyo'&&b.h>=TW.quakeHeight&&!quiet&&!fromUltimate&&b.kind!=='tiny'){b.sway=TW.swaySeconds;if(damage<TW.quakeBreak)damage*=TW.quakeKeep;}
  const r=damageBuilding(b,damage*vuln(b));if(!r.damage)return;releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);award(r.points);heatUp(r.damage*Y.gainPerDamage);if(r.destroyed&&fromUltimate)ultKill.add(b);creditDamage(combat,r.damage,'player',fromUltimate);if(r.destroyed)dropShards(b.x+b.w/2,B.buildingShards);if(!quiet||r.destroyed)burst(b.x+b.w/2,groundAt(b.x+b.w/2)-Math.min(b.h,60),'#e8d8ab',r.destroyed?23:7);if(!quiet||r.destroyed)shake=r.destroyed?5:2;if(r.destroyed||!quiet||!fromUltimate){action=r.destroyed?'STRUCTURE COLLAPSED':quiet?(isBelial()?'ACID':'FLAME JET'):`IMPACT −${Math.round(r.damage)}`;actionTime=1.2;}
  // Fully corroded, it gives way well before its HP runs out.
@@ -2052,6 +2055,9 @@ function drawProp(b:typeof buildings[number],x:number,h:number){const y=b.base-h
   case 'taco':{rect(x,y+h*.4,w,h*.6,'#c25b3c');rect(x+2,y+h*.45,w-4,4,'#e7c07a');poly([[x-3,y+h*.42],[x+w*.5,y],[x+w+3,y+h*.42]],'#2f8f6a');for(let k=0;k<5;k++)rect(x+k*w/5,y+h*.38,w/10,4,'#f2ead8');text('TACOS',x+w/2,y+h*.75,7,'#fff2c9','center');break;}
   case 'morris':{rect(x,y+6,w,h-6,'#2f5a45');rect(x-2,y+h-6,w+4,6,'#2a4a3a');ctx.fillStyle='#2f5a45';ctx.beginPath();ctx.ellipse(x+w/2,y+6,w*.6,6,0,Math.PI,0);ctx.fill();rect(x+2,y+12,w-4,h*.55,'#e8dcc0');rect(x+3,y+16,w-6,3,'#b9473b');rect(x+3,y+24,w-6,2,'#3a4a6b');break;}
   case 'cafe':{rect(x+w*.47,y+4,2,h-4,'#2b2b2b');rect(x,y+3,w,3,'#2b2b2b');rect(x+w*.3,base-2,w*.4,2,'#2b2b2b');poly([[x-4,y+2],[x+w/2,y-10],[x+w+4,y+2]],'#b9473b');rect(x-6,base-10,4,10,'#3b3b3b');rect(x+w+2,base-10,4,10,'#3b3b3b');break;}
+  case 'workbench':{// A lab bench: a scarred plank on trestles with a rack of tools and a pink crystal shard under test.
+   rect(x,y+h*.35,w,4,'#8a7a58');rect(x+2,y+h*.35+4,3,h*.65-4,'#4a4236');rect(x+w-5,y+h*.35+4,3,h*.65-4,'#4a4236');rect(x+3,y+h*.1,5,h*.25,'#9aa3a8');rect(x+w*.5,y+h*.18,3,h*.17,'#c9a91f');
+   poly([[x+w*.68,y+h*.35],[x+w*.74,y+h*.02],[x+w*.84,y+h*.35]],Math.sin(time*3+x)>0?'#f291ca':'#d46fae');break;}
   case 'stall':{rect(x,y+h*.45,w,h*.55,'#7a5a3a');for(let k=0;k<4;k++)rect(x+3+k*(w-6)/4,y+h*.47,(w-6)/4-2,6,['#e8d26a','#d94f4f','#6fb36a','#e89a3a'][k]);poly([[x-4,y+h*.42],[x+2,y],[x+w-2,y],[x+w+4,y+h*.42]],'#c2312b');for(let k=0;k<4;k++)rect(x+4+k*w/4,y+2,w/8,h*.38,'#f2ead8');break;}
   case 'palm':{rect(x+w*.44,y+h*.28,w*.12,h*.72,'#7a5a3a');for(let k=0;k<5;k++)rect(x+w*.44,y+h*.34+k*h*.12,w*.12,2,'#5a4028');
    for(const [dx,dy] of [[-1,.1],[1,.1],[-.8,-.08],[.8,-.08],[0,-.16]])poly([[x+w*.5,y+h*.26],[x+w*.5+dx*w*.7,y+h*(.2+dy)],[x+w*.5+dx*w*.5,y+h*(.34+dy)]],'#4f7d4a');break;}
@@ -2417,6 +2423,8 @@ function drawBanner(){if(!banner)return;const a=Math.min(1,banner.life/.4,(2.4-b
  rect(0,172,960,26,'#15262cdd');rect(0,172,960,2,'#e8506a');rect(0,196,960,2,'#e8506a');const label=banner.side<0?`◀ ${banner.label}`:banner.side>0?`${banner.label} ▶`:banner.label;text(label,480+slide,190,14,'#ffd9c9','center');ctx.globalAlpha=1;}
 // In a police level (Act 1) helicopters are police air and soldiers are SWAT; the Guard keep their olive.
 const swat=(u:object)=>!!block.police&&!guardUnits.has(u);
+// In a hazmat level (Alcatraz) every soldier wears a yellow suit and visor.
+const hazmat=(u:{type:string})=>!!block.hazmat&&u.type==='soldier';
 function drawMilitary(layer:0|1){
  const front=(lane:0|1|null)=>lane===1;
  for(const wreck of military.wrecks){const x=wreck.x-camera;if(x<-100||x>viewW()+40||front(wreck.lane)!==(layer===1))continue;
@@ -2430,7 +2438,7 @@ function drawMilitary(layer:0|1){
  ctx.save();ctx.translate(Math.round(x+u.w/2),Math.round(y));ctx.scale(u.face,1);if(u.flash>0)ctx.filter='brightness(0) invert(1)';
  if(u.type==='police'||u.type==='soldier'){ctx.scale(u.w/7,u.h/14);
  if(u.spotter){rect(-3,-7,1,7,'#2b3d40');rect(-4,-9,3,3,(u.call>MF.spotterSeconds*.5?Math.sin(time*30)>0:Math.sin(time*6)>0)?'#ff5a4a':'#5a2a2a');}
- rect(-2,0,5,4,'#d7b08c');rect(-3,4,6,6,u.type==='police'?'#445b76':swat(u)?'#252d3a':'#647653');rect(-4,-1,7,2,u.type==='police'?'#36516d':swat(u)?'#1b212b':'#667354');rect(2,5,7,2,'#263d3d');rect(-3,10,2,4,'#2b3d40');rect(1,10,2,4,'#2b3d40');
+ rect(-2,0,5,4,'#d7b08c');rect(-3,4,6,6,u.type==='police'?'#445b76':hazmat(u)?'#e3c32e':swat(u)?'#252d3a':'#647653');rect(-4,-1,7,2,u.type==='police'?'#36516d':hazmat(u)?'#c9a91f':swat(u)?'#1b212b':'#667354');if(hazmat(u)){rect(-2,0,5,3,'#2f4a52');rect(-1,1,2,1,'#9fd6e0');rect(-5,5,2,5,'#c9a91f');}rect(2,5,7,2,'#263d3d');rect(-3,10,2,4,'#2b3d40');rect(1,10,2,4,'#2b3d40');
  }else if(u.type==='helicopter'){
  poly([[-23,6],[-9,1],[15,1],[25,10],[17,18],[-9,18],[-20,12]],swat(u)?'#3f5a7a':'#596e60');if(swat(u)){rect(-10,8,22,3,'#e8eef2');rect(-3,-8,7,3,Math.sin(time*9)>0?'#e8401a':'#3a7ae0');}rect(-32,7,20,3,'#566d60');rect(-34,0,4,12,'#627968');rect(-6,18,26,2,'#2d4141');rect(0,-5,3,7,'#394d49');rect(-32,-6,65,2,'#374b47');rect(13,4,10,7,'#b2c6a9');
  }else if(u.type==='jet'||u.type==='bomber'){
@@ -2523,6 +2531,35 @@ function drawSlab(b:typeof buildings[number]){
 function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const bw=b.w-7,base=b.base,mood=CITIES[cityIndex].mood;
  const win=(wx:number,wy:number,ww:number,wh:number)=>{rect(wx,wy,ww,wh,'#2a3a42');rect(wx+1,wy+1,ww-2,wh*.45,mood.lights>.5?mood.win:'#8fb0bd');};
  switch(b.deco){
+  case 'boathouse':{// A boathouse on the dock: weathered planks, a pitched roof and a wide door onto the slip.
+   rect(x,y+h*.28,bw,h*.72,'#6b5a48');for(let xx=x+5;xx<x+bw;xx+=7)rect(xx,y+h*.28,1,h*.72,'#54463a');poly([[x-5,y+h*.3],[x+bw/2,y-4],[x+bw+5,y+h*.3]],'#4a3f38');
+   rect(x+bw*.3,base-h*.55,bw*.4,h*.55,'#2a2420');rect(x+bw*.3,base-h*.55,bw*.4,3,'#8a7a5a');win(x+bw*.1,y+h*.42,12,14);win(x+bw*.8,y+h*.42,12,14);break;}
+  case 'guardtower':{// A prison guard tower: a cabin on concrete legs under a cap, with a searchlight.
+   const cw=bw*.9,cx=x+(bw-cw)/2,cy=y+h*.04,ch=h*.26;for(const k of [.12,.78])rect(x+bw*k,cy+ch,bw*.1,h*.7,'#8d8f86');rect(x+bw*.12,y+h*.62,bw*.76,3,'#7a7c74');
+   rect(cx,cy,cw,ch,'#9a9c92');rect(cx+3,cy+4,cw-6,ch*.45,'#1f2b30');rect(cx-3,cy-5,cw+6,6,'#4a4d48');rect(x+bw*.5-1,cy-14,2,10,'#4a4d48');
+   const a=.18+.1*Math.sin(time*2);ctx.globalAlpha=a;poly([[cx+cw*.5,cy+ch*.3],[cx+cw*.5+170,cy+ch*.3+60],[cx+cw*.5+170,cy+ch*.3+130]],'#fff3b0');ctx.globalAlpha=1;rect(cx+cw*.5-3,cy+ch*.3-3,6,6,'#fff3b0');break;}
+  case 'lighthouse':{// The lighthouse: a tapered white tower with a red band, a gallery and a lantern room throwing a sweeping beam.
+   poly([[x+bw*.14,base],[x+bw*.86,base],[x+bw*.68,y+h*.14],[x+bw*.32,y+h*.14]],'#e6e2d6');
+   poly([[x+bw*.2,base-h*.36],[x+bw*.8,base-h*.36],[x+bw*.76,base-h*.5],[x+bw*.24,base-h*.5]],'#b5372f');
+   rect(x+bw*.26,y+h*.1,bw*.48,4,'#3a3a38');rect(x+bw*.34,y+h*.02,bw*.32,h*.08,'#f6e27a');poly([[x+bw*.3,y+h*.02],[x+bw*.5,y-8],[x+bw*.7,y+h*.02]],'#3a3a38');
+   const sweep=Math.sin(time*1.2),bx=x+bw*.5,by=y+h*.06;ctx.globalAlpha=.22;poly([[bx,by-3],[bx+sweep*320,by-30],[bx+sweep*320,by+30]],'#fff3b0');ctx.globalAlpha=1;
+   rect(x+bw*.4,base-18,bw*.2,18,'#2a2a28');break;}
+  case 'cellhouse':{// The cellhouse: a long concrete block of barred windows. A bay on the summit side stands open on a secret lab: a pinned
+   // surveillance photo of the kaiju Kaiban and a crystal fuel cell schematic on its wall.
+   rect(x,y,bw,h,'#9a9a90');rect(x-3,y,bw+6,8,'#74746c');for(let yy=y+16;yy<base-34;yy+=26)for(let wx=x+8;wx<x+bw*.3-6;wx+=16){rect(wx,yy,9,15,'#262d30');rect(wx+3,yy,1,15,'#6a6f6c');}
+   for(let yy=y+16;yy<base-34;yy+=26)for(let wx=x+bw*.72;wx<x+bw-14;wx+=16){rect(wx,yy,9,15,'#262d30');rect(wx+3,yy,1,15,'#6a6f6c');}
+   const px=x+bw*.32,pw=bw*.38,py=y+h*.2,ph=h*.62;rect(px-3,py-3,pw+6,ph+3,'#5c5c55');rect(px,py,pw,ph,'#232b2d');const glow=.25+.15*Math.sin(time*2.4);ctx.globalAlpha=glow;rect(px,py,pw,ph,'#f291ca');ctx.globalAlpha=1;
+   // The schematic: a blue sheet with a crystal feeding a cell, labelled.
+   const sx=px+pw*.06,sy=py+ph*.12,sw=pw*.5,sh=ph*.46;rect(sx,sy,sw,sh,'#2a5d8f');rect(sx,sy,sw,2,'#9fc3e6');poly([[sx+sw*.18,sy+sh*.62],[sx+sw*.26,sy+sh*.2],[sx+sw*.34,sy+sh*.62]],'#f291ca');
+   rect(sx+sw*.42,sy+sh*.38,sw*.22,2,'#d9ecff');poly([[sx+sw*.62,sy+sh*.3],[sx+sw*.7,sy+sh*.38],[sx+sw*.62,sy+sh*.46]],'#d9ecff');rect(sx+sw*.7,sy+sh*.22,sw*.24,sh*.34,'#d9ecff');rect(sx+sw*.74,sy+sh*.28,sw*.16,sh*.22,'#2a5d8f');
+   text('CRYSTAL FUEL CELL',sx+sw/2,sy+sh+9,6,'#bcd7ee','center');
+   // The photo: grainy, a huge horned silhouette in fog, pinned with red string back to the schematic.
+   const hx=px+pw*.64,hy=py+ph*.1,hw=pw*.3,hh=ph*.4;rect(hx-2,hy-2,hw+4,hh+4,'#d8d2bf');rect(hx,hy,hw,hh,'#68767a');for(let k=0;k<hw;k+=3)rect(hx+k,hy+((k*7)%hh),2,1,'#8a989b');
+   poly([[hx+hw*.2,hy+hh],[hx+hw*.28,hy+hh*.34],[hx+hw*.4,hy+hh*.5],[hx+hw*.5,hy+hh*.1],[hx+hw*.6,hy+hh*.5],[hx+hw*.72,hy+hh*.3],[hx+hw*.82,hy+hh]],'#1e2a2e');
+   rect(hx+hw*.5-1,hy-4,3,3,'#e0372c');ctx.strokeStyle='#e0372c';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(hx+hw*.5,hy-3);ctx.lineTo(sx+sw*.9,sy+sh*.3);ctx.stroke();text('K-?',hx+hw/2,hy+hh+9,6,'#e8e2c8','center');
+   // Workbench and a crystal sample in the bay.
+   rect(px+4,py+ph-14,pw-8,3,'#8a7a58');rect(px+6,py+ph-11,3,11,'#4a4236');rect(px+pw-9,py+ph-11,3,11,'#4a4236');poly([[px+pw*.46,py+ph-14],[px+pw*.5,py+ph-30],[px+pw*.56,py+ph-14]],'#f291ca');
+   rect(px+pw*.5-6,base-30,12,30,'#2a2420');text('CELLHOUSE',x+bw*.5,y+h*.1,10,'#4a4a44','center');break;}
   case 'powerhouse':{// The cable car powerhouse: a brick barn with a big winding wheel in the gable and the cable slot at its foot.
    rect(x,y+h*.2,bw,h*.8,'#8a5a44');for(let yy=y+h*.2+6;yy<base-6;yy+=8)rect(x,yy,bw,1,'#6a4030');poly([[x-6,y+h*.24],[x+bw/2,y-6],[x+bw+6,y+h*.24]],'#4a3a34');
    const wx=x+bw/2,wy=y+h*.46,rr=Math.min(bw,h)*.2;ctx.strokeStyle='#d8c9a0';ctx.lineWidth=3;ctx.beginPath();ctx.arc(wx,wy,rr,0,Math.PI*2);ctx.stroke();ctx.lineWidth=1;
@@ -2725,6 +2762,25 @@ function drawEruption(){const e=eruption;if(!e?.blasted)return;const w=bodyWidth
 // shockwave ring. Each drone glows (additively, so a dense knot of them reads as a bright violet cloud), drags a streak behind it
 // and a little comet of dark specks (looks only: five per drone, strung along its trail), and is drawn bigger with the stage:
 // a red body and dark head, a glowing venom sting, blurred wings. Stings flash a violet-white star.
+// While the swarm is out (looks only), a tornado of bugs whirls round him: a funnel narrow at his feet and flaring wide overhead,
+// reaching far above him and leaning as it sways. Each bug spirals up it and wraps back to the bottom; the half of the funnel behind
+// him is drawn before him (smaller, darker) and the front half after. It spins up as the abdomen bursts and thins as drones die.
+function drawTornado(front:boolean){if(!wasps.length)return;const g=Math.sqrt(scale(combat)),f=Math.min(1,wasps.length/B.swarmCount)*Math.min(1,hive?hive.t/.35:1),
+ w=bodyWidth(),h=bodyHeight(),cx=player.x-camera+w/2,foot=player.y+h,H=Math.max(440,h*4.5),r0=w*.55,r1=r0+H*.5,n=Math.round(650*f),z=Math.max(2.2,2.6*g);
+ if(f<=0)return;
+ if(!front){// Funnel haze: stacked dark violet bands, wider going up.
+  for(let k=0;k<10;k++){const t=(k+.5)/10,y=foot-t*H,lean=Math.sin(time*1.3+t*2)*H*.08*t,r=r0+(r1-r0)*t**1.4;
+   ctx.globalAlpha=.1*f;ctx.fillStyle=k%2?'#3a0f52':'#6a1f8a';ctx.beginPath();ctx.ellipse(cx+lean,y,r*(1+.06*Math.sin(time*7+k)),H/10*.9,0,0,Math.PI*2);ctx.fill();}}
+ for(let i=0;i<n;i++){const u=(i*.618034)%1,v=(i*.414214)%1,t=(u+time*(.18+.14*v))%1,a=time*(3.2+2.5*v)*(1-.4*t)+i*2.39996,
+  depth=Math.sin(a);if((depth>=0)!==front)continue;
+  const lean=Math.sin(time*1.3+t*2)*H*.08*t,r=(r0+(r1-r0)*t**1.4)*(.75+.35*v),x=cx+lean+Math.cos(a)*r+Math.sin(time*21+i)*2*g,
+   y=foot-t*H+depth*r*.18+Math.cos(time*17+i*1.7)*3*g,q=z*(front?1+.4*depth:.7)*(.8+.5*u)*(t<.08?t/.08:1);
+  ctx.globalAlpha=front?.95:.6;rect(x-q*.7,y-q/2,q*1.4,q,i%7===0?'#c04bff':front?(i%3?'#1e0810':'#4a1020'):'#2a1430');
+  if(front&&Math.sin(time*70+i*1.3)>0){ctx.globalAlpha=.55;rect(x-q*.6,y-q*1.2,q*1.2,q*.6,'#fff2dc');}}
+ // Grit kicked up round the base.
+ if(front)for(let i=0;i<40*f;i++){const a=time*5+i*2.4,t=((i*.37+time*.9)%1)*.25,r=r0*(1+t*2),x=cx+Math.cos(a)*r,y=foot-t*60*g+Math.sin(a)*6*g;
+  ctx.globalAlpha=.5*(1-t*4);rect(x-1.5*g,y-1.5*g,3*g,3*g,i%2?'#8d7a66':'#c9a77c');}
+ ctx.globalAlpha=1;}
 function drawSwarm(){const g=Math.sqrt(scale(combat)),C2=ctx as any;
  if(swarm&&!swarm.released&&combat.ultimateTime>0){const w=bodyWidth(),h=bodyHeight(),p=Math.min(1,(B.ultimateDuration-combat.ultimateTime)/B.swarmCharge),
   x=player.x-camera+w/2-player.face*w*.25,y=player.y+h*.55,r=(6+16*p)*g*(1+.18*Math.sin(time*(14+16*p)));
@@ -2736,6 +2792,7 @@ function drawSwarm(){const g=Math.sqrt(scale(combat)),C2=ctx as any;
   if(t<.3){const z=(1-t/.3);C2.globalCompositeOperation='lighter';ctx.globalAlpha=.7*z;ctx.fillStyle='#c04bff';ctx.beginPath();ctx.arc(sx,hive.y,70*g*(.6+t*3),0,Math.PI*2);ctx.fill();
    ctx.globalAlpha=.9*z;ctx.fillStyle='#fff2ff';ctx.beginPath();ctx.arc(sx,hive.y,28*g*(.6+t*3),0,Math.PI*2);ctx.fill();C2.globalCompositeOperation='source-over';}
   ctx.globalAlpha=1;}
+ drawTornado(true);
  if(!wasps.length&&!stings.length)return;const vw=viewW(),on=(wp:Wasp)=>wp.x-camera>-40&&wp.x-camera<vw+40;
  // Glow pass.
  C2.globalCompositeOperation='lighter';
@@ -2806,7 +2863,7 @@ function render(){
   rect(x+d*6*z-3*z,groundAt(wave.x)-(62*z+j*2),6*z,6*z,'#c9a77c');rect(x-d*8*z-2*z,groundAt(wave.x)-(48*z-j*2),4*z,4*z,'#8d7a66');
   rect(Math.min(x,x+d*40*z),groundAt(wave.x),40*z,3,'#ffe0a8');}
  if(combat.superTime>0){const x=player.x-camera;rect(x-7,player.y-7,bodyWidth()+14,bodyHeight()+10,Math.sin(time*10)>0?'#c47cab':'#8d799e');}
- drawEruptionGlow();if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawVehicles(1);drawMilitary(1);drawGeysers();drawRiverFront();drawTelegraphs();drawCityFx();
+ drawEruptionGlow();drawTornado(false);if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawVehicles(1);drawMilitary(1);drawGeysers();drawRiverFront();drawTelegraphs();drawCityFx();
  if(combat.transform>0){const x=player.x-camera+bodyWidth()/2,y=player.y+bodyHeight()/2;const radius=bodyHeight()*.75;poly([[x,y-radius],[x+radius*.6,y],[x,y+radius],[x-radius*.6,y]],'#f4b0d8');poly([[x,y-radius*.85],[x+radius*.35,y],[x,y+radius*.8],[x-radius*.35,y]],'#ffe0f1');}
  if(combat.ultimateTime>0)text(ultimateLabel(),player.x-camera+bodyWidth()/2,player.y-24,10,'#fff1d8','center');
  // Launched tail quill: bone-white spike pointing along its flight, dark base, faint motion streak.
@@ -2828,16 +2885,7 @@ function render(){
  ctx.restore();ctx.restore();if(eruption?.blasted){rect(0,0,960,540,`rgba(255,80,20,${(.16+.04*Math.sin(time*9)).toFixed(3)})`);if(eruption.flash>0)rect(0,0,960,540,`rgba(255,236,190,${(eruption.flash*1.1).toFixed(3)})`);}
  // The swarm darkens the sky with a violet cast while it's out, and the abdomen bursting flashes the screen.
  if(wasps.length){const f=Math.min(1,wasps.length/B.swarmCount);rect(0,0,960,540,`rgba(48,6,70,${(f*(.24+.04*Math.sin(time*11))).toFixed(3)})`);
-  // A few drones whip past right in front of the camera, big and out of focus (looks only).
-  const n=Math.round(5*f);for(let i=0;i<n;i++){const per=.9+(i*.37)%0.7,ph=(time/per+i*.618)%1,dir=i%2?1:-1,z=12+(i*7)%10,
-   x=dir>0?-120+ph*1200:1080-ph*1200,y=90+((i*197)%360)+Math.sin(time*4+i)*30,fl=Math.sin(time*50+i*3)>0,tilt=Math.cos(time*4+i)*.15;
-   for(let k=3;k>=0;k--){const ox=x-dir*k*z*1.1;ctx.globalAlpha=k?.12:.5;ctx.fillStyle='#1a0610';
-    // Abdomen, thorax and head in a row, the abdomen trailing.
-    ctx.beginPath();ctx.ellipse(ox-dir*z*1.2,y+z*.15,z*1.1,z*.55,tilt,0,Math.PI*2);ctx.fill();
-    ctx.beginPath();ctx.ellipse(ox,y,z*.6,z*.45,tilt,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(ox+dir*z*.85,y-z*.1,z*.38,0,Math.PI*2);ctx.fill();}
-   ctx.globalAlpha=.18;ctx.fillStyle='#ffe9c8';ctx.beginPath();ctx.ellipse(x-dir*z*.3,y-z*(fl?.9:.55),z*1.5,z*(fl?.45:.25),-dir*.3,0,Math.PI*2);ctx.fill();
-   ctx.globalAlpha=.6;ctx.fillStyle='#c04bff';ctx.beginPath();ctx.arc(x-dir*z*2.3,y+z*.25,z*.22,0,Math.PI*2);ctx.fill();}
-  ctx.globalAlpha=1;}
+}
  if(hive&&hive.t<.18)rect(0,0,960,540,`rgba(236,170,255,${((.18-hive.t)/.18*.45).toFixed(3)})`);
  // The downpour greens the whole sky while it lasts.
  if(rain.length)rect(0,0,960,540,`rgba(150,210,40,${Math.min(.14,rain.length*.004+.04*Math.sin(time*7)**2).toFixed(3)})`);drawRain2();drawFog();hud();
