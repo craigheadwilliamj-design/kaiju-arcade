@@ -5,11 +5,11 @@ import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL a
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
 // Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
-export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck';
-export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat';
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer';
+export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat'|'rolling'|'cable';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean};
+ damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean,line?:[number,number],plows?:number};
 // pole: a power pole (lamp-kind prop) on that grid index; snapped once it has been knocked out of upright.
 export const VEHICLE_SPECS={
  // Sized to sit with the military's road vehicles (patrol car 48x23, APC 52x26, tank 59x31).
@@ -26,6 +26,8 @@ export const VEHICLE_SPECS={
  tank:{w:U.tank.w,h:U.tank.h,mass:U.tank.mass,points:0},
  artillery:{w:U.artillery.w,h:U.artillery.h,mass:U.artillery.mass,points:0},
  boat:{w:U.boat.w,h:U.boat.h,mass:U.boat.mass,points:0},
+ gunboat:{w:U.gunboat.w,h:U.gunboat.h,mass:U.gunboat.mass,points:0},
+ destroyer:{w:U.destroyer.w,h:U.destroyer.h,mass:U.destroyer.mass,points:0},
  // Lifted newsstands and barriers keep the size of the (city-scaled) structure they were.
  stand:{w:Math.round(BP.t.w*C.cityScale),h:Math.round(BP.t.h*C.cityScale),mass:1.4,points:0},
  barrier:{w:Math.round(BP.b.w*C.cityScale),h:Math.round(BP.b.h*C.cityScale),mass:3,points:0},
@@ -38,7 +40,7 @@ export const VEHICLE_SPECS={
 } as const;
 // Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
 // Road vehicles: what explodes when thrown and wrecks with a bang.
-export const EXPLOSIVE=new Set<VehicleKind>(['car','van','bus','patrol','apc','tank','artillery','train','boat','tram','cablecar','firetruck']);
+export const EXPLOSIVE=new Set<VehicleKind>(['car','van','bus','patrol','apc','tank','artillery','train','boat','gunboat','destroyer','tram','cablecar','firetruck']);
 export const CIVILIAN=new Set<VehicleKind>(['car','van','bus','tram','cablecar','firetruck']);
 const IMPACT:Partial<Record<VehicleKind,number>>={lamp:1.6};
 export function impact(v:Vehicle){return IMPACT[v.kind]??mass(v);}
@@ -49,9 +51,9 @@ function taxi(v:Vehicle){if(TAXI&&v.kind==='car'){v.color=TAXI;v.label='TAXI';}r
 
 export function vehicleBox(v:Vehicle){return {x:v.x,y:v.y,w:v.w,h:v.h};}
 export function mass(v:Vehicle){return v.mass??VEHICLE_SPECS[v.kind].mass;}
-export function grounded(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='flat';}
+export function grounded(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='flat'||v.state==='rolling'||v.state==='cable';}
 // Can be stomped, punted or picked up.
-export function loose(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck';}
+export function loose(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='rolling'||v.state==='cable';}
 
 function make(id:number,kind:VehicleKind,x:number,lane:0|1,color:string):Vehicle{
  const s=VEHICLE_SPECS[kind];

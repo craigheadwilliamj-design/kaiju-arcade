@@ -34,8 +34,8 @@ test('Act 1 data: three levels, the right goals and screens, Mogurodon at Stage 
  // The pier: a deck over water with no buildings standing in the water; the pilings are beside the deck.
  const [wa,wz]=[EMB.water![0][0],EMB.water![0][1]];for(const x of EMB.buildings)if(x.kind!=='tiny'&&x.deco!=='piling')assert.ok(x.x+x.w<=wa||x.x>=wz,`no building stands in the water (${x.x})`);
  assert.ok(EMB.bridge!.x0>wa&&EMB.bridge!.x1<wz);assert.equal(EMB.bridge!.spans,7);
- // Nothing else changed: no other level carries any phase 3 field.
- for(const b of LEVELS.flat().filter(x=>![EMB,UNI,CHI].includes(x)))for(const k of ['target','pocket','garage','police','air','swat','guard','lanterns','crystal','streetcars','cablecars','trolleys','firetrucks','pier'])assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
+ // Nothing else changed: no other level carries any phase 3 field (the Act 2 levels, Nob Hill to the Wharf, reuse some: see sf-act2.test.ts).
+ for(const b of LEVELS.flat().filter(x=>![EMB,UNI,CHI,...SAN_FRANCISCO.slice(3,9)].includes(x)))for(const k of ['target','pocket','garage','police','air','swat','guard','lanterns','crystal','streetcars','cablecars','trolleys','firetrucks','pier'])assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
 });
 
 test('goals open the exits: destroying the target opens a stronghold, 75% destruction opens Chinatown',()=>{
