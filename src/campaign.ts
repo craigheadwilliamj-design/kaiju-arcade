@@ -11,17 +11,24 @@ export const LEGACY_KEYS=['kaiju-arcade:permanent:v1','kaiju-arcade:campaign:v1'
 export type Checkpoint={version:2,id:string,initials:string,kaiju:string,city:number,banked:number};
 export type RecordScore={id:string,initials:string,kaiju:string,score:number,cities:number,completed:boolean};
 // conquered: city ids.
-export type Permanent={version:2,unlocked:string[],conquered:string[],gallery:string[],scores:RecordScore[]};
+// secrets: ids of secret levels cleared in the campaign (a level's `secretId`); each is offered in Free Play and has a gallery entry.
+export type Permanent={version:2,unlocked:string[],conquered:string[],gallery:string[],secrets:string[],scores:RecordScore[]};
 export type Run=Checkpoint&{block:number,phase:'boundary'|'playing'|'results'|'conquered'|'over',blockStart:number};
 export type StorageLike={getItem:(key:string)=>string|null,setItem:(key:string,value:string)=>void,removeItem:(key:string)=>void};
 // The city a campaign position stands for, its index in CITIES / LEVELS, and the levels on its route (secret levels are off it).
 export function campaignCity(position:number){return CITIES[cityIndexOf(CAMPAIGN[position])];}
 export function campaignCityIndex(position:number){return cityIndexOf(CAMPAIGN[position]);}
 export function routeLevels(cityIndex:number){return (LEVELS[cityIndex]??[]).map((b,i)=>b.secret?-1:i).filter(i=>i>=0);}
+// Secret levels: found by their `secretId`. Clearing one in the campaign unlocks it for Free Play and the gallery.
+export function secretLevelOf(id:string):{city:number,block:number}|undefined{for(let city=0;city<LEVELS.length;city++){const block=LEVELS[city].findIndex(b=>b.secret&&b.secretId===id);if(block>=0)return {city,block};}return undefined;}
+export function secretIds(){return LEVELS.flat().filter(b=>b.secret&&b.secretId).map(b=>b.secretId!);}
+export function unlockSecret(p:Permanent,id:string){if(!secretLevelOf(id)||p.secrets.includes(id))return false;p.secrets.push(id);return true;}
+// The levels Free Play offers in a city: its route, then each cleared secret (only once the city itself is conquered).
+export function freePlayLevels(p:Permanent,cityIndex:number){return [...routeLevels(cityIndex),...(p.secrets??[]).map(secretLevelOf).filter(s=>s?.city===cityIndex).map(s=>s!.block)];}
 // The kaiju a campaign plays in a city: the city's own, or the run's chosen kaiju where the city has none.
 export function kaijuFor(run:{kaiju:string,city:number}){return campaignCity(run.city)?.kaiju??run.kaiju;}
 const finalLevel=(run:Run)=>{const r=routeLevels(campaignCityIndex(run.city));return r[r.length-1];};
-export function emptyPermanent():Permanent{return {version:2,unlocked:['Mogurodon'],conquered:[],gallery:[],scores:[]};}
+export function emptyPermanent():Permanent{return {version:2,unlocked:['Mogurodon'],conquered:[],gallery:[],secrets:[],scores:[]};}
 export function initialsValid(value:string){return /^[A-Z]{3}$/.test(value);}
 const finite=(n:unknown):n is number=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<1e12;
 function validCheckpoint(c:any):c is Checkpoint{return c?.version===SAVE_VERSION&&typeof c.id==='string'&&c.id.length<100&&initialsValid(c.initials)&&KAIJU.includes(c.kaiju)&&Number.isInteger(c.city)&&c.city>=0&&c.city<CAMPAIGN.length&&finite(c.banked);}
@@ -30,6 +37,7 @@ export function readSaves(storage:StorageLike|undefined){
  try{const p=JSON.parse(storage?.getItem(PERMANENT_KEY)||'null');if(p?.version===SAVE_VERSION){
  permanent.unlocked=[...new Set(['Mogurodon',...(Array.isArray(p.unlocked)?p.unlocked.filter((k:unknown)=>KAIJU.includes(k as string)):[])])] as string[];
  permanent.conquered=Array.isArray(p.conquered)?[...new Set(p.conquered.filter((c:unknown)=>typeof c==='string'&&cityIndexOf(c)>=0))] as string[]:[];
+ permanent.secrets=Array.isArray(p.secrets)?[...new Set(p.secrets.filter((k:unknown)=>typeof k==='string'&&!!secretLevelOf(k)))] as string[]:[];
  permanent.gallery=Array.isArray(p.gallery)?p.gallery.filter((k:unknown)=>KAIJU.includes(k as string)):[];
  permanent.scores=Array.isArray(p.scores)?p.scores.filter((r:any)=>typeof r?.id==='string'&&r.id.length<100&&initialsValid(r.initials)&&KAIJU.includes(r.kaiju)&&finite(r.score)&&Number.isInteger(r.cities)&&r.cities>=0&&r.cities<=CAMPAIGN.length&&typeof r.completed==='boolean').sort((a:RecordScore,b:RecordScore)=>b.score-a.score).slice(0,10):[];
  for(const r of permanent.scores)if(r.completed&&!permanent.gallery.includes(r.kaiju))permanent.gallery.push(r.kaiju);
