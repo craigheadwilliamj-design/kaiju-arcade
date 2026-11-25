@@ -6,7 +6,8 @@ import {createBuildings,overlaps} from '../src/rules.ts';
 import {setTerrain,groundAt,addMound,streetAt} from '../src/terrain.ts';
 import {createMilitary,spawnUnit,cruiseY,tickMilitary,setCover} from '../src/military.ts';
 import {createParked,spawnTraffic,tickDriving} from '../src/vehicles.ts';
-import {bootCampaign} from './helpers/game-harness.ts';
+import {bootCampaign,bootGame} from './helpers/game-harness.ts';
+import {emptyPermanent,PERMANENT_KEY,KAIJU} from '../src/campaign.ts';
 // Bug fixes for the San Francisco levels (playtest list): each one pinned by the real loop where it can be, by the pure module otherwise.
 const [EMB,UNI,CHI,NOB,FIN,WHARF,FAULT,BAY,GG,ALC]=SAN_FRANCISCO;
 const boot=async(block:number,x?:number)=>{const h=await bootCampaign(.75,{city:'sfo'});h.test().goto(block,x);h.step(2);return h;};
@@ -151,4 +152,18 @@ test('Ramps can be walked down without falling, and break section by section',as
  // Sections break: smash the ramp under a section and it is gone as a surface (and the cover with it).
  const n0=h.state().slopes.filter((s:any)=>s.alive!==false).length;h.test().smashSlope(1);h.step(5);
  const sl=h.state().slopes;assert.equal(sl.filter((s:any)=>s.alive).length,n0-1,'one section down');assert.ok(sl.length>=4,'a ramp is built of several sections');
+});
+
+test('Free Play follows the Wharf\'s exits too: out the east end is Alcatraz, out the west end The Fault',async()=>{
+ for(const side of ['west','east'] as const){
+  const p={...emptyPermanent(),unlocked:[...KAIJU]};p.conquered.push('sfo');
+  const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+  try{
+   h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value=String(SAN_FRANCISCO.length&&0);h.node('#free-block').value='5';h.node('#free-boss').value='Mogurodon';h.click('#free-start');h.step(5);h.test().growTo(3);h.step(30);
+   assert.equal(h.state().blockName,"Fisherman's Wharf");const W=h.state().worldWidth;
+   h.test().sinkCutter();h.step(10);
+   h.test().teleport(side==='west'?60:W-h.state().width-60);h.down(side==='west'?'KeyA':'KeyD');h.step(200);h.up(side==='west'?'KeyA':'KeyD');
+   assert.equal(h.state().mode,'results');h.click('#advance');h.step(2);assert.equal(h.state().blockName,side==='west'?'The Fault':'Alcatraz');
+  }finally{h.release();h.cleanup();}
+ }
 });
