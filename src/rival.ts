@@ -5,9 +5,12 @@ import {CAMPAIGN as P,CONFIG as C} from './config.ts';
 import {partHit} from './hitbox.ts';
 import {overlaps,solid,damageBuilding} from './rules.ts';import type {Building} from './rules.ts';
 import {segmentHits} from './military.ts';import type {Rect} from './military.ts';
-export type Rival=Rect&{hp:number,maxHP:number,dead:boolean,face:number,turn:number,cooldown:number,windup:number,attack:'melee'|'ranged',stagger:number,kb:number,shots:{x:number,y:number,vx:number,life:number}[]};
+export type Rival=Rect&{hp:number,maxHP:number,dead:boolean,face:number,turn:number,cooldown:number,windup:number,attack:'melee'|'ranged',stagger:number,kb:number,shots:{x:number,y:number,vx:number,life:number}[],
+ // The Golden Gate finale (src/game.ts): `dormant` = waiting in the fog, untouchable; `hidden` = vanished into the fog (untargetable);
+ // `retreats` = at 0 health it retreats instead of falling (`retreating`, then `retreated` once gone, which also sets `dead`); `alpha` = how visible it is.
+ dormant?:boolean,hidden?:boolean,retreats?:boolean,retreating?:boolean,retreated?:boolean,alpha?:number};
 export function createRival(worldWidth:number,city:number):Rival{const hp=P.bossHP*(1+city*.1);return {x:worldWidth-250,y:groundAt(worldWidth-250+P.bossWidth/2)-P.bossHeight,w:P.bossWidth,h:P.bossHeight,hp,maxHP:hp,dead:false,face:-1,turn:0,cooldown:1.5,windup:0,attack:'melee',stagger:0,kb:0,shots:[]};}
-export function hitRival(r:Rival,damage:number,source='player',strength=0,direction=1){if(r.dead||source!=='player'||damage<=0)return 0;const actual=Math.min(r.hp,damage);r.hp-=actual;if(r.hp<=0){r.dead=true;r.windup=0;r.shots=[];r.kb=0;}else if(strength>=150){r.stagger=.3;r.windup=0;r.kb=direction*strength*.4;}return actual;}
+export function hitRival(r:Rival,damage:number,source='player',strength=0,direction=1){if(r.dead||r.retreating||r.dormant||r.hidden||source!=='player'||damage<=0)return 0;const actual=Math.min(r.hp,damage);r.hp-=actual;if(r.hp<=0&&r.retreats){r.hp=0;r.retreating=true;r.windup=0;r.shots=[];r.kb=0;}else if(r.hp<=0){r.dead=true;r.windup=0;r.shots=[];r.kb=0;}else if(strength>=150){r.stagger=.3;r.windup=0;r.kb=direction*strength*.4;}return actual;}
 export function tickRival(r:Rival,dt:number,player:Rect,worldWidth:number,buildings:Building[]){
  const hits:{damage:number,strength:number,direction:number}[]=[];if(r.dead)return hits;
  const desired=player.x+player.w/2>=r.x+r.w/2?1:-1;
