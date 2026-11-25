@@ -1884,15 +1884,17 @@ function background(){
  // Sun (or moon), low in the sky so it reads behind the skyline.
  {const sx=W*.72-camera*.02,sy=m.lights>.6?150:m.lights>.35?250:170,r=m.lights>.35&&m.lights<.6?46:m.lights>.6?18:30;ctx.globalAlpha=m.lights>.6?.9:.75;
   ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();if(!night){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
- farSkyline(th.style,W,m);
+ if(th.id==='sfo')sfBackdrop(W,m);else{farSkyline(th.style,W,m);
  // Two parallax layers of city in the mood's colours; windows light up as the light goes.
  for(let i=-1,n=W/79+1;i<n;i++){const x=i*79-(camera*.13)%79,h=50+((i+22)*47%115);rect(x,315-h,50,h,m.far);rect(x+18,305-h,10,10,m.far);
   if(night)for(let yy=322-h;yy<310;yy+=12)for(let xx=6;xx<44;xx+=11)if(((i*31+yy*7+xx)>>1)%4===0)rect(x+xx,yy,3,4,m.win+'99');}
  for(let i=-1,n=W/102+1;i<n;i++){const x=i*102-(camera*.26)%102,h=80+((i+17)*37%110);rect(x,370-h,65,h,m.mid);rect(x+4,374-h,56,4,m.far);
   for(let yy=390-h;yy<360;yy+=15)for(let xx=8;xx<59;xx+=15){const on=((i*13+yy*3+xx)>>2)%5<m.lights*4;rect(x+xx,yy,5,7,on?m.win:night?'#1d2536':m.far);}}
+ }
  if(m.smog){ctx.globalAlpha=.28;rect(0,250,W,C.ground-250,'#e8b778');ctx.globalAlpha=1;}
  // Dense near-layer towers crowd the street and close in the skyline. Open layouts skip them so plazas read as open ground.
- if(!openLayout())for(let i=-1,n=W/88+1;i<n;i++){const x=i*88-(camera*.5)%88,h=170+((i+31)*53%150);rect(x,C.ground-4-h,78,h,m.near);rect(x+78,C.ground-4-h,10,h,m.near);rect(x-2,C.ground-4-h,82,5,m.mid);for(let yy=C.ground-h+4;yy<C.ground-20;yy+=17)for(let xx=7;xx<72;xx+=16)rect(x+xx,yy,7,9,(i+yy)%5<1+m.lights*2?m.win:'#2a3540');}
+ if(!openLayout()&&th.id==='sfo')sfNearRow(W,m);
+ else if(!openLayout())for(let i=-1,n=W/88+1;i<n;i++){const x=i*88-(camera*.5)%88,h=170+((i+31)*53%150);rect(x,C.ground-4-h,78,h,m.near);rect(x+78,C.ground-4-h,10,h,m.near);rect(x-2,C.ground-4-h,82,5,m.mid);for(let yy=C.ground-h+4;yy<C.ground-20;yy+=17)for(let xx=7;xx<72;xx+=16)rect(x+xx,yy,7,9,(i+yy)%5<1+m.lights*2?m.win:'#2a3540');}
  if(!hasTerrain()){rect(0,C.ground-4,W,10,'#c9c5ab');rect(0,C.ground+6,W,99,'#4c5755');rect(0,C.ground+8,W,3,'#202e31');
  for(let i=-1,n=W/85+1;i<n;i++)rect(i*85-camera%85,487,37,3,'#b4b294');rect(0,513,W,27+C.ground/zoom,'#34413f');}
  else{// Terrain: the curb, road and roadbed follow the ground profile; earth fills down to the bottom of the view.
@@ -2186,6 +2188,62 @@ function farSkyline(style:string,W:number,m:{far:string,mid:string,win:string,li
   const y=px(1,2200);poly([[y-12,base],[y-4,base-250],[y+4,base-250],[y+12,base]],c);rect(y-8,base-190,16,8,c);rect(y-1,base-290,2,40,c);if(Math.sin(time*3)>0)rect(y-2,base-292,4,4,'#ff5a5a');
   const t2=y+520;poly([[t2-40,base],[t2-4,base-160],[t2+4,base-160],[t2+40,base]],'#a8463a');rect(t2-24,base-80,48,5,'#d8d8d8');rect(t2-12,base-130,24,4,'#d8d8d8');}
  ctx.globalAlpha=1;}
+// ---- San Francisco backdrop: the Bay, hills under fog, the downtown landmarks and painted row houses up the slopes ----
+// Blend two #rrggbb colours (t = 0 gives a, 1 gives b): used to fade the house paint into the fog with distance.
+function mixHex(a:string,b:string,t:number){const p=(s:string)=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16)),A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');}
+const SF_PAINT=['#c9a9a6','#9fb8ad','#e3d3a8','#a7b4c9','#d8b48f','#b9c6a0','#d6b9c9','#e6e0d0'],sfPaint=(k:number)=>SF_PAINT[((k%8)+8)%8];
+// A rolling hill line in a layer's own scrolled space (wx = screen x + that layer's camera offset).
+const sfHill=(wx:number,amp:number)=>amp*(.55+.25*Math.sin(wx*.0042)+.2*Math.sin(wx*.011+1.3));
+// One row house: a narrow frame with a bay window column, sash windows, a cornice (or a Queen Anne gable) and a stoop.
+function sfHouse(x:number,base:number,w:number,h:number,body:string,trim:string,win:string,gable:boolean,detail:boolean){
+ rect(x,base-h,w,h+40,body);rect(x+w-1,base-h,1,h+40,trim);
+ if(gable)poly([[x-1,base-h],[x+w/2,base-h-w*.42],[x+w+1,base-h]],body);else rect(x-1,base-h-2,w+2,3,trim);
+ if(!detail)return;
+ const bay=Math.round(w*.42),bx=x+2;rect(bx,base-h+5,bay,h-12,mixHex(body,'#ffffff',.12));
+ for(let yy=base-h+8;yy<base-10;yy+=13){rect(bx+2,yy,bay-4,7,win);rect(x+bay+5,yy,Math.max(3,w-bay-9),7,win);}
+ rect(x+bay+4,base-7,w-bay-7,7,trim);}
+function sfBackdrop(W:number,m:{far:string,mid:string,win:string,lights:number,bottom:string}){
+ const base=320,fog=m.bottom,c=m.far,f=-camera*.05;
+ // The far layer barely moves across a block (about 5% of the camera), so the landmarks are laid out once across the view, west to east.
+ // The Bay: a strip of water along the horizon, glinting.
+ rect(0,base-22,W,40,mixHex('#6f8f9c',fog,.35));for(let k=0;k<W;k+=37)rect(k+((time*6)%37),base-14+(k%3)*4,12,1,mixHex('#dfe8e6',fog,.3));
+ ctx.globalAlpha=.85;
+ // Marin headlands far left, with the Golden Gate's orange towers just showing (left out where the bridge itself is the level).
+ const g=f-120;
+ poly([[g-200,base-16],[g-40,base-96],[g+60,base-74],[g+170,base-108],[g+330,base-16]],mixHex('#7c8a7e',fog,.45));
+ if(block.name!=='Golden Gate'){const o=mixHex('#c0362c',fog,.35);for(const tx of [g+250,g+420]){rect(tx,base-120,7,104,o);rect(tx-2,base-120,11,3,o);rect(tx,base-92,7,2,mixHex(o,'#000000',.2));}
+  rect(g+190,base-30,300,4,o);ctx.strokeStyle=o;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(g+180,base-28);ctx.quadraticCurveTo(g+300,base-50,g+253,base-118);ctx.quadraticCurveTo(g+336,base-30,g+423,base-118);ctx.quadraticCurveTo(g+460,base-70,g+500,base-28);ctx.stroke();}
+ // Twin Peaks with Sutro Tower: a three-legged mast with crossbars, red lamps blinking at the tips.
+ const t=f+W*.42;poly([[t-260,base],[t-90,base-120],[t-40,base-108],[t,base-126],[t+60,base-104],[t+260,base]],mixHex('#7d897f',fog,.35));
+ {const sx=t,top=base-126-150,leg=(dx:number)=>poly([[sx+dx-3,base-124],[sx+dx*.25-1,top],[sx+dx*.25+1,top],[sx+dx+3,base-124]],c);leg(-26);leg(26);leg(0);
+  for(const [y,hw] of [[top+40,10],[top+56,12],[top+100,18]])rect(sx-hw,y,hw*2,3,c);for(const dx of [-8,0,8])rect(sx+dx-1,top-22,2,22,c);
+  if(Math.sin(time*2.4)>0)for(const dx of [-8,0,8])rect(sx+dx-1,top-24,3,3,'#ff5a4a');}
+ // Downtown: the Bay Bridge's west span off to the right, then Salesforce Tower, the Transamerica Pyramid and Coit Tower on Telegraph Hill.
+ const d=f+W*.68;
+ if(block.name!=='Bay Bridge'){const b=mixHex('#9aa6aa',fog,.25),deck=base-34;rect(d+300,deck,520,4,b);for(const tx of [d+420,d+600,d+760]){rect(tx,deck-78,5,82,b);rect(tx-4,deck-50,13,2,b);}
+  ctx.strokeStyle=b;ctx.beginPath();ctx.moveTo(d+330,deck);ctx.quadraticCurveTo(d+380,deck-30,d+422,deck-78);ctx.quadraticCurveTo(d+512,deck-10,d+602,deck-78);ctx.quadraticCurveTo(d+682,deck-10,d+762,deck-78);ctx.quadraticCurveTo(d+800,deck-30,d+830,deck);ctx.stroke();}
+ for(const [ox,w,h] of [[-70,26,96],[-40,22,120],[60,30,104],[94,20,82],[150,34,74],[190,24,92],[226,30,60]])rect(d+ox,base-h,w,h,c);
+ {const x=d-12;rect(x,base-218,38,218,c);ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,base-218);ctx.quadraticCurveTo(x+19,base-252,x+38,base-218);ctx.fill();
+  if(m.lights>.4)for(let yy=base-210;yy<base;yy+=9)rect(x+4,yy,30,2,m.win+'77');}
+ {const x=d+32;poly([[x-14,base],[x+4,base-176],[x+6,base-196],[x+8,base-176],[x+26,base]],c);rect(x-10,base-120,6,26,c);rect(x+16,base-120,6,26,c);}
+ {const x=d+300;poly([[x-110,base],[x-30,base-64],[x+30,base-66],[x+110,base]],mixHex('#7f8b80',fog,.3));rect(x-6,base-108,12,44,c);rect(x-8,base-110,16,4,c);for(let k=-4;k<5;k+=3)rect(x+k,base-104,1,38,mixHex(c,'#ffffff',.2));}
+ ctx.globalAlpha=1;
+ // Karl the fog: a soft bank rolling over the ridgelines, drifting slowly.
+ ctx.fillStyle='#eef1ec';for(let k=0;k<9;k++){const fx=((k*190+time*9-camera*.04)%(W+380)+W+380)%(W+380)-190,fy=base-112+(k*37%40);ctx.globalAlpha=.22;ctx.beginPath();ctx.ellipse?.(fx,fy,150,26,0,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;
+ // Far slopes: a carpet of small pastel houses climbing the hills, faded by the fog.
+ {const off=camera*.13,hb=316;ctx.fillStyle=mixHex('#86948a',fog,.45);ctx.beginPath();ctx.moveTo(-10,hb);for(let x=-10;x<=W+10;x+=10)ctx.lineTo(x,hb-sfHill(x+off,70));ctx.lineTo(W+10,hb);ctx.closePath();ctx.fill();
+  const step=14;for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const wx=i*step,x=wx-off,top=hb-sfHill(wx+step/2,70)+3,hh=8+(i*7%5);
+   const col=mixHex(sfPaint(i*5),fog,.5);rect(x,top-hh,step-2,hh+4,col);rect(x,top-hh-1,step-2,1,mixHex(col,'#ffffff',.3));
+   if(m.lights>.4&&i%3===0)rect(x+4,top-hh+3,3,3,m.win);}}
+ // Middle slopes: rows of Victorians stepping up and down the hills.
+ {const off=camera*.26,hb=372,step=30;ctx.fillStyle=mixHex('#7a877c',fog,.3);ctx.beginPath();ctx.moveTo(-10,hb);for(let x=-10;x<=W+10;x+=10)ctx.lineTo(x,hb-sfHill(x+off+900,95));ctx.lineTo(W+10,hb);ctx.closePath();ctx.fill();
+  for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const wx=i*step,x=wx-off,b=hb-sfHill(wx+step/2+900,95)+4,h=30+((i*13)%4)*7;
+   const body=mixHex(sfPaint(i*3),fog,.28);sfHouse(x,b,step-1,h,body,mixHex(body,'#ffffff',.35),m.lights>.4?m.win:mixHex(body,'#3b4650',.45),i%4===1,true);}}
+}
+// Near row: taller three-storey painted ladies (bay windows, cornices, gables) in place of the midtown towers, darker so playable buildings read in front.
+function sfNearRow(W:number,m:{near:string,win:string,lights:number}){const step=64,off=camera*.5;
+ for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const x=i*step-off,h=76+((i*53)%5)*12,body=mixHex(sfPaint(i*7),m.near,.55);
+  sfHouse(x,C.ground-4,step-2,h,body,mixHex(body,'#ffffff',.25),(i+h)%5<1+m.lights*3?m.win:mixHex(body,'#1f2830',.5),i%3===2,true);}}
 // Rain (Tokyo): streaks across the whole view, drawn in screen space over everything.
 function drawRain2(){if(!CITIES[cityIndex].mood.rain)return;ctx.strokeStyle='#a9c4dd55';ctx.lineWidth=1;ctx.beginPath();
  for(let k=0;k<90;k++){const x=((k*97+time*260)%1000)-20,y=((k*53+time*900)%600)-40;ctx.moveTo(x,y);ctx.lineTo(x-4,y+14);}ctx.stroke();}
