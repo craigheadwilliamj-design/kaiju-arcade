@@ -80,7 +80,11 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  buses?:number[],elevatedLook?:'park'|'freeway',ramps?:[number,number][],coastguard?:number[],
  // Phase 5 (SF Act 3), all opt-in. See the notes below.
  cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,approach?:number,deckApproach?:number,
- finale?:{x:number,wake:number,breaks:number[]},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][]};
+ finale?:{x:number,wake:number,breaks:number[]},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
+ // Phase 6 (Alcatraz), all opt-in. `exitAt`: the destruction a district needs before its exits open (default CONFIG.exitThreshold).
+ // `secretId`: clearing this secret level in the campaign unlocks it in Free Play and adds its gallery entry (src/campaign.ts).
+ // `lore`: one results-screen line. `hazmat`: this level's soldiers are drawn in hazmat suits (a reskin, nothing else changes).
+ exitAt?:number,secretId?:string,lore?:string,hazmat?:boolean};
 // Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
 // (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
 // over an underground garage: a slam caves it into a pit of parked cars. `police`: helicopters and soldiers here are drawn as police / SWAT.
@@ -115,7 +119,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `ground`: the street profile as world [x, y] points (src/terrain.ts); absent = flat.
 // Third entry element: a landmark's name (key 'L'), 'cache', or a rooftop fixture ('radar' / 'tank').
 // Façade decoration tags (the third entry element): drawn by drawDeco in src/game.ts.
-const DECOS=new Set(['cellblock','guardtower','shed','brick','fireworks','store','hotel','post','carousel','factory','sub','freighter','crabshack','wall','tallship','powerhouse','vault']);
+const DECOS=new Set(['shed','brick','fireworks','store','hotel','post','carousel','factory','sub','freighter','crabshack','wall','tallship','powerhouse','vault']);
 type Entry=[number,keyof typeof BUILDING_PRESETS]|[number,keyof typeof BUILDING_PRESETS,string];
 const LANDMARK_COLORS=['#c3b48d','#b7a37c','#a9a9a0'];
 // Named NYC landmarks: authored tier silhouettes on the 190-wide 'L' footprint, drawn tier by tier from these parts, authored scale, bottom tier first. Every tier is a roof you can stand on
@@ -473,28 +477,40 @@ function sfGoldenGate():BlockDef{
   units:[['soldier',sc(500)],['apc',sc(800)],['tank',sc(900)],['soldier',sc(950)],['tank',sc(1100)],['artillery',sc(1250)],['emplacement',sc(780)],['emplacement',sc(1040)],
    ['soldier',sc(1300)],['tank',sc(1350)],['jet',sc(1200)],['helicopter',sc(1000),560],['helicopter',sc(1500),600],['bomber',sc(1700),560]]};
 }
-// Level 10 (secret). Alcatraz, reached across the bay from the Wharf's east exit. Fog off the water, a ferry dock at the landing, the bay,
-// then the island itself in three terraces: the guards' quarters at the landing, the administration building, and on the summit the
-// long cellhouse (water tower on its end) behind a prison wall; the lighthouse stands on the far terrace over the east shore. Guard towers
-// along the walls, the full military (tanks, artillery, emplacements, gunships) stationed up the slope. No street, no traffic, no crowd.
+// Level 10. Alcatraz (secret): a rock rising from the bay, 4 screens, west to east. A land spit (west exit), the cove (the dock approach: a
+// ford every stage can wade, Coast Guard boats circling), the dock apron, the switchback road up three terraces (guard tower; the old water
+// tower), the cellhouse on the summit (a secret crystal containment site: workbenches, a crystal cluster, soldiers in hazmat gear,
+// helicopters overhead, a fuel cell schematic and a surveillance photo of Kaiban pinned on its wall) and the lighthouse at the far end.
+// Both exits stand on land at the island's edges, so a kaiju shrunk to Stage 2 is never stranded by water. Existing systems only.
+export const ALCATRAZ={cove:[170,1060] as [number,number],depth:40,ramps:[[1500,1690],[2080,2270],[2600,2790],[3400,3590]] as [number,number][],rises:[0,70,140,210,140] as number[],
+ spit:[0,170] as [number,number],start:110,exitAt:.9,crystal:3345,lore:'PROJECT MK: FUEL SOURCE CONFIRMED.'};
 function sfAlcatraz():BlockDef{
- const W=4*960,SHORE=[3420,3840] as const;
- let b=district('sfo','Alcatraz',4,[],[],[],'district');
- // Terrain (authored x, rise): the landing, a slip of water, the island's terraces and their ramps, the east shore and the bay beyond it.
- b=terrain(b,[[0,0],[470,0],[540,-26],[700,-26],[770,0],[1270,0],[1430,70],[2000,70],[2160,130],[3000,130],[3160,60],[3400,60],[3500,-26],[W,-26]]);
- const guardTower=(x:number)=>hall(x,46,230,'','#8a8f8a','guardtower',220,[{x:14,w:18,top:150},{x:0,w:46,top:230,base:150}]);
- const house=(x:number,w:number,h:number,label:string,hp:number)=>hall(x,w,h,label,'#a39e90','cellblock',hp);
- const cellhouse=hall(2230,430,300,'CELLHOUSE','#9b988e','cellhouse',1200),lighthouse=hall(3190,150,330,'LIGHTHOUSE','#ece8dc','lighthouse',700);
- for(const l of [cellhouse,lighthouse]){l.landmark=true;l.shape=l===cellhouse?'cellhouse':'lighthouse';l.kind='large';l.value=1000;l.parts=shapeParts(l.shape,'nyc',l.w,l.h);}
- const walls=[2670].map(x=>scaled({x,w:190,h:96,hp:200,value:150,kind:'medium' as const,label:'',color:'#8d8c84',deco:'wall'}));
- const barriers=[1180,1900].map(x=>scaled({...BUILDING_PRESETS.b,x,label:'BARRIER',color:'#8d8f86'}));
- const props=[hall(180,200,90,'DOCK OFFICE','#7e8a82','shed',200),house(830,170,130,'GUARD HOUSE',260),guardTower(1040),house(1480,250,150,'ADMINISTRATION',340),guardTower(1800),guardTower(2170),house(2870,120,140,'WARDEN',300),...walls,...barriers,cellhouse,lighthouse];
- b={...b,buildings:props.sort((p,q)=>p.x-q.x)};
- return {...b,name:'Alcatraz',startStage:3,cap:3,tier:5,secret:true,after:'The Fault',
-  water:[[sc(470),sc(770),CONFIG.ground+6],[sc(SHORE[0]),sc(SHORE[1]),CONFIG.ground+6]],bands:true,boats:[sc(620),sc(3650)],
-  fog:{from:sc(300),to:sc(3600),max:.5},
-  // The Guard's last stand up the slope: soldiers and APCs at the landing, tanks and emplacements on the terraces, artillery and gunships over the summit.
-  units:[['soldier',sc(900)],['apc',sc(1050)],['soldier',sc(1200)],['tank',sc(1550)],['emplacement',sc(1750)],['soldier',sc(1900)],['tank',sc(2300)],['artillery',sc(2550)],['emplacement',sc(2650)],['soldier',sc(2850)],['tank',sc(3100)],['helicopter',sc(2200),480],['helicopter',sc(2900),520],['artillery',sc(3250)]]};
+ const A=ALCATRAZ,base=district('sfo','Alcatraz',4,[],[],[]),land=(r:number)=>CONFIG.ground-sc(r),bed=(d:number)=>CONFIG.ground+6+d;
+ // Authored [x, y] points: land is a rise above the dock, the cove's bed is world units below the surface (like the Wharf's bay).
+ const pts:[number,number][]=[[0,land(0)],[A.cove[0],land(0)],[300,bed(24)],[420,bed(A.depth)],[800,bed(A.depth)],[940,bed(24)],[A.cove[1],land(0)]];
+ pts.splice(0,pts.length,...pts.map(([x,y])=>[sc(x),y] as [number,number]));
+ const [t0,t1,t2,t3,t4]=A.rises;pts.push([sc(A.ramps[0][0]),land(t0)],[sc(A.ramps[0][1]),land(t1)],[sc(A.ramps[1][0]),land(t1)],[sc(A.ramps[1][1]),land(t2)],[sc(A.ramps[2][0]),land(t2)],[sc(A.ramps[2][1]),land(t3)],
+  [sc(A.ramps[3][0]),land(t3)],[sc(A.ramps[3][1]),land(t4)],[sc(3840),land(t4)]);
+ const pre=(key:keyof typeof BUILDING_PRESETS,x:number,color:string,extra:Partial<BuildingSpec>={}):BuildingSpec=>scaled({...BUILDING_PRESETS[key],x,label:'',color,...extra});
+ const bench=(x:number)=>scaled({x,w:24,h:22,hp:14,value:30,kind:'tiny' as const,label:'',color:'#7a6a4a',prop:'workbench'});
+ const buildings:BuildingSpec[]=[
+  // The dock: a boathouse and a Coast Guard shed on the apron.
+  hall(1090,190,96,'','#6b5a48','boathouse',200),pre('s',1340,'#8a8f8c'),
+  // Terrace 1: the guard tower and the barracks.
+  hall(1730,56,210,'','#8d8f86','guardtower',220),pre('r',1860,'#9a8f7a'),
+  // Terrace 2: the old water tower (its tank floods the slope when broken) and a storehouse.
+  pre('s',2310,'#8a7f70',{roof:'tank',label:'WATER TOWER'}),pre('m',2450,'#85806f'),
+  // The summit: workbenches, the cellhouse, and the crystal beside it.
+  bench(2790),bench(2818),hall(2850,420,260,'','#9a9a90','cellhouse',900),
+  // The far end: the lighthouse and the keeper's house.
+  hall(3610,64,340,'','#e6e2d6','lighthouse',330),pre('s',3680,'#a89a82'),
+ ];
+ return {...base,buildings,ground:pts,water:[[sc(A.cove[0]),sc(A.cove[1]),CONFIG.ground+6]],bands:true,ramps:A.ramps.map(([a,z])=>[sc(a),sc(z)] as [number,number]),
+  startStage:3,cap:3,tier:5,secret:true,after:'The Fault',start:sc(A.start),exitAt:A.exitAt,secretId:'alcatraz',lore:A.lore,hazmat:true,crystal:sc(A.crystal),
+  coastguard:[480,650,820].map(sc),
+  // Hazmat soldiers round the cellhouse, helicopters over the summit; a Guard squad guards the dock.
+  units:[['soldier',sc(1450)],['soldier',sc(1560)],['soldier',sc(2350)],['tank',sc(2520)],['soldier',sc(2740)],['soldier',sc(2900)],['soldier',sc(3010)],['soldier',sc(3150)],['soldier',sc(3250)],
+   ['helicopter',sc(2500),520],['helicopter',sc(3000),620],['helicopter',sc(3550),560]]};
 }
 export const SAN_FRANCISCO:BlockDef[]=[
  sfEmbarcadero(),

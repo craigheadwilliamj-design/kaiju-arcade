@@ -58,7 +58,7 @@ export function checkParts(b:Shape):string[]{if(!b.parts?.length)return [];const
  return out;
 }
 
-// Parts for the drawn landmark silhouettes ('tower', 'lattice', 'dome', 'twin', 'arch', 'needle', 'pagoda', 'cellhouse', 'lighthouse'), sized to the
+// Parts for the drawn landmark silhouettes ('tower', 'lattice', 'dome', 'twin', 'arch', 'needle', 'pagoda'), sized to the
 // building's world w and h and matching what drawLandmarkShape (src/game.ts) paints for that city style. Change one, change both.
 // Lattices and arches keep their openings: small kaiju can walk through the gap under the Eiffel Tower or an arch.
 export function shapeParts(shape:string,style:string,w:number,h:number):Part[]{
@@ -76,10 +76,6 @@ export function shapeParts(shape:string,style:string,w:number,h:number):Part[]{
     // Narrow columns follow its outline (each as tall as the outline at its centre), so the hitbox is the silhouette rather than a block.
     const N=8,cw=bw/N,out:Part[]=[];for(let k=0;k<N;k++){const m=(k+.5)*cw,top=m<=c?h*(.7+.3*m/c):h*(1-.15*(m-c)/(bw-c));out.push(P(k*cw,cw,top));}
     out.push(P(c-bw*.3-1,2,h+28,.7*h-4,true),P(c+bw*.3-1,2,h+28,.7*h-4,true));return out;}
-  // Alcatraz: the long cellhouse (a low body, a taller hall on it, a water tower on legs at one end) and the lighthouse (a keeper's house,
-  // a tapering tower, gallery, lantern room and cap). Drawn by drawLandmarkShape with these same numbers.
-  case 'cellhouse':return [P(0,bw,.6*h),P(bw*.08,bw*.62,.82*h),P(bw*.79,bw*.08,.82*h),P(bw*.72,bw*.22,h,.8*h)];
-  case 'lighthouse':return [P(c-bw*.42,bw*.84,.3*h),P(c-bw*.18,bw*.36,.78*h),P(c-bw*.26,bw*.52,.82*h,.76*h),P(c-bw*.14,bw*.28,.93*h),P(c-bw*.08,bw*.16,h,.9*h),P(c-1,2,h+14,h-2,true)];
   // Pagoda tiers are the drawn walls (76% of each tier); the eaves are trim.
   case 'pagoda':{const parts:Part[]=[];for(let t=0;t<5;t++){const tw=bw*(1-t*.13)*.76;parts.push(P(c-tw/2,tw,(t+1)*.16*h));}parts.push(P(c-2,4,h,.8*h-4,true));return parts;}
   // 'tower': the box with the stepped crown and spire drawn above it.
