@@ -22,6 +22,12 @@ function profileAt(x:number){
  for(let i=1;i<points.length;i++){const [x1,y1]=points[i];if(x<=x1){const [x0,y0]=points[i-1];return x1===x0?y1:y0+(y1-y0)*(x-x0)/(x1-x0);}}
  return points[points.length-1][1];
 }
+// Platforms: floors above the street that ground units stand on (the upper deck of a double-deck bridge). Only a unit already at or above one
+// is lifted onto it, so units on the road below walk under it. The kaiju and vehicles ignore them (the deck is a building to them).
+export type Platform={x0:number,x1:number,y:number,alive:boolean};
+let platforms:Platform[]=[];
+export function setPlatforms(p:Platform[]){platforms=p;}
+export function platformFloor(x:number,feet:number){for(const p of platforms)if(p.alive&&x>=p.x0&&x<p.x1&&feet<=p.y+6)return p.y;return null;}
 export function deckAt(x:number){for(const d of decks)if(d.alive&&x>=d.x0&&x<d.x1)return d;return null;}
 export function pitAt(x:number){for(const p of pits)if(x>=p.x0&&x<p.x1)return p;return null;}
 export function groundAt(x:number){
