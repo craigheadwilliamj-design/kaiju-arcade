@@ -21,6 +21,9 @@ function entry(b:Shape){
 export function hitParts(b:Shape):readonly HitPart[]{return entry(b).all;}
 // Solid parts only: what bodies collide with, stand on and climb.
 export function solidParts(b:Shape):readonly HitPart[]{return entry(b).solid;}
+// A landmark that has lost floors (a sheared roof, a pancaked storey) is only as tall as it is now: cut every part to height H,
+// dropping the ones that stood wholly above it.
+export function clipParts(parts:readonly Part[],H:number):Part[]{return parts.filter(p=>(p.base??0)<H).map(p=>p.top>H?{...p,top:H}:p);}
 // The whole building's bounding box (street up to its highest part).
 export function bounds(b:Shape):Box{return {x:b.x,y:(b.base??CONFIG.ground)-b.h,w:b.w,h:b.h};}
 
@@ -69,7 +72,10 @@ export function shapeParts(shape:string,style:string,w:number,h:number):Part[]{
   case 'arch':{const top=style==='mex'?.7*h:.75*h,aw=bw*.42,open=.42*h+aw/2,parts=[P(0,c-aw/2,top),P(c+aw/2,bw-c-aw/2,top),P(0,bw,top,open)];
    if(style==='mex')parts.push(P(c-bw*.22,bw*.44,.86*h,top-2),P(c-3,6,h,.86*h-2,true));return parts;}
   case 'needle':if(style==='tyo')return [P(bw*.2,bw*.6,.4*h),P(c-bw*.18,bw*.36,.7*h),P(c-18,36,.72*h),P(c-14,28,.85*h),P(c-7,14,h-30),P(c-2,4,h+40,h-34,true)];
-   return [P(0,bw,.7*h),P(bw*.2,bw*.8,.85*h),P(c-bw*.12,bw*.24,h),P(c-bw*.3-1,2,h+28,.7*h-4,true),P(c+bw*.3-1,2,h+28,.7*h-4,true)];
+   {// The drawn lattice is a polygon: straight up the left edge to 0.7h, rising to the peak over the middle and falling to 0.85h on the right.
+    // Narrow columns follow its outline (each as tall as the outline at its centre), so the hitbox is the silhouette rather than a block.
+    const N=8,cw=bw/N,out:Part[]=[];for(let k=0;k<N;k++){const m=(k+.5)*cw,top=m<=c?h*(.7+.3*m/c):h*(1-.15*(m-c)/(bw-c));out.push(P(k*cw,cw,top));}
+    out.push(P(c-bw*.3-1,2,h+28,.7*h-4,true),P(c+bw*.3-1,2,h+28,.7*h-4,true));return out;}
   // Pagoda tiers are the drawn walls (76% of each tier); the eaves are trim.
   case 'pagoda':{const parts:Part[]=[];for(let t=0;t<5;t++){const tw=bw*(1-t*.13)*.76;parts.push(P(c-tw/2,tw,(t+1)*.16*h));}parts.push(P(c-2,4,h,.8*h-4,true));return parts;}
   // 'tower': the box with the stepped crown and spire drawn above it.

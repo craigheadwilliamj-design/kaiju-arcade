@@ -1,4 +1,4 @@
-import {groundAt} from './terrain.ts';
+import {groundAt,streetAt,waterAt} from './terrain.ts';
 import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F} from './config.ts';
 
 // Civilian vehicles: parked cars, passing traffic, and anything the kaiju punts, carries or throws.
@@ -9,7 +9,8 @@ export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'sta
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat'|'rolling'|'cable';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean,line?:[number,number],plows?:number};
+ damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean,line?:[number,number],plows?:number,chunk?:{shape:string,H:number,cut:number}};
+// chunk: a sheared-off top of a shaped landmark: the shape it was cut from, that shape's full height and how far up it was cut.
 // pole: a power pole (lamp-kind prop) on that grid index; snapped once it has been knocked out of upright.
 export const VEHICLE_SPECS={
  // Sized to sit with the military's road vehicles (patrol car 48x23, APC 52x26, tank 59x31).
@@ -72,7 +73,8 @@ export function createParked(xs:number[]):Vehicle[]{
  xs.forEach((x,i)=>{let end=x+VEHICLE_SPECS[out[i].kind].w;const limit=Math.min(...xs.filter(o=>o>x),Infinity)-V.parkedGap;
   for(let k=1;k<=V.parkedRow;k++){const r=(i*3+k)%7,kind:VehicleKind=r===0?'bus':r===3||r===5?'van':'car',start=end+V.parkedGap;
    if(start+VEHICLE_SPECS[kind].w>limit)break;const v=make(id++,kind,start,(k%2) as 0|1,COLORS[(i+k*2)%COLORS.length]);out.push(v);end=v.x+v.w;}});
- return out;}
+ // Nothing is left parked out on a pier or in the water.
+ return out.filter(v=>!onWater(v.x)&&!onWater(v.x+v.w));}
 // Street lamps keep the old backdrop spacing (every lampSpacing px from the west edge), now as real props.
 export function createLamps(worldWidth:number,firstId:number):Vehicle[]{const out:Vehicle[]=[];for(let x=V.lampSpacing,i=0;x<worldWidth-40;x+=V.lampSpacing,i++)out.push(make(firstId+i,'lamp',x-2,0,'#44575a'));return out;}
 // Power poles: taller lamp-kind props on a grid, strung with wires between neighbours.
@@ -89,13 +91,19 @@ export function spawnTraffic(id:number,camera:number,dir:1|-1,rng:()=>number,vie
 }
 
 // Drivers cruise until the kaiju is ahead, brake hard, then U-turn and flee faster.
+// Traffic keeps to the road: nothing drives out over water, which takes in the piers and docks standing in it.
+export function onWater(x:number){return waterAt(x)!==null;}
 export function tickDriving(v:Vehicle,dt:number,kaijuX:number){
  if(v.state!=='driving')return;
+ // At the water's edge the driver turns round (a car already over water heads for the nearest shore).
+ const mid=v.x+v.w/2;
+ if(onWater(mid)){let d=0;for(let k=20;k<4000;k+=20)if(!onWater(mid-k)){d=-1;break;}else if(!onWater(mid+k)){d=1;break;}if(d)v.dir=d;}
+ else if(onWater(mid+v.dir*(v.w/2+36))){v.dir=-v.dir;v.speed=Math.min(v.speed,v.cruise*.6);}
  const ahead=(kaijuX-(v.x+v.w/2))*v.dir;
  if(v.panic===0&&ahead>0&&ahead<V.panicRange)v.panic=1;
  if(v.panic===1){v.speed=Math.max(0,v.speed-V.panicDecel*dt);if(v.speed===0){v.dir=-v.dir;v.panic=2;}}
  else if(v.panic===2)v.speed=Math.min(v.cruise*V.panicSpeed,v.speed+V.panicDecel*.6*dt);
- v.x+=v.dir*v.speed*dt;v.y=groundAt(v.x+v.w/2)-v.h;
+ v.x+=v.dir*v.speed*dt;v.y=streetAt(v.x+v.w/2)-v.h;
 }
 
 export function launch(v:Vehicle,vx:number,vy:number,damage:number){

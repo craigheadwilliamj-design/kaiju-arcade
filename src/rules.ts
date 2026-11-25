@@ -14,6 +14,8 @@ function floorStack(b:BuildingSpec){const n=Math.round(b.h/FLOORS.floorHeight);i
  const max=b.hp/n*FLOORS.integrity;return {floors:Array(n).fill(max),floorMax:max};}
 // Small enough for the kaiju to pick up whole (newsstands, stronghold barricades); Stage 3 can lift small buildings too.
 export function liftable(b:Building,stage=1){if(b.hpNow<=0||b.lifted||b.role==='hydrant')return false;if(b.h<=FEEL.liftHeight)return true;
+ // Trees come up by the roots at every stage, however tall: they are uprooted and carried like a lamppost.
+ if(b.prop==='palm')return true;
  return stage>=3&&!b.landmark&&b.h<=FEEL.liftHeightStage3&&b.w<=FEEL.liftWidthStage3;}
 export function canTopple(b:Building){return b.kind!=='tiny'&&b.h>=FEEL.toppleMinHeight;}
 // Ground span [from,to] a fallen building covers: its pivot edge out to its full height in the fall direction.
@@ -28,13 +30,13 @@ export function damageBuilding(b:Building,amount:number,source='player'):{damage
  return {damage,points:destroyed&&source==='player'?b.value*10:0,destroyed};
 }
 export function destruction(buildings:Building[]):number {const total=buildings.reduce((n,b)=>n+b.value,0);return total?buildings.reduce((n,b)=>n+(b.rewarded?b.value:0),0)/total:0;}
-export function exitUnlocked(buildings:Building[]):boolean{return destruction(buildings)>=CONFIG.exitThreshold;}
+export function exitUnlocked(buildings:Building[],threshold=CONFIG.exitThreshold):boolean{return destruction(buildings)>=threshold;}
 export function perfectBonus(buildings:Building[]):number{return destruction(buildings)===1?CONFIG.perfectBonus:0;}
 export function solid(b:Building):boolean{return b.kind!=='tiny'&&(b.hpNow>0||b.creak>0);}
 export function overlaps(a:{x:number,y:number,w:number,h:number},b:{x:number,y:number,w:number,h:number}){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
 
 export type CrystalObjective={x:number,hp:number,maxHP:number,shattered:boolean};
-export function canExitBlock(kind:'district'|'stronghold'|'boss',buildings:Building[],objective:CrystalObjective|null){return kind==='district'?exitUnlocked(buildings):kind==='stronghold'?!!objective?.shattered:false;}
+export function canExitBlock(kind:'district'|'stronghold'|'boss',buildings:Building[],objective:CrystalObjective|null,threshold=CONFIG.exitThreshold){return kind==='district'?exitUnlocked(buildings,threshold):kind==='stronghold'?!!objective?.shattered:false;}
 export function damageObjective(objective:CrystalObjective,damage:number,shardCount:number,source='player'){
  if(objective.shattered||damage<=0||source!=='player')return 0;
  objective.hp=Math.max(0,objective.hp-damage);if(objective.hp>0)return 0;
