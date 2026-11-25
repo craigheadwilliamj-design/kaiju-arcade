@@ -82,7 +82,7 @@ const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
 const MX1_NATIVE={scale:116/256,anchor:70+128*116/256};
 // Myrmex Stage 1 attack strips: the same base shifted 40px left (origin at x=30) for room in front of the mandibles.
 const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
-// Myrmex Stage 1 form: the movement set (idle, walk, run, jump, crouch), the light combo, the heavy, the Venom Bomb, the Sting Dive, the climb and grab/carry/throw so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Myrmex Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
  // Run (Shift / double-tap): a low scuttling tripod-gait run, closed on the base. Same timing as Stage 2's run.
@@ -124,7 +124,13 @@ const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-i
  grab:{src:'assets/myrmex-s1-grab.png',frames:9,fps:22,once:true,bite:true,...MX1_LEFT,hold:[[145,179],[145,179],[145,179],[145,179],[145,179],[145,179],[145,179],[145,166],[145,146]]},
  carry:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,bite:true,...MX1_NATIVE,hold:[[185,146],[185,145],[185,144],[185,142],[185,141],[185,142],[185,144],[185,145]]},
  carryWalk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,bite:true,...MX1_NATIVE,hold:[[185,146],[185,147],[185,146],[185,145],[185,149],[185,144],[185,145],[185,147],[185,146],[185,146],[185,145],[185,144],[185,143],[185,144],[185,144],[185,146]]},
- throw:{src:'assets/myrmex-s1-throw.png',frames:6,fps:18,once:true,...MX1_LEFT}}};
+ throw:{src:'assets/myrmex-s1-throw.png',frames:6,fps:18,once:true,...MX1_LEFT},
+ // The Swarm (his Ultimate, U; 256x256, the game draws the drones): charge hunches as the abdomen pulses purple (13 frames = swarmCharge);
+ // roar keeps the closed-jaw charge body and bursts a magenta starburst over the abdomen (drones pour out of `mouth`, the burst core, on
+ // impact frame 4); pound loops the charge's last four frames; settle is the hunch reversed back to standing.
+ ultCharge:{src:'assets/myrmex-s1-ult-charge.png',frames:13,fps:20,once:true,...MX1_NATIVE},
+ ultRoar:{src:'assets/myrmex-s1-ult-roar.png',frames:8,fps:18,once:true,impact:4,...MX1_NATIVE,mouth:[105,164]},
+ ultPound:{src:'assets/myrmex-s1-ult-pound.png',frames:4,fps:10,...MX1_NATIVE},ultSettle:{src:'assets/myrmex-s1-ult-settle.png',frames:8,fps:14,once:true,...MX1_NATIVE}}};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
@@ -812,8 +818,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
   stages:{1:BELIAL_S1,3:BELIAL_S3}},
  // Myrmex (red winged scorpion-ant: curled tail with a glowing venom stinger (poison, not fire), orange wasp wings, long neck, two long hind legs, small
- // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form; Stage 1 (MYRMEX_S1) is being filled in and borrows
- // these strips meanwhile, and Stage 3 still draws this. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
+ // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form; Stage 1 (MYRMEX_S1) has its own complete set,
+ // and Stage 3 still draws this. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
  Myrmex:{width:120,anims:{idle:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,...MX2_NATIVE},
   walk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,...MX2_NATIVE},
   // Run (Shift / double-tap): a low scuttling trot from the rig, diagonal pairs together, with a brief flight phase.
