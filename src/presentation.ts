@@ -77,6 +77,60 @@ const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
 const MX2_NATIVE={scale:146/256,anchor:55+128*146/256};
 // Myrmex Stage 2 PixelLab attack strips: the base shifted 40px left (origin at x=15) for room in front of the snout.
 const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
+// Myrmex Stage 1 strips: the myrmex-s1 base still, a 116x74 young wingless ant (six long clawed legs, wing buds, short purple-tipped
+// stinger) keyed from the user's render with tools/key_render.py, origin at x=70 in a 256x192 frame.
+const MX1_NATIVE={scale:116/256,anchor:70+128*116/256};
+// Myrmex Stage 1 attack strips: the same base shifted 40px left (origin at x=30) for room in front of the mandibles.
+const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
+// Myrmex Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
+const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
+ walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
+ // Run (Shift / double-tap): a low scuttling tripod-gait run, closed on the base. Same timing as Stage 2's run.
+ run:{src:'assets/myrmex-s1-run.png',frames:12,fps:20,...MX1_NATIVE},
+ // Jump (he keeps the floaty jump and two air jumps at every stage, MOVE.myrmex*): rise crouches and springs with the legs tucking and
+ // the wing buds flicking up; the air loop buzzes the buds with the legs dangling; jumpFlap (each air jump) beats the buds down as the
+ // legs kick; land soaks up the impact back to the base. Bottom-aligned (physics moves the sprite).
+ jumpRise:{src:'assets/myrmex-s1-jump-rise.png',frames:9,fps:24,once:true,...MX1_NATIVE},jumpAir:{src:'assets/myrmex-s1-jump-air.png',frames:4,fps:12,...MX1_NATIVE},
+ jumpFlap:{src:'assets/myrmex-s1-jump-flap.png',frames:5,fps:20,once:true,...MX1_NATIVE},jumpLand:{src:'assets/myrmex-s1-jump-land.png',frames:5,fps:20,once:true,...MX1_NATIVE},
+ // Crouch (shared timing): down flattens him onto six splayed legs, 74px tall down to 48 (0.65), head dipped; the loop breathes with
+ // twitching antennae; up is down reversed.
+ crouchDown:{src:'assets/myrmex-s1-crouch-down.png',frames:5,fps:22,once:true,...MX1_NATIVE},crouch:{src:'assets/myrmex-s1-crouch.png',frames:4,fps:6,...MX1_NATIVE},
+ crouchUp:{src:'assets/myrmex-s1-crouch-up.png',frames:5,fps:22,once:true,...MX1_NATIVE},
+ // Light combo (bite, bite, sting; shared 24/21/20 fps, each ends on the shifted base): a rearing snap bite, a low lunging bite, then
+ // the belly sting: he has no tail to swing overhead, so the abdomen curls under him and sprays purple venom forward between his legs.
+ light1:{src:'assets/myrmex-s1-light1.png',frames:9,fps:24,once:true,...MX1_LEFT},light2:{src:'assets/myrmex-s1-light2.png',frames:9,fps:21,once:true,...MX1_LEFT},
+ light3:{src:'assets/myrmex-s1-light3.png',frames:9,fps:20,once:true,...MX1_LEFT},
+ // Heavy, a charged belly sting (shared heavy timing): rear braces and curls the abdomen under him with venom beading on the stinger;
+ // hold quivers as the bead swells and drips; slam blasts a purple venom jet into a splash on the street and settles. Pound reuses the slam.
+ heavyRear:{src:'assets/myrmex-s1-heavy-rear.png',frames:5,fps:20,once:true,...MX1_LEFT},heavyHold:{src:'assets/myrmex-s1-heavy-hold.png',frames:4,fps:10,...MX1_LEFT},
+ heavySlam:{src:'assets/myrmex-s1-heavy-slam.png',frames:8,fps:16,once:true,...MX1_LEFT},pound:{src:'assets/myrmex-s1-heavy-slam.png',frames:8,fps:16,once:true,...MX1_LEFT},
+ // Venom Bomb (L, held; the game draws the bomb): brew straightens the legs to stand tall and tucks the abdomen under him as a glossy
+ // purple bubble swells on the stinger low between the hind legs; hold wobbles and drips it; throw swings the abdomen forward under the
+ // body (the flying bubble erased) and settles to standing height. `mouth` is the stinger tip on the release frame.
+ spitBrew:{src:'assets/myrmex-s1-spit-brew.png',frames:5,fps:8,once:true,...MX1_LEFT},spitHold:{src:'assets/myrmex-s1-spit-hold.png',frames:4,fps:8,...MX1_LEFT},
+ spitThrow:{src:'assets/myrmex-s1-spit-throw.png',frames:6,fps:18,once:true,impact:1,...MX1_LEFT,mouth:[104,172]},
+ // Sting Dive (his Slam, S in the air): dive swings the abdomen under him and drops stinger-first like an attacking wasp, tilting
+ // forward to 25 degrees off vertical, purple glow trailing off the stinger, held on the last; slamLand punches the stinger into the
+ // street in a purple burst, tips him forward onto his legs and stands him up. Bottom-aligned.
+ dive:{src:'assets/myrmex-s1-dive.png',frames:4,fps:24,once:true,...MX1_NATIVE},slamLand:{src:'assets/myrmex-s1-slam-land.png',frames:8,fps:16,once:true,...MX1_NATIVE},
+ // Climb (256x256 frames, shared climb timing; feet on the wall line at frame x=151, the hitbox edge): climb is his own walk turned a
+ // quarter counter-clockwise (head up, belly to the wall, every leg stepping); grab leaps up onto the wall (mid-leap frames pulled back
+ // to the wall line); punch slams the mandibles and claws into the wall with a white flash on frame 4; mantle pulls him over the top.
+ climbGrab:{src:'assets/myrmex-s1-climb-grab.png',frames:5,fps:20,once:true,...MX1_NATIVE},climb:{src:'assets/myrmex-s1-climb.png',frames:16,fps:15,...MX1_NATIVE},
+ climbPunch:{src:'assets/myrmex-s1-climb-punch.png',frames:8,fps:24,once:true,impact:4,...MX1_NATIVE},climbMantle:{src:'assets/myrmex-s1-climb-mantle.png',frames:9,fps:20,once:true,...MX1_NATIVE},
+ // Grab/carry/throw in the mandibles (bite): grab lowers the head to the street, clamps and lifts (the prop waits at the bite spot until
+ // the jaws reach it, frame 3); carry and carryWalk reuse his idle and walk; throw whips the head forward (the prop leaves on the key
+ // press). `hold` is the jaw tip, the rightmost point of the head (rows above the feet), measured per frame.
+ grab:{src:'assets/myrmex-s1-grab.png',frames:9,fps:22,once:true,bite:true,...MX1_LEFT,hold:[[145,179],[145,179],[145,179],[145,179],[145,179],[145,179],[145,179],[145,166],[145,146]]},
+ carry:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,bite:true,...MX1_NATIVE,hold:[[185,146],[185,145],[185,144],[185,142],[185,141],[185,142],[185,144],[185,145]]},
+ carryWalk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,bite:true,...MX1_NATIVE,hold:[[185,146],[185,147],[185,146],[185,145],[185,149],[185,144],[185,145],[185,147],[185,146],[185,146],[185,145],[185,144],[185,143],[185,144],[185,144],[185,146]]},
+ throw:{src:'assets/myrmex-s1-throw.png',frames:6,fps:18,once:true,...MX1_LEFT},
+ // The Swarm (his Ultimate, U; 256x256, the game draws the drones): charge hunches as the abdomen pulses purple (13 frames = swarmCharge);
+ // roar keeps the closed-jaw charge body and bursts a magenta starburst over the abdomen (drones pour out of `mouth`, the burst core, on
+ // impact frame 4); pound loops the charge's last four frames; settle is the hunch reversed back to standing.
+ ultCharge:{src:'assets/myrmex-s1-ult-charge.png',frames:13,fps:20,once:true,...MX1_NATIVE},
+ ultRoar:{src:'assets/myrmex-s1-ult-roar.png',frames:8,fps:18,once:true,impact:4,...MX1_NATIVE,mouth:[105,164]},
+ ultPound:{src:'assets/myrmex-s1-ult-pound.png',frames:4,fps:10,...MX1_NATIVE},ultSettle:{src:'assets/myrmex-s1-ult-settle.png',frames:8,fps:14,once:true,...MX1_NATIVE}}};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
@@ -764,8 +818,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
   stages:{1:BELIAL_S1,3:BELIAL_S3}},
  // Myrmex (red winged scorpion-ant: curled tail with a glowing venom stinger (poison, not fire), orange wasp wings, long neck, two long hind legs, small
- // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form until Stage 1 and 3 art exist, so every stage draws
- // it. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
+ // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form; Stage 1 (MYRMEX_S1) has its own complete set,
+ // and Stage 3 still draws this. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
  Myrmex:{width:120,anims:{idle:{src:'assets/myrmex-s2-idle.png',frames:8,fps:8,...MX2_NATIVE},
   walk:{src:'assets/myrmex-s2-walk.png',frames:16,fps:15,...MX2_NATIVE},
   // Run (Shift / double-tap): a low scuttling trot from the rig, diagonal pairs together, with a brief flight phase.
@@ -822,7 +876,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   ultRoar:{src:'assets/myrmex-s2-ult-roar.png',frames:8,fps:18,once:true,impact:4,...MX2_NATIVE,mouth:[100,178]},
   ultPound:{src:'assets/myrmex-s2-ult-pound.png',frames:4,fps:10,...MX2_NATIVE},ultSettle:{src:'assets/myrmex-s2-ult-settle.png',frames:8,fps:14,once:true,...MX2_NATIVE},
   spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
-  spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}}},
+  spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}},
+  stages:{1:MYRMEX_S1}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
