@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {bootGame} from './helpers/game-harness.ts';
+import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {setTerrain,depthAt} from '../src/terrain.ts';
 import {waterBand,bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from '../src/water.ts';
 import type {DrownEvent} from '../src/water.ts';
@@ -116,8 +116,8 @@ test('real loop: the water drill loads its lake, boats and deep tunnel; the comb
   assert.ok(Math.abs(s.depth(3000)-56)<1e-9);}
  finally{h.release();h.cleanup();}
  const d=await bootGame(.75);try{d.click('#drills');d.click('#start');assert.equal(d.state().blockName,'Combat Drills');assert.equal(d.state().pitDepth,RIVER.pitDepth);assert.equal(d.state().band,'dry');}finally{d.release();d.cleanup();}
- const p=emptyPermanent();p.conquered=['nyc'];const e=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
- try{e.click('#freeplay');e.node('#free-kaiju').value='Mogurodon';e.node('#free-city').value=String(cityIndexOf('nyc'));e.node('#free-boss').value='Mogurodon';e.node('#free-block').value='3';e.click('#free-start');
+ const e=await bootCampaign(.75,{kaiju:'Mogurodon'});
+ try{e.test().goto(3);
   const s=e.state();assert.equal(s.blockName,'East River Offensive');assert.equal(s.pitDepth,RIVER.pitDepth);assert.equal(s.boats.length,0);}
  finally{e.release();e.cleanup();}
 });

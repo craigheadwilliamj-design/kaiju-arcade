@@ -4,7 +4,7 @@ import {setTerrain,groundAt,bedAt,addMound,moundAt} from '../src/terrain.ts';
 import {CONFIG as C,TWISTS as TW,RIVER} from '../src/config.ts';
 import {emptyPermanent,PERMANENT_KEY,CAMPAIGN} from '../src/campaign.ts';import {cityIndexOf} from '../src/levels.ts';
 // The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
-const ORIGINAL=['nyc','mex','par','hkg','tyo'];
+const ORIGINAL=['nyc-classic','mex','par','hkg','tyo'];
 
 test('rubble mounds raise the ground (not the street under them) with sloped sides',()=>{
  setTerrain(null);addMound(100,200,30,.3);assert.equal(moundAt(150),30);assert.equal(groundAt(150),C.ground-30);assert.equal(bedAt(150),C.ground,'the street is still under it');
@@ -12,7 +12,10 @@ test('rubble mounds raise the ground (not the street under them) with sloped sid
 });
 
 // city: one of the original five, in their old order (0 New York .. 4 Tokyo).
-async function free(city:number,block=0){const p=emptyPermanent();p.conquered=[...CAMPAIGN];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
+async function free(city:number,block=0){
+ // New York (index 0) is the off-route fixture city: not in Free Play, so it boots through the campaign harness.
+ if(city===0){const h=await bootCampaign(.75,{kaiju:'Mogurodon'});h.test().goto(block);for(let n=0;n<20;n++)h.step();return h;}
+ const p=emptyPermanent();p.conquered=[...CAMPAIGN];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
  h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value=String(cityIndexOf(ORIGINAL[city]));h.node('#free-boss').value='Mogurodon';h.node('#free-block').value=String(block);h.click('#free-start');
  for(let n=0;n<20;n++)h.step();return h;}
 const slam=(h:any)=>{h.tap('Space');h.step(16);h.down('KeyS');h.step(36);h.up('KeyS');h.step(30);};

@@ -22,7 +22,7 @@ test('Alcatraz data: a secret 4-screen district at Stage 3, a high exit threshol
  // Existing systems only: the same optional fields the Wharf already uses.
  for(const k of ['pocket','garage','lanterns','cracks','gas','finale','warships','tumble','sealions','kaiban','fog'])assert.equal((ALC as any)[k],undefined,`no ${k}`);
  // Only Alcatraz carries the Phase 6 fields.
- for(const b of LEVELS.flat().filter(x=>x!==ALC))for(const k of ['exitAt','secretId','lore','hazmat'])assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
+ for(const b of LEVELS.flat().filter(x=>x!==ALC&&x.name!=='Coney Island'))for(const k of ['exitAt','secretId','lore','hazmat'])assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
 });
 
 test('Alcatraz layout: west to east, everything inside the world and on flat ground, terraces and ramps walkable',()=>{
@@ -75,7 +75,7 @@ test('routing: the Wharf east exit leads to Alcatraz, both Alcatraz exits rejoin
 });
 
 test('unlock: clearing Alcatraz adds it to Free Play and the gallery; unknown ids are ignored; it survives a save round trip',()=>{
- assert.deepEqual(secretIds(),['alcatraz']);assert.deepEqual(secretLevelOf('alcatraz'),{city:sfo,block:alc});assert.equal(secretLevelOf('nowhere'),undefined);
+ assert.deepEqual(secretIds(),['alcatraz','coney-island']);assert.deepEqual(secretLevelOf('alcatraz'),{city:sfo,block:alc});assert.equal(secretLevelOf('nowhere'),undefined);
  const p=emptyPermanent();p.conquered.push('sfo');
  assert.deepEqual(p.secrets,[]);assert.equal(validFreePlay(p,{kaiju:'Mogurodon',city:sfo,boss:'Mogurodon',block:alc}),false,'locked until cleared');assert.equal(freePlayLevels(p,sfo).includes(alc),false);
  assert.equal(unlockSecret(p,'alcatraz'),true);assert.equal(unlockSecret(p,'alcatraz'),false,'only once');assert.equal(unlockSecret(p,'nowhere'),false);assert.deepEqual(p.secrets,['alcatraz']);

@@ -1,4 +1,4 @@
-import {KAIJU,freePlayLevels} from './campaign.ts';import {CITIES} from './levels.ts';import type {Permanent} from './campaign.ts';
+import {KAIJU,CAMPAIGN,freePlayLevels} from './campaign.ts';import {CITIES} from './levels.ts';import type {Permanent} from './campaign.ts';
 export const INTRO_DURATION=12;
 export const INTRO_SCENES=['AN ASTEROID APPROACHES EARTH','IMPACT','PINK CRYSTALS EMERGE','MONSTROUS EVOLUTION'];
 export const ROSTER=[
@@ -19,7 +19,7 @@ export function selectable(p:Permanent,name:string){return KAIJU.includes(name)&
 // city: an index into CITIES (it must be conquered). block: which of the city's route levels to start on (absent = the first;
 // a secret level is offered once cleared in the campaign).
 export type FreePlayChoice={kaiju:string,city:number,boss:string,block?:number};
-export function validFreePlay(p:Permanent,c:FreePlayChoice){return selectable(p,c.kaiju)&&selectable(p,c.boss)&&Number.isInteger(c.city)&&!!CITIES[c.city]&&p.conquered.includes(CITIES[c.city].id)&&(c.block===undefined||freePlayLevels(p,c.city).includes(c.block));}
+export function validFreePlay(p:Permanent,c:FreePlayChoice){return selectable(p,c.kaiju)&&selectable(p,c.boss)&&Number.isInteger(c.city)&&!!CITIES[c.city]&&CAMPAIGN.includes(CITIES[c.city].id)&&p.conquered.includes(CITIES[c.city].id)&&(c.block===undefined||freePlayLevels(p,c.city).includes(c.block));}
 export function unlockEnding(p:Permanent,name:string){if(!KAIJU.includes(name)||p.gallery.includes(name))return false;p.gallery.push(name);return true;}
 export function canViewEnding(p:Permanent,name:string){return KAIJU.includes(name)&&p.gallery.includes(name);}
 export function endingFor(name:string){return ENDINGS.find(e=>e.name===name)||ENDINGS[0];}

@@ -10,7 +10,9 @@ function fightBlock(){
   const s=h.state();check(s);polls++;if(s.mode!=='playing')break;
   if(s.stage>peakStage){peakStage=s.stage;evolutions[`stage${s.stage}`]=Math.round((h.frames()-cityStart)/60);}
   if(s.superCharge>=40&&s.hp===100&&s.stage===3&&s.superTime===0)h.tap('KeyI');
-  if(s.ultimate>=100&&s.canAct&&(s.blockIndex!==2||landingProbe))h.tap('KeyU');
+  // The landing probe waits for Ultimate off on the first New York level (its barricade ring); every other city's third level keeps its old bot rule.
+  const probeBlock=s.cityIndex===cityIndexOf('nyc')&&s.blockIndex===0&&!landingProbe;
+  if(s.ultimate>=100&&s.canAct&&(s.blockIndex!==2||landingProbe)&&!probeBlock)h.tap('KeyU');
   const px=s.x+s.width/2;
   // The Embarcadero starts sealed in a tunnel pocket: jump into the roof until it breaks.
   if(s.pocketHP>0){h.release();if(s.grounded)h.tap('Space');h.step(20);continue;}
@@ -25,7 +27,7 @@ function fightBlock(){
   const blocker=s.buildings.filter((b:any)=>b.hp>0&&b.kind==='large'&&(goal>=s.x?b.x>=s.x+s.width-4&&b.x<goal+s.width:b.x+b.w<=s.x+4&&b.x+b.w>goal)).sort((a:any,b:any)=>goal>=s.x?a.x-b.x:b.x-a.x)[0];
   if(blocker){target=blocker;goal=blocker.x>=px?blocker.x-s.width-25:blocker.x+blocker.w+25;}
   const short=s.buildings.find((b:any)=>b.hp>0&&b.kind==='large'&&b.h<70);
-  if(!landingProbe&&s.cityIndex===cityIndexOf('nyc')&&s.blockIndex===2&&short&&s.grounded&&s.canAct&&short.x-s.x-s.width<100&&short.x-s.x-s.width>45){
+  if(!landingProbe&&s.cityIndex===cityIndexOf('nyc')&&s.blockIndex===0&&short&&s.grounded&&s.canAct&&short.x-s.x-s.width<100&&short.x-s.x-s.width>45){
    h.release();h.down('KeyD');h.tap('Space');let penetrated=false;
    for(let frame=0;frame<85;frame++){h.step();const p=h.state();const b=p.buildings.find((x:any)=>x.x===short.x);if(b?.hp>0&&p.x<b.x+b.w&&p.x+p.width>b.x&&p.y<b.y+b.h&&p.y+p.height>b.y+.01)penetrated=true;}
    h.release();landingProbe=true;console.log(`Landing collision probe: penetration=${penetrated}`);assert.equal(penetrated,false,'Landing must not embed a kaiju in a short solid barricade');

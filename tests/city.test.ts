@@ -5,7 +5,7 @@ import {createBuildings} from '../src/rules.ts';
 import {LEVELS,cityIndexOf} from '../src/levels.ts';
 import {CITY as Y,CONFIG as C} from '../src/config.ts';
 // The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
-const ORIGINAL=['nyc','mex','par','hkg','tyo'];
+const ORIGINAL=['nyc-classic','mex','par','hkg','tyo'];
 
 test('rampage: heat climbs through the multiplier levels, holds for the grace period, then drains',()=>{
  const r=createRampage();assert.equal(rampageMult(r),1);
@@ -28,7 +28,7 @@ test('power grids: membership by x, a grid is live while its substation stands',
 });
 
 test('Lower Manhattan is the city-systems pilot: two powered grids, depots, radars, water towers, poles',()=>{
- const b=LEVELS[cityIndexOf('nyc')][0];assert.equal(b.name,'Lower Manhattan');assert.equal(b.grids!.length,2);
+ const b=LEVELS[cityIndexOf('nyc-classic')][0];assert.equal(b.name,'Lower Manhattan');assert.equal(b.grids!.length,2);
  const subs=substations(b.buildings as any,b.grids);assert.ok(subs.every(Boolean),'each grid has a substation');
  assert.equal(b.buildings.filter(x=>x.role==='depot').length,2);
  assert.ok(b.buildings.filter(x=>x.roof==='radar').length>=2&&b.buildings.filter(x=>x.roof==='tank').length>=4);
