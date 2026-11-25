@@ -1,11 +1,11 @@
 import {groundAt,streetAt,waterAt} from './terrain.ts';
-import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F} from './config.ts';
+import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F,BULL} from './config.ts';
 
 // Civilian vehicles: parked cars, passing traffic, and anything the kaiju punts, carries or throws.
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
 // Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
-export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer';
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer'|'bull';
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat'|'rolling'|'cable';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
@@ -38,6 +38,8 @@ export const VEHICLE_SPECS={
  building:{w:80,h:100,mass:4,points:0},
  // A whole subway train pulled out of a pit by Stage 3 (three carriages, the length of RIVER.trainLength). Paid when snatched.
  train:{w:Math.round(240*C.cityScale),h:37,mass:6,points:0},
+ // New York Act 1: the Charging Bull, a bronze prop (src/config.ts BULL). Not a loose object: see loose().
+ bull:{w:BULL.w,h:BULL.h,mass:BULL.mass,points:BULL.points},
 } as const;
 // Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
 // Road vehicles: what explodes when thrown and wrecks with a bang.
@@ -54,7 +56,8 @@ export function vehicleBox(v:Vehicle){return {x:v.x,y:v.y,w:v.w,h:v.h};}
 export function mass(v:Vehicle){return v.mass??VEHICLE_SPECS[v.kind].mass;}
 export function grounded(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='flat'||v.state==='rolling'||v.state==='cable';}
 // Can be stomped, punted or picked up.
-export function loose(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='rolling'||v.state==='cable';}
+// The Charging Bull is never loose: nothing on the street stomps, punts or wrecks it; only a kaiju strong enough carries it (tryGrab).
+export function loose(v:Vehicle){return v.kind!=='bull'&&(v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='rolling'||v.state==='cable');}
 
 function make(id:number,kind:VehicleKind,x:number,lane:0|1,color:string):Vehicle{
  const s=VEHICLE_SPECS[kind];

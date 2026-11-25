@@ -77,8 +77,13 @@ export const CITIES:City[]=[
 // the cap after a mid-level lift (liftCap in src/combat.ts; a crystal will trigger it). Absent = today's rule: the stage carries
 // over from the last block, Stage 1 to 3. `tier`: the military response tier (absent = the block's position, 1-5).
 // `secret`: in the city's level list but off the campaign route (reached later by a secret exit).
+// New York Act 1 (NYC rework card 2), opt-in: `vents` x of steam-vent manholes (src/config.ts STEAM): they puff now and then, and a slam or pound
+// near one bursts it into a steam jet that scalds troops, launches cars and blinds helicopters (it never sets a building alight, unlike SF's gas
+// mains). `bull` x of the Charging Bull, a heavy bronze prop (src/config.ts BULL: grabbable by a strong kaiju, thrown short and hard, immune to
+// street damage). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
+// without making the level a there-and-back with a west exit): The Battery starts in the harbour, over a `bands` water span with a seabed `ground` profile.
 export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
- target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
+ target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
  guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
  units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
@@ -90,7 +95,9 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // Phase 6 (Alcatraz), all opt-in. `exitAt`: the destruction a district needs before its exits open (default CONFIG.exitThreshold).
  // `secretId`: clearing this secret level in the campaign unlocks it in Free Play and adds its gallery entry (src/campaign.ts).
  // `lore`: one results-screen line. `hazmat`: this level's soldiers are drawn in hazmat suits (a reskin, nothing else changes).
- exitAt?:number,secretId?:string,lore?:string,hazmat?:boolean};
+ exitAt?:number,secretId?:string,lore?:string,hazmat?:boolean,
+ // New York Act 1 (NYC rework card 2), all opt-in. See the notes below.
+ vents?:number[],bull?:number,spawn?:number};
 // Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
 // (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
 // over an underground garage: a slam caves it into a pit of parked cars. `police`: helicopters and soldiers here are drawn as police / SWAT.
@@ -538,16 +545,78 @@ export const SAN_FRANCISCO:BlockDef[]=[
 // A repeating block of rows and cross streets, long enough that a pattern always runs to the end of its level.
 const NYC_ROW='s,m,h,_,l,s,m,_,h,r,_,n,s,m,_',NYC_TALL='x,n,l,x,h,_,n,x,l,n,_',NYC_LOW='r,s,r,m,_,r,s,m,s,_';
 const nycRep=(unit:string,n:number)=>Array(n).fill(unit).join(',');
+// ---- New York Act 1 (NYC rework card 2): The Battery, Wall Street, SoHo and Canal Street ----
+// Level 1. Start waist-deep in the harbour (a `bands` water span with a seabed profile: Stage 1 wades), past NYPD Harbor Unit boats and the
+// moored Staten Island Ferry (a hull you climb over), up the shallows to the seawall (too tall to jump: climb it), into Battery Park (trees, the
+// SeaGlass carousel, the Whitehall terminal over the South Ferry subway loop, a deep tunnel that caves in) and north-east to Castle Clinton.
+function nycBattery():BlockDef{
+ const T=6000,START=520,SHORE=2000,W=8*960;
+ let b=cityLevel('nyc','The Battery',8,'stronghold',`>3300,s,m,h,_,l,s,m,_,h,r,_,n,s,m,_,>6700,s,m,_,h,r,n`,[],{startStage:1,cap:1,tier:1},{target:T,ring:[-770,-440,-190,180,460]});
+ // The harbour: seabed 38 under the start (wading at Stage 1), shoaling up to the shore.
+ const D:[number,number|null][]=[[0,38],[1450,38],[1700,22],[1900,12],[2010,null],[W,null]];
+ const ground:[number,number][]=D.map(([x,d])=>[sc(x),d===null?CONFIG.ground:CONFIG.ground+6+d]);
+ b=clearClutter({...b,ground,cars:b.cars.filter(c=>c>sc(2100))},[[0,2100]]);
+ // The ferry's hull stands on the seabed: its deck is about 70 above the water and its superstructure 150.
+ const ferry=hall(760,340,140,'STATEN ISLAND FERRY','#d9822b','sifery',420,[{x:0,w:340,top:82},{x:40,w:240,top:140}]);
+ const seawall=hall(2012,60,95,'','#8b867a','wall',600);
+ const terminal=hall(2140,260,110,'WHITEHALL TERMINAL','#9a8f78','ferry',360),carousel=hall(2900,150,130,'SEAGLASS','#6fa8a0','carousel',300);
+ // Battery Park: trees (uprooted like a lamppost) on the lawns.
+ const trees=[2460,2560,2660,2780,3100,3200,3300].map(x=>scaled({x,w:27,h:84,hp:10,value:15,kind:'tiny' as const,label:'',color:'#4f7d4a',prop:'tree'}));
+ return {...b,buildings:[...b.buildings,ferry,seawall,terminal,carousel,...trees],spawn:sc(START),
+  water:[[0,sc(SHORE),CONFIG.ground+6]],bands:true,boats:[900,1300,1650].map(sc),
+  subway:[[sc(2450),sc(3700)]],tunnel:'deep',
+  target:{x:sc(T),label:'CASTLE CLINTON',art:'fort'},police:true,air:[sc(6900)],
+  // The NYPD Harbor Unit dug in round the fort (the default garrison stands at the target; these are the approach).
+  units:[['patrol',sc(4300)],['police',sc(4600)],['patrol',sc(4900)],['police',sc(7100)]]};
+}
+// Level 2. Broadway at Bowling Green (the Charging Bull, a heavy bronze prop), then the Wall Street canyon: supertall towers packed shoulder to
+// shoulder, so the street is a gauntlet of barricades and SWAT with helicopters overhead and the rooftops are the fast way through. Trinity
+// Church, the 4/5 subway, the Federal Reserve vault, and the NYSE command post, with two towers flanking it close enough to topple onto it.
+function nycWallStreet():BlockDef{
+ const T=4300,BULL_X=560;
+ let b=cityLevel('nyc','Wall Street',7,'stronghold',
+  `=,x,n,_,>1500,L,_,x,n,x,l,n,x,h:vault,n,x,_,x,n,l,x,n,>5050,n,x,n,_,x,n,x,l,n`,['TRINITY CHURCH|twin'],{startStage:1,cap:1,tier:2},{target:T,ring:[-840,-700,-560,440,500]});
+ // Supertall: the canyon towers are half as tall again as the presets (all within a jump of each other) (the camera has no ceiling), the roofs kept within a step or two of each other.
+ const tall=(x:BuildingSpec)=>x.kind==='tiny'||x.landmark||x.role||x.h<sc(450)?x:{...x,h:sc(x.h/CONFIG.cityScale>=500?760:740)};
+ b={...b,buildings:b.buildings.map(x=>x.deco==='vault'?{...x,label:'FEDERAL RESERVE',color:'#9a9c97'}:tall(x))};
+ // Two towers flank the command post close enough that a toppled one lands on it (toppling damage reaches a target), and two more close the canyon.
+ const flank=[[4010,900],[4450,900],[3860,720],[4590,720]].map(([x,h],i)=>scaled({...BUILDING_PRESETS.x,x,h,label:'',color:cityById('nyc').colors[i+1]}));
+ b={...b,buildings:[...b.buildings,...flank]};
+ return {...b,subway:[[sc(1800),sc(3350)]],bull:sc(BULL_X),
+  target:{x:sc(T),label:'NYSE COMMAND POST',art:'exchange'},police:true,swat:[sc(2600),sc(2900),sc(3300),sc(5300)].map(x=>x),air:[sc(3000),sc(5200)],
+  units:[['police',sc(1100)],['soldier',sc(2300)],['soldier',sc(3000)]]};
+}
+// Level 3. Cast-iron loft rows with rooftop water tanks, then Canal Street: an open stretch of street with vendor stalls, the crystal and the Holland Tunnel approach jammed with traffic, and
+// the steam vents: manholes that puff now and then and burst when you slam or pound near them. The crystal under Canal Street lifts the cap to
+// Stage 2; the Guard rolls in at the exit.
+// Cross-street gaps between standing buildings (>= minGap wide): the steam vents go in their middles.
+function streetGaps(b:BlockDef,from:number,to:number,minGap:number):number[]{
+ const s=b.buildings.filter(x=>x.kind!=='tiny'&&!x.landmark).sort((p,q)=>p.x-q.x),out:number[]=[];
+ for(let i=1;i<s.length;i++){const a=s[i-1].x+s[i-1].w,c=s[i].x;if(c-a>=sc(minGap)&&a>=sc(from)&&c<=sc(to))out.push(Math.round((a+c)/2));}
+ return out;}
+function nycSoho():BlockDef{
+ const CRYSTAL=3900,loft='r:brick,m:tank,r:brick,_,s:brick,m:brick,r:brick,_,m:tank,s:brick,r:brick';
+ let b=cityLevel('nyc','SoHo and Canal Street',7,'district',
+  `${loft},_,r:brick,m:tank,r:brick,_,s:brick,m:brick,r:brick,>5950,r:brick,m:tank,s:brick`,[],
+  {startStage:1,cap:1,capLift:2,tier:2});
+ b=clearClutter(b,[[CRYSTAL-260,CRYSTAL+260]]);
+ // Canal Street: vendor stalls in the open stretch either side of the crystal; the Holland Tunnel's portal at the east end.
+ const stalls=[3420,3500,3580,4200,4260].map(x=>scaled({x,w:34,h:32,hp:10,value:40,kind:'tiny' as const,label:'',color:'#c2312b',prop:'stall'}));
+ const portal=hall(6300,260,150,'HOLLAND TUNNEL','#8a8478','portal',500);
+ b={...b,buildings:[...b.buildings,...stalls,portal]};
+ // The jam: parked rows end to end from Canal Street to the tunnel mouth.
+ const jam=[4420,4620,4820,5020,5220,5420,5620,5820].map(sc);
+ const gaps=streetGaps(b,300,5950,200).filter(x=>Math.abs(x-sc(CRYSTAL))>sc(420));
+ // Manholes in the Canal Street gaps, and two in the middle of the tunnel jam (steam among the stopped cars).
+ const vents=[...gaps.slice(0,6),sc(5000),sc(5600)].sort((p,q)=>p-q);
+ return {...b,cars:[...b.cars.filter(c=>c<sc(4300)),...jam],crystal:sc(CRYSTAL),guard:true,police:true,vents,
+  swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)]};
+}
 const NEW_YORK:BlockDef[]=[
- // 1. Act 1 (Stage 1, cap 1). Castle Clinton, ringed by the NYPD Harbor Unit, is the target.
- {...cityLevel('nyc','The Battery',8,'stronghold',nycRep(NYC_ROW,4),[],{startStage:1,cap:1,tier:1},{target:6000}),
-  target:{x:sc(6000),label:'CASTLE CLINTON',art:'command'},police:true,air:[sc(6900)]},
- // 2. The Wall Street canyon: tall towers packed tight; Trinity Church and the NYSE command post.
- {...cityLevel('nyc','Wall Street',7,'stronghold',`${nycRep(NYC_TALL,1)},>1500,L,${nycRep(NYC_TALL,4)}`,['TRINITY CHURCH|twin'],{startStage:1,cap:1,tier:2},{target:4300}),
-  target:{x:sc(4300),label:'NYSE COMMAND POST',art:'command'},police:true,swat:[sc(2600),sc(2900),sc(3300)],air:[sc(3000),sc(5200)]},
- // 3. SoHo and Canal Street: cast-iron rows; the crystal under Canal Street lifts the cap to 2, the Guard rolls in.
- {...cityLevel('nyc','SoHo and Canal Street',7,'district',nycRep(NYC_LOW,6),[],{startStage:1,cap:1,capLift:2,tier:2}),
-  crystal:sc(3900),guard:true,police:true,swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)]},
+ // 1. Act 1 (Stage 1, cap 1): Castle Clinton, ringed by the NYPD Harbor Unit. 2. The Wall Street canyon. 3. SoHo and Canal Street.
+ nycBattery(),
+ nycWallStreet(),
+ nycSoho(),
  // 4. Act 2 (Stage 2, cap 2). Times Square: long straight avenues.
  {...cityLevel('nyc','Times Square',7,'district',`${nycRep(NYC_ROW,1)},>1600,L,${nycRep(NYC_ROW,4)}`,['ONE TIMES SQUARE|tower'],{startStage:2,cap:2,tier:2}),
   guard:true,police:true,air:[sc(2400),sc(4800)]},

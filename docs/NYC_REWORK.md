@@ -2,7 +2,7 @@
 
 New York gets the same treatment San Francisco got: an authored route of nine levels plus one secret level, three acts, its own playable kaiju and boss, per-level growth, and one new mechanic per level built as an opt-in `BlockDef` field. Everything SF built is reusable.
 
-Status: **scaffold done (card 1)**. The city entry, `cityLevel`, the nine route levels and Coney Island as placeholders (names, screens, kinds, growth, exits, landmarks), the `nyc-classic` fixture city with `kaijuTest.gotoCity`, the retargeted tests, `tests/nyc-scaffold.test.ts`, the QA playthrough and the README are in. Cards 2 to 7 are still to do. Work is queued as separate sessions (see "Work cards" at the end). Each card reads this file first.
+Status: **scaffold done (card 1)**, **Act 1 done (card 2: The Battery, Wall Street, SoHo and Canal Street)**. The city entry, `cityLevel`, the nine route levels and Coney Island as placeholders (names, screens, kinds, growth, exits, landmarks), the `nyc-classic` fixture city with `kaijuTest.gotoCity`, the retargeted tests, `tests/nyc-scaffold.test.ts`, the QA playthrough and the README are in. Cards 3 to 7 are still to do. Work is queued as separate sessions (see "Work cards" at the end). Each card reads this file first.
 
 ## Fixed decisions
 
@@ -36,17 +36,17 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 
 ### Act 1: Downtown (Stage 1, NYPD then the first Guard)
 
-**1. The Battery** (8 / stronghold / 1-1 / tier 1)
+**1. The Battery** (8 / stronghold / 1-1 / tier 1) — **done (card 2)**
 - **Route:** start waist-deep in the harbour west of the Battery, with the Statue of Liberty in the far skyline. Wade ashore past police boats and the moored Staten Island Ferry, then climb the seawall (Kaiban is too slow to jump it cleanly). Battery Park has trees and the SeaGlass carousel. The South Ferry subway loop caves in under it. Push north-east to Castle Clinton, the target: a round sandstone fort with NYPD Harbor Unit dug in round it.
 - **Reuses:** water bands, police boats, a deep subway, `police`, `air`, a `hall` building for the ferry terminal.
 - **New:** start in the water (spawn in a water band, no tunnel pocket), and the fort target art (`art:'fort'`, a low round wall).
 
-**2. Wall Street** (7 / stronghold / 1-1 / tier 2)
+**2. Wall Street** (7 / stronghold / 1-1 / tier 2) — **done (card 2)**
 - **Route:** Broadway at Bowling Green (the Charging Bull), into the Wall Street canyon. The towers are tall and packed tight, so the street is a gauntlet of barricades and SWAT with helicopters overhead. The roofs are the fast, safe route: hop tower to tower. Trinity Church is the landmark (`|twin` or a spire). The target is the NYSE command post: the columned NYSE facade with the NYPD command post in front. Hit it from a roof with a Meteor Drop for the drop-height bonus. Flanking towers topple onto it (the SF Financial District flank rule already damages a target).
 - **Reuses:** police, SWAT, air, a subway (the 4/5 line), flank toppling, the vault cache (the Federal Reserve: `m:vault`, gold).
 - **New:** **the Charging Bull**, a bronze prop. It is heavy: grabbable only by a carry-capable kaiju, thrown short and hard, and it can't be destroyed by street damage. Plus NYSE target art (`art:'exchange'`).
 
-**3. SoHo and Canal Street** (7 / district / 1-1(2) / tier 2)
+**3. SoHo and Canal Street** (7 / district / 1-1(2) / tier 2) — **done (card 2)**
 - **Route:** cast-iron loft rows with fire escapes and rooftop water towers (the `tank` roof fixture). Canal Street has vendor stalls and the Holland Tunnel approach jammed with traffic. The crystal under Canal Street lifts the cap to 2 (grow to Stage 2). The Guard rolls in at the exit (`guard`).
 - **Reuses:** roof tanks, street junk (hot dog cart, trash), the `crystal`, `guard`, parked cars as a traffic jam (the gridlock pattern from the Bay Bridge).
 - **New:** **steam vents**, the foreshadowing hazard.
@@ -119,7 +119,7 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 ## Work cards (in order)
 
 1. **Scaffold (done).** City entry, `cityLevel`, nine plus one placeholder levels with growth, exits and `after`, the `nyc-classic` fixture city and harness, test retargeting, QA and README. *Blocks everything else.*
-2. **Act 1:** the Battery, Wall Street, SoHo (fort and exchange target art, Charging Bull, steam vents).
+2. **Act 1 (done):** the Battery, Wall Street, SoHo (fort and exchange target art, Charging Bull, steam vents). `nycBattery`/`nycWallStreet`/`nycSoho` in `src/levels.ts`, `NYC1`/`BULL`/`STEAM` in `src/config.ts`, `tests/nyc-act1.test.ts`. Notes for later cards: a level that starts somewhere other than the west edge but keeps one exit uses `spawn` (`start` also makes it a there-and-back with a west exit); the Bull is a `vehicles` entry of kind `bull` that `loose()` never reports as loose; `STEAM` is the base for card 5's geysers (add a `auto:true` mode that bursts without a slam).
 3. **Act 2:** Times Square, Grand Central, Central Park (night mood, grid blackout, terminal art, concourse cave-in, two exits).
 4. **Tlézcatl boss kit:** `TLEZCATL_BOSS`, tested on a flat placeholder arena. Can run alongside cards 2 and 3 once the scaffold has landed.
 5. **Act 3 levels 7–8:** Hudson Yards and Herald Square (rail-yard deck, geysers, parade balloons, arena target art).

@@ -34,7 +34,7 @@ test('landmarks and targets use the real names',()=>{
  const names=levels.flatMap(b=>[...b.buildings.filter(x=>x.landmark).map(x=>x.label),...(b.target?[b.target.label]:[])]);
  for(const n of ['CASTLE CLINTON','TRINITY CHURCH','CHRYSLER','MET LIFE','BELVEDERE CASTLE','THE VESSEL',"MACY'S",'MADISON SQUARE GARDEN','EMPIRE STATE','PARACHUTE JUMP'])assert.ok(names.includes(n),n);
  assert.deepEqual(landmarkNames('Grand Central').sort(),['CHRYSLER','MET LIFE']);
- for(const b of levels.filter(x=>x.kind==='stronghold'))assert.ok(b.target&&['clock','command','pyramid','cutter'].includes(b.target.art),`${b.name} has a target`);
+ for(const b of levels.filter(x=>x.kind==='stronghold'))assert.ok(b.target&&['clock','command','pyramid','cutter','fort','exchange'].includes(b.target.art),`${b.name} has a target`);
 });
 
 test('Central Park has two exits; the west leads on, the east leads to Coney Island, which rejoins at Hudson Yards',()=>{
