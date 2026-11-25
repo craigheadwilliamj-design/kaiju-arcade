@@ -79,7 +79,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  exits?:{west?:string,east?:string},after?:string,fog?:{from:number,to:number,max:number},sealions?:number[],kaiban?:{x:number,wade:[number,number]},
  buses?:number[],elevatedLook?:'park'|'freeway',ramps?:[number,number][],coastguard?:number[],
  // Phase 5 (SF Act 3), all opt-in. See the notes below.
- cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,
+ cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,approach?:number,deckApproach?:number,
  finale?:{x:number,wake:number,breaks:number[]},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
  // Phase 6 (Alcatraz), all opt-in. `exitAt`: the destruction a district needs before its exits open (default CONFIG.exitThreshold).
  // `secretId`: clearing this secret level in the campaign unlocks it in Free Play and adds its gallery entry (src/campaign.ts).
@@ -111,6 +111,8 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `finale`: a boss level's Kaiban finale (src/config.ts GATE): `x` where it waits, `wake` the x that wakes it, `breaks` the health fractions at which the deck gives way.
 // `warships`: gunboats and destroyers stationed on the water (under a deck too). `deckUnits`: ground units that stand on an upper deck
 // (building spec `upperDeck`). A target `launch`: the carrier launches jets. See src/config.ts BRIDGE.
+// `approach`: the length of the ramp at each end of an elevated deck (SF: the roof park and the freeway), climbing from the street to the deck
+// and walkable; `deckApproach`: the same for an upper bridge deck, a ramp climbing to it from the west. World units.
 // `elevated`: an elevated railway over [x0, x1] (Tokyo); world units.
 // `water`: river spans [from, to, surfaceY]; `bridge`: a deck at street level over [x0, x1] in `spans` breakable spans; `subway`: x ranges
 // with a subway line under the street (slams cave it in). All world units.
@@ -234,7 +236,8 @@ const SF_ROW='s,m:tank,h,_,l,m,s:cache,_,x,n,m,_,h:radar,s,t,_,m,l,_,h,s:tank,m,
 // ---- San Francisco Act 1 (redesign phase 3): Embarcadero, Union Square, Chinatown ----
 // Authored at the original scale like every other block; fields that are world units on the block are scaled here with sc().
 // A hand-built building (the Ferry Building's halls, pilings): a deco tag picks its drawing.
-function hall(x:number,w:number,h:number,label:string,color:string,deco:string,hp=300):BuildingSpec{return scaled({x,w,h,hp,value:Math.round(hp*.7),kind:'medium',label,color,deco});}
+// `parts`: the hitbox when it is not the whole box (a ship: only the hull is solid, the masts and sails above it are scenery).
+function hall(x:number,w:number,h:number,label:string,color:string,deco:string,hp=300,parts?:Part[]):BuildingSpec{return scaled({x,w,h,hp,value:Math.round(hp*.7),kind:'medium',label,color,deco,...(parts?{parts}:{})});}
 // Drop the street clutter (hydrants, junk) standing in authored x ranges: open water, the tunnel pocket, a plaza.
 function clearClutter(b:BlockDef,ranges:[number,number][],solids=false):BlockDef{return {...b,buildings:b.buildings.filter(x=>(x.kind!=='tiny'&&!solids)||x.landmark||!ranges.some(([a,z])=>x.x+x.w>sc(a)&&x.x<sc(z)))};}
 // Vehicles stationed in the street (streetcars, cable cars, trolleys, fire trucks): each [x, width] moves to the nearest stretch of street
@@ -340,16 +343,16 @@ function sfNobHill():BlockDef{
 // park on a bus terminal's roof: the elevated system, drawn as a park, over a row of buses: collapse it onto them); the tower climb to a
 // helipad with military helicopters at height; and the pyramid tower, the target, ringed by tanks and the Guard.
 function sfFinancial():BlockDef{
- const T=5300,DECK:[number,number]=[2820,4060];
+ const T=5300,DECK:[number,number]=[2400,3640],APPROACH=500;
  let b=sfLevel('Financial District',7,'stronghold',
   `x,n,x,n,_,n,x,n,x,L,_,m:vault,S,_,>4100,x:helipad,n,x,l,_,x,n,>5900,x,n,x,l`,
   ['CORPORATE TOWER|tower'],{startStage:2,cap:2,tier:3},{target:T,ring:[-840,-700,-560,480]});
- b=clearClutter(b,[DECK]);
+ b=clearClutter(b,[[DECK[0]-APPROACH,DECK[1]+APPROACH]]);
  // Two tall towers flank the pyramid close enough that a toppled one lands on it (toppling damage reaches a target).
  const flank=[5040,5480].map((x,i)=>scaled({...BUILDING_PRESETS.x,x,label:'',color:cityById('sfo').colors[i+1]}));
  b={...b,buildings:[...b.buildings,...flank]};
- const buses=[2900,3260,3620].map(sc);
- return {...b,elevated:[sc(DECK[0]),sc(DECK[1])],elevatedLook:'park',buses,
+ const buses=[2480,2840,3200].map(sc);
+ return {...b,elevated:[sc(DECK[0]),sc(DECK[1])],elevatedLook:'park',approach:sc(APPROACH),buses,
   target:{x:sc(T),label:'PYRAMID TOWER',art:'pyramid'},
   // Montgomery Street's tanks, the Guard in front of the vault, helicopters at the helipad towers, the garrison round the pyramid.
   units:[['tank',sc(1000)],['tank',sc(1600)],['soldier',sc(900)],['soldier',sc(1300)],['soldier',sc(1900)],['apc',sc(2300)],['tank',sc(2500)],
@@ -372,7 +375,9 @@ function sfWharf():BlockDef{
  const ground:[number,number][]=D.map(([x,d])=>[sc(x),d===null?CONFIG.ground:d>0?CONFIG.ground+6+d:CONFIG.ground+Math.round(d*CONFIG.cityScale)]);
  const waterLine=CONFIG.ground+6;
  // Piers: hand-built props. Old sailing ships on Hyde Street Pier, a WWII submarine and a cargo ship on Pier 45, a carousel on Pier 39.
- const props=[hall(1330,300,150,'','#6a4a34','tallship',260),hall(1680,260,130,'','#7a5a3a','tallship',240),
+ // The sailing ships' masts and sails are only drawn: the hull is the hitbox, and you walk past on the deck.
+ const hull=(w:number,h:number):Part[]=>[{x:0,w,top:Math.round(h*.34)}];
+ const props=[hall(1330,300,150,'','#6a4a34','tallship',260,hull(300,150)),hall(1680,260,130,'','#7a5a3a','tallship',240,hull(260,130)),
   hall(3930,330,70,'','#5d6a64','sub',280),hall(4290,250,140,'','#7a3a34','freighter',420),
   hall(4880,150,130,'','#c98a3c','carousel',300)];
  // Seafood stands in the Jefferson Street lot (tiny, walk-through).
@@ -395,11 +400,11 @@ function sfWharf():BlockDef{
 // mint, the second crack, fire trucks that cannot keep up), SoMa (warehouses, the double-deck freeway, the third crack: the Big One)
 // and the on-ramp at the east end, a climb onto the road that is the exit. The new thing: the fault cracks and the gas mains.
 function sfFault():BlockDef{
- const CRACKS=[2300,4000,6300],FREEWAY:[number,number]=[5560,7060],RAMP:[number,number]=[7260,7640];
+ const CRACKS=[2300,4000,6300],FREEWAY:[number,number]=[5000,6500],APPROACH=560,RAMP:[number,number]=[7260,7640];
  let b=sfLevel('The Fault',8,'district',
   `s,m,r,_,h,s,m,_,l,r,>1900,L,=,>2540,h,m,r,_,m:vault,h,s,_,>3500,r,h,_,s,m,_,>4180,w:brick,r,w:shed,_,w:brick,r,s,_,w:brick,r,_`,
   ['CITY HALL|dome'],{startStage:3,cap:3,tier:4});
- b=clearClutter(b,[FREEWAY],true);
+ b=clearClutter(b,[[FREEWAY[0]-APPROACH,FREEWAY[1]+APPROACH]],true);
  // The old mint is a granite vault.
  b={...b,buildings:b.buildings.map(x=>x.deco==='vault'?{...x,label:'OLD MINT',color:'#9a9c97'}:x)};
  // Gas mains: the generic hydrants, plus a pair either side of every crack (and under the freeway) where the quake will find them.
@@ -409,7 +414,7 @@ function sfFault():BlockDef{
  b={...b,buildings:[...b.buildings,...mains]};
  b=terrain(b,[[0,0],[RAMP[0],0],[RAMP[1],130],[8000,130]]);
  const trucks=station(b,[3000,3380,3760].map(x=>[sc(x),VEHICLE_SPECS.firetruck.w] as [number,number]));
- return {...b,cracks:CRACKS.map(sc),gas:true,fireCap:GAS.fireCap,elevated:[sc(FREEWAY[0]),sc(FREEWAY[1])],elevatedLook:'freeway',elevatedDecks:2,
+ return {...b,cracks:CRACKS.map(sc),gas:true,fireCap:GAS.fireCap,elevated:[sc(FREEWAY[0]),sc(FREEWAY[1])],elevatedLook:'freeway',elevatedDecks:2,approach:sc(APPROACH),
   firetrucks:trucks.xs,cars:trucks.cars,
   // Full military from the start: tanks and artillery down Van Ness and Mid-Market, jets overhead, soldiers at the on-ramp.
   units:[['soldier',sc(900)],['tank',sc(1300)],['tank',sc(1750)],['artillery',sc(2900)],['soldier',sc(3200)],['tank',sc(3560)],['jet',sc(4300)],
@@ -421,7 +426,7 @@ function sfFault():BlockDef{
 // towers, launching jets. The decks stand BRIDGE.deckRise above the water. The one new thing: the carrier.
 function sfBayBridge():BlockDef{
  const RAMP=[800,1400],WEST=[1400,3600],BAY=[4700,4900],ISLAND_END=5900,RAMP_E=[5900,6400],EAST=[6400,7680],CARRIER=6900,DR=150,BED=-62;
- let b=sfLevel('Bay Bridge',8,'stronghold',`s,m,>4960,L,K,w:shed,w:shed`,['NAVY COMMAND|tower'],{startStage:3,cap:3,tier:4},{target:CARRIER,ring:[]});
+ let b=sfLevel('Bay Bridge',8,'stronghold',`>4960,L,K,w:shed,w:shed`,['NAVY COMMAND|tower'],{startStage:3,cap:3,tier:4},{target:CARRIER,ring:[]});
  b=terrain(b,[[0,0],[RAMP[0],0],[RAMP[1],DR],[RAMP[1]+6,BED],[BAY[0],BED],[BAY[1],0],[ISLAND_END,0],[RAMP_E[1],DR],[RAMP_E[1]+6,BED],[8000,BED]]);
  // No street clutter on the ramps, the decks or in the bay; the island's sheds are the Navy base's hangars.
  b=clearClutter(b,[[RAMP[0],BAY[1]],[ISLAND_END,8000]]);
@@ -438,7 +443,7 @@ function sfBayBridge():BlockDef{
  b={...b,buildings:[...b.buildings,upper,tower(6400),tower(7200),...roadblock]};
  // Gridlock on the lower deck: parked rows end to end.
  const cars=[1620,1960,2300,2640,2980,3320].map(sc);
- return {...b,cars,bridge:{x0:sc(WEST[0]),x1:sc(WEST[1]),spans:8,rise:bd.deckRise,more:[[sc(EAST[0]),sc(EAST[1]),4]]},
+ return {...b,cars,deckApproach:sc(1070),bridge:{x0:sc(WEST[0]),x1:sc(WEST[1]),spans:8,rise:bd.deckRise,more:[[sc(EAST[0]),sc(EAST[1]),4]]},
   water:[[sc(RAMP[1]),sc(BAY[1]),CONFIG.ground+6],[sc(RAMP_E[1]),sc(8000),CONFIG.ground+6]],bands:true,
   target:{x:sc(CARRIER),label:'AIRCRAFT CARRIER',art:'cutter',scale:bd.carrierScale,launch:true},garrison:[],
   // Tanks and soldiers on the lower deck, tanks and artillery on the upper deck, warships on the water below it and in the bay.

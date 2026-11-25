@@ -274,7 +274,7 @@ export const MOVE = {
  // A barge/gore only lands after a run-up: bargeRunUp px (x stage scale) covered running the same way; each hit resets it.
  bargeDamage:26,bargeCooldown:.45,bargeRunUp:90,bargeUnitDamage:18,bargeKnockback:260,
  ledgeGrab:.45,wallLeap:1.6,grabCooldown:.22,
- diveSpeed:900,diveSteer:.35,diveDamage:48,diveRoofMult:1.7,diveRadius:80,diveFallBonus:300,diveFallMax:1.5,
+ diveSpeed:900,diveSteer:.35,diveDamage:48,diveRoofMult:1.7,diveAirMult:3,diveRadius:80,diveFallBonus:300,diveFallMax:1.5,
  diveKnockback:300,diveWaveRange:200,diveWaveSize:.6,diveWaveDamage:.45,diveCooldown:.35,
  diveSpin:16,
  // Street roll: a street Slam with a direction held keeps the spike ball rolling (forms whose dive strip spins, i.e. Mogurodon).
@@ -531,3 +531,13 @@ export const BRIDGE = {deckRise:Math.round(150*CITY_SCALE),clear:Math.round(165*
 // KO'd: it retreats into the fog (`retreatSpeed`, fading over `retreatFade` s) while the main span comes down (`collapseGap` s apart).
 export const GATE = {chargeEvery:13,vanish:.9,telegraph:1.5,chargeSpeed:430,chargeDamage:12,chargeKnock:330,fogDistance:760,chargeOvershoot:380,
  retreatSpeed:140,retreatFade:3.2,collapseGap:.4,wakeShake:12,tower:Math.round(430*CITY_SCALE)};
+
+// Kaiban as a boss (src/rival.ts, any boss level whose rival is Kaiban): the player's own kit turned on the kaiju. He is slow but hits hard.
+// Up close he barges (the shared melee). At mid range he scoops the street and flings a Debris Shotgun fan (`rocks` chunks between
+// `angle` degrees, fast and flat to lobbed, each stopping on the first building or the kaiju it meets: short range, harsh point-blank).
+// Every third mid-range attack (and any attack from `far` away) is a Stampede: a bellow (`stampedeTelegraph` s, he locks his facing and a
+// lane shows on the street), then a head-down charge of `stampedeReach` px at `stampedeSpeed` that hits the kaiju once, wrecks every
+// building in the lane and cannot be staggered, then `stampedeRecover` s winded (the opening to hit back). `meleeStreak` barges in a
+// row from point blank are broken up by a Stampede.
+export const KAIBAN_BOSS = {speed:80,shotgunTelegraph:.9,shotgunCooldown:2.6,rocks:6,rockDamage:3,rockSpeed:[380,520] as [number,number],rockAngle:[8,50] as [number,number],rockGravity:1100,rockLife:.9,rockKnock:60,rockSize:9,rockCap:12,
+ stampedeTelegraph:1.3,stampedeReach:640,stampedeSpeed:400,stampedeDamage:14,stampedeKnock:360,stampedeBuilding:400,stampedeRecover:2,far:520,meleeStreak:2};

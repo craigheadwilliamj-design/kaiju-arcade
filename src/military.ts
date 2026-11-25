@@ -15,7 +15,15 @@ export const NAVAL_UNITS=new Set<UnitType>(['boat','gunboat','destroyer']);
 // Under a bridge deck the water is hidden by the deck (it is the ground there): a level with warships looks at the seabed instead.
 let underDecks=false;export function setNavyUnderDecks(v:boolean){underDecks=v;}
 export function navigable(x:number){if(underDecks){const s=waterAt(x);return s!==null&&bedAt(x)-s>=W.boatMinDepth;}return submerged(x)&&depthAt(x)>=W.boatMinDepth;}
+// Cover from above (set by the game for a level with raised decks): the y of a standing deck that a shot travelling from (x, oy) down to y
+// crossed, or null. Such a deck is as good as the street as far as a falling bomb, a rocket or a strafing round goes.
+let coverFn:(x:number,oy:number,y:number)=>number|null=()=>null;export function setCover(f:(x:number,oy:number,y:number)=>number|null){coverFn=f;}
 export function floatY(x:number,h:number){return (waterAt(x)??groundAt(x))-h*(1-W.boatFloat);}
+// Aircraft hold a cruising height above the street under them: on a flat street that is the old fixed y; over raised ground (a terraced
+// hill, a bridge deck) it rises with the street, so a helicopter never spawns inside the hill nor a jet under the deck, where its bombs
+// and rounds would 'hit the ground' on the spot and blow up on their own crew.
+const CRUISE:Record<string,number>={helicopter:285,jet:267,bomber:246};
+export function cruiseY(type:UnitType,x:number){const base=CRUISE[type]??267;return Math.min(base,base-(C.ground-groundAt(x)));}
 const fielded=(s:{units:Unit[]})=>s.units.filter(u=>u.hp>0&&!NAVAL_UNITS.has(u.type)).length;
 // windup: seconds until the telegraphed shot (`pending`) fires at aimX/aimY; stun: interrupted, cannot move or fire.
 // spotter: carries a radio and calls in a strike after `call` reaches MF.spotterSeconds. vy/flash are presentation physics.
@@ -39,7 +47,7 @@ export type MilitaryState={tier:number,city:number,units:Unit[],projectiles:Proj
 export function createMilitary(tier=1,city=0,rng=Math.random):MilitaryState{return {tier:Math.max(1,Math.min(5,tier)),city,units:[],projectiles:[],wrecks:[],effects:[],events:[],spawnTimer:M.firstSpawn,sequence:0,nextID:1,rng,squad:[],squadSize:0,squadLabel:'',cutOff:{'1':0,'-1':0}};}
 export function onScreen(r:Rect,camera:number,viewW=C.width){return r.x+r.w>camera&&r.x<camera+viewW;}
 export function spawnUnit(s:MilitaryState,type:UnitType,x:number,side=1,spotter=false):Unit{
- const d=UNITS[type],naval=NAVAL_UNITS.has(type);if(!d.air&&!naval)for(let k=0;k<80&&submerged(x+d.w/2);k++)x-=side*40;const y=d.air?(type==='helicopter'?285:type==='jet'?267:246):naval?floatY(x+d.w/2,d.h):groundAt(x+d.w/2)-d.h;
+ const d=UNITS[type],naval=NAVAL_UNITS.has(type);if(!d.air&&!naval)for(let k=0;k<80&&submerged(x+d.w/2);k++)x-=side*40;const y=d.air?cruiseY(type,x+d.w/2):naval?floatY(x+d.w/2,d.h):groundAt(x+d.w/2)-d.h;
  const hp=d.hp*(1+s.city*M.cityHP);
  const u:Unit={id:s.nextID++,type,x,y,w:d.w,h:d.h,hp,maxHP:hp,face:side,pass:side,cooldown:1.1,burst:0,gap:0,shots:0,kb:0,
   windup:0,windTotal:0,aimX:0,aimY:0,pending:null,stun:0,spotter,call:0,vy:0,flash:0};s.units.push(u);return u;
@@ -163,6 +171,8 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
   if(naval)u.y=floatY(u.x+u.w/2,u.h);
   else if(!d.air){const floor=(platformFloor(u.x+u.w/2,u.y+u.h)??groundAt(u.x+u.w/2))-u.h;if(u.vy!==0||u.y<floor-2){u.vy+=MF.unitGravity*dt;u.y+=u.vy*dt;if(u.y>=floor){u.y=floor;u.vy=0;}}else u.y=floor;}
   if(u.type==='jet'||u.type==='bomber')u.x+=u.pass*d.speed*dt;
+  // Flying over rising ground (a hill, a bridge ramp): climb to keep the cruising height above it.
+  if(d.air){const ceil=cruiseY(u.type,u.x+u.w/2);if(u.y>ceil)u.y=Math.max(ceil,u.y-260*dt);}
   if(overlaps(u,player)){
    if(u.type==='police'||u.type==='soldier')hitUnit(s,u,u.hp,contactSource,0,u.face,false,'crush');
    // A grown kaiju flattens the armour it walks into.
@@ -199,9 +209,12 @@ export function tickMilitary(s:MilitaryState,dt:number,camera:number,worldWidth:
  for(const p of s.projectiles){if(p.dead)continue;const ox=p.x,oy=p.y;p.age+=dt;p.life-=dt;
   if(p.weapon==='artillery'){const t=Math.min(1,p.age/p.flight);p.x=p.startX+(p.targetX-p.startX)*t;p.y=p.startY+(groundAt(p.targetX)-p.startY)*t-Math.sin(t*Math.PI)*170;}
   else {if(p.weapon==='bomb')p.vy+=210*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;}
-  const hitsPlayer=segmentHits(ox,oy,p.x,p.y,player,2),hitsBoss=boss&&segmentHits(ox,oy,p.x,p.y,boss,2);
+  // Aerial fire (everything but a lobbed shell) is stopped by a deck over the street, like the street itself: it only reaches what is above the deck.
+  const roof=p.weapon==='artillery'?null:coverFn(p.x,oy,p.y),gy=roof===null?groundAt(p.x):Math.min(groundAt(p.x),roof),ey=roof===null?p.y:roof;
+  const hitsPlayer=segmentHits(ox,oy,p.x,ey,player,2),hitsBoss=boss&&segmentHits(ox,oy,p.x,ey,boss,2);
   if(p.weapon==='artillery'||p.weapon==='bomb'){
-   if(p.y>=groundAt(p.x)||p.weapon==='artillery'&&p.age>=p.flight){p.y=groundAt(p.x);detonate(s,p,player,boss);}
+   if(p.y>=gy||p.weapon==='artillery'&&p.age>=p.flight){p.y=gy;detonate(s,p,player,boss);}
+  }else if(roof!==null&&p.y>=roof&&!hitsPlayer&&!hitsBoss){p.y=roof;if(p.radius>0)detonate(s,p,player,boss);else{p.dead=true;s.events.push({kind:'cosmetic',x:p.x,y:p.y});}
   }else if(hitsPlayer||hitsBoss||p.y>=groundAt(p.x)){
    if(p.radius>0)detonate(s,p,player,boss);
    else {p.dead=true;if(hitsPlayer){const hy=Math.max(player.y,Math.min(p.y,player.y+player.h));s.events.push({kind:'playerHit',damage:p.damage,strength:0,direction:Math.sign(p.vx)||1,x:Math.max(player.x,Math.min(p.x,player.x+player.w)),y:hy,weapon:p.weapon});}else if(hitsBoss)s.events.push({kind:'cosmetic',x:p.x,y:p.y});}

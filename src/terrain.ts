@@ -35,6 +35,9 @@ export function groundAt(x:number){
  const d=deckAt(x);if(d)return d.y;
  const g=profileAt(x),p=pitAt(x);return (p?Math.max(g,p.floor):g)-moundAt(x);
 }
+// The street itself at x: the ground without any rubble heaped on it. Traffic drives on this (it is on the road, in front of the
+// building layer where the rubble lies), so a collapsed building no longer lifts passing cars up over its pile.
+export function streetAt(x:number){return groundAt(x)+moundAt(x);}
 // How high the rubble stands at x (0 off any mound): a flat top with sloped sides.
 export function moundAt(x:number){let h=0;for(const m of mounds){if(x<=m.x0||x>=m.x1)continue;const t=Math.min(1,Math.min(x-m.x0,m.x1-x)/m.side);h=Math.max(h,m.h*t);}return h;}
 export function addMound(x0:number,x1:number,h:number,side=.3){if(x1-x0<8||h<=0)return null;const m={x0,x1,h,side:Math.max(6,(x1-x0)*side)};mounds.push(m);return m;}
