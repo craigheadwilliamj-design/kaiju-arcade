@@ -88,7 +88,7 @@ const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
 const MX3_NATIVE={scale:173/256,anchor:41+128*173/256};
 // Myrmex Stage 3 attack strips: the same base shifted 40px left (origin at x=1) for room in front of the scythes.
 const MX3_LEFT={scale:173/256,anchor:1+128*173/256};
-// Myrmex Stage 3 form (in progress): the movement set and the light combo; `borrow` plays the Stage 2 strip for every other move.
+// Myrmex Stage 3 form (in progress): the movement set, light combo and heavy; `borrow` plays the Stage 2 strip for every other move.
 const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-idle.png',frames:8,fps:8,...MX3_NATIVE},
  walk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,...MX3_NATIVE},
  // Run (Shift / double-tap): a low fast scuttle, legs churning in diagonal pairs, scythes pumping, tail swung by myrmex_s3_sway.py.
@@ -103,7 +103,11 @@ const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-i
  // Light combo (scythes and tail instead of bites): a head-high scythe stab, a low lunging scythe reach, then the tail rises over his back
  // and stabs forward with a magenta venom streak (256x256, the shifted base padded 64px on top for the raised tail).
  light1:{src:'assets/myrmex-s3-light1.png',frames:9,fps:24,once:true,...MX3_LEFT},light2:{src:'assets/myrmex-s3-light2.png',frames:9,fps:21,once:true,...MX3_LEFT},
- light3:{src:'assets/myrmex-s3-light3.png',frames:9,fps:20,once:true,...MX3_LEFT}}};
+ light3:{src:'assets/myrmex-s3-light3.png',frames:9,fps:20,once:true,...MX3_LEFT},
+ // Heavy (256x256, the shifted base padded 64px on top): rear lifts the front, raises both scythes and cocks the tail high as a venom drop forms;
+ // the hold quivers and drips; the slam whips the tail over his head into the street in a magenta arc and splash as the scythes chop down. Pound reuses the slam.
+ heavyRear:{src:'assets/myrmex-s3-heavy-rear.png',frames:5,fps:20,once:true,...MX3_LEFT},heavyHold:{src:'assets/myrmex-s3-heavy-hold.png',frames:4,fps:10,...MX3_LEFT},
+ heavySlam:{src:'assets/myrmex-s3-heavy-slam.png',frames:7,fps:16,once:true,...MX3_LEFT},pound:{src:'assets/myrmex-s3-heavy-slam.png',frames:7,fps:16,once:true,...MX3_LEFT}}};
 // Myrmex Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
