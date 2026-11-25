@@ -82,7 +82,7 @@ const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
 const MX1_NATIVE={scale:116/256,anchor:70+128*116/256};
 // Myrmex Stage 1 attack strips: the same base shifted 40px left (origin at x=30) for room in front of the mandibles.
 const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
-// Myrmex Stage 1 form: the movement set (idle, walk, run, jump, crouch) and the light combo so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Myrmex Stage 1 form: the movement set (idle, walk, run, jump, crouch), the light combo and the heavy so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
  // Run (Shift / double-tap): a low scuttling tripod-gait run, closed on the base. Same timing as Stage 2's run.
@@ -99,7 +99,11 @@ const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-i
  // Light combo (bite, bite, sting; shared 24/21/20 fps, each ends on the shifted base): a rearing snap bite, a low lunging bite, then
  // the belly sting: he has no tail to swing overhead, so the abdomen curls under him and sprays purple venom forward between his legs.
  light1:{src:'assets/myrmex-s1-light1.png',frames:9,fps:24,once:true,...MX1_LEFT},light2:{src:'assets/myrmex-s1-light2.png',frames:9,fps:21,once:true,...MX1_LEFT},
- light3:{src:'assets/myrmex-s1-light3.png',frames:9,fps:20,once:true,...MX1_LEFT}}};
+ light3:{src:'assets/myrmex-s1-light3.png',frames:9,fps:20,once:true,...MX1_LEFT},
+ // Heavy, a charged belly sting (shared heavy timing): rear braces and curls the abdomen under him with venom beading on the stinger;
+ // hold quivers as the bead swells and drips; slam blasts a purple venom jet into a splash on the street and settles. Pound reuses the slam.
+ heavyRear:{src:'assets/myrmex-s1-heavy-rear.png',frames:5,fps:20,once:true,...MX1_LEFT},heavyHold:{src:'assets/myrmex-s1-heavy-hold.png',frames:4,fps:10,...MX1_LEFT},
+ heavySlam:{src:'assets/myrmex-s1-heavy-slam.png',frames:8,fps:16,once:true,...MX1_LEFT},pound:{src:'assets/myrmex-s1-heavy-slam.png',frames:8,fps:16,once:true,...MX1_LEFT}}};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
