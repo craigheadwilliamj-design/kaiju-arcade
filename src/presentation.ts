@@ -82,7 +82,7 @@ const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
 const MX1_NATIVE={scale:116/256,anchor:70+128*116/256};
 // Myrmex Stage 1 attack strips: the same base shifted 40px left (origin at x=30) for room in front of the mandibles.
 const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
-// Myrmex Stage 1 form: the movement set (idle, walk, run, jump, crouch), the light combo and the heavy so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Myrmex Stage 1 form: the movement set (idle, walk, run, jump, crouch), the light combo, the heavy and the Venom Bomb so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
  // Run (Shift / double-tap): a low scuttling tripod-gait run, closed on the base. Same timing as Stage 2's run.
@@ -103,7 +103,12 @@ const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-i
  // Heavy, a charged belly sting (shared heavy timing): rear braces and curls the abdomen under him with venom beading on the stinger;
  // hold quivers as the bead swells and drips; slam blasts a purple venom jet into a splash on the street and settles. Pound reuses the slam.
  heavyRear:{src:'assets/myrmex-s1-heavy-rear.png',frames:5,fps:20,once:true,...MX1_LEFT},heavyHold:{src:'assets/myrmex-s1-heavy-hold.png',frames:4,fps:10,...MX1_LEFT},
- heavySlam:{src:'assets/myrmex-s1-heavy-slam.png',frames:8,fps:16,once:true,...MX1_LEFT},pound:{src:'assets/myrmex-s1-heavy-slam.png',frames:8,fps:16,once:true,...MX1_LEFT}}};
+ heavySlam:{src:'assets/myrmex-s1-heavy-slam.png',frames:8,fps:16,once:true,...MX1_LEFT},pound:{src:'assets/myrmex-s1-heavy-slam.png',frames:8,fps:16,once:true,...MX1_LEFT},
+ // Venom Bomb (L, held; the game draws the bomb): brew straightens the legs to stand tall and tucks the abdomen under him as a glossy
+ // purple bubble swells on the stinger low between the hind legs; hold wobbles and drips it; throw swings the abdomen forward under the
+ // body (the flying bubble erased) and settles to standing height. `mouth` is the stinger tip on the release frame.
+ spitBrew:{src:'assets/myrmex-s1-spit-brew.png',frames:5,fps:8,once:true,...MX1_LEFT},spitHold:{src:'assets/myrmex-s1-spit-hold.png',frames:4,fps:8,...MX1_LEFT},
+ spitThrow:{src:'assets/myrmex-s1-spit-throw.png',frames:6,fps:18,once:true,impact:1,...MX1_LEFT,mouth:[104,172]}}};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
