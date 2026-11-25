@@ -88,7 +88,7 @@ const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
 const MX3_NATIVE={scale:173/256,anchor:41+128*173/256};
 // Myrmex Stage 3 attack strips: the same base shifted 40px left (origin at x=1) for room in front of the scythes.
 const MX3_LEFT={scale:173/256,anchor:1+128*173/256};
-// Myrmex Stage 3 form (in progress): the movement set, light combo and heavy; `borrow` plays the Stage 2 strip for every other move.
+// Myrmex Stage 3 form (in progress): the movement set, light combo, heavy and Venom Bomb; `borrow` plays the Stage 2 strip for every other move.
 const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-idle.png',frames:8,fps:8,...MX3_NATIVE},
  walk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,...MX3_NATIVE},
  // Run (Shift / double-tap): a low fast scuttle, legs churning in diagonal pairs, scythes pumping, tail swung by myrmex_s3_sway.py.
@@ -107,7 +107,11 @@ const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-i
  // Heavy (256x256, the shifted base padded 64px on top): rear lifts the front, raises both scythes and cocks the tail high as a venom drop forms;
  // the hold quivers and drips; the slam whips the tail over his head into the street in a magenta arc and splash as the scythes chop down. Pound reuses the slam.
  heavyRear:{src:'assets/myrmex-s3-heavy-rear.png',frames:5,fps:20,once:true,...MX3_LEFT},heavyHold:{src:'assets/myrmex-s3-heavy-hold.png',frames:4,fps:10,...MX3_LEFT},
- heavySlam:{src:'assets/myrmex-s3-heavy-slam.png',frames:7,fps:16,once:true,...MX3_LEFT},pound:{src:'assets/myrmex-s3-heavy-slam.png',frames:7,fps:16,once:true,...MX3_LEFT}}};
+ heavySlam:{src:'assets/myrmex-s3-heavy-slam.png',frames:7,fps:16,once:true,...MX3_LEFT},pound:{src:'assets/myrmex-s3-heavy-slam.png',frames:7,fps:16,once:true,...MX3_LEFT},
+ // Venom Bomb (256x256): the tail rises forward over his back as a glossy magenta bubble swells on the stinger; the hold wobbles and drips it;
+ // the throw whips the tail forward, the flying bubble erased (the game draws the bomb), launching from the stinger tip (mouth).
+ spitBrew:{src:'assets/myrmex-s3-spit-brew.png',frames:5,fps:8,once:true,...MX3_LEFT},spitHold:{src:'assets/myrmex-s3-spit-hold.png',frames:4,fps:8,...MX3_LEFT},
+ spitThrow:{src:'assets/myrmex-s3-spit-throw.png',frames:6,fps:18,once:true,impact:1,...MX3_LEFT,mouth:[130,105]}}};
 // Myrmex Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
