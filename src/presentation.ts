@@ -88,7 +88,7 @@ const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
 const MX3_NATIVE={scale:173/256,anchor:41+128*173/256};
 // Myrmex Stage 3 attack strips: the same base shifted 40px left (origin at x=1) for room in front of the scythes.
 const MX3_LEFT={scale:173/256,anchor:1+128*173/256};
-// Myrmex Stage 3 form (in progress): everything but the Ultimate; `borrow` plays the Stage 2 strip for every other move.
+// Myrmex Stage 3 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later. `borrow` plays the Stage 2 strip for every other move.
 const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-idle.png',frames:8,fps:8,...MX3_NATIVE},
  walk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,...MX3_NATIVE},
  // Run (Shift / double-tap): a low fast scuttle, legs churning in diagonal pairs, scythes pumping, tail swung by myrmex_s3_sway.py.
@@ -124,7 +124,13 @@ const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-i
  grab:{src:'assets/myrmex-s3-grab.png',frames:9,fps:22,once:true,bite:true,...MX3_LEFT,hold:[[164,191],[164,191],[164,191],[164,189],[164,190],[164,190],[165,183],[180,145],[171,113]]},
  carry:{src:'assets/myrmex-s3-idle.png',frames:8,fps:8,bite:true,...MX3_NATIVE,hold:[[211,113],[211,113],[211,112],[211,111],[211,110],[211,111],[211,111],[211,112]]},
  carryWalk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,bite:true,...MX3_NATIVE,hold:[[211,113],[211,111],[211,109],[211,107],[211,105],[211,106],[211,108],[211,111],[211,113],[211,112],[211,110],[211,107],[211,105],[211,105],[211,108],[211,110]]},
- throw:{src:'assets/myrmex-s3-throw.png',frames:5,fps:18,once:true,...MX3_LEFT}}};
+ throw:{src:'assets/myrmex-s3-throw.png',frames:5,fps:18,once:true,...MX3_LEFT},
+ // The Swarm (his Ultimate; 256x256, the base padded 64px on top): the charge hunches him as the back crystals flare taller and brighter
+ // magenta (13 frames = swarmCharge); the roar rears him up, wings flared, and the back bursts in a magenta starburst on the impact frame,
+ // where the game releases the drones from `mouth`; the pound holds the reared pose with the wings buzzing; the settle lowers him to standing.
+ ultCharge:{src:'assets/myrmex-s3-ult-charge.png',frames:13,fps:20,once:true,...MX3_NATIVE},
+ ultRoar:{src:'assets/myrmex-s3-ult-roar.png',frames:8,fps:18,once:true,impact:3,...MX3_NATIVE,mouth:[118,137]},
+ ultPound:{src:'assets/myrmex-s3-ult-pound.png',frames:4,fps:10,...MX3_NATIVE},ultSettle:{src:'assets/myrmex-s3-ult-settle.png',frames:8,fps:14,once:true,...MX3_NATIVE}}};
 // Myrmex Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
