@@ -80,7 +80,9 @@ const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
 // Myrmex Stage 1 strips: the myrmex-s1 base still, a 116x74 young wingless ant (six long clawed legs, wing buds, short purple-tipped
 // stinger) keyed from the user's render with tools/key_render.py, origin at x=70 in a 256x192 frame.
 const MX1_NATIVE={scale:116/256,anchor:70+128*116/256};
-// Myrmex Stage 1 form: idle, walk, run, jump and crouch (the movement set). `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Myrmex Stage 1 attack strips: the same base shifted 40px left (origin at x=30) for room in front of the mandibles.
+const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
+// Myrmex Stage 1 form: the movement set (idle, walk, run, jump, crouch) and the light combo so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
  // Run (Shift / double-tap): a low scuttling tripod-gait run, closed on the base. Same timing as Stage 2's run.
@@ -93,7 +95,11 @@ const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-i
  // Crouch (shared timing): down flattens him onto six splayed legs, 74px tall down to 48 (0.65), head dipped; the loop breathes with
  // twitching antennae; up is down reversed.
  crouchDown:{src:'assets/myrmex-s1-crouch-down.png',frames:5,fps:22,once:true,...MX1_NATIVE},crouch:{src:'assets/myrmex-s1-crouch.png',frames:4,fps:6,...MX1_NATIVE},
- crouchUp:{src:'assets/myrmex-s1-crouch-up.png',frames:5,fps:22,once:true,...MX1_NATIVE}}};
+ crouchUp:{src:'assets/myrmex-s1-crouch-up.png',frames:5,fps:22,once:true,...MX1_NATIVE},
+ // Light combo (bite, bite, sting; shared 24/21/20 fps, each ends on the shifted base): a rearing snap bite, a low lunging bite, then
+ // the belly sting: he has no tail to swing overhead, so the abdomen curls under him and sprays purple venom forward between his legs.
+ light1:{src:'assets/myrmex-s1-light1.png',frames:9,fps:24,once:true,...MX1_LEFT},light2:{src:'assets/myrmex-s1-light2.png',frames:9,fps:21,once:true,...MX1_LEFT},
+ light3:{src:'assets/myrmex-s1-light3.png',frames:9,fps:20,once:true,...MX1_LEFT}}};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
