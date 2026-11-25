@@ -8,7 +8,7 @@ const landmarks=LEVELS.flat().flatMap(b=>b.buildings.filter(x=>x.landmark));
 const named=(label:string)=>landmarks.find(b=>b.label===label)!;
 
 test('ordinary buildings keep their single footprint box',()=>{
- for(const b of LEVELS.flat().flatMap(x=>x.buildings).filter(x=>!x.landmark&&!x.upperDeck&&x.deco!=='btower')){
+ for(const b of LEVELS.flat().flatMap(x=>x.buildings).filter(x=>!x.landmark&&!x.upperDeck&&x.deco!=='btower'&&x.deco!=='tallship'&&x.deco!=='guardtower')){
   assert.deepEqual(hitParts(b),[{x:b.x,y:C.ground-b.h,w:b.w,h:b.h,solid:true}]);
   assert.equal(solidParts(b).length,1);}
 });

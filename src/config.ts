@@ -274,7 +274,7 @@ export const MOVE = {
  // A barge/gore only lands after a run-up: bargeRunUp px (x stage scale) covered running the same way; each hit resets it.
  bargeDamage:26,bargeCooldown:.45,bargeRunUp:90,bargeUnitDamage:18,bargeKnockback:260,
  ledgeGrab:.45,wallLeap:1.6,grabCooldown:.22,
- diveSpeed:900,diveSteer:.35,diveDamage:48,diveRoofMult:1.7,diveRadius:80,diveFallBonus:300,diveFallMax:1.5,
+ diveSpeed:900,diveSteer:.35,diveDamage:48,diveRoofMult:1.7,diveAirMult:3,diveRadius:80,diveFallBonus:300,diveFallMax:1.5,
  diveKnockback:300,diveWaveRange:200,diveWaveSize:.6,diveWaveDamage:.45,diveCooldown:.35,
  diveSpin:16,
  // Street roll: a street Slam with a direction held keeps the spike ball rolling (forms whose dive strip spins, i.e. Mogurodon).
