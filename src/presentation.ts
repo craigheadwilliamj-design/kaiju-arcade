@@ -86,9 +86,11 @@ const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
 // wings, pink crystals along the back, curled scorpion tail with a magenta stinger) keyed from the user's thin-outline render with
 // tools/key_render.py --square and reduced to 47 colours, origin at x=41 in a 256x192 frame.
 const MX3_NATIVE={scale:173/256,anchor:41+128*173/256};
-// Myrmex Stage 3 form (just started): idle and walk; `borrow` plays the Stage 2 strip for every other move.
+// Myrmex Stage 3 form (in progress): idle, walk and run; `borrow` plays the Stage 2 strip for every other move.
 const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-idle.png',frames:8,fps:8,...MX3_NATIVE},
- walk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,...MX3_NATIVE}}};
+ walk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,...MX3_NATIVE},
+ // Run (Shift / double-tap): a low fast scuttle, legs churning in diagonal pairs, scythes pumping, tail swung by myrmex_s3_sway.py.
+ run:{src:'assets/myrmex-s3-run.png',frames:12,fps:20,...MX3_NATIVE}}};
 // Myrmex Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
