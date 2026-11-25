@@ -88,7 +88,7 @@ const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
 const MX3_NATIVE={scale:173/256,anchor:41+128*173/256};
 // Myrmex Stage 3 attack strips: the same base shifted 40px left (origin at x=1) for room in front of the scythes.
 const MX3_LEFT={scale:173/256,anchor:1+128*173/256};
-// Myrmex Stage 3 form (in progress): the movement set, light combo, heavy, Venom Bomb, Sting Dive and climb; `borrow` plays the Stage 2 strip for every other move.
+// Myrmex Stage 3 form (in progress): everything but the Ultimate; `borrow` plays the Stage 2 strip for every other move.
 const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-idle.png',frames:8,fps:8,...MX3_NATIVE},
  walk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,...MX3_NATIVE},
  // Run (Shift / double-tap): a low fast scuttle, legs churning in diagonal pairs, scythes pumping, tail swung by myrmex_s3_sway.py.
@@ -118,7 +118,13 @@ const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-i
  // Climb (256x256, shared climb timing): the climb loop is his walk turned a quarter (head up, belly to the wall), feet on the wall line at
  // x=162 (24 world units out at 173px per 120). The grab leaps onto the wall, the punch slams both scythes into it, the mantle hauls him over.
  climbGrab:{src:'assets/myrmex-s3-climb-grab.png',frames:5,fps:20,once:true,...MX3_NATIVE},climb:{src:'assets/myrmex-s3-climb.png',frames:16,fps:15,...MX3_NATIVE},
- climbPunch:{src:'assets/myrmex-s3-climb-punch.png',frames:8,fps:24,once:true,impact:3,...MX3_NATIVE},climbMantle:{src:'assets/myrmex-s3-climb-mantle.png',frames:9,fps:20,once:true,...MX3_NATIVE}}};
+ climbPunch:{src:'assets/myrmex-s3-climb-punch.png',frames:8,fps:24,once:true,impact:3,...MX3_NATIVE},climbMantle:{src:'assets/myrmex-s3-climb-mantle.png',frames:9,fps:20,once:true,...MX3_NATIVE},
+ // Grab, carry and throw in the mandibles: the grab lowers the head to the street, closes the jaws and lifts; carry and carry-walk reuse his
+ // idle and walk with the prop at the jaw tip (following the bob); the throw swings the head up and forward with the jaws opening.
+ grab:{src:'assets/myrmex-s3-grab.png',frames:9,fps:22,once:true,bite:true,...MX3_LEFT,hold:[[164,191],[164,191],[164,191],[164,189],[164,190],[164,190],[165,183],[180,145],[171,113]]},
+ carry:{src:'assets/myrmex-s3-idle.png',frames:8,fps:8,bite:true,...MX3_NATIVE,hold:[[211,113],[211,113],[211,112],[211,111],[211,110],[211,111],[211,111],[211,112]]},
+ carryWalk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,bite:true,...MX3_NATIVE,hold:[[211,113],[211,111],[211,109],[211,107],[211,105],[211,106],[211,108],[211,111],[211,113],[211,112],[211,110],[211,107],[211,105],[211,105],[211,108],[211,110]]},
+ throw:{src:'assets/myrmex-s3-throw.png',frames:5,fps:18,once:true,...MX3_LEFT}}};
 // Myrmex Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
