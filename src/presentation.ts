@@ -82,10 +82,10 @@ const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
 const MX1_NATIVE={scale:116/256,anchor:70+128*116/256};
 // Myrmex Stage 1 attack strips: the same base shifted 40px left (origin at x=30) for room in front of the mandibles.
 const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
-// Myrmex Stage 3 strips: the myrmex-s3 base still, a 127x91 adult (four clawed walking legs, folded scythe forelegs, four orange wasp
-// wings, pink crystals along the back, curled scorpion tail with a magenta stinger) keyed from the user's render with tools/key_render.py
-// --square, origin at x=64 in a 256x192 frame.
-const MX3_NATIVE={scale:127/256,anchor:64+128*127/256};
+// Myrmex Stage 3 strips: the myrmex-s3 base still, a 173x123 adult (four clawed walking legs, folded scythe forelegs, four orange wasp
+// wings, pink crystals along the back, curled scorpion tail with a magenta stinger) keyed from the user's thin-outline render with
+// tools/key_render.py --square and reduced to 47 colours, origin at x=41 in a 256x192 frame.
+const MX3_NATIVE={scale:173/256,anchor:41+128*173/256};
 // Myrmex Stage 3 form (just started): idle and walk; `borrow` plays the Stage 2 strip for every other move.
 const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-idle.png',frames:8,fps:8,...MX3_NATIVE},
  walk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,...MX3_NATIVE}}};
