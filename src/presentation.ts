@@ -86,7 +86,9 @@ const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
 // wings, pink crystals along the back, curled scorpion tail with a magenta stinger) keyed from the user's thin-outline render with
 // tools/key_render.py --square and reduced to 47 colours, origin at x=41 in a 256x192 frame.
 const MX3_NATIVE={scale:173/256,anchor:41+128*173/256};
-// Myrmex Stage 3 form (in progress): the movement set (idle, walk, run, jump, crouch); `borrow` plays the Stage 2 strip for every other move.
+// Myrmex Stage 3 attack strips: the same base shifted 40px left (origin at x=1) for room in front of the scythes.
+const MX3_LEFT={scale:173/256,anchor:1+128*173/256};
+// Myrmex Stage 3 form (in progress): the movement set and the light combo; `borrow` plays the Stage 2 strip for every other move.
 const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-idle.png',frames:8,fps:8,...MX3_NATIVE},
  walk:{src:'assets/myrmex-s3-walk.png',frames:16,fps:15,...MX3_NATIVE},
  // Run (Shift / double-tap): a low fast scuttle, legs churning in diagonal pairs, scythes pumping, tail swung by myrmex_s3_sway.py.
@@ -97,7 +99,11 @@ const MYRMEX_S3:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s3-i
  jumpFlap:{src:'assets/myrmex-s3-jump-flap.png',frames:5,fps:20,once:true,...MX3_NATIVE},jumpLand:{src:'assets/myrmex-s3-jump-land.png',frames:5,fps:20,once:true,...MX3_NATIVE},
  // Crouch (shared timing): down splays the four legs and drops him to 0.67 with the wings folded flat; a slow breathing loop; up is down reversed.
  crouchDown:{src:'assets/myrmex-s3-crouch-down.png',frames:5,fps:22,once:true,...MX3_NATIVE},crouch:{src:'assets/myrmex-s3-crouch.png',frames:4,fps:6,...MX3_NATIVE},
- crouchUp:{src:'assets/myrmex-s3-crouch-up.png',frames:5,fps:22,once:true,...MX3_NATIVE}}};
+ crouchUp:{src:'assets/myrmex-s3-crouch-up.png',frames:5,fps:22,once:true,...MX3_NATIVE},
+ // Light combo (scythes and tail instead of bites): a head-high scythe stab, a low lunging scythe reach, then the tail rises over his back
+ // and stabs forward with a magenta venom streak (256x256, the shifted base padded 64px on top for the raised tail).
+ light1:{src:'assets/myrmex-s3-light1.png',frames:9,fps:24,once:true,...MX3_LEFT},light2:{src:'assets/myrmex-s3-light2.png',frames:9,fps:21,once:true,...MX3_LEFT},
+ light3:{src:'assets/myrmex-s3-light3.png',frames:9,fps:20,once:true,...MX3_LEFT}}};
 // Myrmex Stage 1 form (complete): every move has its own strip. `borrow` stays as a safety net for strips added to Stage 2 later.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
