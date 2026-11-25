@@ -82,7 +82,7 @@ const MX2_LEFT={scale:146/256,anchor:15+128*146/256};
 const MX1_NATIVE={scale:116/256,anchor:70+128*116/256};
 // Myrmex Stage 1 attack strips: the same base shifted 40px left (origin at x=30) for room in front of the mandibles.
 const MX1_LEFT={scale:116/256,anchor:30+128*116/256};
-// Myrmex Stage 1 form: the movement set (idle, walk, run, jump, crouch), the light combo, the heavy, the Venom Bomb, the Sting Dive and the climb so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
+// Myrmex Stage 1 form: the movement set (idle, walk, run, jump, crouch), the light combo, the heavy, the Venom Bomb, the Sting Dive, the climb and grab/carry/throw so far. `borrow` plays the Stage 2 strip for every move it doesn't have yet.
 const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,...MX1_NATIVE},
  walk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,...MX1_NATIVE},
  // Run (Shift / double-tap): a low scuttling tripod-gait run, closed on the base. Same timing as Stage 2's run.
@@ -117,7 +117,14 @@ const MYRMEX_S1:Form={width:120,borrow:true,anims:{idle:{src:'assets/myrmex-s1-i
  // quarter counter-clockwise (head up, belly to the wall, every leg stepping); grab leaps up onto the wall (mid-leap frames pulled back
  // to the wall line); punch slams the mandibles and claws into the wall with a white flash on frame 4; mantle pulls him over the top.
  climbGrab:{src:'assets/myrmex-s1-climb-grab.png',frames:5,fps:20,once:true,...MX1_NATIVE},climb:{src:'assets/myrmex-s1-climb.png',frames:16,fps:15,...MX1_NATIVE},
- climbPunch:{src:'assets/myrmex-s1-climb-punch.png',frames:8,fps:24,once:true,impact:4,...MX1_NATIVE},climbMantle:{src:'assets/myrmex-s1-climb-mantle.png',frames:9,fps:20,once:true,...MX1_NATIVE}}};
+ climbPunch:{src:'assets/myrmex-s1-climb-punch.png',frames:8,fps:24,once:true,impact:4,...MX1_NATIVE},climbMantle:{src:'assets/myrmex-s1-climb-mantle.png',frames:9,fps:20,once:true,...MX1_NATIVE},
+ // Grab/carry/throw in the mandibles (bite): grab lowers the head to the street, clamps and lifts (the prop waits at the bite spot until
+ // the jaws reach it, frame 3); carry and carryWalk reuse his idle and walk; throw whips the head forward (the prop leaves on the key
+ // press). `hold` is the jaw tip, the rightmost point of the head (rows above the feet), measured per frame.
+ grab:{src:'assets/myrmex-s1-grab.png',frames:9,fps:22,once:true,bite:true,...MX1_LEFT,hold:[[145,179],[145,179],[145,179],[145,179],[145,179],[145,179],[145,179],[145,166],[145,146]]},
+ carry:{src:'assets/myrmex-s1-idle.png',frames:8,fps:8,bite:true,...MX1_NATIVE,hold:[[185,146],[185,145],[185,144],[185,142],[185,141],[185,142],[185,144],[185,145]]},
+ carryWalk:{src:'assets/myrmex-s1-walk.png',frames:16,fps:15,bite:true,...MX1_NATIVE,hold:[[185,146],[185,147],[185,146],[185,145],[185,149],[185,144],[185,145],[185,147],[185,146],[185,146],[185,145],[185,144],[185,143],[185,144],[185,144],[185,146]]},
+ throw:{src:'assets/myrmex-s1-throw.png',frames:6,fps:18,once:true,...MX1_LEFT}}};
 // Belial Stage 1 attack strips: the same base shifted 40px left (sprite at x=17) so the slashes and the lunge stay in the frame.
 const BL1_LEFT={scale:145/256,anchor:17+128*145/256};
 // Belial Stage 3 strips: the belial-s3 base still, a 200x113 sprite at x=28 in a 256x192 frame (the user's render keyed with
