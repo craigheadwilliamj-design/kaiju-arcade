@@ -1017,7 +1017,10 @@ function drawBlaze(b:typeof buildings[number],x:number,h:number){const f=blazes.
 function heapRubble(b:typeof buildings[number],from?:number,to?:number){if(mounded.has(b)||b.kind==='tiny'||b.role||b.lifted||b.upperDeck||b.deco==='concourse')return;mounded.add(b);
  if(from!==undefined)addMound(from,to!,RB.ridge,RB.side);else addMound(b.x-6,b.x+b.w+4,Math.max(RB.min,Math.min(RB.max,b.h*RB.heightK)),RB.side);}
 function drawMounds(){for(const m of moundList()){const a=m.x0-camera,z=m.x1-camera;if(z<-20||a>viewW()+20)continue;ctx.fillStyle='#6d6a5f';ctx.beginPath();ctx.moveTo(a,bedAt(m.x0));
- for(let x=m.x0;x<=m.x1;x+=6)ctx.lineTo(x-camera,groundAt(x));ctx.lineTo(z,bedAt(m.x1));ctx.closePath();ctx.fill();
+ for(let x=m.x0;x<=m.x1;x+=6)ctx.lineTo(x-camera,groundAt(x));
+ // Over a cave-in the heap rests on the pit floor point by point, instead of a straight base line cutting a wedge across the hole.
+ if(pitList().some(p=>p.x0<m.x1&&p.x1>m.x0)){ctx.lineTo(z,groundAt(m.x1));for(let x=m.x1;x>=m.x0;x-=6)ctx.lineTo(x-camera,bedAt(x));}else ctx.lineTo(z,bedAt(m.x1));
+ ctx.closePath();ctx.fill();
  for(let x=m.x0+4;x<m.x1-6;x+=11){const t=groundAt(x);rect(x-camera,t+2+((x*7)%9),8,6,(x*13)%3?'#898879':'#55534b');}}}
 // Mexico City: soft lake-bed ground. A heavy impact near buildings sinks them; sunk far enough, they give way.
 function sinkAround(cx:number,ult=false){if(style()!=='mex')return;let any=false;
