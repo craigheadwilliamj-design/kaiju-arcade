@@ -8,6 +8,8 @@ export const ROSTER=[
  {name:'Kaiban',color:'#b7a08b',ratings:[5,1,5,2],ending:'King of the Ruins'},
  {name:'Myrmex',color:'#ad9fbf',ratings:[3,4,2,5],ending:'The Swarm Ascendant'},
  {name:'Sargathoth',color:'#79ad91',ratings:[4,1,5,4],ending:'The World Reclaimed'},
+ // Placeholder until the designer's concept lands (docs/ROUTE_SHUFFLE.md card 4): neutral colour, flat ratings, no ending title.
+ {name:'Atomotitan',color:'#93a2b4',ratings:[3,3,3,3],ending:'TBD'},
 ];
 // Original epilogues/illustrations have not been supplied. Do not invent final lore.
 export const ENDINGS=ROSTER.map(r=>({name:r.name,title:r.ending,epilogue:null as string|null}));
@@ -1015,6 +1017,8 @@ export function drawSilhouette(ctx:CanvasRenderingContext2D,name:string,x:number
  if(index===3){box(ctx,-31,-43,54,35,color);box(ctx,12,-33,28,23,color);box(ctx,32,-26,14,13,color);polygon(ctx,[[29,-16],[41,-35],[41,-16]],locked?color:'#e1d5b9');polygon(ctx,[[-30,-40],[-25,-56],[-17,-40]],color);}
  if(index===4){polygon(ctx,[[-7,-40],[-42,-66],[-43,-36],[-7,-19]],color);polygon(ctx,[[6,-40],[37,-66],[40,-36],[6,-19]],color);box(ctx,-10,-52,20,45,color);box(ctx,-8,-65,17,16,color);box(ctx,-14,-77,3,18,color);box(ctx,11,-77,3,18,color);}
  if(index===5){polygon(ctx,[[-26,-6],[-25,-48],[-13,-64],[-5,-47],[5,-71],[17,-57],[24,-31],[34,-6]],color);for(let n=0;n<6;n++){const px=-39+n*15;polygon(ctx,[[px,-1],[px-7,-28-n%2*15],[px+2,-20],[px+8,-2]],color);}}
+ // Atomotitan: a plain block body + head, a generic placeholder (no design yet, card 4).
+ if(index===6){box(ctx,-24,-52,44,42,color);box(ctx,4,-66,22,16,color);}
  if(index!==5){box(ctx,-25,-11,13,12,color);box(ctx,10,-11,15,12,color);}
  if(!locked){box(ctx,index===3?29:index===2?35:18,index===4?-59:index===5?-45:index===1?-55:index===2?-23:-31,4,3,index===5?'#c9fbb1':'#f0b3d0');}
  ctx.restore();

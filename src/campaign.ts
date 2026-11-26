@@ -1,5 +1,5 @@
 import {CITIES,LEVELS,cityIndexOf} from './levels.ts';
-export const KAIJU=['Mogurodon','Tlézcatl','Belial','Kaiban','Myrmex','Sargathoth'];
+export const KAIJU=['Mogurodon','Tlézcatl','Belial','Kaiban','Myrmex','Sargathoth','Atomotitan'];
 // The campaign route: city ids in order. Each city's final boss is (in the redesign) the next city's kaiju.
 export const CAMPAIGN=['sfo','nyc','mex','par','hkg','tyo'];
 // v2 (campaign redesign): cities are ids and San Francisco leads the route. v1 saves are not migrated; they are ignored and the
