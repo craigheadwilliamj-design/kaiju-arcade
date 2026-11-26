@@ -201,8 +201,8 @@ export const BUILDING_PRESETS={
  n:{w:64,h:460,hp:540,value:340,kind:'medium'},
  // NYC fix card 5: chunky towers for the New York route levels in place of the needle presets x (108x520) and n (64x460), which stand over 4.5x as tall as they are wide.
  // y is the pair `x,n` as one wide tower (176 + the 4px gap = the pair's 180, so the layout's rhythm holds); u replaces a lone x or n. Heights stay put.
- y:{w:176,h:520,hp:1000,value:640,kind:'medium'},
- u:{w:132,h:440,hp:640,value:380,kind:'medium'},
+ y:{w:176,h:520,hp:420,value:640,kind:'medium'},
+ u:{w:132,h:440,hp:300,value:380,kind:'medium'},
  L:{w:190,h:500,hp:1200,value:1000,kind:'large'},
  // City systems (src/city.ts): a fenced power substation and a fuel depot. Low yards you walk past like a newsstand (tiny kind,
  // so they never wall off a street) but they do not break on contact; you have to attack them. Not liftable.

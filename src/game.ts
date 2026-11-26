@@ -2525,9 +2525,9 @@ const NYC_SHOPS=['DELI','PIZZA','BAR','CAFE','NAILS','LIQUOR','BAGELS','LAUNDRY'
 function nycFacade(b:typeof buildings[number],x:number,y:number,h:number,bw:number,win:(xx:number,yy:number,off:string)=>string,seed:(n:number)=>number){
  const base=b.base,m=moodNow();
  // Window AC units, and the odd striped window awning.
- for(let yy=22;yy<h-30;yy+=22)for(let xx=10;xx<bw-10;xx+=19){const s=seed(xx*3+yy*11);
-  if(s<.2){rect(x+xx+1,y+yy+13,8,5,'#9aa0a3');rect(x+xx+1,y+yy+17,8,1,'#5a6064');rect(x+xx+2,y+yy+14,6,1,'#c4c9cc');}
-  else if(s<.27){const c=NYC_AWN[Math.floor(seed(yy)*4)];for(let k=0;k<5;k++)rect(x+xx-1+k*2.4,y+yy-3,2.4,5,k%2?c:'#e8dfc8');}}
+ for(let yy=22;yy<h-30;yy+=44)for(let xx=10;xx<bw-10;xx+=38){const s=seed(xx*3+yy*11);
+  if(s<.4){rect(x+xx+1,y+yy+13,8,5,'#9aa0a3');rect(x+xx+1,y+yy+17,8,1,'#5a6064');rect(x+xx+2,y+yy+14,6,1,'#c4c9cc');}
+  else if(s<.55){const c=NYC_AWN[Math.floor(seed(yy)*4)];for(let k=0;k<5;k++)rect(x+xx-1+k*2.4,y+yy-3,2.4,5,k%2?c:'#e8dfc8');}}
  // A second fire escape on the left of a wide building, platforms and a ladder.
  if(bw>90&&h>150){const fx=x+bw*.06,fw=bw*.3;ctx.strokeStyle='#262626';ctx.lineWidth=1;ctx.beginPath();for(let yy=y+60,k=0;yy<base-60;yy+=44,k++){rect(fx,yy+14,fw,2,'#262626');ctx.moveTo(fx+(k%2?fw*.85:fw*.15),yy+16);ctx.lineTo(fx+(k%2?fw*.15:fw*.85),yy+58);}ctx.stroke();}
  // Ground floor: a striped awning over a shop sign, and a blade sign on the corner.
@@ -2805,9 +2805,9 @@ const nightMix=(a:string,b:string,t:number)=>hexOk(a)&&hexOk(b)?mixHex(a,b,Math.
 function nycBackBuilding(x:number,w:number,h:number,seed:number,kind:NycDistrict,body:string,hole:string,offWin:string,win:string,lights:number,night:number,topY:number,base:number){
  const y=base-h,lit=(a:number,b:number)=>nh(seed*131+a*7+b*3)<lights;
  rect(x,y,w,h+6,body);rect(x+w-3,y,3,h+6,shade(body,.25));
- const sh=kind==='soho'?18:12,sv=kind==='soho'?20:15,ww=kind==='soho'?7:6,wh=kind==='soho'?13:9;
+ const sh=kind==='soho'?20:16,sv=kind==='soho'?24:19,ww=kind==='soho'?7:6,wh=kind==='soho'?13:9;
  // Windows: a grid, lit per mood (a window is lit or its day/night off colour).
- for(let k=Math.max(0,Math.floor((topY-sv-y-14)/sv));;k++){const yy=y+14+k*sv;if(yy>=base-30)break;for(let xx=8;xx<w-10;xx+=sh)rect(x+xx,yy,ww,wh,lit(xx,yy|0)?win:offWin);}
+ for(let k=Math.max(0,Math.floor((topY-sv-y-14)/sv));;k++){const yy=y+14+k*sv;if(yy>=base-30)break;rect(x+8,yy,w-18,wh,offWin);for(let xx=8;xx<w-10;xx+=sh)if(lit(xx,yy|0))rect(x+xx,yy,ww,wh,win);}
  if(kind==='canyon'){// pilasters, a stepped crown, an arcade at the foot
   ctx.globalAlpha=.16;for(let xx=18;xx<w-6;xx+=24)rect(x+xx,y,1,h,'#000000');ctx.globalAlpha=1;
   if(seed%3!==0){rect(x+w*.17,y-34,w*.66,34,body);rect(x+w*.34,y-58,w*.32,24,body);if(seed%2)poly([[x+w*.34,y-58],[x+w*.5,y-92],[x+w*.66,y-58]],body);else rect(x+w*.5-1,y-92,2,34,body);}

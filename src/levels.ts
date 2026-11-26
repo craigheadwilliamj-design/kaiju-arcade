@@ -783,11 +783,15 @@ function nycTimesSquare():BlockDef{
  const pattern=['m,h:board,l:board,s,m:billboard,h:board,u:billboard,m:board,s:board,_',
   'h:board,u:billboard,m:board,S,_',
   '>2750,=,L,=',
-  'u:billboard,h:board,l:board,m,s:board,h:board,m:billboard,u:billboard,l:board,_',
+  'm:billboard,h:board,l:board,m,s:board,h:board,m:billboard,u:billboard,l:board,_',
   'h:board,S,u:billboard,_,m:board,s,h:board,m:board'].join(',');
  let b=cityLevel('nyc','Times Square',7,'district',pattern,['ONE TIMES SQUARE|tower'],{startStage:2,cap:2,tier:2},{clutter:true});
  // The ball sits on One Times Square's roof.
  b={...b,buildings:b.buildings.map(x=>x.landmark?{...x,roof:'ball' as const}:x)};
+ // The ball's run down Broadway stays clear of street clutter (carts and cabs would crush and catch it).
+ {const lx=b.buildings.find(x=>x.landmark)!.x;b=clearProps(b,[lx+sc(3000)],sc(3000));
+ // ...and so does the stretch where the ball is first set down to be picked up: no parked row starts in the square's west approach.
+ b={...b,cars:b.cars.filter(c=>c<lx-sc(1200)||c>lx-sc(800))};}
  b=powered(b,[[0,3360],[3360,6720]],NYC_POLES(220,6700));
  // The square is packed: extra street spots (a crowd each) round One Times Square and along both avenues.
  b={...b,street:[...b.street,...[700,1100,2800,2900,3000,3480,3600,3700,3800,3900,4300,4600].map(sc)].sort((p,q)=>p-q)};
