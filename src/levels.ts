@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -91,7 +91,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  buses?:number[],elevatedLook?:'park'|'freeway',ramps?:[number,number][],coastguard?:number[],
  // Phase 5 (SF Act 3), all opt-in. See the notes below.
  cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,approach?:number,deckApproach?:number,
- finale?:{x:number,wake:number,breaks:number[]},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
+ finale?:{x:number,wake:number,breaks:number[],perches?:{x0:number,x1:number,h:number}[],tower?:number,crack?:number},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
  // Phase 6 (Alcatraz), all opt-in. `exitAt`: the destruction a district needs before its exits open (default CONFIG.exitThreshold).
  // `secretId`: clearing this secret level in the campaign unlocks it in Free Play and adds its gallery entry (src/campaign.ts).
  // `lore`: one results-screen line. `hazmat`: this level's soldiers are drawn in hazmat suits (a reskin, nothing else changes).
@@ -130,6 +130,8 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // once (default FIRE.cap). `elevatedDecks: 2` with `elevatedLook: 'freeway'`: the elevated line is a double-deck freeway that pancakes on the Big One.
 // `bridge.rise`: how far above the street (and the water) the decks stand; `bridge.more`: further [x0, x1, spans] decks at the same height.
 // `finale`: a boss level's Kaiban finale (src/config.ts GATE): `x` where it waits, `wake` the x that wakes it, `breaks` the health fractions at which the deck gives way.
+// Opt-in climbing finale (NYC rework card 6, src/config.ts EMPIRE): `perches` the setback ledges up a tower, bottom first ([x0,x1] the standable x range, `h` the surface height
+// above the street); `tower` the x of the tower building (its west edge) whose setbacks give way at each break; `crack` the x the street splits at on the wake.
 // `warships`: gunboats and destroyers stationed on the water (under a deck too). `deckUnits`: ground units that stand on an upper deck
 // (building spec `upperDeck`). A target `launch`: the carrier launches jets. See src/config.ts BRIDGE.
 // `approach`: the length of the ramp at each end of an elevated deck (SF: the roof park and the freeway), climbing from the street to the deck
@@ -663,6 +665,24 @@ function nycHerald():BlockDef{
    ['helicopter',sc(2857)+170,560],['helicopter',sc(3357)+170,620],['helicopter',sc(3986)+170,700],['helicopter',sc(5100)+170,600]],
   garrison:[['tank',-420],['tank',-260],['soldier',-140],['soldier',-80],['artillery',330],['soldier',260],['tank',440]],air:[sc(2600)]};
 }
+// Level 9. Empire State: two screens of 34th Street and Fifth Avenue (the last military push), then the tower itself. Passing `wake` splits the street
+// and Tlézcatl erupts out of it. The tower is the Empire State's authored setbacks (LANDMARK_SHAPES) re-proportioned into a supertall staircase: five tiers,
+// each setback a ledge EMPIRE.ledge wide on the west face (room for both kaiju), rising to the summit and the mast. He climbs ahead of the kaiju and fights
+// from the ledges (`finale.perches`); at each health break the ledge under the kaiju is cut away and both drop a tier.
+function nycEmpire():BlockDef{
+ const X0=3700,src=landmarkShape('EMPIRE STATE')!.filter(p=>!p.spire),E=EMPIRE;
+ let b=cityLevel('nyc','Empire State',6,'boss',`r,s,m,h,_,s,m,l,>3830,m,s,h`,[],{startStage:3,cap:3,tier:5});
+ b=clearClutter({...b,buildings:b.buildings.filter(x=>x.kind==='tiny'||x.x+x.w<=X0-80||x.x>=X0+E.tw+80)},[[X0-200,X0+E.tw+200]]);
+ // One tier per authored tier, ledges stepping in from the west; the mast is a spire (a hit-only part) on the summit.
+ const parts:Part[]=src.map((_,i)=>({x:i*E.ledge,w:E.east[i]-i*E.ledge,top:E.tops[i]})),summit=E.tops[src.length-1],mx=parts[src.length-1].x+Math.round(parts[src.length-1].w/2)-8;
+ parts.push({x:mx,w:16,top:summit+E.mast,base:summit,spire:true});
+ const tower:BuildingSpec={x:X0,w:E.tw,h:summit,hp:1e7,value:1,kind:'large',label:'EMPIRE STATE',color:'#b7a37c',landmark:true,parts};
+ b={...b,buildings:[...b.buildings,tower]};
+ const perches=src.map((_,i)=>({x0:X0+i*E.ledge,x1:i<src.length-1?X0+(i+1)*E.ledge:X0+E.east[i],h:E.tops[i]}));
+ return {...b,finale:{x:X0-260,wake:X0-1500,breaks:[.66,.33],perches,tower:X0,crack:X0-E.crack},police:true,guard:true,
+  // The last military push on the street, ahead of the wake: armour, artillery, infantry, air cover.
+  units:[['soldier',sc(500)],['apc',sc(800)],['tank',sc(1000)],['soldier',sc(1200)],['tank',sc(1500)],['artillery',sc(1700)],['emplacement',sc(1600)],['soldier',sc(1900)],['helicopter',sc(1400),520]],air:[sc(1300)]};
+}
 const NEW_YORK:BlockDef[]=[
  // 1. Act 1 (Stage 1, cap 1): Castle Clinton, ringed by the NYPD Harbor Unit. 2. The Wall Street canyon. 3. SoHo and Canal Street.
  nycBattery(),
@@ -683,7 +703,7 @@ const NEW_YORK:BlockDef[]=[
  nycHudson(),
  nycHerald(),
  // 9. Empire State (boss): the street, then the tower. The tower's authored setback tiers stand at the east end.
- cityLevel('nyc','Empire State',6,'boss',`r,s,m,h,_,s,m,l,>2600,L,m,s`,['EMPIRE STATE'],{startStage:3,cap:3,tier:5}),
+ nycEmpire(),
  // Secret. Coney Island, reached from Central Park's east exit; rejoins the route at Hudson Yards.
  {...cityLevel('nyc','Coney Island',4,'district',`${nycRep(NYC_LOW,2)},>1500,L,${nycRep(NYC_LOW,2)}`,['PARACHUTE JUMP|lattice'],{startStage:3,cap:3,tier:5,secret:true}),
   after:'Hudson Yards',secretId:'coney-island',lore:'THE Q TRAIN RUNS PAST THE LAST STOP.',guard:true,police:true},

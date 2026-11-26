@@ -262,3 +262,134 @@ test('real loop: smashing Madison Square Garden opens the exit',async()=>{
   s=h.state();assert.equal(s.objectiveHP,0,'the Garden is destroyed');assert.equal(s.exitOpen,true);
  }finally{h.release();h.cleanup();}
 });
+
+// ---- Level 9: Empire State (NYC rework card 6): the street, the wake, a climbing rival, the setback breaks, the mast and the retreat ----
+import {EMPIRE as EM,CAMPAIGN as CP,TLEZCATL_BOSS as TB} from '../src/config.ts';
+import {emptyPermanent,PERMANENT_KEY,CHECKPOINT_KEY,CAMPAIGN as CAMP} from '../src/campaign.ts';
+
+
+const EMP=LV[at('Empire State')],empIndex=at('Empire State'),TOWER=EMP.buildings.find(b=>b.label==='EMPIRE STATE')!,GROUND=C.ground;
+const bootE=async(x=300,permanent?:any)=>{const h=await bootCampaign(.75,{city:'nyc',kaiju:'Kaiban',permanent});h.test().goto(empIndex,x);h.step(2);h.test().shield(99999);return h;};
+const surf=(hh:number)=>GROUND-hh;
+// Put the kaiju on ledge i of the tower (feet on its surface, clear of Tlézcatl's end of it) and settle.
+const onLedge=(h:any,i:number)=>{const p=h.state().climbState.perches[i];h.test().place(p.x0+30,p.y);h.step(4);};
+
+test('Empire State data: six screens, boss, Stage 3, two screens of street then a supertall setback tower with room on every ledge for both kaiju',()=>{
+ assert.deepEqual([EMP.name,EMP.screens,EMP.kind,EMP.startStage,EMP.cap,EMP.tier],['Empire State',6,'boss',3,3,5]);assert.equal(at('Empire State'),8,'level 9 of the route');assert.ok(!EMP.secret);
+ const W=levelWidth(EMP);assert.ok(TOWER.x>=C.width*2&&TOWER.x+TOWER.w<W-200,'two screens of street, then the tower');
+ // The tower is the authored Empire State's tiers re-proportioned: the same count, a spire for the mast, every tier narrower than the one under it.
+ const tiers=TOWER.parts!.filter(p=>!p.spire),mast=TOWER.parts!.find(p=>p.spire)!;assert.equal(tiers.length,5);assert.ok(mast.top-mast.base!>=EM.mast-1,'a tall mast');assert.deepEqual(checkParts(TOWER),[]);
+ assert.ok(TOWER.h>=sc(1000)&&TOWER.h>=TOWER.parts!.filter(p=>!p.spire).reduce((a,p)=>Math.max(a,p.top),0),'a supertall: far above a screen');
+ for(let i=1;i<tiers.length;i++){assert.ok(tiers[i].top>tiers[i-1].top&&tiers[i].x>tiers[i-1].x);assert.ok(tiers[i].x-tiers[i-1].x>=EM.ledge&&tiers[i].x-tiers[i-1].x>=134+CP.bossWidth,'a ledge wide enough for Kaiban (Stage 3) and Tlézcatl side by side');}
+ const f=EMP.finale!;assert.equal(f.tower,TOWER.x);assert.deepEqual(f.breaks,[.66,.33]);assert.equal(f.perches!.length,5);assert.ok(f.wake<f.crack!&&f.crack!<TOWER.x,'the wake is on the street, the crack before the tower');
+ f.perches!.forEach((p,i)=>{assert.equal(p.h,tiers[i].top,'a perch per tier roof');assert.ok(p.x0>=TOWER.x+tiers[i].x&&p.x1<=TOWER.x+tiers[i].x+tiers[i].w);});
+ for(let i=1;i<f.perches!.length;i++)assert.ok(f.perches![i].h>f.perches![i-1].h,'perches run up the tower');
+ // The last military push is on the street, nothing on the tower; no building overlaps it.
+ assert.ok(EMP.units!.length>=6&&EMP.units!.every(u=>u[1]<TOWER.x));const kinds=new Set(EMP.units!.map(u=>u[0]));for(const k of ['soldier','apc','tank','artillery','helicopter','emplacement'])assert.ok(kinds.has(k as any),k);
+ for(const b of EMP.buildings)if(b!==TOWER&&b.kind!=='tiny')assert.ok(b.x+b.w<=TOWER.x||b.x>=TOWER.x+TOWER.w,'street building clear of the tower');
+ // Opt-in: the Golden Gate's finale has no perches, and no other level has any.
+ for(const b of LEVELS.flat().filter(x=>x!==EMP&&x.finale))assert.equal(b.finale!.perches,undefined,b.name);assert.ok(LEVELS.flat().filter(x=>x.finale).length>=2);
+ assert.ok(EM.press>0&&EM.leapRise<EM.tops[1]-EM.tops[0]&&EM.leapRise>=EM.tops[4]-EM.tops[3],'short rises leap, long ones climb');
+});
+
+test('real loop: the wake splits the street: a crack, magma pools, a big shake and a banner; Tlézcatl erupts out of it and stands on the street',async()=>{
+ const h=await bootE(300);let s=h.state();const f=EMP.finale!;
+ assert.ok(s.rivalState.tlez&&s.rivalState.dormant&&s.rivalState.alpha===0,'underground, unseen, untouchable');assert.equal(s.finaleState.woke,false);assert.equal(s.climbState.crackOpen,0);
+ const hp0=s.rivalState.hp;h.test().hurtRival(500);assert.equal(h.state().rivalState.hp,hp0,'untouchable while dormant');
+ h.test().teleport(f.wake+60);h.step(3);s=h.state();assert.ok(s.finaleState.woke);assert.ok(s.climbState.crackOpen>0&&s.climbState.emerge>0,'the street opens, he is coming up');
+ assert.equal(s.rivalState.dormant,false);assert.ok(s.rivalState.pools>=EM.pools,`magma pools burn the street (${s.rivalState.pools})`);assert.ok(s.rivalState.poolYs.every((y:number)=>y===GROUND),'on the street');
+ h.step(120);s=h.state();assert.equal(s.climbState.emerge,0);assert.equal(s.climbState.crackOpen,1);assert.equal(s.climbState.i,-1,'on the street first');
+ assert.ok(Math.abs(s.rivalState.x+s.rivalState.w/2-f.crack!)<260&&Math.abs(s.rivalState.y+s.rivalState.h-GROUND)<2);assert.equal(s.rivalState.alpha,1);
+ h.test().hurtRival(10);assert.equal(h.state().rivalState.hp,hp0-10,'hittable now');
+});
+
+test('real loop: he perches on the ledges and moves between them: a telegraphed climb up the wall, a telegraphed leap for the short rise',async()=>{
+ const h=await bootE(300);const f=EMP.finale!;h.test().teleport(f.wake+60);h.step(3);h.test().perchRival(0);h.step(2);let s=h.state();
+ const ps=s.climbState.perches;assert.equal(ps.length,5);assert.equal(s.climbState.i,0);assert.deepEqual(s.climbState.perch,{x0:ps[0].x0,x1:ps[0].x1,y:ps[0].y},'perched on ledge 0');
+ assert.ok(Math.abs(s.rivalState.y+s.rivalState.h-ps[0].y)<1.5,'his height is the ledge, not the street');assert.ok(s.rivalState.x>=ps[0].x0&&s.rivalState.x+s.rivalState.w<=ps[0].x1);
+ // Left alone on a ledge he holds it and fights from it (his height never snaps to the street).
+ const kaijuUp=()=>{const p=h.state().climbState.perches[h.state().climbState.i];h.test().place(p.x0+20,p.y);};
+ // The kaiju on his ledge presses him: he telegraphs, then climbs the wall to the next ledge.
+ kaijuUp();let seen:string[]=[],tele=false,maxRise=0;
+ for(let n=0;n<60*14&&h.state().climbState.i<1;n++){kaijuUp();h.step();const c=h.state().climbState;if(c.move){if(c.move.tele>0)tele=true;seen.push(c.move.kind);}
+  maxRise=Math.max(maxRise,ps[0].y-(h.state().rivalState.y+h.state().rivalState.h));}
+ s=h.state();assert.equal(s.climbState.i,1,'he went up one ledge');assert.ok(tele,'the move was telegraphed first');assert.ok(seen.includes('climb'),'a long rise is a climb');
+ assert.ok(Math.abs(s.rivalState.y+s.rivalState.h-ps[1].y)<1.5);assert.deepEqual(s.climbState.perch,{x0:ps[1].x0,x1:ps[1].x1,y:ps[1].y});assert.equal(s.climbState.moves.climb,1);
+ // The last rise is short enough to leap.
+ h.test().perchRival(3);h.step(2);seen=[];
+ for(let n=0;n<60*14&&h.state().climbState.i<4;n++){kaijuUp();h.step();const c=h.state().climbState;if(c.move)seen.push(c.move.kind);}
+ s=h.state();assert.equal(s.climbState.i,4,'on the summit');assert.ok(seen.includes('leap'),'the short rise is a leap');assert.equal(s.climbState.moves.leap,1);
+ assert.ok(Math.abs(s.rivalState.y+s.rivalState.h-ps[4].y)<1.5);
+ // On the summit there is nowhere left to go: he stays.
+ for(let n=0;n<60*20;n++){kaijuUp();h.step();}assert.equal(h.state().climbState.i,4);assert.equal(h.state().climbState.move,null);
+});
+
+test('real loop: from a ledge he flames down the wall and lobs lava onto the setback below the kaiju, not the street',async()=>{
+ const h=await bootE(300);const f=EMP.finale!;h.test().teleport(f.wake+60);h.step(3);h.test().perchRival(2);h.step(2);const ps=h.state().climbState.perches;
+ // The kaiju is on ledge 1 under him (a tier down): a lob lands on ledge 1's surface.
+ const seen=new Set<string>(),ys=new Set<number>();let jetAngles:number[]=[];
+ for(let n=0;n<60*14;n++){h.test().place(ps[1].x0+60,ps[1].y);h.step();const r=h.state().rivalState;seen.add(r.attack);for(const y of r.poolYs)ys.add(y);if(r.flame)jetAngles.push(r.flame.angle);
+  if(!h.state().climbState.move&&h.state().climbState.i===2)assert.ok(Math.abs(r.y+r.h-ps[2].y)<1.5,'his height stays the ledge through every attack');}
+ assert.ok(ys.has(ps[1].y)||ys.has(ps[2].y),`lava pooled on a setback (${[...ys]})`);
+ assert.ok(ys.has(ps[1].y),'a lob landed on the lower setback under the kaiju');
+ // Flame: the sweep goes steeply down the wall from a ledge (steeper than the street kit's).
+ const f2=await bootE(300);f2.test().teleport(f.wake+60);f2.step(3);f2.test().perchRival(2);f2.step(2);const q=f2.state().climbState.perches;jetAngles=[];
+ for(let n=0;n<60*40&&!(jetAngles.length>4&&!f2.state().rivalState.flame);n++){f2.test().place(q[2].x0-140,q[2].y+200);// hanging on the wall just under his lip
+  f2.step();const r=f2.state().rivalState;if(r.flame)jetAngles.push(r.flame.angle);}
+ assert.ok(jetAngles.length>=2,'a flame jet from the ledge');assert.ok(Math.min(...jetAngles)<TB.jetDown-5,`steeper than the street jet (${Math.min(...jetAngles)})`);
+});
+
+test('real loop: at each health break the setback under both kaiju gives way: they drop a tier, rubble falls, the tower damage stays',async()=>{
+ const h=await bootE(300);const f=EMP.finale!;h.test().teleport(f.wake+60);h.step(3);h.test().perchRival(2);h.step(2);let s=h.state();const maxHP=s.rivalState.maxHP,ps=s.climbState.perches;
+ // Both on ledge 2 (1300): the kaiju at the outer end, Tlézcatl at the wall.
+ h.test().place(ps[2].x0+30,ps[2].y);h.step(4);s=h.state();assert.ok(s.playerGrounded&&Math.abs(s.playerFeet-ps[2].y)<2,'kaiju on ledge 2');
+ h.test().hurtRival(maxHP*.36);h.step(2);s=h.state();assert.equal(s.finaleState.breaks,1,'the first break');assert.ok(s.climbState.pending,'the warning: the ledge is rumbling');assert.equal(s.climbState.scars,0,'not cut yet');
+ for(let n=0;n<60*8&&!(s.climbState.scars===1&&!s.climbState.falling&&s.playerGrounded&&s.climbState.perch);n++){h.step();s=h.state();}
+ assert.equal(s.climbState.scars,1,'the tower keeps the damage');assert.ok(s.climbState.perches.length===4&&!s.climbState.perches.some((p:any)=>p.h===EM.tops[2]),'that ledge is gone');
+ assert.ok(Math.abs(s.playerFeet-surf(EM.tops[1]))<3,`the kaiju dropped a tier (to ${EM.tops[1]}): feet ${s.playerFeet}`);
+ assert.ok(Math.abs(s.rivalState.y+s.rivalState.h-surf(EM.tops[1]))<3,'and so did Tlézcatl: both on the same ledge');assert.equal(s.climbState.perch.y,surf(EM.tops[1]));
+ const wide=s.climbState.perches.find((p:any)=>p.h===EM.tops[1])!;assert.ok(wide.x1-wide.x0>=EM.ledge*2-2,'the ledge below is wider now: the slab fell onto it');
+ assert.ok(s.rivalState.stagger>0||s.rivalState.cooldown>0);
+ // The geometry: the tier's west face stepped in (solid parts), holes in the face.
+ const t2=s.climbState.towerParts[2];assert.equal(t2.x,EM.ledge*3,'tier 2 now starts where tier 3 does');
+ // Second break: the next ledge down goes the same way.
+ h.test().hurtRival(maxHP*.33);h.step(2);s=h.state();assert.equal(s.finaleState.breaks,2);
+ for(let n=0;n<60*8&&!(s.climbState.scars===2&&!s.climbState.falling&&s.playerGrounded&&s.climbState.perch);n++){h.step();s=h.state();}
+ assert.equal(s.climbState.scars,2);assert.ok(Math.abs(s.playerFeet-surf(EM.tops[0]))<3,`dropped again, to ${EM.tops[0]}`);assert.ok(Math.abs(s.rivalState.y+s.rivalState.h-surf(EM.tops[0]))<3);
+ assert.ok(s.climbState.perches.length===3);
+});
+
+test('real loop: a break while he is above the kaiju brings him down too; on the summit (the last stand) nothing gives way',async()=>{
+ const h=await bootE(300);const f=EMP.finale!;h.test().teleport(f.wake+60);h.step(3);h.test().perchRival(3);h.step(2);let s=h.state();const maxHP=s.rivalState.maxHP,ps=s.climbState.perches;
+ h.test().place(ps[1].x0+30,ps[1].y);h.step(4);h.test().hurtRival(maxHP*.36);
+ for(let n=0;n<60*9&&!(s.climbState.scars===1&&!s.climbState.falling&&s.climbState.perch);n++){h.step();s=h.state();}
+ assert.equal(s.climbState.scars,1,'the ledge under the kaiju gave way');assert.ok(Math.abs(s.rivalState.y+s.rivalState.h-s.playerFeet)<4,'he came down to the kaiju\'s ledge');
+ const g=await bootE(300);g.test().teleport(f.wake+60);g.step(3);g.test().perchRival(4);g.step(2);const q=g.state().climbState.perches;g.test().place(q[4].x0+20,q[4].y);g.step(4);
+ g.test().hurtRival(g.state().rivalState.maxHP*.4);g.step(30);const t=g.state();assert.equal(t.climbState.scars,0,'no ledge cut');assert.equal(t.climbState.skipped,1,'the mast holds');assert.ok(Math.abs(t.playerFeet-q[4].y)<2,'the kaiju stays on the summit');
+});
+
+test('real loop: at 0 health he retreats off the tower into the magma on the street and sinks; then the city is conquered, Tlézcatl and Mexico City unlock',async()=>{
+ const perm={...emptyPermanent(),unlocked:['Mogurodon','Kaiban']};
+ const h=await bootE(300,perm);const f=EMP.finale!;h.test().teleport(f.wake+60);h.step(3);h.test().perchRival(3);h.step(2);let s=h.state();const maxHP=s.rivalState.maxHP,ps=s.climbState.perches;
+ h.test().place(ps[3].x0+20,ps[3].y);h.step(4);h.test().hurtRival(maxHP*.7);h.step(3);h.test().hurtRival(maxHP*.7);
+ // (the early breaks are skipped or taken; settle them first)
+ for(let n=0;n<60*10&&!h.state().rivalState.retreating;n++){h.test().hurtRival(maxHP);h.step();}
+ s=h.state();assert.ok(s.rivalState.retreating&&!s.rivalState.dead&&s.rivalState.hp===0,'beaten, not dead: he retreats');assert.equal(s.modeNow,'playing');
+ const seen:string[]=[];let minY=Infinity,landedX=0;
+ for(let n=0;n<60*14&&h.state().modeNow==='playing';n++){h.step();const c=h.state().climbState;if(c.retreat){if(seen[seen.length-1]!==c.retreat.phase)seen.push(c.retreat.phase);if(c.retreat.phase==='sink'){landedX=h.state().rivalState.x+h.state().rivalState.w/2;}}minY=Math.min(minY,h.state().rivalState.y);}
+ s=h.state();assert.deepEqual(seen,['dive','sink'],'a dive, then he sinks');assert.ok(Math.abs(landedX-EMP.finale!.crack!)<4,'into the cracked street, the magma');assert.equal(s.modeNow,'conquered');assert.ok(s.rivalState.retreated&&s.rivalState.dead);
+ const p=JSON.parse(h.saved.get(PERMANENT_KEY)!);assert.ok(p.conquered.includes('nyc'),'New York is conquered');assert.ok(p.unlocked.includes('Tlézcatl'),'Tlézcatl unlocks');
+ const cp=JSON.parse(h.saved.get(CHECKPOINT_KEY)!);assert.equal(CAMP[cp.city],'mex','the checkpoint points at Mexico City');
+});
+
+test('real loop: climbing to the mast: the kaiju climbs every setback up the tower with its head on screen the whole way (the camera follows), and stands on the summit',async()=>{
+ const h=await bootE(EMP.finale!.crack!-300);let s=h.state();const zoom=s.zoom,screenY=(wy:number,cy:number)=>GROUND+(wy+cy-GROUND)*zoom;
+ const top=surf(EM.tops[4]);let worst=Infinity,maxRise=0,reached=-1;h.down('KeyD');h.down('KeyW');
+ for(let n=0;n<60*80;n++){h.step();s=h.state();const head=s.playerFeet-1.4*s.height;worst=Math.min(worst,screenY(head,s.cameraRise));maxRise=Math.max(maxRise,s.cameraRise);
+  if(s.playerGrounded&&Math.abs(s.playerFeet-top)<2){reached=n;break;}}
+ h.up('KeyD');h.up('KeyW');
+ assert.ok(reached>=0,`the kaiju reached the summit (feet ${s.playerFeet}, wanted ${top}, rival ledge ${s.climbState.i})`);
+ assert.ok(worst>=0,`the head was on screen the whole climb (highest ${worst.toFixed(0)})`);assert.ok(maxRise>EM.tops[3]*zoom*.5,`the camera rose with it (${maxRise.toFixed(0)})`);
+ assert.ok(s.playerFeet<surf(EM.tops[3]),'above every setback below');
+ assert.ok(s.climbState.i>=3,'Tlézcatl was pressed up the tower ahead of him');
+});
