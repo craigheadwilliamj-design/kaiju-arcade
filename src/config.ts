@@ -657,6 +657,14 @@ export const NYC2 = {
  // the street, then rolls down Broadway away from the kaiju: a heavy rolling body (src/rolling.ts) starting at `speed` px/s and shedding
  // `glide` px/s of it a second, so it runs a long way. It scatters and crushes the crowd (`crowdPoints` a person) and wrecks what it hits.
  ballSize:Math.round(46*CITY_SCALE),ballMass:6,ballSpeed:330,ballGlide:14,ballFall:.9,ballPoints:1500,crowdPoints:10,
+ // Once it is down the ball is a prop a Stage 2+ kaiju can carry (the Charging Bull's rules): grabbable while parked or rolling slower than `ballGrabSpeed`.
+ // Thrown forward it is a bowling ball: a flat arc (`ballThrowSpeed`, `ballThrowLift`) that rolls again on landing at `ballReroll` of its speed (at least
+ // `ballRerollMin`), plowing the crowd, cars and troops through the usual rolling impacts. W + throw lobs it (`ballLobSpeed`, `ballLobLift`) for anti-air.
+ // `ballThrowDamage` is the flying body's damage. Every hard impact of a thrown ball (a building, the rival or the target, in flight or rolling faster
+ // than `ballChipSpeed`; at most one per `ballChipGap` s) costs it 1 of `ballHp`: cracked panels, then (at half) broken segments, then at 0 it shatters
+ // for `ballShatterPoints` and a HAPPY NEW YEAR banner. The drop itself pays `ballPoints` once; throws earn the normal impact and crowd points.
+ ballGrabSpeed:70,ballThrowSpeed:520,ballThrowLift:190,ballLobSpeed:150,ballLobLift:640,ballThrowDamage:150,ballReroll:.9,ballRerollMin:160,
+ ballHp:4,ballChipSpeed:150,ballChipGap:.3,ballShatterPoints:2500,ballHint:260,
  // Grand Central. The terminal target (`art:'terminal'`) is a wide stone facade with a clock and a statue group. The concourse
  // (BlockDef `concourse`) is the roof over the Main Concourse: a building you stand on; once it is broken the pit opens with
  // `commuters` people and `police` officers in it.

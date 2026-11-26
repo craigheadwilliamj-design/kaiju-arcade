@@ -117,7 +117,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // units. Target art `arena` is Madison Square Garden: a drum with the Army field HQ at its foot. Building deco `float` is a parade float.
 // New York Act 2 (NYC rework card 3), opt-in: `night` repaints the level with the night mood (src/config.ts NYC2.night) wherever the game reads
 // the city's mood; on a level with power grids a destroyed substation then blacks out that grid's windows and billboards. A building's `board`
-// is a facade billboard (a big neon screen), the roof fixture `billboard` a rooftop one, and the roof fixture `ball` is One Times Square's ball:
+// is a facade billboard (a big neon screen), the roof fixture `billboard` a rooftop one, and the roof fixture `ball` is One Times Square's ball (once dropped it can be carried, thrown and shattered: src/config.ts NYC2):
 // break it and it drops and rolls down the street. Target art `terminal` is Grand Central Terminal (a wide stone facade, a clock, the statue
 // group). `concourse` [x0, x1]: the Main Concourse under a roof building (deco `concourse`): break the roof and the street under it
 // opens into a pit full of commuters and police. A single-deck `elevatedLook: 'freeway'` is the Park Avenue Viaduct, and `deckUnits` troops stand
