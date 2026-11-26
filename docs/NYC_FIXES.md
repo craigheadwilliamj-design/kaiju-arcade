@@ -181,38 +181,42 @@ Take screenshots: the ball held overhead, mid-throw, and the shatter.
 
 ---
 
-## Card 5: Make Manhattan feel dense
+## Card 5: Make Manhattan feel dense without walling it in
 
-**Feedback.** "Overall, Manhattan doesn't feel dense enough. Really my only complaint."
+**Feedback.** "Overall, Manhattan doesn't feel dense enough." But: no wall-to-wall, unwalkable maps. Buildings are solid walls (you climb over or smash through every one), so packing the playable row makes levels a slog. The current scale (kaiju vs buildings vs props) stays. It plays well. The only proportion fix is the needle towers.
 
-**What's thin now:**
-- **Street gaps.**
-  - `cityLevel()` in `src/levels.ts` turns `_` into a 240px gap and `=` into a 420px gap (before `cityScale`), and buildings are packed `x+=w+4`.
-  - NYC patterns use a lot of gaps: `NYC_ROW='s,m,h,_,l,s,m,_,h,r,_,n,s,m,_'` has 4 gaps per 15 tokens, and Times Square, Grand Central and the placeholders reuse it.
-  - The `>N` jumps (e.g. Wall Street's `>1500`, `>5050`; Times Square's `>1600`) leave long empty runs.
-  - Stronghold levels also clear `[mid-900, mid+560]` around the target.
-- **Short buildings.** Most presets are mid-rise (`s` 150, `m` 240, `h` 330 before scale). The playable street-front reads as a row of separate mid-rises with lots of sky between them.
-- **The backdrop is low and sparse.** On Wall Street at Stage 1 the background (`farSkyline()` and the mid layer in `background()`) is a uniform band of ~8–12-storey grey blocks with daylight sky above. Manhattan should be a wall of towers behind the playable row.
-- In the Wall Street screenshots, only the supertall canyon (x ≈ 2500–4700) feels like Manhattan. The Bowling Green end and everything past the target feel suburban.
+**Diagnosis.**
+- The thinness is what's **behind** the gaps: a low, uniform band of ~8–12-storey grey blocks (`farSkyline()`, the mid layer in `background()`) under open sky.
+- Needles: `n` is 64×460 (about 7:1). Wall Street's `tall()` stretches `n` to ~760 and `x` to ~740 without widening, putting `n` at ~12:1.
 
-**Do** (NYC only; SF output must stay byte-identical):
-1. **Tighter street-front.**
-   - Add a `cityLevel` option, e.g. `opts.dense` or a per-city gap table, so NYC gaps are narrower: `_` ≈ 140, `=` ≈ 260 (tune by play).
-   - Thin the gap tokens out of the NYC patterns. Keep real cross streets only where gameplay needs them: cars, steam `vents`, the subway line ends, troop lanes and stronghold rings.
-   - Fill the `>N` dead runs with buildings unless they're intentional (water at the Battery, plazas, Central Park lawns).
-2. **Taller street-front.** Add NYC presets or a height jitter (e.g. `s`/`m` → 4–8-storey walk-ups next to 20–40-storey `h`/`x`/`n` towers), so roofs step irregularly but stay within a jump of each other. Respect each level's growth: Act 1 at Stage 1 must still be able to climb and hop.
-3. **A second rank of buildings.** A non-interactive layer drawn just behind the playable buildings: darker, slightly smaller, parallaxing slowly, so gaps show more buildings, not sky. This can be a new background layer in `background()`, styled per `CITIES[...].style==='nyc'` and keyed to the level's district (downtown canyon, SoHo lofts with water towers, Midtown towers, the park with the Fifth and Central Park West skylines).
-4. **A denser far skyline for NYC.** A much taller, busier `farSkyline()` for `nyc` with recognisable pieces placed per level:
-   - One WTC from downtown
-   - the Empire State/Chrysler from Midtown (Herald already draws the Empire State)
-   - more mid-layer towers and water towers
-   - lit windows that obey `moodNow()` (and card 4's ramp)
-5. **Street clutter.** More parked cars, cabs, scaffolding sheds, hot-dog carts, newsstands, subway entrances and hydrants, scaled to stay under the vehicle cap (`VC.vehicleCap`) and perf budget.
+**Do not:**
+- shrink street gaps, fill open runs, or add buildings to the playable row
+- change the window spacing, stage sizes, or prop sizes
+- make buildings taller
+- touch SF or `nyc-classic`
+
+**Do:**
+1. **A second row of buildings** just behind the playable row.
+   - Not solid: darker, smaller, slower parallax, styled per district (downtown canyon, SoHo lofts with water towers, Midtown, the park's Fifth Avenue/CPW walls).
+   - It obeys `moodNow()`/`moodRamp`.
+2. **A taller, busier NYC far skyline:** One WTC downtown, the Empire State/Chrysler in Midtown, lit windows per mood.
+3. **Height comes with width.**
+   - Normal towers are capped at height ≤ ~4.5× width; spire landmarks are exempt.
+   - Retire `n` for NYC, and replace Wall Street's `tall()` stretch with wider towers (~180–240 px world width) at the same heights.
+   - Optional setbacks as standable tiers (`resetParts` if parts are rewritten).
+   - Add a test for the cap. The back layers follow the same proportions.
+4. **Walk-through street clutter** (`tiny`/`walkThrough`): scaffolding sheds, newsstands, subway kiosks, hydrants, cabs, carts. Mostly smashable, within `VC.vehicleCap`.
+5. **Busier facades:** signage, fire escapes, awnings, AC units, water towers. Art only.
 
 **Guard rails:**
-- Run `npm run perf` before and after: dense levels can't drop the frame rate in the stress test.
-- Keep exits, spawn, targets, stronghold rings, `vents`, `bull`, balloons, the deck spans, the subway lines and the Empire State tower unobstructed.
-- The NYC act tests that assert positions (e.g. "the Bull is on open street", the vent and span positions) must stay true. Update their numbers only where the layout intentionally moved.
-- Don't touch `nyc-classic` or SF.
+- The QA playthrough before and after shows no rise in time spent climbing or blocked.
+- `npm run perf` holds.
+- Exits, spawn, targets, rings, vents, the Bull, balloons, deck spans, subway lines and the Empire State stay unobstructed.
+- NYC position asserts stay true except where a needle was intentionally replaced.
 
-**Done when** before/after screenshots of every NYC level show a continuous wall of buildings with towers behind, perf holds, and tests are green.
+**Done when** before/after screenshots of every NYC level show city filling the gaps and the sky, no needles, walkability and perf unchanged, and tests green.
+
+**Scale reference (for curiosity, not to change).**
+- Window rows are ~23 px a storey, so Stage 1 (69 px) ≈ 3 storeys (~37 ft), Stage 2 (97 px) ≈ 4 storeys (~53 ft), Stage 3 (193 px) ≈ 8½ storeys (~105 ft).
+- The 56 px `FLOORS.floorHeight` is a damage chunk (~2½ window rows), not a storey.
+- Cars and props are drawn oversized for readability.
