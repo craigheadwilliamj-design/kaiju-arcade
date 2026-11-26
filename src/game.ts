@@ -1,4 +1,4 @@
-import {CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,EMPIRE as EMP,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST} from './config.ts';
+import {CONEY,CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,EMPIRE as EMP,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST} from './config.ts';
 import {groundAt,groundUnder,setTerrain,terrainPoints,hasTerrain,profileFrom,submerged,waterAt,waterSpans,bedAt,addMound,moundList,deckAt,pitAt,pitList,addPit,depthAt,setPlatforms,platformFloor} from './terrain.ts';
 import {bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from './water.ts';
 import type {Band,Drown} from './water.ts';
@@ -7,7 +7,7 @@ import {createRampage,feedRampage,tickRampage,rampageLevel,rampageMult,pointsHea
 import type {RoofProp,LiveWire} from './city.ts';
 import {createParked,createLamps,createPoles,setVehicleLook,uproot,upright,impact,makeProp,spawnTraffic,tickDriving,onWater,tickFlying,launch,vehicleBox,mass,loose,grounded,liftedBuilding,VEHICLE_SPECS,EXPLOSIVE,CIVILIAN,createFleet,createGarageCars} from './vehicles.ts';
 import type {Vehicle} from './vehicles.ts';
-import {startRolling,tickRolling,putOnCable,tickCable,releaseCables,rollDamage,downhill} from './rolling.ts';
+import {startRolling,tickRolling,putOnCable,tickCable,releaseCables,rollDamage,downhill,tickTrain,derail,startRunaway} from './rolling.ts';
 import {createShip,sinkShip,tickShip,shipSunk,hullBox,deckY} from './ship.ts';
 import type {Ship} from './ship.ts';
 import {fogAt} from './fog.ts';
@@ -117,7 +117,7 @@ function setupAct2(){
 // What a rolling car does to what is in its way: a building it destroys is bowled through (it keeps most of its speed), one left
 // standing wrecks it (launched on the careening car's terms); troops and other vehicles are shoved aside.
 function crashRolling(v:Vehicle,dir:number,against?:object){
- if(!v.rewarded)rewardVehicle(v);const vx=Math.max(90,Math.abs(v.vx));
+ v.runaway=false;if(!v.rewarded)rewardVehicle(v);const vx=Math.max(90,Math.abs(v.vx));
  launch(v,-dir*vx*RN.crashSpeed,-RN.crashLift,R.careenDamage);v.thrown=true;v.spin=-dir*4;if(against)v.hits.add(against);}
 function rollImpacts(v:Vehicle){
  const dir=Math.sign(v.vx)||1,box=vehicleBox(v),cx=v.x+v.w/2,cy=v.y+v.h/2;
@@ -128,9 +128,27 @@ function rollImpacts(v:Vehicle){
  for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&!NAVAL_UNITS.has(u.type)&&!v.hits.has(u)&&overlaps(box,u)){v.hits.add(u);hitUnit(military,u,RN.unitDamage,'player',180*mass(v),dir,false,'thrown');}
  if(rival&&!rival.dead&&!v.hits.has(rival)&&overlaps(box,rival)){v.hits.add(rival);strikeRival(rollDamage(v)*.3,160*mass(v),dir);crashRolling(v,dir,rival);return;}
  if(objective&&!objective.shattered&&!v.hits.has(objective)&&overlaps(box,obox())){v.hits.add(objective);hitObjective(rollDamage(v)*.5);crashRolling(v,dir,objective);return;}
- for(const o of vehicles)if(o!==v&&loose(o)&&o.state!=='rolling'&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),RN.unitDamage);o.hits.add(v);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);v.vx*=1-VC.chainPush*.6;spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
+ for(const o of vehicles)if(o!==v&&loose(o)&&o.state!=='rolling'&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),RN.unitDamage);o.hits.add(v);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);v.vx*=1-VC.chainPush*(v.kind==='wheel'?.05:.6);spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
  // The kaiju is in its way too: it does not hurt a monster, it just wrecks the car.
  if(Math.abs(v.vx)>60&&overlaps(box,{x:player.x,y:player.y,w:bodyWidth(),h:bodyHeight()}))crashRolling(v,dir);
+}
+// ---- New York secret level: Coney Island (NYC rework card 7) ----
+// The Ferris wheel stands on its base (a `wheelbase` building); breaking the base sets it loose, rolling (src/rolling.ts). The roller coaster's train shuttles on a
+// raised track of `track` buildings and derails, then runs away, when the deck under it is gone. Both opt-in per level (`wheel`, `coaster`).
+let wheelLoose=false,derailed=0;
+const trackSections=()=>buildings.filter(b=>b.deco==='track');
+// The world y of the track's deck at x, or null where no standing section is under it (a broken one, or the train has gone past the ends).
+function trackDeck(x:number):number|null{for(const b of trackSections())if(b.hpNow>0&&!b.lifted&&b.topple===0&&x>=b.x&&x<=b.x+b.w){const y=topAt(b,x,true);if(y!==null)return y;}return null;}
+function setupConey(){
+ wheelLoose=false;derailed=0;
+ if(block.wheel!==undefined){const v=createFleet('wheel',[block.wheel-CONEY.wheel.d/2],nextVehicle++,'#d9822b')[0];v.state='parked';vehicles.push(v);}
+ if(block.coaster){const [a,z]=block.coaster,v=createFleet('coaster',[a+10],nextVehicle++,'#b9402f')[0];putOnCable(v,[a,z]);tickTrain(v,0,trackDeck);vehicles.push(v);}
+}
+function tickConey(dt:number){
+ const wheel=vehicles.find(v=>v.kind==='wheel');
+ if(wheel&&!wheelLoose){wheel.angle+=CONEY.wheel.spin*dt;const base=buildings.find(b=>b.deco==='wheelbase');
+  if(base&&base.hpNow<=0){wheelLoose=true;startRolling(wheel,CONEY.wheel.shove,1);wheel.plows=CONEY.wheel.plows;banner={label:'THE WHEEL IS LOOSE',side:0,life:2.4};action='THE FERRIS WHEEL COMES OFF';actionTime=2.2;award(CONEY.wheel.points*.5);heatUp(10);shake=Math.max(shake,10);}}
+ for(const v of vehicles)if(v.kind==='coaster'&&v.state==='cable'&&tickTrain(v,dt,trackDeck)==='derail'){derail(v);for(const b of trackSections())v.hits.add(b);/* the track it fell off is not something it hits on the way down (the broken section still stands a moment); once it lands and runs away it plows through what is left */derailed++;banner={label:'COASTER DERAILED',side:0,life:2.4};action='THE COASTER JUMPS THE TRACK';actionTime=2.2;award(CONEY.coaster.points*.5);heatUp(8);shake=Math.max(shake,8);}
 }
 function tickAct2(dt:number){
  // Powerhouse: while it stands the cars ride their cables; once it is destroyed every one comes loose.
@@ -1110,7 +1128,7 @@ function loadBlock(drill=false){
   if(block.target)stations.push(...garrison.map(([type,offset])=>({type,x:objective.x+offset,side:1})));else for(const [type,offset] of garrison)spawnUnit(military,type,objective.x+offset);}
  if(!drill){for(const [type,x] of block.warships??[])spawnUnit(military,type,x,-1);for(const [type,x] of block.deckUnits??[])stations.push({type,x,side:1,perch:true});for(const [type,x,alt] of block.units??[])stations.push({type,x,side:1,alt});for(const x of block.air??[])stations.push({type:'helicopter',x,side:1});for(const x of block.swat??[])stations.push({type:'soldier',x,side:1});}
  if(openLayout()&&!drill){action=`${block.buildings.filter(b=>b.landmark).length?`${block.buildings.filter(b=>b.landmark).length} LANDMARKS · `:''}EXITS EAST AND WEST`;actionTime=3.5;}
- yardFall=new Map();yardDrops=0;yardBuildings=0;if(!drill){setupSF();setupAct2();setupCracks();setupVents();setupBalloons();setupBridge();setupSlopes();setCover(coverAt);}else{vents=[];balloons=[];slopes=[];setCover(()=>null);cracks=[];bigOne=null;setPlatforms([]);upperPlat=[];jetLaunch=[];pendingRunaways=[];pendingTumble=[];tumbleArmed=false;lions=[];kaiban=null;}
+ yardFall=new Map();yardDrops=0;yardBuildings=0;if(!drill){setupSF();setupAct2();setupConey();setupCracks();setupVents();setupBalloons();setupBridge();setupSlopes();setCover(coverAt);}else{vents=[];balloons=[];slopes=[];setCover(()=>null);cracks=[];bigOne=null;setPlatforms([]);upperPlat=[];jetLaunch=[];pendingRunaways=[];pendingTumble=[];tumbleArmed=false;lions=[];kaiban=null;}
  loadKaijuArt(activeKaiju,combat.stage);
  mode='playing';overlay.innerHTML='';focus();
 }
@@ -1782,15 +1800,16 @@ function tickVehicles(dt:number){
  if(trafficBudget>0){trafficTimer+=dt;if(trafficTimer>=VC.trafficInterval&&vehicles.filter(v=>v.state==='driving').length<VC.trafficCap){trafficTimer=0;trafficBudget--;
   const sv=spawnTraffic(nextVehicle++,camera,Math.random()<.5?1:-1,Math.random,viewW());if(!onWater(sv.x)&&!onWater(sv.x+sv.w))vehicles.push(sv);}}
  for(const v of vehicles){
+  if(v===held)v.runaway=false;// a derailed train the kaiju has picked up is the kaiju's now
   if(v===held){const [anim,at]=currentAnim(),hp=holdPoint(activeKaiju,anim,at,combat.stage);
    if(hp){const k=scale(combat),feet=player.y+bodyHeight()+C.spriteDrop,bite=holdBite(activeKaiju,anim,combat.stage);
     // In the jaws (`bite`) the point is where the teeth close: the prop is gripped by its near end (its centre 0.3 of its width
     // ahead) at mid-height, and never sinks below the feet line while the head is down at the street.
     v.x=cx+player.face*(hp[0]*k+(bite?v.w*.3:0))-v.w/2;v.y=bite?Math.min(feet+hp[1]*k-v.h/2,feet-v.h):feet+hp[1]*k-v.h;}else{v.x=cx-v.w/2;v.y=player.y-v.h+C.spriteDrop*.5;}if(v.kind==='lamp')v.angle=player.face>0?0:Math.PI;continue;}
   if(v.shield)v.shield=Math.max(0,v.shield-dt);if(v.calm)v.calm=Math.max(0,v.calm-dt);
-  if(v.state==='cable')tickCable(v,dt);else if(v.state==='rolling'&&tickRolling(v,dt,worldWidth)==='rolling')rollImpacts(v);
+  if(v.state==='cable'&&v.kind!=='coaster')tickCable(v,dt);else if(v.state==='rolling'){if(tickRolling(v,dt,worldWidth)==='rolling')rollImpacts(v);else v.runaway=false;}
   tickDriving(v,dt,cx);
-  const wasFlying=v.state==='flying',settled=tickFlying(v,dt,worldWidth);if(wasFlying)vehicleImpacts(v);if(settled)detonate(v);
+  const wasFlying=v.state==='flying',settled=tickFlying(v,dt,worldWidth);if(wasFlying)vehicleImpacts(v);if(settled&&v.runaway){startRunaway(v);spawnChunks(v.x+v.w/2,v.y+v.h,Math.sign(v.vx)||1,v.color,6,1.3);shake=Math.max(shake,8);}else if(settled)detonate(v);
   // A thrown Bull thuds into the street: it breaks spans and caves the street in like a thrown building, then stands there again (never a wreck).
   if(settled&&v.kind==='bull'){heavyLanding(v);v.state='parked';v.angle=0;v.spin=0;v.y=groundAt(v.x+v.w/2)-v.h;spawnChunks(v.x+v.w/2,groundAt(v.x+v.w/2)-6,Math.sign(v.vx)||player.face,'#5b4a3a',5,1.3);burst(v.x+v.w/2,groundAt(v.x+v.w/2)-6,'#b1ac91',10);shake=Math.max(shake,6);}
   // A thrown building breaks apart where it lands instead of lying around as a wreck.
@@ -2180,7 +2199,7 @@ function update(dt:number){
  }
  echo=false;if(rival?.dead){winCity();return;}
  if(rival){tickFinale(dt,w,h);if(!bossFrozen())for(const hit of tickRival(rival,dt,{x:player.x,y:player.y,w,h},worldWidth,buildings))receiveHit(combat,hit.damage,'boss',hit.strength,hit.direction);for(const b of buildings)if(b.hpNow<b.hp)releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);if(endIfDead())return;}
- tickCity(dt,w);tickRiver(dt,w);tickFire(dt);tickSF(dt);tickAct2(dt);tickCracks(dt);tickBridge(dt);tickResponse(dt);tickMains(dt);tickVents(dt);tickYard(dt);tickRails(dt,w,h);tickSlopes(dt);
+ tickCity(dt,w);tickRiver(dt,w);tickFire(dt);tickSF(dt);tickAct2(dt);tickConey(dt);tickCracks(dt);tickBridge(dt);tickResponse(dt);tickMains(dt);tickVents(dt);tickYard(dt);tickRails(dt,w,h);tickSlopes(dt);
  tickMilitary(military,dt,camera,worldWidth,{x:player.x,y:player.y,w,h},destruction(buildings),rival||undefined,Math.abs(kb)<.01?'player':'military',viewW(),combat.stage);drainMilitary();tickBalloons(dt);syncBody();if(endIfDead())return;
  waves=waves.filter(w=>w.life>0&&w.x>0&&w.x<worldWidth);
  // Ambient crystals and growths appear ahead of the kaiju (the way it faces), so heading west still finds them.
@@ -2765,6 +2784,13 @@ function drawVehicle(v:Vehicle){
   ctx.save();ctx.beginPath();ctx.rect(L-14,T-260,w+28,h+260);ctx.clip();ctx.translate(0,h/2-C.ground);
   drawStructure({x:0,w,h:v.chunk.H,base:C.ground+v.chunk.cut,color:v.color,label:'',landmark:true,shape:v.chunk.shape,cache:false,hpNow:1,hp:1,holes:[],floors:[],floorMax:0} as unknown as typeof buildings[number],L,v.chunk.H);ctx.restore();}
  else if(v.kind==='building'){ctx.translate(0,h/2-C.ground);drawStructure({x:0,w,h,base:C.ground,color:v.color,label:v.label,landmark:false,cache:false,hpNow:1,hp:1,holes:[],floors:[],floorMax:0} as unknown as typeof buildings[number],L,h);ctx.translate(0,C.ground-h/2);}
+ else if(v.kind==='wheel'){// The Ferris wheel: a rim, spokes, a hub and gondolas that swing level as it turns (v.angle is the wheel's turn).
+  const R=w/2-3,gond=['#d9822b','#3a6ea5','#b9402f','#4f9a62','#d4b13a','#8a5fa0'];ctx.strokeStyle='#cfd2c8';ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.stroke();ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,R*.62,0,Math.PI*2);ctx.stroke();
+  ctx.lineWidth=2;ctx.beginPath();for(let k=0;k<16;k++){const a=k*Math.PI/8;ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*R,Math.sin(a)*R);}ctx.stroke();
+  for(let k=0;k<12;k++){const a=k*Math.PI/6,gx=Math.cos(a)*R,gy=Math.sin(a)*R;ctx.save();ctx.translate(gx,gy);ctx.rotate(-v.angle);rect(-9,0,18,14,gond[k%gond.length]);rect(-9,0,18,3,'#2b2b2b');rect(-1,-4,2,4,'#2b2b2b');ctx.restore();}
+  ctx.fillStyle='#8d8f86';ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e9d6a2';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();}
+ else if(v.kind==='coaster'){// The coaster train: three low open cars nose to tail, riders with their arms up.
+  const car=w/3;for(let k=0;k<3;k++){const cx=L+k*car;rect(cx+2,T+h*.3,car-4,h*.7,k===0?'#b9402f':'#d9822b');rect(cx+2,T+h*.3,car-4,3,'#f2e6a8');for(const px of [.22,.62]){rect(cx+car*px,T,6,h*.34,'#e6c9a8');rect(cx+car*px-2,T-4,2,6,'#e6c9a8');rect(cx+car*px+6,T-4,2,6,'#e6c9a8');}rect(cx+5,T+h*.88,6,h*.14,tire);rect(cx+car-11,T+h*.88,6,h*.14,tire);}}
  else if(v.kind==='bull'){// The Charging Bull: bronze, head down and horns forward, on a low plinth (facing the way it was set down, forward = +x).
   const bronze='#4b3a2a',hi='#7a5f3c';rect(L-2,T+h*.86,w+4,h*.14,'#6e695c');
   ctx.fillStyle=bronze;ctx.beginPath();ctx.ellipse(-w*.1,T+h*.46,w*.38,h*.3,0,0,Math.PI*2);ctx.fill();
@@ -3004,6 +3030,17 @@ function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const b
   case 'wall':{// A garden retaining wall: dressed stone with a hedge on top.
    rect(x,y,bw,h,'#a39a88');for(let yy=y+8;yy<base-4;yy+=10)rect(x,yy,bw,1,'#857d6c');for(let xx=x+10;xx<x+bw;xx+=26)rect(xx,y+6,1,h-10,'#857d6c');rect(x-3,y-3,bw+6,6,'#c4baa4');
    ctx.fillStyle='#4f7d4a';for(let xx=x;xx<x+bw;xx+=14){ctx.beginPath();ctx.arc(xx+7,y-4,8,Math.PI,0);ctx.fill();}break;}
+  case 'track':{// A section of the coaster's raised wooden track: posts to the street, a cross-brace with diagonal struts, the deck and its rails.
+   const pw=14,hm=h*.28;for(const px of [x,x+bw/2-pw/2,x+bw-pw]){rect(px,y+8,pw,h-8,'#7a4e30');rect(px+2,y+8,3,h-8,'#946239');}
+   rect(x,y+hm,bw,8,'#6a4228');ctx.strokeStyle='#5e3c24';ctx.lineWidth=3;ctx.beginPath();for(const [a,z] of [[x+pw,x+bw/2-pw/2],[x+bw/2+pw/2,x+bw-pw]]){ctx.moveTo(a,y+hm+8);ctx.lineTo(z,base);ctx.moveTo(z,y+hm+8);ctx.lineTo(a,base);}ctx.stroke();
+   rect(x-3,y,bw+6,8,'#8a5a3a');rect(x-3,y+6,bw+6,2,'#4a2e1c');rect(x-3,y-7,bw+6,2,'#cfc3a2');for(let k=0;k<=4;k++)rect(x-2+k*(bw+2)/4,y-7,2,8,'#cfc3a2');break;}
+  case 'wheelbase':{// The Ferris wheel's base: a machine house and the hub's A-frame (the wheel itself is a vehicle drawn in front).
+   const hx=x+bw/2,hy=y+10,hh=h*.3;poly([[hx-6,hy],[hx+6,hy],[x+bw,base-hh],[x+bw-16,base-hh]],'#cfd2c8');poly([[hx-6,hy],[hx+6,hy],[x+16,base-hh],[x,base-hh]],'#cfd2c8');
+   rect(x,base-hh,bw,hh,'#c9c3b0');rect(x,base-hh,bw,4,'#8d8f86');rect(x+bw*.4,base-hh*.7,bw*.2,hh*.7,'#2a2420');win(x+bw*.1,base-hh*.8,10,12);win(x+bw*.76,base-hh*.8,10,12);
+   ctx.fillStyle='#8d8f86';ctx.beginPath();ctx.arc(hx,hy,9,0,Math.PI*2);ctx.fill();break;}
+  case 'lifeguard':{// A lifeguard tower: a white cabin on stilts with a ladder and a flag.
+   const cy=y+h*.04,ch=h*.34;for(const k of [.1,.78])rect(x+bw*k,cy+ch,bw*.12,h*.62,'#e8e2d2');rect(x+bw*.1,y+h*.62,bw*.8,3,'#d8553a');rect(x+bw*.28,cy+ch,bw*.08,h*.62,'#c9c3b0');
+   rect(x-4,cy,bw+8,ch,'#e8e2d2');rect(x-4,cy,bw+8,5,'#d8553a');rect(x+4,cy+ch*.35,bw-8,ch*.4,'#2a3a42');rect(x+bw*.5,cy-18,2,18,'#4a4d48');poly([[x+bw*.5+2,cy-18],[x+bw*.5+16,cy-14],[x+bw*.5+2,cy-9]],'#d8553a');break;}
   case 'carousel':{// A carousel: striped canopy over painted horses on brass poles.
    rect(x+bw*.08,base-10,bw*.84,10,'#6a4a30');for(let k=0;k<5;k++){const px=x+bw*(.14+k*.18);rect(px,y+h*.28,2,h*.62,'#d9b45a');rect(px-3,base-h*.42+(Math.sin(time*3+k)*3),8,h*.2,k%2?'#f2f0e8':'#d9b45a');}
    for(let k=0;k<7;k++)poly([[x+bw*k/7,y+h*.28],[x+bw*(k+1)/7,y+h*.28],[x+bw/2+bw*.02*(k-3),y-2]],k%2?'#f2f0e8':'#c0392b');rect(x+bw/2-1,y-10,2,10,'#d9b45a');break;}

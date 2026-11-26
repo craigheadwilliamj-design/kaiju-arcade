@@ -510,6 +510,18 @@ export const NYC3 = {arenaW:230,arenaH:150,yard:{spanHP:360,sinkSpeed:70,lean:.3
 export const PARADE = {size:Math.round(130*CITY_SCALE),hp:10,minHit:10,crew:3,rope:Math.round(70*CITY_SCALE),drift:46,driftSpeed:.55,floatSpeed:70,throwDrift:140,ceiling:2600,fall:150,drape:7,blind:2.5,
  shelter:260,points:350,shapes:['dog','turkey','astronaut','kaiju'] as const,tether:{w:16,h:30,mass:.6}};
 
+// New York secret level (NYC rework card 7, Coney Island). `wheel`: the Ferris wheel (src/rolling.ts rolls it): a huge round body, `d` across,
+// `mass` heavy, standing on its base (a `wheelbase` building); breaking the base sets it loose at `shove`. It rolls on `friction` (far less than a car's
+// RUNAWAY.friction, so a gentle boardwalk slope keeps it going), spins `spin` rad/s while it stands and bowls through `plows` buildings it flattens.
+// `coaster`: the roller coaster. Its train (`trainW` x `trainH`, `mass`) shuttles along the track at `speed` like a cable car; the track is a row of
+// `deco:'track'` buildings `sectionW` wide whose decks stand `deckH` above the street. A train whose leading end or middle has no deck under it (a section
+// broken) derails: it is thrown off at `derailSpeed` / `derailLift` and, once it lands, runs away (`runaway` px/s, `plows` buildings) on the street's slope.
+export const CONEY = {
+ wheel:{d:Math.round(300*CITY_SCALE),mass:9,points:900,friction:8,shove:70,plows:4,spin:.18,baseW:Math.round(84*CITY_SCALE),baseHP:260},
+ coaster:{trainW:Math.round(150*CITY_SCALE),trainH:Math.round(26*CITY_SCALE),mass:5,points:600,speed:96,sectionW:Math.round(100*CITY_SCALE),deckH:Math.round(210*CITY_SCALE),
+  derailSpeed:210,derailLift:150,derailDamage:60,runaway:200,plows:3,sectionHP:150},
+};
+
 // Runaway cable cars (SF Act 2, Nob Hill). A vehicle in the `rolling` state is driven by the street's slope alone: it picks up
 // `gravity` px/s² per unit of slope (rise over run) toward downhill, loses `friction` px/s² to rolling resistance (so on flat
 // ground it coasts to a stop below `stopSpeed`), and tops out at `maxSpeed`. Cable cars on their line (`cable` state) shuttle at
