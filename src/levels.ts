@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -99,7 +99,14 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // New York Act 1 (NYC rework card 2), all opt-in. See the notes below.
  vents?:number[],bull?:number,spawn?:number,
  // New York Act 3 (NYC rework card 5), all opt-in. See the notes below.
- ventsAuto?:boolean,yard?:{x0:number,x1:number,spans:number},balloons?:[number,number][]};
+ ventsAuto?:boolean,yard?:{x0:number,x1:number,spans:number},balloons?:[number,number][],
+ // New York secret level (NYC rework card 7), all opt-in. See the notes below.
+ wheel?:number,coaster?:[number,number]};
+// New York secret level (NYC rework card 7, Coney Island), opt-in: `wheel` x of the Ferris wheel's centre (src/config.ts CONEY): a huge round body standing on its
+// base, a `deco:'wheelbase'` building; when the base is broken the wheel comes off and rolls (src/rolling.ts), speeding up on any slope, bowling through the buildings it
+// flattens and wrecking against the first it cannot. `coaster` [x0, x1] the roller coaster's run: a raised wooden track of `deco:'track'` buildings (each a stack of
+// hit parts: posts, a cross-brace, the deck you can climb) with a train shuttling along it like a cable car; a train with no deck under it (a section broken) derails and
+// runs away. Building decos `wheelbase`, `track` and `lifeguard` are drawings of this level.
 // New York Act 3 (NYC rework card 5), opt-in: `ventsAuto` makes the level's `vents` geysers (src/config.ts STEAM.geyser): they burst on their own,
 // no slam needed, much bigger than the Act 1 vents. `yard` {x0, x1, spans}: Hudson Yards' rail-yard deck, world x, `spans` equal deck spans at street
 // level over a live rail yard. The level builder also sets the matching `bridge` (the spans) and `subway` + `tunnel:'deep'` (the yard's line: trains run
@@ -683,6 +690,29 @@ function nycEmpire():BlockDef{
   // The last military push on the street, ahead of the wake: armour, artillery, infantry, air cover.
   units:[['soldier',sc(500)],['apc',sc(800)],['tank',sc(1000)],['soldier',sc(1200)],['tank',sc(1500)],['artillery',sc(1700)],['emplacement',sc(1600)],['soldier',sc(1900)],['helicopter',sc(1400),520]],air:[sc(1300)]};
 }
+// Secret. Coney Island (4 screens, Stage 3, tier 5): the subway terminal at the west end, the amusement area (arcades, a hot dog stand), a roller coaster on a raised
+// wooden track, a Ferris wheel over the top of the boardwalk's ramp, then the boardwalk, the Parachute Jump, the beach and the Atlantic (a wade at Stage 3 and Stage 2) with
+// a jetty at the far end for the exit. The ride names are generic. The wheel's base breaks and the wheel rolls east down the boardwalk; the coaster's train runs away off a
+// broken section of track.
+function nycConey():BlockDef{
+ const C=CONEY,SAND=-30,SURF=CONFIG.ground-sc(SAND)+8,BED=SURF+60,TRACK:[number,number]=[1050,1650],WHEEL=1900,land=(r:number)=>CONFIG.ground-sc(r);
+ let b=cityLevel('nyc','Coney Island',4,'district',`>490,s,m,r,s,m,_,>3200,L`,['PARACHUTE JUMP|lattice'],{startStage:3,cap:3,tier:5,secret:true});
+ b=clearClutter(b,[[1030,2080],[2500,3440]],true);
+ // The boardwalk drops 30 down a ramp just east of the wheel's base (a gentle slope: it is enough, the wheel is round), then runs flat to the beach; the sea shelves 60 deep (a wade at
+ // Stage 3, and still one at Stage 2) and a jetty rises out of it at the east end.
+ const ground:[number,number][]=[[0,land(0)],[sc(1960),land(0)],[sc(2400),land(SAND)],[sc(3420),land(SAND)],[sc(3480),BED],[sc(3640),BED],[sc(3700),land(SAND)],[sc(3840),land(SAND)]];
+ // The track: six sections, each a stack of parts (posts to the street, a cross-brace, the deck); the middle two are the hill.
+ const w=Math.round(C.coaster.sectionW/CONFIG.cityScale),track=Array.from({length:6},(_,k)=>{const H=Math.round(C.coaster.deckH/CONFIG.cityScale)+(k===2||k===3?50:0),pw=14;
+  return hall(TRACK[0]+k*w,w,H,'','#8a5a3a','track',C.coaster.sectionHP,[{x:0,w:pw,top:H-8},{x:w-pw,w:pw,top:H-8},{x:w/2-pw/2,w:pw,top:H-8},{x:0,w,top:H*.72,base:H*.72-8},{x:0,w,top:H,base:H-8}]);});
+ // The wheel's base: a machine house and the hub's A-frame under the wheel's centre.
+ const bw=Math.round(C.wheel.baseW/CONFIG.cityScale),hubH=Math.round(C.wheel.d/CONFIG.cityScale/2),base=hall(WHEEL-bw/2,bw,hubH+10,'','#c9c3b0','wheelbase',C.wheel.baseHP,[{x:0,w:bw,top:hubH*.3},{x:bw/2-12,w:24,top:hubH+10,base:hubH*.3-4}]);
+ const stands=[hall(2540,60,52,'FRANKS','#d4b13a','store',90),hall(2650,120,92,'ARCADE','#846a89','brick',170),hall(2830,38,110,'LIFEGUARD','#e8e2d2','lifeguard',150),
+  hall(2960,200,160,'BOARDWALK PAVILION','#9a8f78','brick',4000),hall(420,60,52,'FRANKS','#d4b13a','store',90),
+  hall(150,260,110,'STILLWELL TERMINAL','#9a8f78','ferry',420)];
+ return {...b,ground,buildings:[...b.buildings,...track,base,...stands],water:[[sc(3480-60),sc(3700),SURF]],bands:true,wheel:sc(WHEEL),coaster:[sc(TRACK[0]),sc(TRACK[1])],
+  after:'Hudson Yards',secretId:'coney-island',lore:'THE Q TRAIN RUNS PAST THE LAST STOP.',guard:true,police:true,
+  units:[['soldier',sc(700)],['soldier',sc(1000)],['tank',sc(2300)],['apc',sc(2750)],['tank',sc(3300)],['soldier',sc(3750)],['helicopter',sc(1800),560],['helicopter',sc(3100),620]],air:[sc(1500),sc(3000)]};
+}
 const NEW_YORK:BlockDef[]=[
  // 1. Act 1 (Stage 1, cap 1): Castle Clinton, ringed by the NYPD Harbor Unit. 2. The Wall Street canyon. 3. SoHo and Canal Street.
  nycBattery(),
@@ -705,8 +735,7 @@ const NEW_YORK:BlockDef[]=[
  // 9. Empire State (boss): the street, then the tower. The tower's authored setback tiers stand at the east end.
  nycEmpire(),
  // Secret. Coney Island, reached from Central Park's east exit; rejoins the route at Hudson Yards.
- {...cityLevel('nyc','Coney Island',4,'district',`${nycRep(NYC_LOW,2)},>1500,L,${nycRep(NYC_LOW,2)}`,['PARACHUTE JUMP|lattice'],{startStage:3,cap:3,tier:5,secret:true}),
-  after:'Hudson Yards',secretId:'coney-island',lore:'THE Q TRAIN RUNS PAST THE LAST STOP.',guard:true,police:true},
+ nycConey(),
 ];
 // The old five New York blocks, kept verbatim as the off-route fixture city 'nyc-classic' (not in CAMPAIGN, never shown in Free Play,
 // the map or the records): the pilots for city systems, terrain and river/bridge/subway, which many tests boot.
