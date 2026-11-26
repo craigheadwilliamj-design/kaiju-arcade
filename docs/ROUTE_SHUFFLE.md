@@ -5,7 +5,7 @@ Five updates, turned into four work cards:
 - **Add Sydney, Australia:** card 2.
 - **Move Myrmex to Sydney:** card 3.
 - **Move Sargathoth to Hong Kong:** card 3.
-- **Add Atomotitan:** card 1 (roster slot) and card 4 (kit and art).
+- **Add Atomotitan:** card 1 (roster slot). His kit and art are card 4, which is parked.
 - **Move Atomotitan to Tokyo:** card 3.
 
 Each card stands alone: start a session with the card's text. Read this whole file first.
@@ -13,7 +13,7 @@ Each card stands alone: start a session with the card's text. Read this whole fi
 **Order.**
 - Cards 1 and 2 can run in parallel.
 - Card 3 needs both of them.
-- Card 4 needs card 1 and can run any time after it, before or after card 3.
+- Card 4 is **parked** (low priority, no kit planned yet). Atomotitan ships as a placeholder alongside Sargathoth until the designer is ready.
 
 The three moves are one card on purpose. Done one at a time, they leave the route in broken in-between states: two cities with the same boss, a boss that isn't in `KAIJU` yet, and three save-format bumps instead of one.
 
@@ -31,7 +31,7 @@ The three moves are one card on purpose. Done one at a time, they leave the rout
   Atomotitan is the final city and the final kaiju unlock.
 - **Sydney gets placeholder parity**, not a full rework. Mexico City, Paris, Hong Kong and Tokyo are still the original five districts per city (4/6/8/8/4 screens). Sydney gets the same: five districts, its own style, skyline, landmarks, street junk and one city twist. A NYC_REWORK-style rework of Sydney (nine levels plus a secret level, three acts) is a later, separate plan.
 - **Sargathoth's move is just the move.** He keeps the shared M4 rival moveset and his geometric stand-in. His kit and art are a later card.
-- **Atomotitan's concept comes from the designer** (see card 4). Don't invent lore, an epilogue or a look beyond what that card states (`src/presentation.ts`: "Original epilogues/illustrations have not been supplied. Do not invent final lore.").
+- **Atomotitan is a placeholder, like Sargathoth.** He gets the shared M4 rival moveset, a geometric stand-in, provisional ratings and a `'TBD'` ending. His concept comes from the designer later (card 4, parked). Don't invent lore, an epilogue or a look beyond what that card states (`src/presentation.ts`: "Original epilogues/illustrations have not been supplied. Do not invent final lore.").
 
 ## How cities and kaiju are wired today (read before any card)
 
@@ -89,10 +89,10 @@ The three moves are one card on purpose. Done one at a time, they leave the rout
 **Do.**
 - **Roster data.**
   - `src/campaign.ts`: append `'Atomotitan'` to `KAIJU`.
-  - `src/presentation.ts`: add a `ROSTER` entry with the colour, ratings and ending title from card 4's concept block. If card 4's concept isn't filled in yet, use a neutral colour, `[3,3,3,3]` and ending `'TBD'`, and say so in the PR.
+  - `src/presentation.ts`: add a `ROSTER` entry with placeholder values: a neutral colour distinct from the other six, ratings `[3,3,3,3]` and ending `'TBD'`. Comment it as a placeholder until card 4.
   - `ENDINGS`/`ART_SLOTS` pick it up automatically. Check that they do.
 - **Stand-in.** Rivals and roster previews for a kaiju without art fall back to the stand-ins near `// Deliberately simple replaceable geometric stand-ins` in `src/presentation.ts`. Confirm Atomotitan draws there, in the roster preview and as a Free Play boss, the same way Sargathoth does.
-- **Labels.** `ultimateLabel()` and the dive label in `src/game.ts` fall through to the generic text for him. Leave them; card 4 names them.
+- **Labels.** `ultimateLabel()` and the dive label in `src/game.ts` fall through to the generic text for him, as they do for Sargathoth. Leave them.
 - **Roster screen.** The choose-your-kaiju grid (`roster-grid` in `public/style.css`) has had six cards until now. Check that seven lay out cleanly at desktop width and at phone width (390px), and fix the grid if the seventh card orphans badly.
 - **Saves.** Adding a name to `KAIJU` is backwards compatible: v2 saves stay valid. Don't bump `SAVE_VERSION` here.
 - **Tests.**
@@ -207,9 +207,9 @@ Also add `'syd'` to the `ORIGINAL` city lists in `tests/campaign.test.ts`, `test
 
 ---
 
-## Card 4: Atomotitan's kit and art
+## Card 4: Atomotitan's kit and art — **parked**
 
-**Needs card 1.** It can run before or after card 3.
+**Status: parked.** No kit is planned yet and it's low priority. Atomotitan plays as a placeholder alongside Sargathoth until then. Don't start this card until the concept block below is filled in. It needs card 1 and can run before or after card 3.
 
 **Concept (designer to fill in; the card can't start until this is filled in).**
 - **Look:** the silhouette and palette at Stage 1, Stage 2 and Stage 3.
