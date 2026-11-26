@@ -19,9 +19,12 @@ function fightBlock(){
   // Chinatown's crystal formation lifts the cap to Stage 2: the bot detours to shatter it once it is within a screen or two of the way.
   const formation=s.formationHP>0&&s.formationX!==null&&!s.exitOpen?{x:s.formationX-66,y:285,w:132,h:150,hp:s.formationHP}:null;
   let target:any=null,goal=s.worldWidth-s.width;
+  // Fisherman's Wharf is there-and-back: the main route leaves by the west exit (to The Fault); the east exit is the secret Alcatraz.
+  if(s.exitOpen&&s.level.name==='Fisherman\'s Wharf')goal=0;
   if(s.rival){target=s.rival;goal=target.x-s.width-25;}
-  else if(s.objectiveHP>0){const o=s.objective;target={x:o.x-o.w/2,y:435-o.h,w:o.w,h:o.h,hp:s.objectiveHP};goal=target.x-s.width-25;}
+  // A crystal formation comes before a stronghold's objective: the Wharf's cutter sits past deep water that only the Stage 3 lift opens.
   else if(formation){target=formation;goal=target.x-s.width-25;}
+  else if(s.objectiveHP>0){const o=s.objective;target={x:o.x-o.w/2,y:435-o.h,w:o.w,h:o.h,hp:s.objectiveHP};goal=target.x-s.width-25;}
   else if(!s.exitOpen){target=s.buildings.filter((b:any)=>b.hp>0).sort((a:any,b:any)=>Math.abs(a.x-px)-Math.abs(b.x-px))[0];if(target)goal=target.x>=px?target.x-s.width-25:target.x+target.w+25;}
   // Clear solid obstructions en route, independent of quota/objective targets.
   const blocker=s.buildings.filter((b:any)=>b.hp>0&&b.kind==='large'&&(goal>=s.x?b.x>=s.x+s.width-4&&b.x<goal+s.width:b.x+b.w<=s.x+4&&b.x+b.w>goal)).sort((a:any,b:any)=>goal>=s.x?a.x-b.x:b.x-a.x)[0];
