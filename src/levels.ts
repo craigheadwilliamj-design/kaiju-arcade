@@ -83,7 +83,7 @@ export const CITIES:City[]=[
 // street damage). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
 // without making the level a there-and-back with a west exit): The Battery starts in the harbour, over a `bands` water span with a seabed `ground` profile.
 export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
- target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
+ target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
  guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
  units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
@@ -97,7 +97,15 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // `lore`: one results-screen line. `hazmat`: this level's soldiers are drawn in hazmat suits (a reskin, nothing else changes).
  exitAt?:number,secretId?:string,lore?:string,hazmat?:boolean,
  // New York Act 1 (NYC rework card 2), all opt-in. See the notes below.
- vents?:number[],bull?:number,spawn?:number};
+ vents?:number[],bull?:number,spawn?:number,
+ // New York Act 3 (NYC rework card 5), all opt-in. See the notes below.
+ ventsAuto?:boolean,yard?:{x0:number,x1:number,spans:number},balloons?:[number,number][]};
+// New York Act 3 (NYC rework card 5), opt-in: `ventsAuto` makes the level's `vents` geysers (src/config.ts STEAM.geyser): they burst on their own,
+// no slam needed, much bigger than the Act 1 vents. `yard` {x0, x1, spans}: Hudson Yards' rail-yard deck, world x, `spans` equal deck spans at street
+// level over a live rail yard. The level builder also sets the matching `bridge` (the spans) and `subway` + `tunnel:'deep'` (the yard's line: trains run
+// under the deck); breaking a span opens a pit down to the yard floor and whatever stands on it goes down too (src/config.ts NYC3). `balloons`
+// [x, altitude] parade balloons (src/config.ts PARADE): x of the tether on the street, altitude the balloon's centre above the street, both world
+// units. Target art `arena` is Madison Square Garden: a drum with the Army field HQ at its foot. Building deco `float` is a parade float.
 // Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
 // (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
 // over an underground garage: a slam caves it into a pit of parked cars. `police`: helicopters and soldiers here are drawn as police / SWAT.
@@ -132,7 +140,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `ground`: the street profile as world [x, y] points (src/terrain.ts); absent = flat.
 // Third entry element: a landmark's name (key 'L'), 'cache', or a rooftop fixture ('radar' / 'tank').
 // Façade decoration tags (the third entry element): drawn by drawDeco in src/game.ts.
-const DECOS=new Set(['shed','brick','fireworks','store','hotel','post','carousel','factory','sub','freighter','crabshack','wall','tallship','powerhouse','vault']);
+const DECOS=new Set(['shed','brick','fireworks','store','hotel','post','carousel','factory','sub','freighter','crabshack','wall','tallship','powerhouse','vault','float']);
 type Entry=[number,keyof typeof BUILDING_PRESETS]|[number,keyof typeof BUILDING_PRESETS,string];
 const LANDMARK_COLORS=['#c3b48d','#b7a37c','#a9a9a0'];
 // Named NYC landmarks: authored tier silhouettes on the 190-wide 'L' footprint, drawn tier by tier from these parts, authored scale, bottom tier first. Every tier is a roof you can stand on
@@ -612,6 +620,49 @@ function nycSoho():BlockDef{
  return {...b,cars:[...b.cars.filter(c=>c<sc(4300)),...jam],crystal:sc(CRYSTAL),guard:true,police:true,vents,
   swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)]};
 }
+// ---- New York Act 3 (NYC rework card 5): Hudson Yards and Herald Square ----
+// Level 7. Hudson Boulevard's towers, the High Line (a roof park on an elevated deck: no buses under it), the Vessel, then the Hudson Yards
+// platform: a plaza and its towers standing on a deck over a live rail yard. Six deck spans, one tower (or two) on each: break a span and the
+// towers on it sink into the yard and come down. Steam geysers (`ventsAuto`) go off all over the level on their own: Tlézcatl is close.
+function nycHudson():BlockDef{
+ const HL:[number,number]=[1900,3200],APPROACH=400,YARD:[number,number]=[4300,6700],N=6,SPAN=(YARD[1]-YARD[0])/N;
+ let b=cityLevel('nyc','Hudson Yards',8,'district',
+  `n,x,l,_,x,n,h,_,>3700,L,_,>6800,x,n,l,_,x,h,n,_,m,s`,['THE VESSEL|lattice'],{startStage:3,cap:3,tier:4});
+ b=clearClutter(b,[[HL[0]-APPROACH,HL[1]+APPROACH],YARD]);
+ // The platform's towers, one or two to a span, each wholly inside its span (so a span going takes exactly the towers standing on it). Supertall.
+ const colors=cityById('nyc').colors,on=(k:number,key:'x'|'l'|'n'|'m',h:number,off?:number)=>{const w=BUILDING_PRESETS[key].w;return scaled({...BUILDING_PRESETS[key],x:YARD[0]+k*SPAN+(off??Math.round((SPAN-w)/2)),h,label:'',color:colors[(k+1)%colors.length]});};
+ const deck:BuildingSpec[]=[on(1,'x',760),on(2,'l',680),on(3,'x',720),on(4,'l',640),on(5,'n',700,40),on(5,'m',420,190)];
+ b={...b,buildings:[...b.buildings,...deck]};
+ // Geysers: in the cross-street gaps either side of the platform and in the gaps between its towers.
+ // The open stretches (under the High Line, round the Vessel, the plaza's west end) have no neighbours to find gaps between: those are authored.
+ const vents=[...streetGaps(b,300,1500,200),...[2150,2500,2850,3350,3550,3950,4150,4480,4620,6760].map(sc),...streetGaps(b,YARD[0]-20,YARD[1]+20,150),...streetGaps(b,6700,7500,200)].sort((p,q)=>p-q);
+ return {...b,vents,ventsAuto:true,guard:true,police:true,
+  elevated:[sc(HL[0]),sc(HL[1])],elevatedLook:'park',approach:sc(APPROACH),
+  yard:{x0:sc(YARD[0]),x1:sc(YARD[1]),spans:N},bridge:{x0:sc(YARD[0]),x1:sc(YARD[1]),spans:N},subway:[[sc(YARD[0]),sc(YARD[1])]],tunnel:'deep',
+  air:[sc(2400),sc(4900),sc(7000)],units:[['soldier',sc(1000)],['soldier',sc(3900)],['apc',sc(4100)],['tank',sc(6900)],['soldier',sc(7200)],['helicopter',sc(5800),620]]};
+}
+// Level 8. The Thanksgiving parade route down 34th Street: Macy's, Penn Station (the line below it), then Madison Square Garden (the target, a drum
+// with the Army's field HQ) behind a ring of parade floats used as barricades, under the full military. Parade balloons drift at roof height,
+// each held by a handler crew, with helicopters sheltering behind them. The Empire State rises over the far skyline at the east end.
+function nycHerald():BlockDef{
+ const T=5600,PENN:[number,number]=[1750,3550],BALLOONS:[number,number][]=[[857,560],[1307,640],[1821,600],[2857,560],[3357,620],[3986,700],[5100,600]];
+ let b=cityLevel('nyc','Herald Square',8,'stronghold',
+  `s,m,h,_,l,_,>1500,L,_,>2420,m,s,h,_,l,m,_,s,n,m,_,>4200,h,m,s,_,>6160,x,n,l,_,x,h,n,_,m,s`,
+  ["MACY'S|tower"],{startStage:3,cap:3,tier:4},{target:T,ring:[-840,-640,-440,-190,180,460]});
+ // Parade floats stand where the barricades would: low flatbeds with a painted figure on top (a Gore Charge breaks them).
+ const fcol=['#d9822b','#3a6ea5','#b9402f','#4f9a62','#8a5fa0','#d4b13a'];let f=0;
+ b={...b,buildings:b.buildings.map(x=>x.label==='BARRIER'?{...x,label:'PARADE FLOAT',deco:'float',color:fcol[f++%fcol.length],w:Math.round(x.w*2),h:Math.round(x.h*1.5)}:x)};
+ // Penn Station's head house over the line, Macy's at the west end.
+ b=clearClutter(b,[[PENN[0]+180,PENN[0]+620]]);
+ b={...b,buildings:[...b.buildings,hall(PENN[0]+210,380,120,'PENN STATION','#9a8f78','ferry',420)]};
+ return {...b,subway:[[sc(PENN[0]),sc(PENN[1])]],balloons:BALLOONS.map(([x,a])=>[sc(x),a] as [number,number]),
+  target:{x:sc(T),label:'MADISON SQUARE GARDEN',art:'arena'},guard:true,police:true,
+  // The full military: Guard soldiers and armour along the avenue, artillery and an emplacement behind the floats, and a helicopter sheltering
+  // behind each of the four balloons nearest the stronghold (they hold position behind them).
+  units:[['soldier',sc(1200)],['tank',sc(2400)],['soldier',sc(2700)],['apc',sc(3100)],['tank',sc(3500)],['soldier',sc(3900)],['tank',sc(4300)],['artillery',sc(4900)],['emplacement',sc(5000)],['soldier',sc(6300)],['tank',sc(6600)],
+   ['helicopter',sc(2857)+170,560],['helicopter',sc(3357)+170,620],['helicopter',sc(3986)+170,700],['helicopter',sc(5100)+170,600]],
+  garrison:[['tank',-420],['tank',-260],['soldier',-140],['soldier',-80],['artillery',330],['soldier',260],['tank',440]],air:[sc(2600)]};
+}
 const NEW_YORK:BlockDef[]=[
  // 1. Act 1 (Stage 1, cap 1): Castle Clinton, ringed by the NYPD Harbor Unit. 2. The Wall Street canyon. 3. SoHo and Canal Street.
  nycBattery(),
@@ -627,12 +678,10 @@ const NEW_YORK:BlockDef[]=[
  // Yards (the main route); the east exit, past the Reservoir, leads to the secret Coney Island.
  {...cityLevel('nyc','Central Park',8,'district',`${nycRep(NYC_LOW,2)},>2400,=,=,>4200,L,=,>5400,${nycRep(NYC_LOW,3)}`,['BELVEDERE CASTLE|dome'],{startStage:2,cap:2,capLift:3,tier:3}),
   start:sc(3840),crystal:sc(4400),guard:true,exits:{west:'Hudson Yards',east:'Coney Island'}},
- // 7. Act 3 (Stage 3, cap 3): Hudson Yards, the Vessel and the towers.
- {...cityLevel('nyc','Hudson Yards',8,'district',`${nycRep(NYC_TALL,1)},>2200,L,${nycRep(NYC_TALL,5)}`,['THE VESSEL|lattice'],{startStage:3,cap:3,tier:4}),
-  guard:true,police:true,air:[sc(2600),sc(4400),sc(6400)]},
- // 8. Herald Square and 34th Street: Macy's, Penn Station, Madison Square Garden (the target).
- {...cityLevel('nyc','Herald Square',8,'stronghold',`${nycRep(NYC_ROW,1)},>1400,L,${nycRep(NYC_ROW,4)}`,["MACY'S|tower"],{startStage:3,cap:3,tier:4},{target:5600}),
-  target:{x:sc(5600),label:'MADISON SQUARE GARDEN',art:'pyramid'},guard:true,police:true,air:[sc(2600),sc(4000)]},
+ // 7. Act 3 (Stage 3, cap 3): Hudson Yards, the High Line, the Vessel and the rail-yard deck. 8. Herald Square and 34th Street: Macy's, Penn Station,
+ // the parade and Madison Square Garden (the target).
+ nycHudson(),
+ nycHerald(),
  // 9. Empire State (boss): the street, then the tower. The tower's authored setback tiers stand at the east end.
  cityLevel('nyc','Empire State',6,'boss',`r,s,m,h,_,s,m,l,>2600,L,m,s`,['EMPIRE STATE'],{startStage:3,cap:3,tier:5}),
  // Secret. Coney Island, reached from Central Park's east exit; rejoins the route at Hudson Yards.
