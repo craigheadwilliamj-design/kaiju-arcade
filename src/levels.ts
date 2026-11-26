@@ -100,6 +100,8 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  vents?:number[],bull?:number,spawn?:number,
  // New York Act 2 (NYC rework card 3), all opt-in. See the notes below.
  night?:boolean,concourse?:[number,number],zoo?:number[],carriages?:number[],
+ // NYC fix card 4, opt-in. See the notes below.
+ moodRamp?:[x:number,mood:Mood|'day'|'night'|'dusk'|'dawn'|'golden'|'predawn'][],
  // New York Act 3 (NYC rework card 5), all opt-in. See the notes below.
  ventsAuto?:boolean,yard?:{x0:number,x1:number,spans:number},balloons?:[number,number][],
  // New York secret level (NYC rework card 7), all opt-in. See the notes below.
@@ -115,6 +117,10 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // under the deck); breaking a span opens a pit down to the yard floor and whatever stands on it goes down too (src/config.ts NYC3). `balloons`
 // [x, altitude] parade balloons (src/config.ts PARADE): x of the tether on the street, altitude the balloon's centre above the street, both world
 // units. Target art `arena` is Madison Square Garden: a drum with the Army field HQ at its foot. Building deco `float` is a parade float.
+// NYC fix card 4, opt-in: `moodRamp` [x, mood][] gives the level a light that changes along it: mood stops by world x (ascending). The game blends the stops at the
+// camera's centre (colours and `lights` lerp, `rain`/`smog` come from the nearer stop), so the sky, stars, sun and moon, windows, fire glow and billboard halos all move
+// continuously. A name is the city's day mood ('day'), NYC2.night ('night'), or NYC2.dusk/dawn/golden/predawn; a Mood object is used as given. Without it a level keeps its
+// hard mood (`night` or the city's). SoHo, Times Square and Grand Central are the only levels that set it.
 // New York Act 2 (NYC rework card 3), opt-in: `night` repaints the level with the night mood (src/config.ts NYC2.night) wherever the game reads
 // the city's mood; on a level with power grids a destroyed substation then blacks out that grid's windows and billboards. A building's `board`
 // is a facade billboard (a big neon screen), the roof fixture `billboard` a rooftop one, and the roof fixture `ball` is One Times Square's ball (once dropped it can be carried, thrown and shattered: src/config.ts NYC2):
@@ -643,7 +649,9 @@ function nycSoho():BlockDef{
  // Manholes in the Canal Street gaps, and two in the middle of the tunnel jam (steam among the stopped cars).
  const vents=[...gaps.slice(0,6),sc(5000),sc(5600)].sort((p,q)=>p-q);
  return {...b,cars:[...b.cars.filter(c=>c<sc(4300)),...jam],crystal:sc(CRYSTAL),guard:true,police:true,vents,
-  swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)]};
+  swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)],
+  // Day for most of it; golden hour from about two-thirds in, dusk at the east exit (the next level opens at dusk).
+  moodRamp:[[0,'day'],[levelWidth(b)*.55,'day'],[levelWidth(b)*.72,'golden'],[levelWidth(b)-700,'dusk']]};
 }
 // ---- New York Act 3 (NYC rework card 5): Hudson Yards and Herald Square ----
 // Level 7. Hudson Boulevard's towers, the High Line (a roof park on an elevated deck: no buses under it), the Vessel, then the Hudson Yards
@@ -753,7 +761,9 @@ function nycTimesSquare():BlockDef{
  // The square is packed: extra street spots (a crowd each) round One Times Square and along both avenues.
  b={...b,street:[...b.street,...[700,1100,2800,2900,3000,3480,3600,3700,3800,3900,4300,4600].map(sc)].sort((p,q)=>p-q)};
  return {...b,night:true,guard:true,police:true,air:[sc(2400),sc(4800)],
-  units:[['police',sc(1600)],['patrol',sc(2000)],['soldier',sc(2500)],['apc',sc(3900)],['soldier',sc(4100)],['soldier',sc(4600)],['apc',sc(5400)],['soldier',sc(5700)],['helicopter',sc(3100),560]]};
+  units:[['police',sc(1600)],['patrol',sc(2000)],['soldier',sc(2500)],['apc',sc(3900)],['soldier',sc(4100)],['soldier',sc(4600)],['apc',sc(5400)],['soldier',sc(5700)],['helicopter',sc(3100),560]],
+  // Opens at dusk (where SoHo ends), full night within about a screen, night through the square, pre-dawn toward the east exit.
+  moodRamp:[[0,'dusk'],[1500,'night'],[levelWidth(b)*.66,'night'],[levelWidth(b)-700,'predawn']]};
 }
 // Level 5. Grand Central. Park Avenue South climbs onto the Park Avenue Viaduct (a single-deck elevated, the freeway look, the Guard's tanks
 // and troops on it), which ends at the terminal's yard. The terminal is the target, with the Main Concourse's roof behind it: break that roof
@@ -775,7 +785,9 @@ function nycGrandCentral():BlockDef{
   // The Guard on the viaduct deck (tanks and troops), then the garrison round the terminal.
   deckUnits:[['tank',sc(1400)],['soldier',sc(1560)],['apc',sc(1760)],['soldier',sc(1960)],['tank',sc(2160)],['soldier',sc(2300)]],
   units:[['soldier',sc(700)],['apc',sc(900)],['helicopter',sc(2600),560],['helicopter',sc(4300),600]],
-  garrison:[['tank',-420],['soldier',-250],['apc',-130],['soldier',170],['tank',420],['soldier',560]]};
+  garrison:[['tank',-420],['soldier',-250],['apc',-130],['soldier',170],['tank',420],['soldier',560]],
+  // Opens at dawn and is in full day by a third of the way in.
+  moodRamp:[[0,'dawn'],[levelWidth(b)/3,'day']]};
 }
 // Level 6. Central Park, a there-and-back level (open layout, an exit at each end) entered from Central Park South. West to east: the main exit
 // (to Hudson Yards), a rock outcrop, the Great Lawn (the Guard dug in with APCs), another outcrop, Bethesda Terrace, the Pond under Gapstow

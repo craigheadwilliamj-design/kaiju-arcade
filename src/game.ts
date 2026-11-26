@@ -12,7 +12,7 @@ import {createShip,sinkShip,tickShip,shipSunk,hullBox,deckY} from './ship.ts';
 import type {Ship} from './ship.ts';
 import {fogAt} from './fog.ts';
 import {NEW_YORK_BLOCK_ONE,DRILL_BLOCK,WATER_DRILL,CITIES,LEVELS,levelWidth,cityIndexOf} from './levels.ts';
-import type {BlockDef} from './levels.ts';
+import type {BlockDef,Mood} from './levels.ts';
 import {createBuildings,damageBuilding,destruction,exitUnlocked,perfectBonus,solid,overlaps,canExitBlock,damageObjective,separateHorizontal,canTopple,toppleSpan,crushDamage,liftable} from './rules.ts';
 import {wearFloor,floorAt,floorHeightOf} from './rules.ts';
 import {createCombat,setGrowth,liftCap,canAct,scale,damageMultiplier,collectCrystal,creditDamage,tickCombat,light,beginHeavy,releaseHeavy,ranged,activateUltimate,activateSuper,cancelCharge,receiveHit} from './combat.ts';
@@ -61,7 +61,19 @@ function applyDisplay(){const frame=document.querySelector<HTMLElement>('#frame'
 function saveDisplay(){try{storage?.setItem(DISPLAY_KEY,JSON.stringify({version:1,...display}));}catch{}applyDisplay();}
 let cityIndex=0,blockIndex=0,block=LEVELS[0][0],worldWidth=levelWidth(block);
 // The mood the level is drawn in: the city's own, or the night mood on a level that sets `night` (Times Square). Read wherever the mood is.
-function moodNow(){return block.night?NYC2.night:CITIES[cityIndex].mood;}
+// A level with `moodRamp` blends its mood stops at the camera's centre (colours and `lights` lerp, `rain`/`smog` come from the nearer stop); cached per camera spot.
+const hexOk=(c:string)=>/^#[0-9a-f]{6}$/i.test(c);
+let moodKey='',moodCache:Mood|null=null;
+function rampStop(n:Mood|string):Mood{return typeof n!=='string'?n:n==='day'?CITIES[cityIndex].mood:n==='night'?NYC2.night:NYC2[n as 'dusk'|'dawn'|'golden'|'predawn'];}
+function blendMood(stops:[number,Mood|string][],x:number):Mood{
+ const i=stops.findIndex(([sx])=>sx>x);if(i<0)return rampStop(stops[stops.length-1][1]);if(i===0)return rampStop(stops[0][1]);
+ const [x0,n0]=stops[i-1],[x1,n1]=stops[i],a=rampStop(n0),b=rampStop(n1),t=(x-x0)/Math.max(1,x1-x0),mix=(p:string,q:string)=>hexOk(p)&&hexOk(q)?mixHex(p,q,t):t<.5?p:q,near=t<.5?a:b;
+ return {top:mix(a.top,b.top),bottom:mix(a.bottom,b.bottom),far:mix(a.far,b.far),mid:mix(a.mid,b.mid),near:mix(a.near,b.near),win:mix(a.win,b.win),lights:a.lights+(b.lights-a.lights)*t,sun:mix(a.sun,b.sun),rain:near.rain,smog:near.smog};}
+function moodNow():Mood{
+ if(!block.moodRamp)return block.night?NYC2.night:CITIES[cityIndex].mood;
+ const x=camera+viewW()/2,key=`${cityIndex}:${blockIndex}:${x}`;if(key!==moodKey||!moodCache){moodKey=key;moodCache=blendMood(block.moodRamp,x);}return moodCache;}
+// A light-driven switch: a hard threshold at `t` normally, a smooth 0..1 ramp `w` wide around it on a level with `moodRamp`.
+function thr(l:number,t:number,w=.2){return block.moodRamp?Math.max(0,Math.min(1,(l-(t-w/2))/w)):l>t?1:0;}
 // The stronghold's target: the central crystal by default; a SF level's `target` makes it a clock tower or a command post (same HP, same hit rules, a taller or wider box).
 let objective:{x:number,hp:number,maxHP:number,shattered:boolean,w:number,h:number,art:'crystal'|'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal',label:string,ship?:Ship}|null=null,rival:Rival|null=null;
 // x ranges of the vehicles a level stations in the street (streetcars, cable cars, trolleys, fire trucks): no street lamp stands in or within 70 px of one, so a station can be walked up to and grabbed.
@@ -1035,7 +1047,7 @@ function tickFire(dt:number){const rain=!!moodNow().rain;
  for(const p of pools){if(!p.fire)continue;for(const b of buildings)if(b.hpNow>0&&b.kind!=='tiny'&&p.x<b.x+b.w+FI.poolReach&&p.x+p.w>b.x-FI.poolReach){expose(b,FI.poolChance*dt);break;}}}
 // A burning building's flames: tongues in its upper floors, more of it alight as the heat climbs; a glow at night.
 function drawBlaze(b:typeof buildings[number],x:number,h:number){const f=blazes.get(b);if(!f)return;const y=b.base-h,bw=b.w-7,rows=Math.max(1,Math.ceil(f.heat*Math.min(6,h/40)));
- if(moodNow().lights>.6){ctx.globalAlpha=.18*f.heat;rect(x-10,y-20,bw+20,h*.6,'#ff8a1f');ctx.globalAlpha=1;}
+ {const gl=thr(moodNow().lights,.7,.6);if(gl>0){ctx.globalAlpha=.18*f.heat*gl;rect(x-10,y-20,bw+20,h*.6,'#ff8a1f');ctx.globalAlpha=1;}}
  for(let r=0;r<rows;r++){const yy=y+14+r*30;for(let xx=8;xx<bw-8;xx+=22){const hh=10+8*Math.abs(Math.sin(time*10+xx*.3+r*1.7));poly([[x+xx-6,yy+12],[x+xx-1,yy+12-hh],[x+xx+3,yy+12-hh*.6],[x+xx+7,yy+12]],r%2?'#ffb13b':'#e8401a');}}
  for(let k=0;k<3;k++){const cx=x+bw*(.25+k*.25),hh=(14+10*Math.abs(Math.sin(time*8+k)))*f.heat;poly([[cx-8,y+2],[cx,y-hh],[cx+8,y+2]],'#ff8a1f');}}
 // Rubble: a collapsed building heaps over its footprint; a toppled tower leaves a ridge where it fell.
@@ -2338,19 +2350,23 @@ function text(s:string,x:number,y:number,size=12,color='#e7edde',align:CanvasTex
 function poly(points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();}
 function background(){
  // W covers the zoomed-out view; layers repeat across it and the street fill runs down past the old 540 floor.
- const W=viewW()+100,top=C.ground-(C.ground+cameraY)/zoom-20,th=CITIES[cityIndex],m=moodNow(),night=m.lights>.6;
+ const W=viewW()+100,top=C.ground-(C.ground+cameraY)/zoom-20,th=CITIES[cityIndex],m=moodNow(),night=m.lights>.6,nightA=thr(m.lights,.6,.4);
  // Sky: a gradient from the city's zenith colour down to its horizon light (flat fill where gradients are unavailable).
  const g=ctx.createLinearGradient?.(0,top,0,C.ground);if(g&&g.addColorStop){g.addColorStop(0,m.top);g.addColorStop(1,m.bottom);ctx.fillStyle=g;ctx.fillRect(0,top,W,540-top);}else rect(0,top,W,540-top,m.bottom);
- if(night)for(let k=0;k<60;k++){const sx=(k*137%997)/997*W,sy=top+((k*71%331)/331)*(260-top);if(sy<300)rect(sx,sy,k%7?1:2,k%7?1:2,(Math.sin(time*2+k)>.6)?'#ffffff':'#c9d4e8');}
+ if(nightA>0){ctx.globalAlpha=nightA;for(let k=0;k<60;k++){const sx=(k*137%997)/997*W,sy=top+((k*71%331)/331)*(260-top);if(sy<300)rect(sx,sy,k%7?1:2,k%7?1:2,(Math.sin(time*2+k)>.6)?'#ffffff':'#c9d4e8');}ctx.globalAlpha=1;}
  // Sun (or moon), low in the sky so it reads behind the skyline.
- {const sx=W*.72-camera*.02,sy=m.lights>.6?150:m.lights>.35?250:170,r=m.lights>.35&&m.lights<.6?46:m.lights>.6?18:30;ctx.globalAlpha=m.lights>.6?.9:.75;
-  ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();if(!night){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+ {if(block.moodRamp){// Continuous: the sun slides down behind the skyline as the light goes, then the moon rises (and the reverse toward dawn).
+  const L=m.lights,sx=W*.72-camera*.02,moon=L>.55,k=moon?Math.min(1,(L-.55)/.45):Math.min(1,Math.max(0,(L-.15)/.4)),sy=moon?330+(150-330)*k:170+(330-170)*k,r=moon?18:30+20*k;
+   ctx.globalAlpha=moon?.9:.75;ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();
+   if(!moon){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+  else{const sx=W*.72-camera*.02,sy=m.lights>.6?150:m.lights>.35?250:170,r=m.lights>.35&&m.lights<.6?46:m.lights>.6?18:30;ctx.globalAlpha=m.lights>.6?.9:.75;
+  ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();if(!night){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}}
  if(th.id==='sfo')sfBackdrop(W,m);else{farSkyline(th.style,W,m);
  // Two parallax layers of city in the mood's colours; windows light up as the light goes.
  for(let i=-1,n=W/79+1;i<n;i++){const x=i*79-(camera*.13)%79,h=50+((i+22)*47%115);rect(x,315-h,50,h,m.far);rect(x+18,305-h,10,10,m.far);
-  if(night)for(let yy=322-h;yy<310;yy+=12)for(let xx=6;xx<44;xx+=11)if(((i*31+yy*7+xx)>>1)%4===0)rect(x+xx,yy,3,4,m.win+'99');}
+  if(nightA>0){ctx.globalAlpha=nightA;for(let yy=322-h;yy<310;yy+=12)for(let xx=6;xx<44;xx+=11)if(((i*31+yy*7+xx)>>1)%4===0)rect(x+xx,yy,3,4,m.win+'99');ctx.globalAlpha=1;}}
  for(let i=-1,n=W/102+1;i<n;i++){const x=i*102-(camera*.26)%102,h=80+((i+17)*37%110);rect(x,370-h,65,h,m.mid);rect(x+4,374-h,56,4,m.far);
-  for(let yy=390-h;yy<360;yy+=15)for(let xx=8;xx<59;xx+=15){const on=((i*13+yy*3+xx)>>2)%5<m.lights*4;rect(x+xx,yy,5,7,on?m.win:night?'#1d2536':m.far);}}
+  for(let yy=390-h;yy<360;yy+=15)for(let xx=8;xx<59;xx+=15){const on=((i*13+yy*3+xx)>>2)%5<m.lights*4;rect(x+xx,yy,5,7,on?m.win:nightA>0?(block.moodRamp&&hexOk(m.far)?mixHex(m.far,'#1d2536',nightA):'#1d2536'):m.far);}}
  }
  if(m.smog){ctx.globalAlpha=.28;rect(0,250,W,C.ground-250,'#e8b778');ctx.globalAlpha=1;}
  // Dense near-layer towers crowd the street and close in the skyline. Open layouts skip them so plazas read as open ground.
@@ -2405,7 +2421,7 @@ function drawStructure(b:typeof buildings[number],x:number,h:number){
  const y=b.base-h;
  if(b.prop){drawProp(b,x,h);return;}
  if(b.role){drawUtility(b,x,h);return;}
- const g=gridOfB.get(b)??-1,lit=g>=0&&power[g],dark=!!block.night&&g>=0&&!power[g],tiers=tiered(b)?drawnParts(b,x,h):null;
+ const g=gridOfB.get(b)??-1,lit=g>=0&&power[g],dark=!!(block.night||block.moodRamp)&&g>=0&&!power[g],tiers=tiered(b)?drawnParts(b,x,h):null;
  // Damage marks go on the facade: the whole front, or a tiered landmark's biggest solid tier.
  let fx=x,fy=y,fw=b.w,fh=h;
  if(tiers){drawTiers(b,tiers);const f=tiers.filter(t=>!t.spire).reduce((a,t)=>t.w*t.h>a.w*a.h?t:a);fx=f.x;fy=f.y;fw=f.w;fh=f.h;}
@@ -2424,7 +2440,7 @@ function drawStructure(b:typeof buildings[number],x:number,h:number){
  for(const o of b.holes as (typeof b.holes[number]&{shape?:number[]})[]){if(o.y>b.h)continue;const cx=x+o.x,cy=b.base-o.y*h/b.h;
   if(!o.shape){o.shape=[];for(let k=0;k<8;k++){const a=k/8*Math.PI*2,j=.62+.38*Math.abs(Math.sin(o.seed*12.9898+k*78.233));o.shape.push(Math.cos(a)*o.r*j,Math.sin(a)*o.r*j);}}
   const q=o.shape,ring=(ox:number,oy:number,kx:number,ky:number,color:string)=>{ctx.fillStyle=color;ctx.beginPath();for(let k=0;k<16;k+=2){const px=cx+ox+q[k]*kx,py=cy+oy+q[k+1]*ky;if(k)ctx.lineTo(px,py);else ctx.moveTo(px,py);}ctx.closePath();ctx.fill();};
-  ring(1,-1,1,.85,'#cfc6a8');const lit=moodNow().lights>.4||o.seed%3===0;ring(0,0,1,.85,lit?'#7a5a32':'#3a3530');ring(0,.25*o.r,.8,.35,lit?'#d9a84e':'#4a4036');rect(cx-o.r*.75,cy+o.r*.12,o.r*1.5,2,'#151515');ring(0,-.2*o.r,.35,.25,'#121c20');}
+  ring(1,-1,1,.85,'#cfc6a8');const lit=block.moodRamp?o.seed%3===0||(o.seed*.618034)%1<thr(moodNow().lights,.45,.4):moodNow().lights>.4||o.seed%3===0;ring(0,0,1,.85,lit?'#7a5a32':'#3a3530');ring(0,.25*o.r,.8,.35,lit?'#d9a84e':'#4a4036');rect(cx-o.r*.75,cy+o.r*.12,o.r*1.5,2,'#151515');ring(0,-.2*o.r,.35,.25,'#121c20');}
  // Floors worn past half show a crack across that storey (two at a quarter).
  if(b.floors?.length){const fh=h/b.floors.length;b.floors.forEach((v,i)=>{if(v>b.floorMax*.5)return;const yy=b.base-(i+1)*fh+fh*.15,deep=v<b.floorMax*.25;
   // On a tiered landmark the crack only runs across the tiers at that height.
@@ -2469,12 +2485,12 @@ function boardLit(b:typeof buildings[number]){return powered(b.x+b.w/2);}
 function drawBoard(b:typeof buildings[number],x:number,y:number,h:number,lit:boolean){const bw=b.w-7,bh=Math.min(h*.3,130),by=y+Math.max(20,h*.14),ad=BOARD_ADS[Math.abs(Math.round(b.x/7))%BOARD_ADS.length],ph=Math.floor(time*.8+b.x*.003)%2===0;
  if(bw<50||h<90)return;rect(x+5,by-4,bw-10,bh+8,'#16181d');
  if(!lit){rect(x+8,by,bw-16,bh,'#090a0d');poly([[x+10,by+2],[x+bw*.5,by+2],[x+10,by+bh*.6]],'#ffffff0d');return;}
- ctx.globalAlpha=.2;rect(x-5,by-9,bw+10,bh+18,ad[0]);ctx.globalAlpha=1;
+ ctx.globalAlpha=block.moodRamp?.2*Math.min(1,moodNow().lights):.2;rect(x-5,by-9,bw+10,bh+18,ad[0]);ctx.globalAlpha=1;
  rect(x+8,by,bw-16,bh,ph?ad[0]:ad[1]);rect(x+8,by+bh*.62,bw-16,bh*.38,ph?ad[1]:ad[0]);
  text(ad[2],x+bw/2,by+bh*.5,Math.max(8,Math.min(15,Math.floor((bw-22)/ad[2].length*1.7))),ph?ad[1]:ad[0],'center');
  for(let k=0;k<5;k++)rect(x+10+((time*60+k*37)%(bw-24)),by+bh*.7+k%2*5,10,3,ph?ad[0]:ad[1]);}
 function facade(b:typeof buildings[number],x:number,y:number,h:number,gridLit:boolean,dark=false){const th=CITIES[cityIndex],m=moodNow(),bw=b.w-7,base=b.base,st=th.style;
- const seed=(n:number)=>((n*2654435761+b.x*97)>>>0)%1000/1000,win=(xx:number,yy:number,off:string)=>(seed(xx*7+yy*13)<(dark?NYC2.darkWindows:m.lights*.55+(gridLit?.2:0)))?m.win:off;
+ const seed=(n:number)=>((n*2654435761+b.x*97)>>>0)%1000/1000,win=(xx:number,yy:number,off:string)=>(seed(xx*7+yy*13)<(dark?(block.moodRamp?m.lights*.55+(NYC2.darkWindows-m.lights*.55)*Math.min(1,m.lights):NYC2.darkWindows):m.lights*.55+(gridLit?.2:0)))?m.win:off;
  rect(x+5,y+8,b.w,h-8,'#222b31');rect(x,y,bw,h,b.color);
  if(st==='nyc'){for(let yy=y+10;yy<base;yy+=6){ctx.globalAlpha=.12;rect(x,yy,bw,1,'#000000');ctx.globalAlpha=1;}
   rect(x-3,y,b.w+4,7,'#cbbfa4');rect(x-2,y+7,b.w+2,3,'#5d4a40');
@@ -2549,7 +2565,7 @@ function drawProp(b:typeof buildings[number],x:number,h:number){const y=b.base-h
    for(const [dx,dy] of [[-1,.1],[1,.1],[-.8,-.08],[.8,-.08],[0,-.16]])poly([[x+w*.5,y+h*.26],[x+w*.5+dx*w*.7,y+h*(.2+dy)],[x+w*.5+dx*w*.5,y+h*(.34+dy)]],'#4f7d4a');break;}
   case 'turntable':{ctx.fillStyle='#5d564a';ctx.beginPath();ctx.ellipse(x+w/2,base-3,w/2,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8a8272';ctx.beginPath();ctx.ellipse(x+w/2,base-4,w/2-5,3.5,0,0,Math.PI*2);ctx.fill();rect(x+w*.1,base-5,w*.8,2,'#3b3730');rect(x+w/2-1,base-7,2,6,'#3b3730');break;}
   case 'vending':{rect(x,y,w,h,'#d9e2ea');rect(x+2,y+3,w-4,h*.5,'#1c2a3a');for(let r=0;r<3;r++)for(let k=0;k<3;k++)rect(x+3+k*(w-6)/3,y+5+r*h*.15,(w-6)/3-1,h*.1,['#d94f4f','#4fa3d9','#e8d26a'][(r+k)%3]);rect(x+2,y+h*.62,w-4,4,'#2b2b2b');
-   if(moodNow().lights>.6){ctx.globalAlpha=.25;rect(x-6,y-4,w+12,h+4,'#bfe8ff');ctx.globalAlpha=1;}break;}}}
+   {const va=thr(moodNow().lights,.7,.6);if(va>0){ctx.globalAlpha=.25*va;rect(x-6,y-4,w+12,h+4,'#bfe8ff');ctx.globalAlpha=1;}}break;}}}
 // Substation: a fenced yard with a gantry and two transformers on insulators. Fuel depot: two banded tanks with a hazard diamond.
 function drawUtility(b:typeof buildings[number],x:number,h:number){const y=b.base-h,w=b.w,hurt=b.hpNow<b.hp*.55,live=b.hpNow>0&&powered(b.x+b.w/2);
  rect(x-2,b.base-7,w+4,7,'#5d6763');
@@ -3165,7 +3181,7 @@ function drawSlab(b:typeof buildings[number]){
  if(k<.4&&particles.length<C.particleCap&&Math.random()<.2)particles.push({x:b.x+Math.random()*b.w,y:top+t,vx:0,vy:60,life:.5,color:'#8a908c',size:2});}
 // Facade decorations for the SF levels (BuildingSpec.deco): drawn instead of the city's own facade, damage marks go on top.
 function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const bw=b.w-7,base=b.base,mood=moodNow();
- const win=(wx:number,wy:number,ww:number,wh:number)=>{rect(wx,wy,ww,wh,'#2a3a42');rect(wx+1,wy+1,ww-2,wh*.45,mood.lights>.5?mood.win:'#8fb0bd');};
+ const win=(wx:number,wy:number,ww:number,wh:number)=>{rect(wx,wy,ww,wh,'#2a3a42');rect(wx+1,wy+1,ww-2,wh*.45,block.moodRamp&&hexOk(mood.win)?mixHex('#8fb0bd',mood.win,thr(mood.lights,.5,.4)):mood.lights>.5?mood.win:'#8fb0bd');};
  switch(b.deco){
   case 'boathouse':{// A boathouse on the dock: weathered planks, a pitched roof and a wide door onto the slip.
    rect(x,y+h*.28,bw,h*.72,'#6b5a48');for(let xx=x+5;xx<x+bw;xx+=7)rect(xx,y+h*.28,1,h*.72,'#54463a');poly([[x-5,y+h*.3],[x+bw/2,y-4],[x+bw+5,y+h*.3]],'#4a3f38');
@@ -3263,7 +3279,7 @@ function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const b
    for(let f=0;f<floors;f++){const yy=y+f*fh;for(let wx=x+8;wx<x+bw-18;wx+=22)win(wx,yy+10,12,fh*.45);if(f>0){rect(x+3,yy,bw-6,4,paints[(f+Math.floor(b.x/90))%3]);for(let rx=x+5;rx<x+bw-8;rx+=6)rect(rx,yy+4,1,7,paints[(f+Math.floor(b.x/90))%3]);}}
    poly([[x-7,y+6],[x+9,y-9],[x+bw*.34,y-9],[x+bw*.34+14,y+6]],'#2f5a45');rect(x+bw*.1,y-14,4,6,'#c9a441');rect(x+bw*.5,y-3,bw*.4,3,'#3a2d2a');
    rect(x+bw*.3,base-26,bw*.38,26,'#3a2d2a');rect(x+bw*.3,base-26,bw*.38,3,paints[Math.floor(b.x/70)%3]);
-   if(mood.lights>.4)for(let k=0;k<3;k++)rect(x+8+k*(bw-18)/2,y+h*.18,5,7,'#e8401a');break;}
+   {const wa=thr(mood.lights,.4,.3);if(wa>0){ctx.globalAlpha=wa;for(let k=0;k<3;k++)rect(x+8+k*(bw-18)/2,y+h*.18,5,7,'#e8401a');ctx.globalAlpha=1;}}break;}
   case 'fireworks':{// A red shopfront with painted rockets and a gold sign; flashes now and then.
    rect(x,y,bw,h,'#a83a30');rect(x,y,bw,6,'#c9a441');for(let yy=y+10;yy<base-16;yy+=26)for(let wx=x+8;wx<x+bw-18;wx+=22)win(wx,yy,12,12);
    for(let k=0;k<3;k++){const rx=x+10+k*(bw-24)/2,ry=base-52;rect(rx,ry+6,5,24,'#e8dfc4');poly([[rx,ry+6],[rx+2.5,ry-4],[rx+5,ry+6]],'#c0392b');rect(rx+2,ry+30,1,8,'#c9a441');}
@@ -3704,6 +3720,8 @@ if((window as any).__kaijuTest)Object.defineProperty(window,'kaijuTest',{value:{
  gotoCity:(id:string,bi:number,px?:number)=>{if(!run||cityIndexOf(id)<0)return false;cityIndex=cityIndexOf(id);activeKaiju=run.kaiju;score=0;citySettled=false;combat=createCombat();blockIndex=bi;run.block=bi;run.phase='playing';cleared=false;loadBlock(false);if(px!==undefined)teleport(px);return true;},
  goto:(bi:number,px?:number)=>{if(!run)return false;blockIndex=bi;run.block=bi;run.phase='playing';cleared=false;loadBlock(false);if(px!==undefined)teleport(px);return true;},
  teleport:(px:number)=>teleport(px),
+ // Put the camera's centre at world x without moving the kaiju (the mood ramp reads the camera: tests/nyc-mood.test.ts).
+ setCamera:(cx:number)=>{camera=cx-viewW()/2;},
  // Play as another kaiju (the campaign forces Kaiban in New York; tests that need a weaker carrier switch here).
  setKaiju:(k:string)=>{activeKaiju=k;},
  // Set building i alight, or smash the most valuable buildings until the block is `frac` destroyed.

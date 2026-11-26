@@ -43,9 +43,10 @@ test('Times Square data: night, a grid each side with billboards on both, the ba
 });
 
 test('Times Square: the night mood is read from the level, other levels stay in daylight',async()=>{
- const h=await boot('Times Square');assert.equal(h.state().moodLights,1);
- h.test().goto(at('Grand Central'));h.step(2);assert.equal(h.state().moodLights,CITIES[NYC].mood.lights);
- h.test().goto(at('Times Square'));h.step(2);assert.equal(h.state().moodLights,1,'and back');
+ // Times Square and Grand Central ramp their light along the level (tests/nyc-mood.test.ts); mid-level the mood is the full night and the full day.
+ const h=await boot('Times Square',sc(3400));assert.equal(h.state().moodLights,1);
+ h.test().goto(at('Grand Central'),sc(3400));h.step(2);assert.equal(h.state().moodLights,CITIES[NYC].mood.lights);
+ h.test().goto(at('Times Square'),sc(3400));h.step(2);assert.equal(h.state().moodLights,1,'and back');
 });
 
 test('Times Square blackout: destroying a substation darkens that grid\'s billboards (facade and roof); the other grid stays lit',async()=>{
