@@ -2,7 +2,7 @@ import type {Part} from './hitbox.ts';
 // `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 // `role`: a structure with a job in the city (src/city.ts). `roof`: a rooftop fixture on an ordinary building.
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',upperDeck?:boolean,label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant'|'powerhouse',roof?:'radar'|'tank'|'sign'|'crab'|'helipad',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean};
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',upperDeck?:boolean,label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant'|'powerhouse',roof?:'radar'|'tank'|'sign'|'crab'|'helipad'|'billboard'|'ball',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean,board?:boolean};
 // `parts`: the hitbox silhouette (src/hitbox.ts); omitted means one box, the whole footprint.
 // `prop`: street junk (a walk-through breakable: hot dog cart, trash can, taco stand, advertising column, café table, market stall,
 // vending machine), drawn per kind.
@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,NYC2} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -83,7 +83,7 @@ export const CITIES:City[]=[
 // street damage). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
 // without making the level a there-and-back with a west exit): The Battery starts in the harbour, over a `bands` water span with a seabed `ground` profile.
 export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
- target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
+ target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'terminal',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
  guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
  units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
@@ -97,7 +97,17 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // `lore`: one results-screen line. `hazmat`: this level's soldiers are drawn in hazmat suits (a reskin, nothing else changes).
  exitAt?:number,secretId?:string,lore?:string,hazmat?:boolean,
  // New York Act 1 (NYC rework card 2), all opt-in. See the notes below.
- vents?:number[],bull?:number,spawn?:number};
+ vents?:number[],bull?:number,spawn?:number,
+ // New York Act 2 (NYC rework card 3), all opt-in. See the notes below.
+ night?:boolean,concourse?:[number,number],zoo?:number[],carriages?:number[]};
+// New York Act 2 (NYC rework card 3), opt-in: `night` repaints the level with the night mood (src/config.ts NYC2.night) wherever the game reads
+// the city's mood; on a level with power grids a destroyed substation then blacks out that grid's windows and billboards. A building's `board`
+// is a facade billboard (a big neon screen), the roof fixture `billboard` a rooftop one, and the roof fixture `ball` is One Times Square's ball:
+// break it and it drops and rolls down the street. Target art `terminal` is Grand Central Terminal (a wide stone facade, a clock, the statue
+// group). `concourse` [x0, x1]: the Main Concourse under a roof building (deco `concourse`): break the roof and the street under it
+// opens into a pit full of commuters and police. A single-deck `elevatedLook: 'freeway'` is the Park Avenue Viaduct, and `deckUnits` troops stand
+// on any elevated deck. `zoo`: Central Park Zoo animals at x that bolt from the kaiju (the sea-lion logic). `carriages`: horse-drawn
+// carriages at x that bolt once the kaiju nears (the runaway rolling physics).
 // Phase 3 (SF Act 1), all opt-in, x in world units like `start`. `target`: a stronghold's objective at x as a clock tower or command post
 // (default: the central crystal). `pocket`: a sealed tunnel pocket you start in; its roof box (hp) is a ceiling until broken. `garage`: x ranges
 // over an underground garage: a slam caves it into a pit of parked cars. `police`: helicopters and soldiers here are drawn as police / SWAT.
@@ -132,7 +142,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `ground`: the street profile as world [x, y] points (src/terrain.ts); absent = flat.
 // Third entry element: a landmark's name (key 'L'), 'cache', or a rooftop fixture ('radar' / 'tank').
 // Façade decoration tags (the third entry element): drawn by drawDeco in src/game.ts.
-const DECOS=new Set(['shed','brick','fireworks','store','hotel','post','carousel','factory','sub','freighter','crabshack','wall','tallship','powerhouse','vault']);
+const DECOS=new Set(['rink','bethesda','gapstow','subentry','concourse','zoopen','shed','brick','fireworks','store','hotel','post','carousel','factory','sub','freighter','crabshack','wall','tallship','powerhouse','vault']);
 type Entry=[number,keyof typeof BUILDING_PRESETS]|[number,keyof typeof BUILDING_PRESETS,string];
 const LANDMARK_COLORS=['#c3b48d','#b7a37c','#a9a9a0'];
 // Named NYC landmarks: authored tier silhouettes on the 190-wide 'L' footprint, drawn tier by tier from these parts, authored scale, bottom tier first. Every tier is a roof you can stand on
@@ -167,7 +177,7 @@ function district(city:string,name:string,screens:number,entries:Entry[],street:
    const b=scaled({...BUILDING_PRESETS[key],x,label,color,landmark:true,...(shape?{shape}:{})});return {...b,shape:shape||'tower',parts:shapeParts(shape||'tower',theme.style,b.w,b.h)};}
   if(key==='S'||key==='F'||key==='K')return scaled({...BUILDING_PRESETS[key],x,label:key==='K'?'ARMORY':'',color:key==='S'?'#7f8c88':key==='F'?'#c4bea6':'#8a5444',role:key==='S'?'substation':key==='F'?'depot':'armory'});
   if(key==='P')return scaled({...BUILDING_PRESETS[key],x,label:'CABLE CAR POWERHOUSE',color:'#8a5a44',role:'powerhouse',deco:'powerhouse'});
-  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='vault'?{cache:true,deco:'vault',label:'VAULT'}:tag==='factory'?{deco:'factory',roof:'sign',label:'CHOCOLATE'}:tag==='radar'||tag==='tank'||tag==='sign'||tag==='crab'||tag==='helipad'?{roof:tag}:tag&&DECOS.has(tag)?{deco:tag,label:'',...(tag==='fireworks'?{explosive:true,label:'FIREWORKS'}:{})}:{})});
+  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='vault'?{cache:true,deco:'vault',label:'VAULT'}:tag==='factory'?{deco:'factory',roof:'sign',label:'CHOCOLATE'}:tag==='radar'||tag==='tank'||tag==='sign'||tag==='crab'||tag==='helipad'||tag==='billboard'||tag==='ball'?{roof:tag}:tag==='board'?{board:true}:tag&&DECOS.has(tag)?{deco:tag,label:'',...(tag==='fireworks'?{explosive:true,label:'FIREWORKS'}:{})}:{})});
  });
  // Water mains: a fire hydrant on the pavement beside every MAINS.every-th street spot (never inside a building), in district and
  // stronghold blocks. Appended after the authored buildings so their order is untouched.
@@ -612,21 +622,110 @@ function nycSoho():BlockDef{
  return {...b,cars:[...b.cars.filter(c=>c<sc(4300)),...jam],crystal:sc(CRYSTAL),guard:true,police:true,vents,
   swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)]};
 }
+// ---- New York Act 2 (NYC rework card 3): Times Square, Grand Central, Central Park ----
+// A named landmark placed by hand (the pattern builder keeps a stronghold's middle clear): built the way an 'L' token is in district().
+function landmarkAt(x:number,label:string,color:string,shape?:string):BuildingSpec{
+ const tiers=shape?undefined:landmarkShape(label);
+ if(tiers)return scaled({...BUILDING_PRESETS.L,x,h:Math.max(...tiers.map(p=>p.top)),parts:tiers,label,color,landmark:true});
+ const b=scaled({...BUILDING_PRESETS.L,x,label,color,landmark:true,...(shape?{shape}:{})});return {...b,shape:shape||'tower',parts:shapeParts(shape||'tower','nyc',b.w,b.h)};}
+const NYC_POLES=(from:number,to:number)=>{const out:number[]=[];for(let x=from;x<to;x+=280)out.push(x);return out;};
+// Level 4. Times Square, the only night level. Seventh Avenue and Broadway are long straight avenues of storefront towers (a Stampede lane
+// each) wrapped in billboards: facade screens on the walls, rooftop screens on the towers. The power grid feeds them: a west and an east
+// grid, a substation each, and destroying one blacks out its windows and screens. One Times Square stands in the middle of the square
+// with the ball on its roof: break the ball loose and it rolls down Broadway. Crowds fill the street spots and flee.
+function nycTimesSquare():BlockDef{
+ const pattern=['m,h:board,l:board,s,m:billboard,h:board,x:billboard,m:board,s:board,_',
+  'h:board,n:billboard,m:board,S,_',
+  '>2750,=,L,=',
+  'x:billboard,h:board,l:board,m,s:board,h:board,m:billboard,n:billboard,l:board,_',
+  'h:board,S,n:billboard,_,m:board,s,h:board,m:board'].join(',');
+ let b=cityLevel('nyc','Times Square',7,'district',pattern,['ONE TIMES SQUARE|tower'],{startStage:2,cap:2,tier:2});
+ // The ball sits on One Times Square's roof.
+ b={...b,buildings:b.buildings.map(x=>x.landmark?{...x,roof:'ball' as const}:x)};
+ b=powered(b,[[0,3360],[3360,6720]],NYC_POLES(220,6700));
+ // The square is packed: extra street spots (a crowd each) round One Times Square and along both avenues.
+ b={...b,street:[...b.street,...[700,1100,2800,2900,3000,3480,3600,3700,3800,3900,4300,4600].map(sc)].sort((p,q)=>p-q)};
+ return {...b,night:true,guard:true,police:true,air:[sc(2400),sc(4800)],
+  units:[['police',sc(1600)],['patrol',sc(2000)],['soldier',sc(2500)],['apc',sc(3900)],['soldier',sc(4100)],['soldier',sc(4600)],['apc',sc(5400)],['soldier',sc(5700)],['helicopter',sc(3100),560]]};
+}
+// Level 5. Grand Central. Park Avenue South climbs onto the Park Avenue Viaduct (a single-deck elevated, the freeway look, the Guard's tanks
+// and troops on it), which ends at the terminal's yard. The terminal is the target, with the Main Concourse's roof behind it: break that roof
+// from above and drop into the pit (the Main Concourse, full of commuters and police). MetLife stands right behind and a second tower in front:
+// toppled, either lands on the terminal. The Chrysler Building is the climbable landmark to the east. Metro-North trains run in the tunnel under
+// Park Avenue and burst out where the street caves in.
+function nycGrandCentral():BlockDef{
+ const T=3400,DECK:[number,number]=[1150,2380],APPROACH=420,CONC:[number,number]=[3500,190];
+ let b=cityLevel('nyc','Grand Central',7,'stronghold',
+  `s,m,h,>3980,h,m,_,s,>4700,L,_,m,h,_,s,m,h,_,l,s`,['CHRYSLER'],{startStage:2,cap:2,tier:3},{target:T,ring:[-440,-190]});
+ b=clearClutter(b,[[DECK[0]-APPROACH,DECK[1]+APPROACH]]);
+ const metlife=landmarkAt(3710,'MET LIFE','#a9a9a0'),front=scaled({...BUILDING_PRESETS.x,x:3070,label:'',color:cityById('nyc').colors[2]});
+ const concourse=hall(CONC[0],CONC[1],70,'MAIN CONCOURSE','#b7ab8d','concourse',NYC2.concourseHP);
+ b={...b,buildings:[...b.buildings,metlife,front,concourse]};
+ // Commuters in the terminal's yard and on the avenue under the viaduct, parked cars along it.
+ b={...b,street:[...b.street,...[900,1500,2000,2500,2900,3140,3290,3470].map(sc)].sort((p,q)=>p-q),cars:[...b.cars,...[800,1250,1700,2150,2600].map(sc)].sort((p,q)=>p-q)};
+ return {...b,elevated:[sc(DECK[0]),sc(DECK[1])],elevatedLook:'freeway',approach:sc(APPROACH),subway:[[sc(560),sc(3280)]],concourse:[concourse.x,concourse.x+concourse.w],
+  target:{x:sc(T),label:'GRAND CENTRAL TERMINAL',art:'terminal'},guard:true,police:true,air:[sc(2600)],
+  // The Guard on the viaduct deck (tanks and troops), then the garrison round the terminal.
+  deckUnits:[['tank',sc(1400)],['soldier',sc(1560)],['apc',sc(1760)],['soldier',sc(1960)],['tank',sc(2160)],['soldier',sc(2300)]],
+  units:[['soldier',sc(700)],['apc',sc(900)],['helicopter',sc(2600),560],['helicopter',sc(4300),600]],
+  garrison:[['tank',-420],['soldier',-250],['apc',-130],['soldier',170],['tank',420],['soldier',560]]};
+}
+// Level 6. Central Park, a there-and-back level (open layout, an exit at each end) entered from Central Park South. West to east: the main exit
+// (to Hudson Yards), a rock outcrop, the Great Lawn (the Guard dug in with APCs), another outcrop, Bethesda Terrace, the Pond under Gapstow
+// Bridge, Wollman Rink, the start (Central Park South, with the carriage horses further on), the zoo, Belvedere Castle on its rock with the
+// crystal that lifts the cap to Stage 3, the Reservoir (over a Stage 2 kaiju's head, wading depth at Stage 3, so the crystal is what opens
+// it) and, past it, the subway entrance of the Q train (the east exit, to Coney Island). The ground is dense with trees.
+function nycCentralPark():BlockDef{
+ const START=3840,CRYSTAL=5600,W=8*960,CASTLE=5320;
+ let b=cityLevel('nyc','Central Park',8,'district',`r,s,m,_`,[],{startStage:2,cap:2,capLift:3,tier:3});
+ // Terrain (authored x; null = street level, a number > 0 = the water's depth over the bed, a number < 0 = a rock outcrop that high). Outcrops
+ // are rock you climb: a ramp up, a flat top, a ramp down; the Pond is a shallow wading dip, the Reservoir a deep one.
+ const D:[number,number|null][]=[[0,null],[860,null],[1020,-40],[1200,-40],[1360,null],[2100,null],[2250,-36],[2400,-36],[2550,null],
+  [2960,null],[3040,40],[3440,40],[3520,null],[5060,null],[5260,-56],[5700,-56],[5880,null],[5960,null],[6100,90],[7330,90],[7470,null],[W,null]];
+ const ground:[number,number][]=D.map(([x,d])=>[sc(x),d===null?CONFIG.ground:d>0?CONFIG.ground+6+d:CONFIG.ground+Math.round(d*CONFIG.cityScale)]);
+ const waterLine=CONFIG.ground+6;
+ // The landmarks: the Pond's Gapstow Bridge (an arched span over the water), Wollman Rink, Bethesda Terrace (stepped up to the fountain), the
+ // zoo's pens, Belvedere Castle on the rock, and the subway entrance.
+ const bridge=hall(3150,200,60,'GAPSTOW BRIDGE','#8a8f86','gapstow',260,[{x:0,w:200,top:60}]);
+ const rink=hall(3540,230,56,'WOLLMAN RINK','#bfd8e4','rink',220);
+ const bethesda=hall(2600,300,70,'BETHESDA TERRACE','#c8b997','bethesda',320,[{x:0,w:300,top:30},{x:60,w:180,top:50},{x:110,w:80,top:70}]);
+ const pens=[4580,4760,4940].map(x=>hall(x,150,52,'','#7a6a4a','zoopen',140));
+ const castleSpec=scaled({...BUILDING_PRESETS.L,x:CASTLE,h:300,label:'BELVEDERE CASTLE',color:'#b7a37c',landmark:true,shape:'dome'});
+ const castleBuilt={...castleSpec,parts:shapeParts('dome','nyc',castleSpec.w,castleSpec.h)};
+ const entrance=hall(7490,110,62,'SUBWAY · Q','#4a5a52','subentry',200);
+ // Trees: dense, on flat ground only (not in water, not on a ramp, not against a building or the start).
+ const solids=[bridge,rink,bethesda,...pens,castleBuilt,entrance];
+ const trees:BuildingSpec[]=[];let seed=7;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+ for(let x=150;x<7400;x+=13+Math.floor(rnd()*20)){
+  const lawn=x>1450&&x<2480&&rnd()<.65,sx=sc(x);if(lawn)continue;
+  if(Math.abs(x-START)<170||Math.abs(profileY(ground,sx)-profileY(ground,sx+sc(30)))>1||Math.abs(profileY(ground,sx)-profileY(ground,sx-sc(30)))>1)continue;
+  if(profileY(ground,sx)>CONFIG.ground+4)continue;
+  if(solids.some(o=>sx+sc(34)>o.x-sc(14)&&sx<o.x+o.w+sc(14)))continue;
+  if(x>=4150&&x<=4500)continue;
+  const h=64+Math.floor(rnd()*44);trees.push(scaled({x,w:27,h,hp:10,value:15,kind:'tiny' as const,label:'',color:['#4f7d4a','#5c8a4e','#436f43'][Math.floor(rnd()*3)],prop:'tree'}));}
+ // The street clutter goes (the pattern's few houses on Central Park West stay, with the park's own buildings and the trees).
+ b=clearClutter(b,[[300,W]]);
+ b={...b,buildings:[...b.buildings.filter(x=>x.role!=='hydrant'),bridge,rink,bethesda,...pens,castleBuilt,entrance,...trees]};
+ return {...b,ground,start:sc(START),water:[[sc(2960),sc(3520),waterLine],[sc(5960),sc(7470),waterLine]],bands:true,
+  ramps:[[1020,860],[1200,1360],[2250,2100],[2400,2550],[5260,5060],[5700,5880]].map(([a,z])=>[sc(Math.min(a,z)),sc(Math.max(a,z))] as [number,number]),
+  crystal:sc(CRYSTAL),zoo:[4640,4720,4800,4880,4960,5020].map(sc),carriages:[4200,4360].map(sc),
+  cars:[],street:[...b.street,...[3300,3420,3700,3960,4120,4640,5000].map(sc)].sort((p,q)=>p-q),
+  // The Great Lawn: the Guard dug in with APCs (and the first tank), more troops by the Reservoir.
+  units:[['soldier',sc(1500)],['apc',sc(1640)],['soldier',sc(1760)],['apc',sc(1900)],['soldier',sc(2040)],['tank',sc(2180)],['soldier',sc(2320)],['soldier',sc(1700)],['soldier',sc(2260)],['soldier',sc(5880)],['soldier',sc(4300)],['apc',sc(6900)]],
+  exits:{west:'Hudson Yards',east:'Coney Island'}};
+}
 const NEW_YORK:BlockDef[]=[
  // 1. Act 1 (Stage 1, cap 1): Castle Clinton, ringed by the NYPD Harbor Unit. 2. The Wall Street canyon. 3. SoHo and Canal Street.
  nycBattery(),
  nycWallStreet(),
  nycSoho(),
- // 4. Act 2 (Stage 2, cap 2). Times Square: long straight avenues.
- {...cityLevel('nyc','Times Square',7,'district',`${nycRep(NYC_ROW,1)},>1600,L,${nycRep(NYC_ROW,4)}`,['ONE TIMES SQUARE|tower'],{startStage:2,cap:2,tier:2}),
-  guard:true,police:true,air:[sc(2400),sc(4800)]},
- // 5. Grand Central: the Chrysler Building to the east, MetLife right behind the terminal. The Guard and tanks on the viaduct.
- {...cityLevel('nyc','Grand Central',7,'stronghold',`${nycRep(NYC_ROW,1)},L,>4700,L,${nycRep(NYC_ROW,1)}`,['MET LIFE','CHRYSLER'],{startStage:2,cap:2,tier:3},{target:3400}),
-  target:{x:sc(3400),label:'GRAND CENTRAL TERMINAL',art:'clock'},guard:true,police:true,air:[sc(2600)]},
+ // 4. Act 2 (Stage 2, cap 2). Times Square: the night, the billboards on the grid, One Times Square's ball.
+ nycTimesSquare(),
+ // 5. Grand Central: the viaduct, the terminal and its concourse, MetLife behind it, the Chrysler Building to the east.
+ nycGrandCentral(),
  // 6. Central Park: there and back from mid-map. Belvedere Castle holds the crystal that lifts the cap to 3. West exit leads to Hudson
  // Yards (the main route); the east exit, past the Reservoir, leads to the secret Coney Island.
- {...cityLevel('nyc','Central Park',8,'district',`${nycRep(NYC_LOW,2)},>2400,=,=,>4200,L,=,>5400,${nycRep(NYC_LOW,3)}`,['BELVEDERE CASTLE|dome'],{startStage:2,cap:2,capLift:3,tier:3}),
-  start:sc(3840),crystal:sc(4400),guard:true,exits:{west:'Hudson Yards',east:'Coney Island'}},
+ nycCentralPark(),
  // 7. Act 3 (Stage 3, cap 3): Hudson Yards, the Vessel and the towers.
  {...cityLevel('nyc','Hudson Yards',8,'district',`${nycRep(NYC_TALL,1)},>2200,L,${nycRep(NYC_TALL,5)}`,['THE VESSEL|lattice'],{startStage:3,cap:3,tier:4}),
   guard:true,police:true,air:[sc(2600),sc(4400),sc(6400)]},
