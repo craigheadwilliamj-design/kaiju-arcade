@@ -2,7 +2,7 @@
 
 Playtest feedback on the reworked New York, turned into work cards. Each card stands alone: start a session with the card's text. Read `docs/NYC_REWORK.md` first, since every card builds on the systems it documents.
 
-**Order:** card 0 first, because it blocks everything else. Cards 1–4 can then run in any order. They all touch `src/game.ts`, so expect small merges if they run in parallel. Card 5 (density) goes last, because it moves buildings that cards 1, 2 and 4 position things against.
+**Order:** card 0 is done (PR #138, so the default branch `claude/laughing-brown-mq2oup` has the full route). Base every card on the default branch. Cards 1–4 can then run in any order. They all touch `src/game.ts`, so expect small merges if they run in parallel. Card 5 (density) goes last, because it moves buildings that cards 1, 2 and 4 position things against.
 
 ## Shared notes (every card)
 
@@ -13,7 +13,7 @@ Playtest feedback on the reworked New York, turned into work cards. Each card st
 
 ---
 
-## Card 0: Merge NYC Act 2 into the default branch (blocks everything)
+## Card 0: Merge NYC Act 2 into the default branch — **done** (PR #138)
 
 **Problem.** Times Square, Grand Central and Central Park only exist on `main`. The default branch has Act 3, Empire State and Coney Island but not Act 2, and no branch has both.
 - `origin/main` (`c06c359`, PR #133) has NYC Act 2 (`393e3d9`): `nycTimesSquare`/`nycGrandCentral`/`nycCentralPark`, `NYC2` in `src/config.ts`, `moodNow()` in `src/game.ts`, and `tests/nyc-act2.test.ts`. It lacks the Tlézcatl kit (PR #134), Act 3 (PR #135), Empire State (PR #136) and Coney Island (PR #137).
