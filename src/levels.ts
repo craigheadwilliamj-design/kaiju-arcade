@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,BULL} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -121,6 +121,10 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // camera's centre (colours and `lights` lerp, `rain`/`smog` come from the nearer stop), so the sky, stars, sun and moon, windows, fire glow and billboard halos all move
 // continuously. A name is the city's day mood ('day'), NYC2.night ('night'), or NYC2.dusk/dawn/golden/predawn; a Mood object is used as given. Without it a level keeps its
 // hard mood (`night` or the city's). SoHo, Times Square and Grand Central are the only levels that set it.
+// NYC fix card 5, opt-in and art/props only: the New York route levels (`cityLevel('nyc', ...)`, option `clutter:true`) add walk-through street clutter (src/config.ts NYC5: sidewalk
+// sheds, subway entrances, cabs, vendor carts and newsstands, all `tiny` props in street gaps, so none blocks the street and each smashes or lifts like a newsstand). The `y` and `u`
+// presets are the chunky NYC towers that replace the needles `x` and `n` there (height at most 4.5x width; named landmarks are exempt; tests/nyc-density.test.ts). The back row of
+// buildings, the far skyline and the busier facades are drawn by src/game.ts for the levels named in `NYC_DISTRICT`, keyed by name: no field, no hitbox.
 // New York Act 2 (NYC rework card 3), opt-in: `night` repaints the level with the night mood (src/config.ts NYC2.night) wherever the game reads
 // the city's mood; on a level with power grids a destroyed substation then blacks out that grid's windows and billboards. A building's `board`
 // is a facade billboard (a big neon screen), the roof fixture `billboard` a rooftop one, and the roof fixture `ball` is One Times Square's ball (once dropped it can be carried, thrown and shattered: src/config.ts NYC2):
@@ -200,7 +204,7 @@ function district(city:string,name:string,screens:number,entries:Entry[],street:
    const b=scaled({...BUILDING_PRESETS[key],x,label,color,landmark:true,...(shape?{shape}:{})});return {...b,shape:shape||'tower',parts:shapeParts(shape||'tower',theme.style,b.w,b.h)};}
   if(key==='S'||key==='F'||key==='K')return scaled({...BUILDING_PRESETS[key],x,label:key==='K'?'ARMORY':'',color:key==='S'?'#7f8c88':key==='F'?'#c4bea6':'#8a5444',role:key==='S'?'substation':key==='F'?'depot':'armory'});
   if(key==='P')return scaled({...BUILDING_PRESETS[key],x,label:'CABLE CAR POWERHOUSE',color:'#8a5a44',role:'powerhouse',deco:'powerhouse'});
-  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='vault'?{cache:true,deco:'vault',label:'VAULT'}:tag==='factory'?{deco:'factory',roof:'sign',label:'CHOCOLATE'}:tag==='radar'||tag==='tank'||tag==='sign'||tag==='crab'||tag==='helipad'||tag==='billboard'||tag==='ball'?{roof:tag}:tag==='board'?{board:true}:tag&&DECOS.has(tag)?{deco:tag,label:'',...(tag==='fireworks'?{explosive:true,label:'FIREWORKS'}:{})}:{})});
+  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'||key==='y'||key==='u'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='vault'?{cache:true,deco:'vault',label:'VAULT'}:tag==='factory'?{deco:'factory',roof:'sign',label:'CHOCOLATE'}:tag==='radar'||tag==='tank'||tag==='sign'||tag==='crab'||tag==='helipad'||tag==='billboard'||tag==='ball'?{roof:tag}:tag==='board'?{board:true}:tag&&DECOS.has(tag)?{deco:tag,label:'',...(tag==='fireworks'?{explosive:true,label:'FIREWORKS'}:{})}:{})});
  });
  // Water mains: a fire hydrant on the pavement beside every MAINS.every-th street spot (never inside a building), in district and
  // stronghold blocks. Appended after the authored buildings so their order is untouched.
@@ -248,13 +252,13 @@ export function cityIndexOf(id:string){return CITIES.findIndex(c=>c.id===id);}
 // before each level is authored. A pattern is comma-separated tokens: a preset key (optionally `key:tag`, tag as in Entry), `_` a
 // street (240 wide, a street spot and a parked car in it) or `=` an open lot (420). Buildings stand 4 apart. Landmarks ('L') take the
 // next name from `landmarks`. A stronghold keeps its middle clear for the crystal, ringed by barricades; a boss level is an arena.
-type CityLevelRest=[name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts?:{target?:number,ring?:number[],from?:number}];
+type CityLevelRest=[name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts?:{target?:number,ring?:number[],from?:number,clutter?:boolean}];
 type Growth={startStage:1|2|3,cap:1|2|3,capLift?:2|3,tier:number,secret?:boolean};
 // Extra pattern tokens (SF Act 2): `~N` a bare gap of N (a hillside ramp: no street spot, no car); `^R` a new terrace at rise R
 // (authored, above the base street) starting at the current x: the ramp is the gap just before it (`~N` right before the `^R`).
 // The block gets `terraces` (consumed by terraced()) listing [rampStart, start, rise].
 type Terraces=[number,number,number][];
-function cityLevel(city:string,name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts:{target?:number,ring?:number[],from?:number}={}):BlockDef&{terraces?:Terraces}{
+function cityLevel(city:string,name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts:{target?:number,ring?:number[],from?:number,clutter?:boolean}={}):BlockDef&{terraces?:Terraces}{
  const W=screens*960,mid=opts.target??W/2,entries:Entry[]=[],street:number[]=[175],cars:number[]=[230],terraces:Terraces=[];let x=opts.from??400,l=0,lastGap=0;
  const clear=kind==='stronghold'?[mid-900,mid+560]:null;
  if(clear)for(const o of opts.ring??[-770,-440,-190,180,460])entries.push([mid+o,'b']);
@@ -269,8 +273,30 @@ function cityLevel(city:string,name:string,screens:number,kind:BlockDef['kind'],
   const label=key==='L'?landmarks[l++]:tag;entries.push(label===undefined?[x,key]:[x,key,label]);x+=w+4;lastGap=0;
  }
  entries.sort((a,b)=>a[0]-b[0]);
- return {...district(city,name,screens,entries,[...new Set(street)].filter(v=>v<W-60).sort((a,b)=>a-b),[...new Set(cars)].filter(v=>v<W-60).sort((a,b)=>a-b),kind),...growth,...(terraces.length?{terraces}:{})};
+ const built=district(city,name,screens,entries,[...new Set(street)].filter(v=>v<W-60).sort((a,b)=>a-b),[...new Set(cars)].filter(v=>v<W-60).sort((a,b)=>a-b),kind);
+ return {...(opts.clutter?nycClutter(built,kind==='stronghold'?mid:undefined):built),...growth,...(terraces.length?{terraces}:{})};
 }
+// NYC fix card 5, opt-in (`clutter` in the cityLevel options, set by the New York route levels): walk-through street clutter, the city's own. Every piece is a `tiny` prop
+// in a real gap between solid buildings (so none ever walls off the street, and each smashes or lifts like a newsstand), stood on the pavement beside the street junk
+// district() places: sidewalk sheds (`scaffold`), subway entrances (`kiosk`), parked cabs (`cab`), vendor carts (`cart`) and newsstands (`news`, the preset `t`).
+// None is a vehicle (so VEHICLES.vehicleCap is untouched). Kept off the exits (the world's ends), a stronghold's target and an open lot wider than `NYC5.lotMax`.
+// Levels with vents, the Bull, balloon tethers or a deck drop the pieces that fall on them afterwards.
+export const NYC_CLUTTER=['kiosk','cab','cart','scaffold','news'] as const;
+function nycClutter(b:BlockDef,target?:number):BlockDef{
+ const solids=b.buildings.filter(x=>x.kind!=='tiny').sort((p,q)=>p.x-q.x),tiny=b.buildings.filter(x=>x.kind==='tiny'),lo=sc(NYC5.edge),hi=levelWidth(b)-sc(NYC5.edge);
+ const gaps:[number,number][]=[];let from=lo;for(const s of solids){if(s.x>from)gaps.push([from,s.x]);from=Math.max(from,s.x+s.w);}if(hi>from)gaps.push([from,hi]);
+ const add:BuildingSpec[]=[];let n=0;
+ for(const [g0,g1] of gaps){if(g1-g0>sc(NYC5.lotMax)||g1-g0<sc(100))continue;let placed=0;
+  // Rotate through the kinds, putting each at the first free spot along the gap (scanned in 14px steps from the west), a margin clear of anything already there.
+  for(let tries=0;tries<NYC_CLUTTER.length&&placed<NYC5.perGap;tries++){const prop=NYC_CLUTTER[(n+tries)%NYC_CLUTTER.length],[dw,dh,value,hp]=NYC5.dims[prop],w=sc(dw),h=sc(dh);
+   for(let px=g0+10;px+w<=g1-10;px+=14){
+    if(target!==undefined&&Math.abs(px+w/2-target)<sc(NYC5.targetClear))continue;
+    if([...tiny,...add].some(t=>px<t.x+t.w+10&&px+w>t.x-10))continue;
+    add.push(prop==='news'?{...BUILDING_PRESETS.t,x:px,w,h,label:'NEWS',color:'#ca9a50'}:{x:px,w,h,hp,value,kind:'tiny',label:'',color:prop==='cab'?'#f2c230':'#7a8a66',prop});placed++;n++;break;}}}
+ return {...b,buildings:[...b.buildings,...add]};}
+// Drop street clutter standing within `r` of any x (a vent, the Bull, a balloon tether): an opt-in pass for the levels that put a mechanic in the street.
+const isClutter=(x:BuildingSpec)=>x.kind==='tiny'&&(x.prop?(NYC_CLUTTER as readonly string[]).includes(x.prop):x.label==='NEWS');
+function clearProps(b:BlockDef,xs:number[],r:number):BlockDef{return {...b,buildings:b.buildings.filter(x=>!isClutter(x)||!xs.some(v=>x.x+x.w>v-r&&x.x<v+r))};}
 function sfLevel(...a:CityLevelRest):ReturnType<typeof cityLevel>{return cityLevel('sfo',...a);}
 // Terraced hillside: buildings stand on flat terraces, the slopes are the ramp gaps (authored: each terrace rise, `^R` in the pattern).
 // Returns the block with its ground profile and `ramps` (world x ranges), minus the `terraces` bookkeeping. `base` is the rise before the first terrace.
@@ -584,7 +610,7 @@ const nycRep=(unit:string,n:number)=>Array(n).fill(unit).join(',');
 // SeaGlass carousel, the Whitehall terminal over the South Ferry subway loop, a deep tunnel that caves in) and north-east to Castle Clinton.
 function nycBattery():BlockDef{
  const T=6000,START=520,SHORE=2000,W=8*960;
- let b=cityLevel('nyc','The Battery',8,'stronghold',`>3300,s,m,h,_,l,s,m,_,h,r,_,n,s,m,_,>6700,s,m,_,h,r,n`,[],{startStage:1,cap:1,tier:1},{target:T,ring:[-770,-440,-190,180,460]});
+ let b=cityLevel('nyc','The Battery',8,'stronghold',`>3300,s,m,h,_,l,s,m,_,h,r,_,u,s,m,_,>6700,s,m,_,h,r,u`,[],{startStage:1,cap:1,tier:1},{target:T,ring:[-770,-440,-190,180,460],clutter:true});
  // The harbour: seabed 38 under the start (wading at Stage 1), shoaling up to the shore.
  const D:[number,number|null][]=[[0,38],[1450,38],[1700,22],[1900,12],[2010,null],[W,null]];
  const ground:[number,number][]=D.map(([x,d])=>[sc(x),d===null?CONFIG.ground:CONFIG.ground+6+d]);
@@ -608,12 +634,14 @@ function nycBattery():BlockDef{
 function nycWallStreet():BlockDef{
  const T=4300,BULL_X=560;
  let b=cityLevel('nyc','Wall Street',7,'stronghold',
-  `=,x,n,_,>1500,L,_,x,n,x,l,n,x,h:vault,n,x,_,x,n,l,x,n,>5050,n,x,n,_,x,n,x,l,n`,['TRINITY CHURCH|twin'],{startStage:1,cap:1,tier:2},{target:T,ring:[-840,-700,-560,440,500]});
+  `=,y,_,>1500,L,_,y,u,l,y,h:vault,y,_,y,l,y,>5050,y,u,_,y,u,l,u`,['TRINITY CHURCH|twin'],{startStage:1,cap:1,tier:2},{target:T,ring:[-840,-700,-560,440,500],clutter:true});
  // Supertall: the canyon towers are half as tall again as the presets (all within a jump of each other) (the camera has no ceiling), the roofs kept within a step or two of each other.
- const tall=(x:BuildingSpec)=>x.kind==='tiny'||x.landmark||x.role||x.h<sc(450)?x:{...x,h:sc(x.h/CONFIG.cityScale>=500?760:740)};
+ // NYC fix card 5: the wide `y` towers are stretched (never narrower than a quarter of their height, so none is a needle), alternating 760/740 for a ragged skyline.
+ let ti=0;const tall=(x:BuildingSpec)=>x.kind==='tiny'||x.landmark||x.role||x.h<sc(450)?x:{...x,h:sc(ti++%2?740:760)};
  b={...b,buildings:b.buildings.map(x=>x.deco==='vault'?{...x,label:'FEDERAL RESERVE',color:'#9a9c97'}:tall(x))};
  // Two towers flank the command post close enough that a toppled one lands on it (toppling damage reaches a target), and two more close the canyon.
- const flank=[[4010,900],[4450,900],[3860,720],[4590,720]].map(([x,h],i)=>scaled({...BUILDING_PRESETS.x,x,h,label:'',color:cityById('nyc').colors[i+1]}));
+ // The 900s are 204 wide (4.4:1); the 720 is the plain wide tower. (The fourth tower that used to close the east end is gone: a wide one no longer fits before the barricades.)
+ const flank=[[4000,900],[4450,900],[3800,720]].map(([x,h],i)=>scaled({...BUILDING_PRESETS.y,x,h,...(h===900?{w:204}:{}),label:'',color:cityById('nyc').colors[i+1]}));
  b={...b,buildings:[...b.buildings,...flank]};
  // The line's ends are tunnel portals, so each sits in a cross-street gap rather than mid-block under a tower.
  // A little plaza round the Bull: no parked cars, cart, hydrant or crowd within BULL.clear (the loop also clears parked rows and lamps there).
@@ -637,7 +665,7 @@ function nycSoho():BlockDef{
  const CRYSTAL=3900,loft='r:brick,m:tank,r:brick,_,s:brick,m:brick,r:brick,_,m:tank,s:brick,r:brick';
  let b=cityLevel('nyc','SoHo and Canal Street',7,'district',
   `${loft},_,r:brick,m:tank,r:brick,_,s:brick,m:brick,r:brick,>5950,r:brick,m:tank,s:brick`,[],
-  {startStage:1,cap:1,capLift:2,tier:2});
+  {startStage:1,cap:1,capLift:2,tier:2},{clutter:true});
  b=clearClutter(b,[[CRYSTAL-260,CRYSTAL+260]]);
  // Canal Street: vendor stalls in the open stretch either side of the crystal; the Holland Tunnel's portal at the east end.
  const stalls=[3420,3500,3580,4200,4260].map(x=>scaled({x,w:34,h:32,hp:10,value:40,kind:'tiny' as const,label:'',color:'#c2312b',prop:'stall'}));
@@ -648,6 +676,7 @@ function nycSoho():BlockDef{
  const gaps=streetGaps(b,300,5950,200).filter(x=>Math.abs(x-sc(CRYSTAL))>sc(420));
  // Manholes in the Canal Street gaps, and two in the middle of the tunnel jam (steam among the stopped cars).
  const vents=[...gaps.slice(0,6),sc(5000),sc(5600)].sort((p,q)=>p-q);
+ b=clearProps(b,vents,sc(70));
  return {...b,cars:[...b.cars.filter(c=>c<sc(4300)),...jam],crystal:sc(CRYSTAL),guard:true,police:true,vents,
   swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)],
   // Day for most of it; golden hour from about two-thirds in, dusk at the east exit (the next level opens at dusk).
@@ -660,15 +689,16 @@ function nycSoho():BlockDef{
 function nycHudson():BlockDef{
  const HL:[number,number]=[1900,3200],APPROACH=400,YARD:[number,number]=[4300,6700],N=6,SPAN=(YARD[1]-YARD[0])/N;
  let b=cityLevel('nyc','Hudson Yards',8,'district',
-  `n,x,l,_,x,n,h,_,>3700,L,_,>6800,x,n,l,_,x,h,n,_,m,s`,['THE VESSEL|lattice'],{startStage:3,cap:3,tier:4});
+  `y,l,_,y,h,_,>3700,L,_,>6800,y,l,_,u,h,u,_,m,s`,['THE VESSEL|lattice'],{startStage:3,cap:3,tier:4},{clutter:true});
  b=clearClutter(b,[[HL[0]-APPROACH,HL[1]+APPROACH],YARD]);
  // The platform's towers, one or two to a span, each wholly inside its span (so a span going takes exactly the towers standing on it). Supertall.
- const colors=cityById('nyc').colors,on=(k:number,key:'x'|'l'|'n'|'m',h:number,off?:number)=>{const w=BUILDING_PRESETS[key].w;return scaled({...BUILDING_PRESETS[key],x:YARD[0]+k*SPAN+(off??Math.round((SPAN-w)/2)),h,label:'',color:colors[(k+1)%colors.length]});};
- const deck:BuildingSpec[]=[on(1,'x',760),on(2,'l',680),on(3,'x',720),on(4,'l',640),on(5,'n',700,40),on(5,'m',420,190)];
+ const colors=cityById('nyc').colors,on=(k:number,key:'y'|'l'|'m',h:number,off?:number,ww?:number)=>{const w=ww??BUILDING_PRESETS[key].w;return scaled({...BUILDING_PRESETS[key],w,x:YARD[0]+k*SPAN+(off??Math.round((SPAN-w)/2)),h,label:'',color:colors[(k+1)%colors.length]});};
+ const deck:BuildingSpec[]=[on(1,'y',760),on(2,'l',680,undefined,170),on(3,'y',720),on(4,'l',640),on(5,'y',700,10),on(5,'m',420,200)];
  b={...b,buildings:[...b.buildings,...deck]};
  // Geysers: in the cross-street gaps either side of the platform and in the gaps between its towers.
  // The open stretches (under the High Line, round the Vessel, the plaza's west end) have no neighbours to find gaps between: those are authored.
  const vents=[...streetGaps(b,300,1500,200),...[2150,2500,2850,3350,3550,3950,4150,4480,4620,6760].map(sc),...streetGaps(b,YARD[0]-20,YARD[1]+20,150),...streetGaps(b,6700,7500,200)].sort((p,q)=>p-q);
+ b=clearProps(b,vents,sc(70));
  return {...b,vents,ventsAuto:true,guard:true,police:true,
   elevated:[sc(HL[0]),sc(HL[1])],elevatedLook:'park',approach:sc(APPROACH),
   yard:{x0:sc(YARD[0]),x1:sc(YARD[1]),spans:N},bridge:{x0:sc(YARD[0]),x1:sc(YARD[1]),spans:N},subway:[[sc(YARD[0]),sc(YARD[1])]],tunnel:'deep',
@@ -680,14 +710,15 @@ function nycHudson():BlockDef{
 function nycHerald():BlockDef{
  const T=5600,PENN:[number,number]=[1750,3550],BALLOONS:[number,number][]=[[857,560],[1307,640],[1821,600],[2857,560],[3357,620],[3986,700],[5100,600]];
  let b=cityLevel('nyc','Herald Square',8,'stronghold',
-  `s,m,h,_,l,_,>1500,L,_,>2420,m,s,h,_,l,m,_,s,n,m,_,>4200,h,m,s,_,>6160,x,n,l,_,x,h,n,_,m,s`,
-  ["MACY'S|tower"],{startStage:3,cap:3,tier:4},{target:T,ring:[-840,-640,-440,-190,180,460]});
+  `s,m,h,_,l,_,>1500,L,_,>2420,m,s,h,_,l,m,_,s,u,m,_,>4200,h,m,s,_,>6160,y,l,_,u,h,u,_,m,s`,
+  ["MACY'S|tower"],{startStage:3,cap:3,tier:4},{target:T,ring:[-840,-640,-440,-190,180,460],clutter:true});
  // Parade floats stand where the barricades would: low flatbeds with a painted figure on top (a Gore Charge breaks them).
  const fcol=['#d9822b','#3a6ea5','#b9402f','#4f9a62','#8a5fa0','#d4b13a'];let f=0;
  b={...b,buildings:b.buildings.map(x=>x.label==='BARRIER'?{...x,label:'PARADE FLOAT',deco:'float',color:fcol[f++%fcol.length],w:Math.round(x.w*2),h:Math.round(x.h*1.5)}:x)};
  // Penn Station's head house over the line, Macy's at the west end.
  b=clearClutter(b,[[PENN[0]+180,PENN[0]+620]]);
  b={...b,buildings:[...b.buildings,hall(PENN[0]+210,380,120,'PENN STATION','#9a8f78','ferry',420)]};
+ b=clearProps(b,BALLOONS.map(([x])=>sc(x)),sc(80));
  return {...b,subway:[[sc(PENN[0]),sc(PENN[1])]],balloons:BALLOONS.map(([x,a])=>[sc(x),a] as [number,number]),
   target:{x:sc(T),label:'MADISON SQUARE GARDEN',art:'arena'},guard:true,police:true,
   // The full military: Guard soldiers and armour along the avenue, artillery and an emplacement behind the floats, and a helicopter sheltering
@@ -749,14 +780,18 @@ const NYC_POLES=(from:number,to:number)=>{const out:number[]=[];for(let x=from;x
 // grid, a substation each, and destroying one blacks out its windows and screens. One Times Square stands in the middle of the square
 // with the ball on its roof: break the ball loose and it rolls down Broadway. Crowds fill the street spots and flee.
 function nycTimesSquare():BlockDef{
- const pattern=['m,h:board,l:board,s,m:billboard,h:board,x:billboard,m:board,s:board,_',
-  'h:board,n:billboard,m:board,S,_',
+ const pattern=['m,h:board,l:board,s,m:billboard,h:board,u:billboard,m:board,s:board,_',
+  'h:board,u:billboard,m:board,S,_',
   '>2750,=,L,=',
-  'x:billboard,h:board,l:board,m,s:board,h:board,m:billboard,n:billboard,l:board,_',
-  'h:board,S,n:billboard,_,m:board,s,h:board,m:board'].join(',');
- let b=cityLevel('nyc','Times Square',7,'district',pattern,['ONE TIMES SQUARE|tower'],{startStage:2,cap:2,tier:2});
+  'm:billboard,h:board,l:board,m,s:board,h:board,m:billboard,u:billboard,l:board,_',
+  'h:board,S,u:billboard,_,m:board,s,h:board,m:board'].join(',');
+ let b=cityLevel('nyc','Times Square',7,'district',pattern,['ONE TIMES SQUARE|tower'],{startStage:2,cap:2,tier:2},{clutter:true});
  // The ball sits on One Times Square's roof.
  b={...b,buildings:b.buildings.map(x=>x.landmark?{...x,roof:'ball' as const}:x)};
+ // The ball's run down Broadway stays clear of street clutter (carts and cabs would crush and catch it).
+ {const lx=b.buildings.find(x=>x.landmark)!.x;b=clearProps(b,[lx+sc(3000)],sc(3000));
+ // ...and so does the stretch where the ball is first set down to be picked up: no parked row starts in the square's west approach.
+ b={...b,cars:b.cars.filter(c=>c<lx-sc(1200)||c>lx-sc(800))};}
  b=powered(b,[[0,3360],[3360,6720]],NYC_POLES(220,6700));
  // The square is packed: extra street spots (a crowd each) round One Times Square and along both avenues.
  b={...b,street:[...b.street,...[700,1100,2800,2900,3000,3480,3600,3700,3800,3900,4300,4600].map(sc)].sort((p,q)=>p-q)};
@@ -773,9 +808,9 @@ function nycTimesSquare():BlockDef{
 function nycGrandCentral():BlockDef{
  const T=3400,DECK:[number,number]=[1150,2380],APPROACH=420,CONC:[number,number]=[3500,190];
  let b=cityLevel('nyc','Grand Central',7,'stronghold',
-  `s,m,h,>3980,h,m,_,s,>4700,L,_,m,h,_,s,m,h,_,l,s`,['CHRYSLER'],{startStage:2,cap:2,tier:3},{target:T,ring:[-440,-190]});
+  `s,m,h,>3980,h,m,_,s,>4700,L,_,m,h,_,s,m,h,_,l,s`,['CHRYSLER'],{startStage:2,cap:2,tier:3},{target:T,ring:[-440,-190],clutter:true});
  b=clearClutter(b,[[DECK[0]-APPROACH,DECK[1]+APPROACH]]);
- const metlife=landmarkAt(3710,'MET LIFE','#a9a9a0'),front=scaled({...BUILDING_PRESETS.x,x:3070,label:'',color:cityById('nyc').colors[2]});
+ const metlife=landmarkAt(3710,'MET LIFE','#a9a9a0'),front=scaled({...BUILDING_PRESETS.u,x:3070,h:520,label:'',color:cityById('nyc').colors[2]});
  const concourse=hall(CONC[0],CONC[1],70,'MAIN CONCOURSE','#b7ab8d','concourse',NYC2.concourseHP);
  b={...b,buildings:[...b.buildings,metlife,front,concourse]};
  // Commuters in the terminal's yard and on the avenue under the viaduct, parked cars along it.

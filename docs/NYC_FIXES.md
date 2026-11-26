@@ -181,7 +181,7 @@ Take screenshots: the ball held overhead, mid-throw, and the shatter.
 
 ---
 
-## Card 5: Make Manhattan feel dense
+## Card 5 (done): Make Manhattan feel dense
 
 **Feedback.** "Overall, Manhattan doesn't feel dense enough. Really my only complaint."
 
@@ -216,3 +216,10 @@ Take screenshots: the ball held overhead, mid-throw, and the shatter.
 - Don't touch `nyc-classic` or SF.
 
 **Done when** before/after screenshots of every NYC level show a continuous wall of buildings with towers behind, perf holds, and tests are green.
+
+### Card 5 as built
+
+- **Needles retired.** `y` (176 wide, so `x,n` becomes one `y` with the same rhythm) and `u` (132 wide, a lone `x` or `n`) replace `x`/`n` in every NYC route level; `x` and `n` stay for SF, `nyc-classic` and the drills. Wall Street's `tall()` stretches `y` only, and its flank towers are 204 wide. Test: `tests/nyc-density.test.ts` (height at most 4.5x width for every non-landmark, non-hand-built building). No setbacks were added.
+- **Back row, far skyline, facades.** `nycBackRow`, `nycFarSkyline`, `nycMidLayers` and `nycFacade` in `src/game.ts`, keyed by level name (`NYC_DISTRICT`), so drills, `nyc-classic` and Coney Island draw as before. Back-row windows follow `moodNow()` and go dark with a downed grid.
+- **Clutter.** `cityLevel(..., {clutter:true})` adds `tiny` props (`kiosk`, `cab`, `cart`, `scaffold`, `news`; `NYC5` in `src/config.ts`) in street gaps. They are props, not vehicles, so `VC.vehicleCap` is untouched. Vents, the Bull plaza, balloon tethers and Times Square's ball run are kept clear.
+- **QA and perf.** `npm run qa` dies at SF level 8 on the base branch, so the NYC levels were run with a NYC-only copy of the bot: blocked time 108 s before, 101 s after (Hudson Yards is a little worse, Wall Street better). Perf drill unchanged; a frame-time walk through Wall Street, Times Square and Herald Square is within noise of before.
