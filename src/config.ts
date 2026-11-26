@@ -480,9 +480,35 @@ export const BULL = {w:70,h:40,mass:5,points:600,minStrength:4,throwSpeed:420,th
 // `knockback`, `stun`), launches loose vehicles within `carRadius` (`carDamage`, lifted `carLift` x) and blinds any helicopter in the
 // column (`blind` s: its wind-up is cancelled and it cannot fire or move). A spent vent stays quiet for `rearm` s, then puffs again.
 // Steam is not fire: it never sets a building alight.
+// Geysers (NYC Act 3, Hudson Yards, a level's `ventsAuto`): the same vents at full strength. They need no slam: each puffs as a warning
+// (`geyser.warn` s, the first after `geyser.first` s, staggered by `geyser.stagger` s a vent) and then bursts on its own, every
+// `geyser.every` s afterwards. A geyser jet is `geyser.height`x taller and `geyser.radius`x wider, runs `geyser.seconds` s and hits
+// `geyser.damage`x harder; a self-burst pays nothing (only what it scalds does). A slam or pound still sets one off early.
 export const STEAM = {first:3,every:7,stagger:2.3,puff:1.4,reach:Math.round(220*CITY_SCALE),ultReach:Math.round(520*CITY_SCALE),
  seconds:4.5,height:Math.round(230*CITY_SCALE),radius:Math.round(110*CITY_SCALE),carRadius:Math.round(90*CITY_SCALE),tick:.4,damage:7,knockback:320,stun:1,
- carDamage:14,carLift:2.6,blind:3,rearm:12,points:300,heat:6};
+ carDamage:14,carLift:2.6,blind:3,rearm:12,points:300,heat:6,
+ geyser:{first:2.5,stagger:1.7,warn:1.2,every:6.5,seconds:3.4,height:1.7,radius:1.4,damage:1.6,carLift:1.3}};
+
+// NYC Act 3 (rework card 5): Hudson Yards and Herald Square. All opt-in per level (src/levels.ts).
+// Targets: Madison Square Garden (`arena`) is a wide drum, `arenaW` x `arenaH`, with the Army's field HQ (tents, trucks, a flag) at its foot.
+// The rail-yard deck (`yard`): the deck is a row of bridge spans at street level (they are the ground until they break) over a live rail yard
+// (a subway line with a deep tunnel: breaking a span opens a pit down to the yard floor and the trains running there show through it, grabbable at
+// Stage 3). Whatever stands on a span when it breaks goes down with it: a building whose centre is on the span sinks `yard.sinkSpeed` px/s into
+// the yard, leaning `yard.lean` radians over by the time it lands, then comes down (it topples toward the hole and crushes what it falls on).
+// The deck spans are `yard.spanHP` tough (a span's drop pays `yard.points` once, on top of the usual bridge-span points); `yard.landDelay`: how long a sunk
+// building stands in the yard, leaning, before it comes down.
+export const NYC3 = {arenaW:230,arenaH:150,yard:{spanHP:360,sinkSpeed:70,lean:.32,landDelay:.35,points:900}};
+// Parade balloons (Herald Square, a level's `balloons` [x, altitude]): giant helium balloons drifting at roof height, `size` px across (a
+// shape per balloon, cycling `shapes`: generic figures only), non-solid, with `hp` (every hit counts for at least `minHit`, so any hit pops it). Each is held down by a handler crew (`crew` handlers on
+// ropes `rope` px long at the end of its tether) and drifts `drift` px either way of its tether. Grabbing the tether (H) drags the balloon along
+// overhead as the crew let go and scatter; throwing it (or letting go) releases the balloon, which floats off up and away (`floatSpeed`
+// px/s up, `throwDrift` px/s sideways, gone above `ceiling` px over the street). Any hit pops it (a melee blow, a shot, a thrown wreck, a blast, the
+// Flame Jet). A popped balloon falls `fall` px/s as a deflating sheet and drapes over what is under it (the highest roof or unit within its width):
+// for `drape` s every ground trooper (and any helicopter) under the sheet is blinded: its wind-up is cancelled and it cannot move or fire (and for `blind` s after the cloth is gone). A
+// helicopter stationed with a balloon (a `helicopter` unit within `shelter` px of it) holds position behind it, hidden from the kaiju (it does
+// not fire) until the balloon is popped or taken away. `points` for a pop.
+export const PARADE = {size:Math.round(130*CITY_SCALE),hp:10,minHit:10,crew:3,rope:Math.round(70*CITY_SCALE),drift:46,driftSpeed:.55,floatSpeed:70,throwDrift:140,ceiling:2600,fall:150,drape:7,blind:2.5,
+ shelter:260,points:350,shapes:['dog','turkey','astronaut','kaiju'] as const,tether:{w:16,h:30,mass:.6}};
 
 // Runaway cable cars (SF Act 2, Nob Hill). A vehicle in the `rolling` state is driven by the street's slope alone: it picks up
 // `gravity` px/s² per unit of slope (rise over run) toward downhill, loses `friction` px/s² to rolling resistance (so on flat

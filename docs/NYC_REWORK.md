@@ -2,7 +2,7 @@
 
 New York gets the same treatment San Francisco got: an authored route of nine levels plus one secret level, three acts, its own playable kaiju and boss, per-level growth, and one new mechanic per level built as an opt-in `BlockDef` field. Everything SF built is reusable.
 
-Status: **scaffold done (card 1)**, **Act 1 done (card 2: The Battery, Wall Street, SoHo and Canal Street)**. The city entry, `cityLevel`, the nine route levels and Coney Island as placeholders (names, screens, kinds, growth, exits, landmarks), the `nyc-classic` fixture city with `kaijuTest.gotoCity`, the retargeted tests, `tests/nyc-scaffold.test.ts`, the QA playthrough and the README are in. Cards 3 to 7 are still to do. Work is queued as separate sessions (see "Work cards" at the end). Each card reads this file first.
+Status: **scaffold done (card 1)**, **Act 1 done (card 2: The Battery, Wall Street, SoHo and Canal Street)**, **Act 3 levels 7-8 done (card 5: Hudson Yards, Herald Square)**. The city entry, `cityLevel`, the nine route levels and Coney Island as placeholders (names, screens, kinds, growth, exits, landmarks), the `nyc-classic` fixture city with `kaijuTest.gotoCity`, the retargeted tests, `tests/nyc-scaffold.test.ts`, the QA playthrough and the README are in. Cards 3 to 7 are still to do. Work is queued as separate sessions (see "Work cards" at the end). Each card reads this file first.
 
 ## Fixed decisions
 
@@ -76,12 +76,12 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 
 ### Act 3: The West Side and the top (Stage 3, the full military)
 
-**7. Hudson Yards** (8 / district / 3-3 / tier 4)
+**7. Hudson Yards** (8 / district / 3-3 / tier 4) — **done (card 5)**
 - **Route:** the High Line (`elevatedLook:'park'`, the roof-park drawing over nothing; no buses here), the Vessel (a landmark, `|lattice` or a new shape), and the towers of Hudson Yards. The yards are built on a deck over a live rail yard. Steam geysers break out all over (the vents at full strength: Tlézcatl is close) and trigger on their own, with no slam needed.
 - **Reuses:** elevated park, steam vents, the subway/train system for the yard trains, terrain.
 - **New:** **the rail-yard deck.** The plaza and towers stand on a deck over the tracks, using the `bridge` spans logic with the yard below. Break the deck spans and the towers on them sink and tilt into the yard (reuse `sink` / topple). Trains in the yard are grabbable (the Stage 3 train pull already exists).
 
-**8. Herald Square / 34th Street** (8 / stronghold / 3-3 / tier 4)
+**8. Herald Square / 34th Street** (8 / stronghold / 3-3 / tier 4) — **done (card 5)**
 - **Route:** the Thanksgiving parade route. Macy's flagship, Penn Station, then Madison Square Garden (the target, `art:'arena'`, a drum with the Army's NYC field HQ inside).
 - **Military:** the full military with parade floats as cover. Long 34th Street is a Stampede lane. The Empire State looms at the east end (the far skyline, then the next level).
 - **Reuses:** trains under Penn Station, `garrison`, fire, flank toppling.
@@ -122,6 +122,6 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 2. **Act 1 (done):** the Battery, Wall Street, SoHo (fort and exchange target art, Charging Bull, steam vents). `nycBattery`/`nycWallStreet`/`nycSoho` in `src/levels.ts`, `NYC1`/`BULL`/`STEAM` in `src/config.ts`, `tests/nyc-act1.test.ts`. Notes for later cards: a level that starts somewhere other than the west edge but keeps one exit uses `spawn` (`start` also makes it a there-and-back with a west exit); the Bull is a `vehicles` entry of kind `bull` that `loose()` never reports as loose; `STEAM` is the base for card 5's geysers (add a `auto:true` mode that bursts without a slam).
 3. **Act 2:** Times Square, Grand Central, Central Park (night mood, grid blackout, terminal art, concourse cave-in, two exits).
 4. **Tlézcatl boss kit (done):** `TLEZCATL_BOSS` in `src/config.ts` and the `tlez` branch of `src/rival.ts`, tests in `tests/tlezcatl-boss.test.ts`. Notes for card 6: the kit measures everything from his feet (`r.y+r.h`), so a perch only has to move him; `tickRival` still snaps his `y` to the street whenever he walks, so the climbing rival needs to own his `y` while perched. `retreats` is not set by default (the finale code sets it), and a retreating rival ticks nothing.
-5. **Act 3 levels 7–8:** Hudson Yards and Herald Square (rail-yard deck, geysers, parade balloons, arena target art).
+5. **Act 3 levels 7–8 (done):** `nycHudson`/`nycHerald` in `src/levels.ts`, `NYC3`/`PARADE`/`STEAM.geyser` in `src/config.ts`, `tests/nyc-act3.test.ts`. Act 1's vents were in, so geysers are `ventsAuto` on `STEAM`. Notes for later cards: the deck is `yard` (bridge spans at street level + a deep `subway` line; `dropSpan` opens a pit and sinks the towers on it, which collapse in place rather than topple, so they cannot cascade across the deck); a balloon's tether is a grabbable `tether` vehicle (not `loose`), so grab/throw/drop reuse the vehicle code; `kaijuTest.setBalloonAlt` lowers a balloon for tests. The Empire State card can extend `tests/nyc-act3.test.ts` or make its own file; the Herald far skyline already draws the tower.
 6. **Empire State boss level:** the climbing rival, the setback breaks, the eruption intro and the retreat. Needs card 4.
 7. **Coney Island secret level:** the Wonder Wheel and the Cyclone.
