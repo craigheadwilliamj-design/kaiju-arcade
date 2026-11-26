@@ -1,15 +1,15 @@
 import {groundAt,streetAt,waterAt} from './terrain.ts';
-import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F,BULL,PARADE,CONEY} from './config.ts';
+import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F,BULL,PARADE,CONEY,NYC2} from './config.ts';
 
 // Civilian vehicles: parked cars, passing traffic, and anything the kaiju punts, carries or throws.
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
 // Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
-export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer'|'bull'|'tether'|'wheel'|'coaster';
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer'|'bull'|'ball'|'carriage'|'tether'|'wheel'|'coaster';
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat'|'rolling'|'cable';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean,line?:[number,number],plows?:number,runaway?:boolean,chunk?:{shape:string,H:number,cut:number}};
+ damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean,line?:[number,number],plows?:number,glide?:number,runaway?:boolean,chunk?:{shape:string,H:number,cut:number}};
 // chunk: a sheared-off top of a shaped landmark: the shape it was cut from, that shape's full height and how far up it was cut.
 // pole: a power pole (lamp-kind prop) on that grid index; snapped once it has been knocked out of upright.
 export const VEHICLE_SPECS={
@@ -40,6 +40,9 @@ export const VEHICLE_SPECS={
  train:{w:Math.round(240*C.cityScale),h:37,mass:6,points:0},
  // New York Act 1: the Charging Bull, a bronze prop (src/config.ts BULL). Not a loose object: see loose().
  bull:{w:BULL.w,h:BULL.h,mass:BULL.mass,points:BULL.points},
+ // New York Act 2: One Times Square's ball (a heavy rolling sphere) and a Central Park carriage (a horse-drawn cab that bolts). `glide` is how fast a rolling one sheds speed (src/rolling.ts).
+ ball:{w:NYC2.ballSize,h:NYC2.ballSize,mass:NYC2.ballMass,points:0},
+ carriage:{w:NYC2.carriageW,h:NYC2.carriageH,mass:NYC2.carriageMass,points:NYC2.carriagePoints},
  // New York Act 3: a parade balloon's tether (the rope's end the handler crew hold). Grabbable, and not a loose street object: see loose().
  tether:{w:PARADE.tether.w,h:PARADE.tether.h,mass:PARADE.tether.mass,points:0},
  // New York secret level (Coney Island): the Ferris wheel (a huge round body) and the roller coaster's train. See src/config.ts CONEY.
@@ -49,7 +52,7 @@ export const VEHICLE_SPECS={
 // Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
 // Road vehicles: what explodes when thrown and wrecks with a bang.
 export const EXPLOSIVE=new Set<VehicleKind>(['car','van','bus','patrol','apc','tank','artillery','train','boat','gunboat','destroyer','tram','cablecar','firetruck','coaster']);
-export const CIVILIAN=new Set<VehicleKind>(['car','van','bus','tram','cablecar','firetruck']);
+export const CIVILIAN=new Set<VehicleKind>(['car','van','bus','tram','cablecar','firetruck','carriage']);
 const IMPACT:Partial<Record<VehicleKind,number>>={lamp:1.6};
 export function impact(v:Vehicle){return IMPACT[v.kind]??mass(v);}
 let COLORS=['#b16d5b','#70958e','#a09b65','#7d84a6','#c1a06a'],TAXI='';
@@ -61,8 +64,8 @@ export function vehicleBox(v:Vehicle){return {x:v.x,y:v.y,w:v.w,h:v.h};}
 export function mass(v:Vehicle){return v.mass??VEHICLE_SPECS[v.kind].mass;}
 export function grounded(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='flat'||v.state==='rolling'||v.state==='cable';}
 // Can be stomped, punted or picked up.
-// The Charging Bull, a balloon's tether and the Ferris wheel are never loose, and neither is a coaster train on its track: nothing on the street stomps, punts or wrecks it; only a kaiju strong enough carries it (tryGrab).
-export function loose(v:Vehicle){return v.kind!=='bull'&&v.kind!=='tether'&&v.kind!=='wheel'&&!(v.kind==='coaster'&&v.state==='cable')&&(v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='rolling'||v.state==='cable');}
+// The Charging Bull, a balloon's tether, the Ferris wheel and Times Square's ball are never loose, and neither is a coaster train on its track: nothing on the street stomps, punts or wrecks it; only a kaiju strong enough carries it (tryGrab).
+export function loose(v:Vehicle){return v.kind!=='bull'&&v.kind!=='ball'&&v.kind!=='tether'&&v.kind!=='wheel'&&!(v.kind==='coaster'&&v.state==='cable')&&(v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='rolling'||v.state==='cable');}
 
 function make(id:number,kind:VehicleKind,x:number,lane:0|1,color:string):Vehicle{
  const s=VEHICLE_SPECS[kind];

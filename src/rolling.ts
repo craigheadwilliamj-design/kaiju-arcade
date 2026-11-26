@@ -13,7 +13,7 @@ export function startRolling(v:Vehicle,push=RN.shove,fallback=1){
  v.state='rolling';v.vx=downhill(v,fallback)*push;v.vy=0;v.speed=0;v.panic=0;v.plows=RN.plows;v.hits=new Set();v.line=undefined;}
 // One step. Returns 'stopped' when the car has coasted to rest (it parks), else 'rolling'.
 // The Ferris wheel (Coney Island) is round: it rolls on far less resistance than a car, and turns as it goes (v.angle, radians).
-const friction=(v:Vehicle)=>v.kind==='wheel'?CONEY.wheel.friction:RN.friction;
+const friction=(v:Vehicle)=>v.kind==='wheel'?CONEY.wheel.friction:(v.glide??RN.friction);
 // The wheel is too big for a heap of rubble to matter: it rolls over the street itself, not over the rubble lying on it.
 const surface=(v:Vehicle,x:number)=>v.kind==='wheel'?streetAt(x):groundAt(x);
 const slopeOf=(v:Vehicle)=>v.kind==='wheel'?(streetAt(centre(v)-4)-streetAt(centre(v)+4))/8:slopeAt(centre(v));
