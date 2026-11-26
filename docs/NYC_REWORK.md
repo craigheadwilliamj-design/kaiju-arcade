@@ -2,7 +2,7 @@
 
 New York gets the same treatment San Francisco got: an authored route of nine levels plus one secret level, three acts, its own playable kaiju and boss, per-level growth, and one new mechanic per level built as an opt-in `BlockDef` field. Everything SF built is reusable.
 
-Status: **scaffold done (card 1)**, **Act 1 done (card 2: The Battery, Wall Street, SoHo and Canal Street)**. The city entry, `cityLevel`, the nine route levels and Coney Island as placeholders (names, screens, kinds, growth, exits, landmarks), the `nyc-classic` fixture city with `kaijuTest.gotoCity`, the retargeted tests, `tests/nyc-scaffold.test.ts`, the QA playthrough and the README are in. Cards 3 to 7 are still to do. Work is queued as separate sessions (see "Work cards" at the end). Each card reads this file first.
+Status: **scaffold done (card 1)**, **Act 1 done (card 2: The Battery, Wall Street, SoHo and Canal Street)**, **Act 2 done (card 3: Times Square, Grand Central, Central Park)**. The city entry, `cityLevel`, the nine route levels and Coney Island as placeholders (names, screens, kinds, growth, exits, landmarks), the `nyc-classic` fixture city with `kaijuTest.gotoCity`, the retargeted tests, `tests/nyc-scaffold.test.ts`, the QA playthrough and the README are in. Cards 3 to 7 are still to do. Work is queued as separate sessions (see "Work cards" at the end). Each card reads this file first.
 
 ## Fixed decisions
 
@@ -57,17 +57,17 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 
 ### Act 2: Midtown (Stage 2, the Guard, then tanks)
 
-**4. Times Square** (7 / district / 2-2 / tier 2)
+**4. Times Square** (7 / district / 2-2 / tier 2) — **done (card 3)**
 - **Route:** night, the only night level, with lit windows and neon. Billboards cover the buildings (the `sign` roof fixture plus facade billboards). Crowds flee. The power grid feeds the screens: destroy the substation and that grid's billboards and windows go dark (an existing city system, now visible). One Times Square (the ball-drop tower) is the landmark: knock the ball loose and it rolls down Broadway (`src/rolling.ts`). Long straight avenues make good Stampede lanes.
 - **Reuses:** substations and grids, roof signs, rolling physics, the population system.
 - **New:** **a per-level night mood** (`night:true` or `moodOverride` on `BlockDef`, read where `CITIES[cityIndex].mood` is read), and **billboards that black out with their grid**.
 
-**5. Grand Central** (7 / stronghold / 2-2 / tier 3)
+**5. Grand Central** (7 / stronghold / 2-2 / tier 3) — **done (card 3)**
 - **Route:** Park Avenue South climbs onto the Park Avenue Viaduct, which wraps round the terminal (the elevated system, `elevatedLook:'freeway'`, single deck). The Chrysler Building is the climbable landmark to the east. The MetLife tower stands right behind the terminal and topples onto it. Metro-North trains run in the tunnel under Park Avenue and burst out when the street caves in. The target is the Grand Central Terminal facade (`art:'terminal'`: the clock, the arched windows, the Mercury statue group), with the Guard and tanks on the viaduct.
 - **Reuses:** elevated, the subway (trains), flank toppling, `deckUnits`-style troops on the viaduct, `garrison`.
 - **New:** the terminal target art, and **the concourse cave-in**. Break the terminal's roof from above and fall into the Main Concourse, a pit like the Union Square garage, full of commuters and police.
 
-**6. Central Park** (8 / open, two exits / 2-2(3) / tier 3)
+**6. Central Park** (8 / open, two exits / 2-2(3) — **done (card 3)** / tier 3)
 - **Route:** there-and-back like Fisherman's Wharf. The kaiju starts mid-map, entering from Central Park South. Landmarks along the way: Gapstow Bridge, the Pond, Wollman Rink, the zoo (animals flee like the Pier 39 sea lions), Bethesda Terrace, the Great Lawn (Guard dug in with APCs), Belvedere Castle (the crystal, cap lift to 3) and the Reservoir.
 - **Water:** the Reservoir is over a Stage 2 kaiju's head and wading depth at Stage 3, so the crystal opens it (the same rule as the Wharf bay).
 - **Exits:** west exit → Hudson Yards (the main route). East exit, past the Reservoir → a subway entrance, the Q train to Coney Island (secret).
@@ -120,7 +120,7 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 
 1. **Scaffold (done).** City entry, `cityLevel`, nine plus one placeholder levels with growth, exits and `after`, the `nyc-classic` fixture city and harness, test retargeting, QA and README. *Blocks everything else.*
 2. **Act 1 (done):** the Battery, Wall Street, SoHo (fort and exchange target art, Charging Bull, steam vents). `nycBattery`/`nycWallStreet`/`nycSoho` in `src/levels.ts`, `NYC1`/`BULL`/`STEAM` in `src/config.ts`, `tests/nyc-act1.test.ts`. Notes for later cards: a level that starts somewhere other than the west edge but keeps one exit uses `spawn` (`start` also makes it a there-and-back with a west exit); the Bull is a `vehicles` entry of kind `bull` that `loose()` never reports as loose; `STEAM` is the base for card 5's geysers (add a `auto:true` mode that bursts without a slam).
-3. **Act 2:** Times Square, Grand Central, Central Park (night mood, grid blackout, terminal art, concourse cave-in, two exits).
+3. **Act 2 (done):** Times Square, Grand Central, Central Park. `nycTimesSquare`/`nycGrandCentral`/`nycCentralPark` in `src/levels.ts`, `NYC2` in `src/config.ts`, `tests/nyc-act2.test.ts`. Notes for later cards: `night` is the per-level mood override (read through `moodNow()` in `src/game.ts`); the roof fixtures `billboard` and `ball` and the building flag `board` are opt-in; `deckUnits` now also perches troops on a single-deck `elevated` viaduct; vehicles have an optional `glide` (rolling friction override) and kinds `ball` and `carriage`; the zoo reuses the sea-lion list; `concourse` leaves a pit, not rubble. Coney Island's rejoin and the Reservoir crossing need Stage 3.
 4. **Tlézcatl boss kit:** `TLEZCATL_BOSS`, tested on a flat placeholder arena. Can run alongside cards 2 and 3 once the scaffold has landed.
 5. **Act 3 levels 7–8:** Hudson Yards and Herald Square (rail-yard deck, geysers, parade balloons, arena target art).
 6. **Empire State boss level:** the climbing rival, the setback breaks, the eruption intro and the retreat. Needs card 4.

@@ -1,4 +1,4 @@
-import {CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,NYC1,BULL as BL,STEAM as ST} from './config.ts';
+import {CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,NYC1,BULL as BL,STEAM as ST,NYC2} from './config.ts';
 import {groundAt,groundUnder,setTerrain,terrainPoints,hasTerrain,profileFrom,submerged,waterAt,waterSpans,bedAt,addMound,moundList,deckAt,pitAt,pitList,addPit,depthAt,setPlatforms,platformFloor} from './terrain.ts';
 import {bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from './water.ts';
 import type {Band,Drown} from './water.ts';
@@ -20,7 +20,7 @@ import type {Strike} from './combat.ts';
 import {createMilitary,tickMilitary,spawnUnit,hitUnit as hitUnitBase,intercept,segmentHits,captureUnit,callStrike,GRABBABLE_UNITS,UNITS,WEAPONS,roadLane,ROAD_UNITS,smallArmsScale,blast,NAVAL_UNITS,setNavyUnderDecks,cruiseY,setCover} from './military.ts';
 import type {MilitaryEvent} from './military.ts';
 import type {Rect,Unit} from './military.ts';
-import {createPopulation,releaseOccupants,tickPopulation} from './population.ts';
+import {createPopulation,releaseOccupants,tickPopulation,civilianBox} from './population.ts';
 import type {Permanent} from './campaign.ts';
 import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,initialsValid,KAIJU,CAMPAIGN,campaignCityIndex,routeLevels,freePlayLevels,unlockSecret,secretLevelOf,secretIds,exitTarget,kaijuFor,discardLegacySaves} from './campaign.ts';
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
@@ -60,12 +60,14 @@ function access():Permanent{return devUnlock?{...permanent,unlocked:[...KAIJU],c
 function applyDisplay(){const frame=document.querySelector<HTMLElement>('#frame')!;if(display.integer){const space=Math.max(0,Math.min(1160,(window.innerWidth||960)-40)),factor=Math.floor(space/960);frame.style.width=factor>=1?`${960*factor}px`:'';}else frame.style.width='';}
 function saveDisplay(){try{storage?.setItem(DISPLAY_KEY,JSON.stringify({version:1,...display}));}catch{}applyDisplay();}
 let cityIndex=0,blockIndex=0,block=LEVELS[0][0],worldWidth=levelWidth(block);
+// The mood the level is drawn in: the city's own, or the night mood on a level that sets `night` (Times Square). Read wherever the mood is.
+function moodNow(){return block.night?NYC2.night:CITIES[cityIndex].mood;}
 // The stronghold's target: the central crystal by default; a SF level's `target` makes it a clock tower or a command post (same HP, same hit rules, a taller or wider box).
-let objective:{x:number,hp:number,maxHP:number,shattered:boolean,w:number,h:number,art:'crystal'|'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange',label:string,ship?:Ship}|null=null,rival:Rival|null=null;
+let objective:{x:number,hp:number,maxHP:number,shattered:boolean,w:number,h:number,art:'crystal'|'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'terminal',label:string,ship?:Ship}|null=null,rival:Rival|null=null;
 // x ranges of the vehicles a level stations in the street (streetcars, cable cars, trolleys, fire trucks): no street lamp stands in or within 70 px of one, so a station can be walked up to and grabbed.
 function stationBoxes():[number,number][]{return ([['tram',block.streetcars],['cablecar',block.cablecars],['bus',block.trolleys],['firetruck',block.firetrucks]] as const).flatMap(([k,xs])=>(xs??[]).map(x=>[x,x+VEHICLE_SPECS[k].w] as [number,number]));}
 function makeObjective(){const t=block.target,art=t?.art??'crystal',ship=art==='cutter'?createShip(t!.x,t!.scale??1):undefined,
- [w,h]=ship?[ship.w,ship.h+ship.deck]:art==='clock'?[SFC.clockW,SFC.clockH]:art==='command'?[SFC.commandW,SFC.commandH]:art==='pyramid'?[SF2.pyramidW,SF2.pyramidH]:art==='fort'?[NYC1.fortW,NYC1.fortH]:art==='exchange'?[NYC1.exchangeW,NYC1.exchangeH]:[60,100];
+ [w,h]=ship?[ship.w,ship.h+ship.deck]:art==='clock'?[SFC.clockW,SFC.clockH]:art==='command'?[SFC.commandW,SFC.commandH]:art==='pyramid'?[SF2.pyramidW,SF2.pyramidH]:art==='fort'?[NYC1.fortW,NYC1.fortH]:art==='exchange'?[NYC1.exchangeW,NYC1.exchangeH]:art==='terminal'?[NYC2.terminalW,NYC2.terminalH]:[60,100];
  return {x:t?t.x:worldWidth/2,hp:P.strongholdHP,maxHP:P.strongholdHP,shattered:false,w,h,art,label:t?.label??'CENTRAL CRYSTAL',...(ship?{ship}:{})};}
 // A floating target (the cutter) rides the waterline and goes down with its hull; everything else stands on the street.
 function obox(){const o=objective!;if(o.ship)return hullBox(o.ship,waterAt(o.x)??C.ground);return {x:o.x-o.w/2,y:groundAt(o.x)-o.h,w:o.w,h:o.h};}
@@ -100,7 +102,7 @@ function setupSF(){
 }
 // ---- San Francisco Act 2 (redesign phase 4) ----
 // Runaway cable cars, the powerhouse, Lombard's tumbling cars, sea lions, Kaiban in the fog and the cutter. All opt-in per level.
-type Lion={x:number,y:number,vx:number,state:'rest'|'flee'|'gone',t:number};
+type Lion={x:number,y:number,vx:number,state:'rest'|'flee'|'gone',t:number,zoo?:{sp:number,from:number}};
 let pendingRunaways:Vehicle[]=[],pendingTumble:{v:Vehicle,t:number}[]=[],tumbleArmed=false,powerhouseDown=false,loosed=0,lions:Lion[]=[],lionsEscaped=0;
 let kaiban:{roared:boolean,roar:number}|null=null,exitSide:'west'|'east'='east';
 function setupAct2(){
@@ -112,6 +114,8 @@ function setupAct2(){
  // Lombard: parked cars on the tumble slope wait for the kaiju.
  if(block.tumble){const [a,z]=block.tumble;vehicles.filter(v=>v.state==='parked'&&v.pole===undefined&&v.kind!=='lamp'&&v.kind!=='cablecar'&&v.x+v.w/2>=a&&v.x+v.w/2<z).sort((p,q)=>p.x-q.x).forEach((v,i)=>pendingTumble.push({v,t:i*RN.tumbleStagger}));}
  lions=(block.sealions??[]).map(x=>({x,y:groundAt(x)-14,vx:0,state:'rest' as const,t:Math.random()*3}));
+ // Central Park Zoo (NYC Act 2): the same herd logic, an animal each, bolting away from the kaiju instead of for the water.
+ lions.push(...(block.zoo??[]).map((x,i)=>({x,y:groundAt(x)-14,vx:0,state:'rest' as const,t:Math.random()*3,zoo:{sp:i%6,from:x}})));
  if(block.kaiban)kaiban={roared:false,roar:0};
 }
 // What a rolling car does to what is in its way: a building it destroys is bowled through (it keeps most of its speed), one left
@@ -121,17 +125,50 @@ function crashRolling(v:Vehicle,dir:number,against?:object){
  launch(v,-dir*vx*RN.crashSpeed,-RN.crashLift,R.careenDamage);v.thrown=true;v.spin=-dir*4;if(against)v.hits.add(against);}
 function rollImpacts(v:Vehicle){
  const dir=Math.sign(v.vx)||1,box=vehicleBox(v),cx=v.x+v.w/2,cy=v.y+v.h/2;
+ if(v.kind==='ball')for(const c of population.civilians)if(!c.squashed&&!c.escaped&&overlaps(box,civilianBox(c))){c.squashed=true;award(NYC2.crowdPoints);ballCrowd++;}
  for(const b of buildings){if(!solid(b)||b.hpNow<=0||v.hits.has(b))continue;const p=partHit(b,box);if(!p)continue;
   v.hits.add(b);hit(b,rollDamage(v),false,dir,{x:cx,y:cy});spawnChunks(cx,cy,-dir,v.color,5);shake=Math.max(shake,6);
   if(b.hpNow<=0&&(v.plows??0)>1){v.plows!--;v.vx*=RN.plowKeep;if(!v.rewarded)rewardVehicle(v);continue;}
-  v.x=dir>0?p.x-v.w-1:p.x+p.w+1;crashRolling(v,dir,b);return;}
+  v.x=dir>0?p.x-v.w-1:p.x+p.w+1;if(v.kind==='ball'){v.vx=0;v.state='parked';return;}crashRolling(v,dir,b);return;}
  for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&!NAVAL_UNITS.has(u.type)&&!v.hits.has(u)&&overlaps(box,u)){v.hits.add(u);hitUnit(military,u,RN.unitDamage,'player',180*mass(v),dir,false,'thrown');}
  if(rival&&!rival.dead&&!v.hits.has(rival)&&overlaps(box,rival)){v.hits.add(rival);strikeRival(rollDamage(v)*.3,160*mass(v),dir);crashRolling(v,dir,rival);return;}
  if(objective&&!objective.shattered&&!v.hits.has(objective)&&overlaps(box,obox())){v.hits.add(objective);hitObjective(rollDamage(v)*.5);crashRolling(v,dir,objective);return;}
- for(const o of vehicles)if(o!==v&&loose(o)&&o.state!=='rolling'&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),RN.unitDamage);o.hits.add(v);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);v.vx*=1-VC.chainPush*.6;spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
+ for(const o of vehicles)if(o!==v&&loose(o)&&o.state!=='rolling'&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),RN.unitDamage);o.hits.add(v);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);if(v.kind!=='ball')v.vx*=1-VC.chainPush*.6;spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
  // The kaiju is in its way too: it does not hurt a monster, it just wrecks the car.
- if(Math.abs(v.vx)>60&&overlaps(box,{x:player.x,y:player.y,w:bodyWidth(),h:bodyHeight()}))crashRolling(v,dir);
+ if(v.kind!=='ball'&&Math.abs(v.vx)>60&&overlaps(box,{x:player.x,y:player.y,w:bodyWidth(),h:bodyHeight()}))crashRolling(v,dir);
 }
+// ---- New York Act 2 (NYC rework card 3) ----
+// One Times Square's ball, Grand Central's concourse cave-in and Central Park's carriage horses (the zoo animals are the sea-lion herd, above).
+// Every part is opt-in per level (src/levels.ts); a level that sets none of it runs none of this.
+let ballFall:{x0:number,x:number,y0:number,t:number,dir:number}|null=null,ballsLoosed=0,ballCrowd=0,concourseOpen=false,concourseRoof:typeof buildings[number]|null=null,commutersDropped=0,carriagesBolted=0;
+const bolted=new WeakSet<Vehicle>();
+function setupNyc2(){ballFall=null;ballsLoosed=0;ballCrowd=0;concourseOpen=false;commutersDropped=0;carriagesBolted=0;concourseRoof=block.concourse?buildings.find(b=>b.deco==='concourse')??null:null;}
+// The ball is knocked loose (its roof fixture broke: a blow to the roof, or the tower coming down): it falls to the street and rolls away from
+// the kaiju, down Broadway.
+function dropBall(r:{x:number,y:number,w:number,h:number},b:typeof buildings[number]){const cx=r.x+r.w/2,dir=cx>=player.x+bodyWidth()/2?1:-1;
+ // It falls clear of the tower, on the side away from the kaiju, so it rolls off down the street instead of into the tower's own rubble.
+ ballFall={x0:cx,x:dir>0?b.x+b.w+NYC2.ballSize:b.x-NYC2.ballSize,y0:r.y+r.w/2,t:0,dir};ballsLoosed++;
+ award(NYC2.ballPoints);heatUp(10);shake=Math.max(shake,8);banner={label:'THE BALL IS LOOSE',side:0,life:2.4};action='THE BALL DROPS';actionTime=2;}
+function openConcourse(){concourseOpen=true;const [x0,x1]=block.concourse!,floor=groundAt((x0+x1)/2)+pitDepth();addPit(x0,x1,floor);
+ const n=NYC2.commuters;for(let i=0;i<n&&population.civilians.length<M.civilianMax;i++){population.civilians.push({x:x0+12+(i+.5)*(x1-x0-24)/n,variant:i%3,escaped:false,squashed:false,panicked:true});commutersDropped++;}
+ for(let i=0;i<NYC2.police;i++){const u=spawnUnit(military,'police',x0+30+(i+.5)*(x1-x0-60)/NYC2.police,1);u.y=floor-u.h;pitted.add(u);}
+ for(let x=x0;x<x1;x+=20)spawnChunks(x,groundAt(x)-pitDepth(),x<(x0+x1)/2?-1:1,'#b7ab8d',2,1.2);burst((x0+x1)/2,C.ground-6,'#cfc6a8',24);
+ award(NYC2.concoursePoints);heatUp(12);shake=Math.max(shake,12);banner={label:'THE MAIN CONCOURSE',side:0,life:2.6};action='ROOF DOWN · INTO THE CONCOURSE';actionTime=2.2;}
+function boltCarriage(v:Vehicle,from:number){bolted.add(v);const dir=v.x+v.w/2<from?-1:1;v.dir=dir;v.glide=NYC2.boltGlide;startRolling(v,NYC2.boltSpeed,dir);carriagesBolted++;
+ for(const c of population.civilians)if(Math.abs(c.x-v.x)<480)c.panicked=true;action='THE HORSES BOLT';actionTime=1.2;}
+function tickNyc2(dt:number){
+ if(ballFall){ballFall.t+=dt;if(ballFall.t>=NYC2.ballFall){const f=ballFall;ballFall=null;const v=makeProp(nextVehicle++,'ball',f.x-NYC2.ballSize/2,'#e8ecff');v.state='parked';v.glide=NYC2.ballGlide;v.y=groundAt(f.x)-v.h;vehicles.push(v);startRolling(v,NYC2.ballSpeed,f.dir);v.plows=8;
+  burst(f.x,groundAt(f.x)-6,'#dfe6ff',18);shake=Math.max(shake,8);for(const c of population.civilians)if(Math.abs(c.x-f.x)<900)c.panicked=true;}}
+ for(const v of vehicles){if(v.kind==='ball'&&v.state==='rolling')v.angle+=v.vx/(v.w/2)*dt;if(v.kind==='carriage'&&v.state==='rolling')v.dir=Math.sign(v.vx)||v.dir;}
+ if(concourseRoof&&!concourseOpen&&concourseRoof.hpNow<=0)openConcourse();
+ if(block.carriages){const cx=player.x+bodyWidth()/2;for(const v of vehicles)if(v.kind==='carriage'&&v.state==='parked'&&!bolted.has(v)&&Math.abs(v.x+v.w/2-cx)<NYC2.boltRange)boltCarriage(v,cx);}}
+function drawBallFall(){if(!ballFall)return;const k=Math.min(1,ballFall.t/NYC2.ballFall),gy=groundAt(ballFall.x)-NYC2.ballSize/2,y=ballFall.y0+(gy-ballFall.y0)*k*k;drawBallSphere(ballFall.x0+(ballFall.x-ballFall.x0)*k-camera,y,NYC2.ballSize/2,time);}
+function nycDebug(){return {ballsLoosed,ballFalling:!!ballFall,ballCrowd,concourseOpen,commutersDropped,carriagesBolted,
+ ball:(()=>{const v=vehicles.find(o=>o.kind==='ball');return v?{x:v.x,y:v.y,w:v.w,vx:v.vx,state:v.state}:null;})(),
+ carriageList:vehicles.filter(v=>v.kind==='carriage').map(v=>({x:v.x,y:v.y,state:v.state,vx:v.vx})),
+ zooList:lions.filter(l=>l.zoo).map(l=>({x:l.x,state:l.state,sp:l.zoo!.sp})),
+ roofList:roofs.map(p=>({kind:p.kind,dead:p.dead,grid:p.grid,lit:p.grid<0||power[p.grid]})),gridPower:[...power],
+ boardList:buildings.filter(b=>b.board).map(b=>({x:b.x,lit:boardLit(b)})),moodLights:moodNow().lights};}
 function tickAct2(dt:number){
  // Powerhouse: while it stands the cars ride their cables; once it is destroyed every one comes loose.
  if(!powerhouseDown){const ph=buildings.find(b=>b.role==='powerhouse');if(ph&&ph.hpNow<=0){powerhouseDown=true;loosed=releaseCables(vehicles);banner={label:'POWERHOUSE DOWN · CABLE CARS LOOSE',side:0,life:2.4};action='THE CABLE CARS ARE LOOSE';actionTime=2.2;award(SFC.pocketPoints);heatUp(10);shake=Math.max(shake,10);}}
@@ -141,6 +178,9 @@ function tickAct2(dt:number){
  // Sea lions: they flop away from the kaiju toward the nearest water and dive.
  const cx=player.x+bodyWidth()/2;
  for(const l of lions){if(l.state==='gone')continue;l.t+=dt;
+  if(l.zoo){if(l.state==='rest'&&Math.abs(l.x-cx)<NYC2.zooAlarm){l.state='flee';l.vx=(l.x<cx?-1:1)*NYC2.zooSpeed;}
+   if(l.state==='flee'){l.x+=l.vx*dt;l.y=groundAt(l.x)-(l.zoo.sp===0?30:22)-Math.abs(Math.sin(l.t*8))*6;if(submerged(l.x)||Math.abs(l.x-l.zoo.from)>NYC2.zooRun||l.x<20||l.x>worldWidth-20){l.state='gone';lionsEscaped++;award(NYC2.zooPoints);if(submerged(l.x))splash(l.x,waterAt(l.x)!,8);}}
+   else l.y=groundAt(l.x)-(l.zoo.sp===0?30:22);continue;}
   if(l.state==='rest'&&Math.abs(l.x-cx)<SF2.lionAlarm){let dir=0;for(let d=8;d<900&&!dir;d+=8){const e=submerged(l.x+d),w=submerged(l.x-d);if(e||w)dir=e?1:-1;}if(dir){l.state='flee';l.vx=dir*SF2.lionSpeed;}}
   if(l.state==='flee'){l.x+=l.vx*dt;l.y=groundAt(l.x)-14-Math.abs(Math.sin(l.t*7))*10;if(submerged(l.x)){l.state='gone';lionsEscaped++;splash(l.x,waterAt(l.x)!,8);}}
   else l.y=groundAt(l.x)-14;}
@@ -162,7 +202,7 @@ function tickSF(dt:number){
  garageDrops=garageDrops.filter(d=>d.t>0);
  // Stationed units join when the camera is near and the squad cap has room (they count against it like any fielded unit).
  for(const st of stations){const near=st.x>camera-M.despawnDistance+150&&st.x<camera+viewW()+M.despawnDistance-150;
-  if(near&&military.units.filter(u=>u.hp>0&&!NAVAL_UNITS.has(u.type)).length<M.caps[military.tier-1]){const u=spawnUnit(military,st.type,st.x,st.side);if(st.guard)guardUnits.add(u);if(st.alt)u.y=groundAt(st.x+u.w/2)-st.alt-u.h/2;if(st.perch&&upperPlat[0]?.p.alive)u.y=upperPlat[0].p.y-u.h;st.wait=-1;}}
+  if(near&&military.units.filter(u=>u.hp>0&&!NAVAL_UNITS.has(u.type)).length<M.caps[military.tier-1]){const u=spawnUnit(military,st.type,st.x,st.side);if(st.guard)guardUnits.add(u);if(st.alt)u.y=groundAt(st.x+u.w/2)-st.alt-u.h/2;if(st.perch){if(upperPlat[0]?.p.alive)u.y=upperPlat[0].p.y-u.h;else{const r=railAt(st.x+u.w/2);if(r?.alive)u.y=r.y-u.h;}}st.wait=-1;}}
  stations=stations.filter(st=>st.wait!==-1);
  for(const s of shows){s.t-=dt;s.next-=dt;if(s.next<=0){s.next=.12+Math.random()*.12;const bx=s.x+(Math.random()-.5)*180,by=s.y-30-Math.random()*220;fireball(bx,by,9+Math.random()*10);burst(bx,by,['#ff5a4a','#ffd84f','#6fd6ff','#b98cff','#7ff08a'][Math.floor(Math.random()*5)],14);
    if(Math.random()<.5)blast(military,bx,groundAt(bx)-20,SFC.fireworksBlast,SFC.fireworksDamage,'player');}}
@@ -657,7 +697,7 @@ let upperPlat:{b:typeof buildings[number],p:{x0:number,x1:number,y:number,alive:
 function carrierWaterline(){const t=block.target;return (block.water??[]).find(([a,z])=>t!==undefined&&t.x>=a&&t.x<z)?.[2]??C.ground;}
 function makeCarrierDeck():Deck|null{const t=block.target;if(!t?.launch)return null;const s=createShip(t.x,t.scale??1);return {x0:t.x-s.w/2,x1:t.x+s.w/2,y:deckY(s,carrierWaterline()),alive:true};}
 function carrierJetsUp(){return [...carrierJets].filter(u=>u.hp>0&&military.units.includes(u)).length;}
-function setupBridge(){upperPlat=buildings.filter(b=>b.upperDeck).map(b=>({b,p:{x0:b.x,x1:b.x+b.w,y:b.base-b.h,alive:true}}));setPlatforms(upperPlat.map(o=>o.p));jetLaunch=[];carrierJets=new Set();launchTimer=BR.launchEvery*.5;jetsLaunched=0;deckOrder=[];}
+function setupBridge(){upperPlat=buildings.filter(b=>b.upperDeck).map(b=>({b,p:{x0:b.x,x1:b.x+b.w,y:b.base-b.h,alive:true}}));setPlatforms([...upperPlat.map(o=>o.p),...(block.deckUnits&&!upperPlat.length?rails:[])]);jetLaunch=[];carrierJets=new Set();launchTimer=BR.launchEvery*.5;jetsLaunched=0;deckOrder=[];}
 function upperDeckDown(b:typeof buildings[number]){award(BR.upperPoints);heatUp(14);shake=Math.max(shake,14);deckOrder.push('upper');banner={label:'UPPER DECK DOWN',side:0,life:2.4};action='THE UPPER DECK COMES DOWN';actionTime=2;
  for(let x=b.x+60;x<b.x+b.w-30;x+=90){spawnChunks(x,b.base-b.h,x<b.x+b.w/2?-1:1,'#7d8588',2,1.2);burst(x,b.base-b.h+10,'#9aa3ad',3);}
  // Whatever stood on it drops: troops go down with it.
@@ -726,7 +766,7 @@ let blazes=new Map<object,{heat:number,tick:number,spread:number}>(),mounded=new
 function expose(b:typeof buildings[number],amount:number){if(blazes.has(b)||b.hpNow<=0)return;const e=(exposure.get(b)??0)+amount;if(e>=1){exposure.delete(b);setAlight(b);}else exposure.set(b,e);}
 function setAlight(b:typeof buildings[number]){if(b.hpNow<=0||b.kind==='tiny'||b.role||blazes.has(b)||blazes.size>=(block.fireCap??FI.cap))return false;blazes.set(b,{heat:FI.start,tick:time+.5,spread:time+FI.spreadEvery});return true;}
 function douse(x:number,r:number){for(const b of [...blazes.keys()] as (typeof buildings[number])[])if(Math.abs(b.x+b.w/2-x)<r+b.w/2){blazes.delete(b);for(let n=0;n<6;n++)particles.push({x:b.x+Math.random()*b.w,y:b.base-b.h*Math.random(),vx:0,vy:-60,life:.6,color:'#d9dde0',size:3});}}
-function tickFire(dt:number){const rain=!!CITIES[cityIndex].mood.rain;
+function tickFire(dt:number){const rain=!!moodNow().rain;
  for(const [o,f] of [...blazes]){const b=o as typeof buildings[number];if(b.hpNow<=0||b.topple||b.lifted){blazes.delete(b);continue;}
   f.heat=Math.min(1,f.heat+FI.grow*(rain?.5:1)*dt);
   if(time>=f.tick){f.tick=time+.5;hit(b,FI.dps*f.heat*.5,true,player.face,undefined,true);}
@@ -738,11 +778,11 @@ function tickFire(dt:number){const rain=!!CITIES[cityIndex].mood.rain;
  for(const p of pools){if(!p.fire)continue;for(const b of buildings)if(b.hpNow>0&&b.kind!=='tiny'&&p.x<b.x+b.w+FI.poolReach&&p.x+p.w>b.x-FI.poolReach){expose(b,FI.poolChance*dt);break;}}}
 // A burning building's flames: tongues in its upper floors, more of it alight as the heat climbs; a glow at night.
 function drawBlaze(b:typeof buildings[number],x:number,h:number){const f=blazes.get(b);if(!f)return;const y=b.base-h,bw=b.w-7,rows=Math.max(1,Math.ceil(f.heat*Math.min(6,h/40)));
- if(CITIES[cityIndex].mood.lights>.6){ctx.globalAlpha=.18*f.heat;rect(x-10,y-20,bw+20,h*.6,'#ff8a1f');ctx.globalAlpha=1;}
+ if(moodNow().lights>.6){ctx.globalAlpha=.18*f.heat;rect(x-10,y-20,bw+20,h*.6,'#ff8a1f');ctx.globalAlpha=1;}
  for(let r=0;r<rows;r++){const yy=y+14+r*30;for(let xx=8;xx<bw-8;xx+=22){const hh=10+8*Math.abs(Math.sin(time*10+xx*.3+r*1.7));poly([[x+xx-6,yy+12],[x+xx-1,yy+12-hh],[x+xx+3,yy+12-hh*.6],[x+xx+7,yy+12]],r%2?'#ffb13b':'#e8401a');}}
  for(let k=0;k<3;k++){const cx=x+bw*(.25+k*.25),hh=(14+10*Math.abs(Math.sin(time*8+k)))*f.heat;poly([[cx-8,y+2],[cx,y-hh],[cx+8,y+2]],'#ff8a1f');}}
 // Rubble: a collapsed building heaps over its footprint; a toppled tower leaves a ridge where it fell.
-function heapRubble(b:typeof buildings[number],from?:number,to?:number){if(mounded.has(b)||b.kind==='tiny'||b.role||b.lifted||b.upperDeck)return;mounded.add(b);
+function heapRubble(b:typeof buildings[number],from?:number,to?:number){if(mounded.has(b)||b.kind==='tiny'||b.role||b.lifted||b.upperDeck||b.deco==='concourse')return;mounded.add(b);
  if(from!==undefined)addMound(from,to!,RB.ridge,RB.side);else addMound(b.x-6,b.x+b.w+4,Math.max(RB.min,Math.min(RB.max,b.h*RB.heightK)),RB.side);}
 function drawMounds(){for(const m of moundList()){const a=m.x0-camera,z=m.x1-camera;if(z<-20||a>viewW()+20)continue;ctx.fillStyle='#6d6a5f';ctx.beginPath();ctx.moveTo(a,bedAt(m.x0));
  for(let x=m.x0;x<=m.x1;x+=6)ctx.lineTo(x-camera,groundAt(x));ctx.lineTo(z,bedAt(m.x1));ctx.closePath();ctx.fill();
@@ -883,7 +923,7 @@ function loadBlock(drill=false){
   if(!drill)setupPocket();else pocketRoof=null;
   stations=[];garageDrops=[];rampage=createRampage();rampFlash=0;wires=[];splashes=[];fired=new Set();ultKill=new Set();
   subs=substations(buildings,block.grids);power=gridPowered(subs);roofs=createRoofProps(buildings,block.grids);roofOf=new Map(roofs.map(p=>[p.b,p]));gridOfB=new Map(buildings.map(b=>[b,gridOf(b.x+b.w/2,block.grids)]));
-  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);for(const [kind,xs,color,label] of [['tram',block.streetcars,'#b9402f',''],['cablecar',block.cablecars,'#8a2f2a',''],['bus',block.trolleys,'#c9c3a2','TROLLEY'],['firetruck',block.firetrucks,'#c0392b',''],['bus',block.buses,'#3d6f8a','TRANSIT'],['bull',block.bull===undefined?undefined:[block.bull],'#3b2e24','']] as const)if(xs&&!drill){vehicles.push(...createFleet(kind,xs,nextVehicle,color,label));nextVehicle+=xs.length;}held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];spit=null;brew=null;clouds=[];poison.clear();swarm=null;wasps=[];hive=null;stings=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
+  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);for(const [kind,xs,color,label] of [['tram',block.streetcars,'#b9402f',''],['cablecar',block.cablecars,'#8a2f2a',''],['bus',block.trolleys,'#c9c3a2','TROLLEY'],['firetruck',block.firetrucks,'#c0392b',''],['bus',block.buses,'#3d6f8a','TRANSIT'],['bull',block.bull===undefined?undefined:[block.bull],'#3b2e24',''],['carriage',block.carriages,'#2b2830','']] as const)if(xs&&!drill){vehicles.push(...createFleet(kind,xs,nextVehicle,color,label));nextVehicle+=xs.length;}held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];spit=null;brew=null;clouds=[];poison.clear();swarm=null;wasps=[];hive=null;stings=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
  // Campaign levels with their own growth set the stage window; Free Play, drills and the original cities stay fully dynamic.
  if(!drill&&session==='campaign'&&block.startStage)setGrowth(combat,block.startStage,block.cap??3);
  cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
@@ -896,6 +936,7 @@ function loadBlock(drill=false){
   if(block.target)stations.push(...garrison.map(([type,offset])=>({type,x:objective.x+offset,side:1})));else for(const [type,offset] of garrison)spawnUnit(military,type,objective.x+offset);}
  if(!drill){for(const [type,x] of block.warships??[])spawnUnit(military,type,x,-1);for(const [type,x] of block.deckUnits??[])stations.push({type,x,side:1,perch:true});for(const [type,x,alt] of block.units??[])stations.push({type,x,side:1,alt});for(const x of block.air??[])stations.push({type:'helicopter',x,side:1});for(const x of block.swat??[])stations.push({type:'soldier',x,side:1});}
  if(openLayout()&&!drill){action=`${block.buildings.filter(b=>b.landmark).length?`${block.buildings.filter(b=>b.landmark).length} LANDMARKS · `:''}EXITS EAST AND WEST`;actionTime=3.5;}
+ setupNyc2();
  if(!drill){setupSF();setupAct2();setupCracks();setupVents();setupBridge();setupSlopes();setCover(coverAt);}else{vents=[];slopes=[];setCover(()=>null);cracks=[];bigOne=null;setPlatforms([]);upperPlat=[];jetLaunch=[];pendingRunaways=[];pendingTumble=[];tumbleArmed=false;lions=[];kaiban=null;}
  loadKaijuArt(activeKaiju,combat.stage);
  mode='playing';overlay.innerHTML='';focus();
@@ -1053,7 +1094,8 @@ function explodeDepot(b:typeof buildings[number],ult:boolean,dir:number){const c
  banner={label:'FUEL DEPOT EXPLODED',side:0,life:2};action='FUEL DEPOT EXPLODED';actionTime=1.8;}
 function hitRoof(p:RoofProp,damage:number,ult=false){if(p.dead||damage<=0)return;p.hp-=damage;const r=roofBox(p);sparks(r.x+r.w/2,r.y+r.h/2,player.face,4,p.kind==='radar'?'#fff0c9':'#cfe9f5');if(p.hp<=0)breakRoof(p,ult);}
 function breakRoof(p:RoofProp,ult:boolean){if(p.dead)return;p.dead=true;p.call=0;const r=roofBox(p),cx=r.x+r.w/2;
- if(p.kind==='sign'||p.kind==='crab'||p.kind==='helipad'){award(SF2.roofPoints[p.kind]);heatUp(6);burst(cx,r.y+r.h/2,p.kind==='crab'?'#e0553f':p.kind==='sign'?'#f2d49a':'#cfd6d8',12);spawnChunks(cx,r.y+r.h/2,player.face,p.kind==='crab'?'#d8483a':p.kind==='sign'?'#d9b36a':'#6f7a80',8,1.3);action=p.kind==='crab'?'GIANT CRAB SMASHED':p.kind==='sign'?'ROOFTOP LETTERS SMASHED':'HELIPAD WRECKED';actionTime=1.6;return;}
+ if(p.kind==='ball'){dropBall(r,p.b);return;}
+ if(p.kind==='sign'||p.kind==='crab'||p.kind==='helipad'||p.kind==='billboard'){award(SF2.roofPoints[p.kind]);heatUp(6);burst(cx,r.y+r.h/2,p.kind==='crab'?'#e0553f':p.kind==='sign'?'#f2d49a':'#cfd6d8',12);spawnChunks(cx,r.y+r.h/2,player.face,p.kind==='crab'?'#d8483a':p.kind==='sign'?'#d9b36a':'#6f7a80',8,1.3);action=p.kind==='crab'?'GIANT CRAB SMASHED':p.kind==='sign'?'ROOFTOP LETTERS SMASHED':p.kind==='billboard'?'BILLBOARD SMASHED':'HELIPAD WRECKED';actionTime=1.6;return;}
  if(p.kind==='radar'){award(Y.radarPoints);if(!ult&&combat.ultimateTime<=0)combat.ultimate=Math.min(B.ultimateMax,combat.ultimate+Y.radarUltimate);heatUp(Y.radarHeat);
   fireball(cx,r.y+r.h/2,28,false);burst(cx,r.y,'#ffcf73',14);spawnChunks(cx,r.y,player.face,'#7d8d8a',6,1.2);action='AIR DEFENCE RADAR DOWN';actionTime=1.8;return;}
  award(Y.tankPoints);heatUp(Y.splashHeat);splashes.push({x:cx,top:r.y,t:0});spawnChunks(cx,r.y+r.h/2,player.face,'#8a5a3a',8,1.4);
@@ -1464,7 +1506,7 @@ function performStrike(strike:Strike|null){
 }
 // First player-caused wreck of a vehicle pays out once (traffic pays less, so passing cars can't be farmed). No crystals.
 function rewardVehicle(v:Vehicle,fromUltimate=false){if(v.rewarded)return;v.rewarded=true;award(Math.round(VEHICLE_SPECS[v.kind].points*(v.traffic?VC.trafficPoints:1)));creditDamage(combat,M.carHP,'player',fromUltimate);}
-function flattenVehicle(v:Vehicle,playerCaused=true,fromUltimate=false){if(v.kind==='bull')return;if(v===held)held=null;
+function flattenVehicle(v:Vehicle,playerCaused=true,fromUltimate=false){if(v.kind==='bull'||v.kind==='ball')return;if(v===held)held=null;
  if(v.kind==='lamp'){if(upright(v)){uproot(v);v.state='wreck';v.angle=player.face>0?0:Math.PI;v.y=groundAt(v.x+v.w/2)-v.h;spawnChunks(v.x+v.w/2,groundAt(v.x+v.w/2)-8,player.face,'#e9d6a2',3);if(playerCaused)rewardVehicle(v,fromUltimate);}return;}if(playerCaused&&!v.rewarded)wreckFeel(v,player.face,false,fromUltimate);v.state='flat';v.angle=0;v.vx=v.vy=0;v.y=groundAt(v.x+v.w/2)-v.h;
  burst(v.x+v.w/2,groundAt(v.x+v.w/2)-6,playerCaused?'#e6b983':'#b5aa8e',playerCaused?8:4);if(playerCaused)rewardVehicle(v,fromUltimate);}
 // Punt: a hit sends the vehicle tumbling as a projectile that damages whatever it crashes into.
@@ -1551,7 +1593,7 @@ function vehicleImpacts(v:Vehicle){
  if(objective&&!objective.shattered&&!v.hits.has(objective)&&overlaps(box,obox())){v.hits.add(objective);hitObjective(v.damage);v.vx=-v.vx*VC.restitution;v.damage*=VC.impactKeep;}
  for(const g of growths)if(g.hp>0&&!v.hits.has(g)&&overlaps(box,gbox(g))){v.hits.add(g);hitGrowth(g,v.damage);}
  for(const p of roofs)if(!p.dead&&!v.hits.has(p)&&overlaps(box,roofBox(p))){v.hits.add(p);hitRoof(p,v.damage);}
- for(const o of vehicles)if(o!==v&&loose(o)&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);o.hits.add(v);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),v.damage*.5);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);v.vx*=1-VC.chainPush*.6;spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
+ for(const o of vehicles)if(o!==v&&loose(o)&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);o.hits.add(v);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),v.damage*.5);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);if(v.kind!=='ball')v.vx*=1-VC.chainPush*.6;spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
  if(v.thrown&&(v.hits.size>before||v.y>=groundAt(v.x+v.w/2)-v.h-1))detonate(v);
 }
 function tickVehicles(dt:number){
@@ -1958,7 +2000,7 @@ function update(dt:number){
  }
  echo=false;if(rival?.dead){winCity();return;}
  if(rival){tickFinale(dt,w,h);if(!bossFrozen())for(const hit of tickRival(rival,dt,{x:player.x,y:player.y,w,h},worldWidth,buildings))receiveHit(combat,hit.damage,'boss',hit.strength,hit.direction);for(const b of buildings)if(b.hpNow<b.hp)releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);if(endIfDead())return;}
- tickCity(dt,w);tickRiver(dt,w);tickFire(dt);tickSF(dt);tickAct2(dt);tickCracks(dt);tickBridge(dt);tickResponse(dt);tickMains(dt);tickVents(dt);tickRails(dt,w,h);tickSlopes(dt);
+ tickCity(dt,w);tickRiver(dt,w);tickFire(dt);tickSF(dt);tickAct2(dt);tickCracks(dt);tickBridge(dt);tickResponse(dt);tickMains(dt);tickVents(dt);tickNyc2(dt);tickRails(dt,w,h);tickSlopes(dt);
  tickMilitary(military,dt,camera,worldWidth,{x:player.x,y:player.y,w,h},destruction(buildings),rival||undefined,Math.abs(kb)<.01?'player':'military',viewW(),combat.stage);drainMilitary();syncBody();if(endIfDead())return;
  waves=waves.filter(w=>w.life>0&&w.x>0&&w.x<worldWidth);
  // Ambient crystals and growths appear ahead of the kaiju (the way it faces), so heading west still finds them.
@@ -1990,7 +2032,7 @@ function text(s:string,x:number,y:number,size=12,color='#e7edde',align:CanvasTex
 function poly(points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();}
 function background(){
  // W covers the zoomed-out view; layers repeat across it and the street fill runs down past the old 540 floor.
- const W=viewW()+100,top=C.ground-(C.ground+cameraY)/zoom-20,th=CITIES[cityIndex],m=th.mood,night=m.lights>.6;
+ const W=viewW()+100,top=C.ground-(C.ground+cameraY)/zoom-20,th=CITIES[cityIndex],m=moodNow(),night=m.lights>.6;
  // Sky: a gradient from the city's zenith colour down to its horizon light (flat fill where gradients are unavailable).
  const g=ctx.createLinearGradient?.(0,top,0,C.ground);if(g&&g.addColorStop){g.addColorStop(0,m.top);g.addColorStop(1,m.bottom);ctx.fillStyle=g;ctx.fillRect(0,top,W,540-top);}else rect(0,top,W,540-top,m.bottom);
  if(night)for(let k=0;k<60;k++){const sx=(k*137%997)/997*W,sy=top+((k*71%331)/331)*(260-top);if(sy<300)rect(sx,sy,k%7?1:2,k%7?1:2,(Math.sin(time*2+k)>.6)?'#ffffff':'#c9d4e8');}
@@ -2039,6 +2081,7 @@ function drawBuilding(b:typeof buildings[number]){
  if(b.hpNow<=0&&b.collapse<=0&&CITIES[cityIndex].material.frame&&b.kind!=='tiny'&&!b.role){// Steel-framed towers leave their skeleton standing.
   const fh=Math.min(b.h,320)*.45,cols=Math.max(2,Math.round(b.w/40));ctx.globalAlpha=.9;for(let k=0;k<=cols;k++){const fx=x+k*(b.w-6)/cols;rect(fx,b.base-fh*(k%2?.8:1),4,fh*(k%2?.8:1),'#5d6a7a');}
   for(let yy=b.base-fh*.8;yy<b.base;yy+=24)rect(x,yy,b.w-2,3,'#6c7480');ctx.globalAlpha=1;}
+ if(b.deco==='concourse'&&b.hpNow<=0&&b.collapse<=0)return;
  if(b.hpNow<=0&&b.collapse<=0){rect(x,b.base-7,b.w,7,'#62625b');for(let j=0;j<b.w;j+=13)rect(x+j,b.base-8-(j%7),10,8+j%7,'#898879');return;}
  const squash=b.hpNow<=0?b.collapse/C.collapseDuration:1,sunk=b.sink>0,sw=b.sway>0?Math.sin(b.sway*18)*.012*b.sway:0;
  if(sunk||sw){ctx.save();if(sunk){ctx.beginPath();ctx.rect(x-20,-4000,b.w+40,4000+b.base-b.sink);ctx.clip();}if(sw){ctx.translate(x+b.w/2,b.base);ctx.rotate(sw);ctx.translate(-(x+b.w/2),-b.base);}}
@@ -2054,11 +2097,12 @@ function drawStructure(b:typeof buildings[number],x:number,h:number){
  const y=b.base-h;
  if(b.prop){drawProp(b,x,h);return;}
  if(b.role){drawUtility(b,x,h);return;}
- const g=gridOfB.get(b)??-1,lit=g>=0&&power[g],tiers=tiered(b)?drawnParts(b,x,h):null;
+ const g=gridOfB.get(b)??-1,lit=g>=0&&power[g],dark=!!block.night&&g>=0&&!power[g],tiers=tiered(b)?drawnParts(b,x,h):null;
  // Damage marks go on the facade: the whole front, or a tiered landmark's biggest solid tier.
  let fx=x,fy=y,fw=b.w,fh=h;
  if(tiers){drawTiers(b,tiers);const f=tiers.filter(t=>!t.spire).reduce((a,t)=>t.w*t.h>a.w*a.h?t:a);fx=f.x;fy=f.y;fw=f.w;fh=f.h;}
- else if(b.landmark&&b.shape&&b.shape!=='tower')drawLandmarkShape(b,x,y,h);else if(b.deco)drawDeco(b,x,y,h);else facade(b,x,y,h,lit);
+ else if(b.landmark&&b.shape&&b.shape!=='tower')drawLandmarkShape(b,x,y,h);else if(b.deco)drawDeco(b,x,y,h);else facade(b,x,y,h,lit,dark);
+ if(b.board&&!tiers&&!b.deco)drawBoard(b,x,y,h,!dark);
  if(b.label&&h>35&&!b.landmark){rect(x+4,y+h-47,b.w-16,17,'#263e46');text(b.label,x+(b.w-8)/2,y+h-35,9,'#eddfa8','center');}
  // Landmarks: stepped crown and blinking spire (seen when climbing), gold pilasters, and a street-level name banner.
  if(b.landmark&&!tiers&&(!b.shape||b.shape==='tower')){const cx=x+(b.w-7)/2;for(let px=x+8;px<x+b.w-14;px+=34)rect(px,y+7,3,h-7,'#e4cf8a');rect(x+12,y-14,b.w-31,14,b.color);rect(x+9,y-17,b.w-25,4,'#e4cf8a');rect(x+36,y-34,b.w-79,20,b.color);rect(x+33,y-37,b.w-73,4,'#e4cf8a');
@@ -2072,7 +2116,7 @@ function drawStructure(b:typeof buildings[number],x:number,h:number){
  for(const o of b.holes as (typeof b.holes[number]&{shape?:number[]})[]){if(o.y>b.h)continue;const cx=x+o.x,cy=b.base-o.y*h/b.h;
   if(!o.shape){o.shape=[];for(let k=0;k<8;k++){const a=k/8*Math.PI*2,j=.62+.38*Math.abs(Math.sin(o.seed*12.9898+k*78.233));o.shape.push(Math.cos(a)*o.r*j,Math.sin(a)*o.r*j);}}
   const q=o.shape,ring=(ox:number,oy:number,kx:number,ky:number,color:string)=>{ctx.fillStyle=color;ctx.beginPath();for(let k=0;k<16;k+=2){const px=cx+ox+q[k]*kx,py=cy+oy+q[k+1]*ky;if(k)ctx.lineTo(px,py);else ctx.moveTo(px,py);}ctx.closePath();ctx.fill();};
-  ring(1,-1,1,.85,'#cfc6a8');const lit=CITIES[cityIndex].mood.lights>.4||o.seed%3===0;ring(0,0,1,.85,lit?'#7a5a32':'#3a3530');ring(0,.25*o.r,.8,.35,lit?'#d9a84e':'#4a4036');rect(cx-o.r*.75,cy+o.r*.12,o.r*1.5,2,'#151515');ring(0,-.2*o.r,.35,.25,'#121c20');}
+  ring(1,-1,1,.85,'#cfc6a8');const lit=moodNow().lights>.4||o.seed%3===0;ring(0,0,1,.85,lit?'#7a5a32':'#3a3530');ring(0,.25*o.r,.8,.35,lit?'#d9a84e':'#4a4036');rect(cx-o.r*.75,cy+o.r*.12,o.r*1.5,2,'#151515');ring(0,-.2*o.r,.35,.25,'#121c20');}
  // Floors worn past half show a crack across that storey (two at a quarter).
  if(b.floors?.length){const fh=h/b.floors.length;b.floors.forEach((v,i)=>{if(v>b.floorMax*.5)return;const yy=b.base-(i+1)*fh+fh*.15,deep=v<b.floorMax*.25;
   // On a tiered landmark the crack only runs across the tiers at that height.
@@ -2081,7 +2125,7 @@ function drawStructure(b:typeof buildings[number],x:number,h:number){
  {const p=roofOf.get(b);if(p&&!p.dead)drawRoof(p,x,h);}
  if(tunnels.has(b)&&b.hpNow>0){const tw=Math.min(b.w-12,bodyWidth()*1.1),th=Math.min(h-10,bodyHeight()*1.08),tx=x+(b.w-7-tw)/2,ty=b.base-th;
   ctx.fillStyle='#1a1512';ctx.beginPath();ctx.moveTo(tx,b.base);for(let k=0;k<=10;k++){const a=Math.PI*(1-k/10),j=((k*7+b.x)%5)-2;ctx.lineTo(tx+tw/2+Math.cos(a)*tw/2+j,ty+th*.35-Math.sin(a)*th*.35+j+th*.0);}ctx.lineTo(tx+tw,b.base);ctx.closePath();ctx.fill();
-  ctx.globalAlpha=.25;rect(tx+tw*.2,ty+th*.3,tw*.6,th*.7,CITIES[cityIndex].mood.bottom);ctx.globalAlpha=1;}
+  ctx.globalAlpha=.25;rect(tx+tw*.2,ty+th*.3,tw*.6,th*.7,moodNow().bottom);ctx.globalAlpha=1;}
  drawBlaze(b,x,h);
  if(reinforced.has(b)&&b.hpNow>0)for(let k=0;k*14<b.w-6;k++){rect(x+k*14,b.base-9,13,9,'#b8a77a');rect(x+k*14,b.base-9,13,2,'#d3c393');}
  if(b.jolt>F.joltSeconds*.55){ctx.globalAlpha=.5;rect(x,y,b.w-7,h,'#fff4dc');ctx.globalAlpha=1;}
@@ -2110,8 +2154,19 @@ function drawTiers(b:typeof buildings[number],tiers:ReturnType<typeof drawnParts
  if(base.h>70&&base.w>60){const cx=base.x+(base.w-7)/2;rect(base.x+6,b.base-58,base.w-19,21,'#3a3524');rect(base.x+6,b.base-58,base.w-19,2,'#e4cf8a');text(b.label,cx,b.base-43,11,'#f1dc96','center');}
  else{const w=Math.max(...tiers.map(t=>t.w)),top=tiers.find(t=>t.w===w)!;const cx=top.x+(top.w-7)/2;rect(top.x+6,top.y+top.h-30,top.w-19,21,'#3a3524');text(b.label,cx,top.y+top.h-15,11,'#f1dc96','center');}
 }
-function facade(b:typeof buildings[number],x:number,y:number,h:number,gridLit:boolean){const th=CITIES[cityIndex],m=th.mood,bw=b.w-7,base=b.base,st=th.style;
- const seed=(n:number)=>((n*2654435761+b.x*97)>>>0)%1000/1000,win=(xx:number,yy:number,dark:string)=>(seed(xx*7+yy*13)<m.lights*.55+(gridLit?.2:0))?m.win:dark;
+// Times Square's facade billboards (BuildingSpec `board`): a big neon screen that cycles between two looks while its grid is live and goes dead
+// black (a glint of street light on the glass) once the substation is down.
+const BOARD_ADS:[string,string,string][]=[['#e0245e','#ffd24a','NOODLES'],['#1d9bf0','#e9f7ff','MUSICAL'],['#7a3df0','#ffb3f0','SODA'],['#12b886','#f4fff0','SNEAKERS'],['#f76707','#fff3bf','PIZZA']];
+function boardLit(b:typeof buildings[number]){return powered(b.x+b.w/2);}
+function drawBoard(b:typeof buildings[number],x:number,y:number,h:number,lit:boolean){const bw=b.w-7,bh=Math.min(h*.3,130),by=y+Math.max(20,h*.14),ad=BOARD_ADS[Math.abs(Math.round(b.x/7))%BOARD_ADS.length],ph=Math.floor(time*.8+b.x*.003)%2===0;
+ if(bw<50||h<90)return;rect(x+5,by-4,bw-10,bh+8,'#16181d');
+ if(!lit){rect(x+8,by,bw-16,bh,'#090a0d');poly([[x+10,by+2],[x+bw*.5,by+2],[x+10,by+bh*.6]],'#ffffff0d');return;}
+ ctx.globalAlpha=.2;rect(x-5,by-9,bw+10,bh+18,ad[0]);ctx.globalAlpha=1;
+ rect(x+8,by,bw-16,bh,ph?ad[0]:ad[1]);rect(x+8,by+bh*.62,bw-16,bh*.38,ph?ad[1]:ad[0]);
+ text(ad[2],x+bw/2,by+bh*.5,Math.max(8,Math.min(15,Math.floor((bw-22)/ad[2].length*1.7))),ph?ad[1]:ad[0],'center');
+ for(let k=0;k<5;k++)rect(x+10+((time*60+k*37)%(bw-24)),by+bh*.7+k%2*5,10,3,ph?ad[0]:ad[1]);}
+function facade(b:typeof buildings[number],x:number,y:number,h:number,gridLit:boolean,dark=false){const th=CITIES[cityIndex],m=moodNow(),bw=b.w-7,base=b.base,st=th.style;
+ const seed=(n:number)=>((n*2654435761+b.x*97)>>>0)%1000/1000,win=(xx:number,yy:number,off:string)=>(seed(xx*7+yy*13)<(dark?NYC2.darkWindows:m.lights*.55+(gridLit?.2:0)))?m.win:off;
  rect(x+5,y+8,b.w,h-8,'#222b31');rect(x,y,bw,h,b.color);
  if(st==='nyc'){for(let yy=y+10;yy<base;yy+=6){ctx.globalAlpha=.12;rect(x,yy,bw,1,'#000000');ctx.globalAlpha=1;}
   rect(x-3,y,b.w+4,7,'#cbbfa4');rect(x-2,y+7,b.w+2,3,'#5d4a40');
@@ -2142,7 +2197,7 @@ function drawLandmarkShape(b:typeof buildings[number],x:number,y:number,h:number
  if(sh==='lattice'){const col=st==='tyo'?'#d9452f':'#6e5a48';ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,base);ctx.quadraticCurveTo(x+bw*.3,y+h*.45,cx-3,y+18);ctx.moveTo(x+bw,base);ctx.quadraticCurveTo(x+bw*.7,y+h*.45,cx+3,y+18);ctx.stroke();
   ctx.lineWidth=1;ctx.beginPath();for(let k=0;k<14;k++){const t=k/14,yy=base-t*(h-18),half=(bw/2)*(1-t)**1.6+3;ctx.moveTo(cx-half,yy);ctx.lineTo(cx+half*.6,yy-(h-18)/14);ctx.moveTo(cx+half,yy);ctx.lineTo(cx-half*.6,yy-(h-18)/14);}ctx.stroke();
   for(const t of [.28,.56]){const half=(bw/2)*(1-t)**1.6+3;rect(cx-half-4,base-t*(h-18),half*2+8,6,col);if(st==='tyo')rect(cx-half-4,base-t*(h-18)+6,half*2+8,3,'#eeeeee');}
-  ctx.fillStyle=col;ctx.beginPath();ctx.arc(cx,base,bw*.32,Math.PI,0);ctx.fillStyle=CITIES[cityIndex].mood.bottom;ctx.fill();rect(cx-1,y-30,2,48,col);if(Math.sin(time*4)>0)rect(cx-2,y-32,4,4,'#ff5a5a');return;}
+  ctx.fillStyle=col;ctx.beginPath();ctx.arc(cx,base,bw*.32,Math.PI,0);ctx.fillStyle=moodNow().bottom;ctx.fill();rect(cx-1,y-30,2,48,col);if(Math.sin(time*4)>0)rect(cx-2,y-32,4,4,'#ff5a5a');return;}
  if(sh==='dome'){const gold=st==='mex',body=gold?'#ece4d2':'#ece6d6',dome=gold?'#d9a441':'#efe9da';rect(x,y+h*.38,bw,h*.62,body);for(let px=x+8;px<x+bw-8;px+=16)rect(px,y+h*.45,5,h*.5,'#d2c8b0');rect(x-4,y+h*.38,bw+8,8,'#c9bea2');
   ctx.fillStyle=dome;ctx.beginPath();ctx.ellipse(cx,y+h*.38,bw*.38,h*.26,0,Math.PI,0);ctx.fill();rect(cx-8,y+h*.06,16,18,body);ctx.beginPath();ctx.ellipse(cx,y+h*.06,9,10,0,Math.PI,0);ctx.fill();rect(cx-1,y-6,2,12,'#8a7a5a');
   rect(cx-14,base-40,28,40,'#3b3326');ctx.fillStyle='#3b3326';ctx.beginPath();ctx.arc(cx,base-40,14,Math.PI,0);ctx.fill();return;}
@@ -2186,7 +2241,7 @@ function drawProp(b:typeof buildings[number],x:number,h:number){const y=b.base-h
    for(const [dx,dy] of [[-1,.1],[1,.1],[-.8,-.08],[.8,-.08],[0,-.16]])poly([[x+w*.5,y+h*.26],[x+w*.5+dx*w*.7,y+h*(.2+dy)],[x+w*.5+dx*w*.5,y+h*(.34+dy)]],'#4f7d4a');break;}
   case 'turntable':{ctx.fillStyle='#5d564a';ctx.beginPath();ctx.ellipse(x+w/2,base-3,w/2,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8a8272';ctx.beginPath();ctx.ellipse(x+w/2,base-4,w/2-5,3.5,0,0,Math.PI*2);ctx.fill();rect(x+w*.1,base-5,w*.8,2,'#3b3730');rect(x+w/2-1,base-7,2,6,'#3b3730');break;}
   case 'vending':{rect(x,y,w,h,'#d9e2ea');rect(x+2,y+3,w-4,h*.5,'#1c2a3a');for(let r=0;r<3;r++)for(let k=0;k<3;k++)rect(x+3+k*(w-6)/3,y+5+r*h*.15,(w-6)/3-1,h*.1,['#d94f4f','#4fa3d9','#e8d26a'][(r+k)%3]);rect(x+2,y+h*.62,w-4,4,'#2b2b2b');
-   if(CITIES[cityIndex].mood.lights>.6){ctx.globalAlpha=.25;rect(x-6,y-4,w+12,h+4,'#bfe8ff');ctx.globalAlpha=1;}break;}}}
+   if(moodNow().lights>.6){ctx.globalAlpha=.25;rect(x-6,y-4,w+12,h+4,'#bfe8ff');ctx.globalAlpha=1;}break;}}}
 // Substation: a fenced yard with a gantry and two transformers on insulators. Fuel depot: two banded tanks with a hazard diamond.
 function drawUtility(b:typeof buildings[number],x:number,h:number){const y=b.base-h,w=b.w,hurt=b.hpNow<b.hp*.55,live=b.hpNow>0&&powered(b.x+b.w/2);
  rect(x-2,b.base-7,w+4,7,'#5d6763');
@@ -2231,7 +2286,22 @@ function drawKaiban(){if(!kaiban||!block.kaiban)return;const k=block.kaiban,p=Ma
 function drawFog(){const a=fogAt(block,player.x+bodyWidth()/2);if(a<=0.001)return;
  ctx.globalAlpha=a*.7;rect(0,0,960,540,FOGC.tint);for(let k=0;k<4;k++){const y=120+k*95,dx=((time*FOGC.drift*(1+k*.4)+k*260)%1200)-120;ctx.globalAlpha=a*.28;ctx.fillStyle='#f1f4f4';ctx.beginPath();ctx.ellipse(dx,y,380,34,0,0,Math.PI*2);ctx.fill();}
  ctx.globalAlpha=1;}
+function drawZooAnimal(l:Lion,x:number,dir:number){const sp=l.zoo!.sp,hop=l.state==='flee'?Math.sin(l.t*14)*3:0;ctx.save();ctx.translate(x,l.y+hop);ctx.scale(dir,1);
+ const leg=(lx:number,len:number,col:string)=>rect(lx+(l.state==='flee'?Math.sin(l.t*14+lx)*3:0),0,3,len,col);
+ if(sp===0){// elephant
+  ctx.fillStyle='#8d8f94';ctx.beginPath();ctx.ellipse(0,-12,22,15,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(21,-17,10,9,0,0,Math.PI*2);ctx.fill();rect(28,-16,4,17,'#7c7e83');
+  ctx.beginPath();ctx.ellipse(16,-16,6,10,.3,0,Math.PI*2);ctx.fillStyle='#7c7e83';ctx.fill();for(const lx of [-14,-4,8,17])leg(lx,16,'#7c7e83');rect(26,-22,2,2,'#111');}
+ else if(sp===1||sp===4){// giraffe
+  ctx.fillStyle='#d9a441';ctx.beginPath();ctx.ellipse(0,-14,13,8,0,0,Math.PI*2);ctx.fill();poly([[8,-18],[14,-48],[19,-48],[15,-16]],'#d9a441');ctx.beginPath();ctx.ellipse(18,-50,6,3.5,.2,0,Math.PI*2);ctx.fill();rect(17,-56,1,5,'#7a5a24');
+  for(const lx of [-9,-4,5,10])leg(lx,18,'#c8932f');for(const [dx,dy] of [[-4,-16],[2,-12],[10,-30],[12,-40]])rect(dx,dy,3,3,'#7a4a1c');}
+ else if(sp===2||sp===5){// zebra
+  ctx.fillStyle='#ecece6';ctx.beginPath();ctx.ellipse(0,-14,14,8,0,0,Math.PI*2);ctx.fill();poly([[8,-18],[14,-30],[19,-26],[14,-14]],'#ecece6');for(const lx of [-9,-4,5,10])leg(lx,15,'#ecece6');
+  for(let k=-10;k<12;k+=4)rect(k,-20,2,12,'#222');rect(15,-30,3,6,'#222');}
+ else{// bear
+  ctx.fillStyle='#5a4030';ctx.beginPath();ctx.ellipse(0,-10,15,10,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(15,-14,7,0,Math.PI*2);ctx.fill();rect(19,-14,5,4,'#8a6a50');for(const lx of [-10,-3,6,12])leg(lx,10,'#4a3426');}
+ ctx.restore();}
 function drawSeaLions(){for(const l of lions){if(l.state==='gone')continue;const x=l.x-camera,dir=l.vx<0?-1:1;if(x<-40||x>viewW()+40)continue;
+ if(l.zoo){drawZooAnimal(l,x,l.state==='flee'?dir:(l.zoo.sp%2?1:-1));continue;}
  ctx.save();ctx.translate(x,l.y);ctx.scale(dir,1);ctx.fillStyle='#6b5a4c';ctx.beginPath();ctx.ellipse(0,0,15,7,-.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(13,-6,6,4,-.4,0,Math.PI*2);ctx.fill();
  poly([[-14,2],[-24,6],[-12,6]],'#4f4034');rect(14,-8,2,2,'#111');rect(1,4,8,3,'#5a493c');ctx.restore();}}
 function act3Debug(){return {finaleState:finale?{woke:finale.woke,phase:finale.phase,charges:finale.charges,nextBreak:finale.nextBreak,breaks:finale.breaks,started:finale.started,queued:finale.queue.filter(e=>e.t!==Infinity).length}:null,rivalState:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,maxHP:rival.maxHP,dead:rival.dead,alpha:rival.alpha??1,dormant:!!rival.dormant,hidden:!!rival.hidden,attack:rival.attack,windup:rival.windup,charging:!!rival.charge,rocks:rival.rocks?.length??0,face:rival.face,retreating:!!rival.retreating,retreated:!!rival.retreated}:null,upperDeck:upperPlat[0]?{hp:upperPlat[0].b.hpNow,alive:upperPlat[0].p.alive,y:upperPlat[0].p.y,x0:upperPlat[0].p.x0,x1:upperPlat[0].p.x1,index:buildings.indexOf(upperPlat[0].b)}:null,carrierDeck:carrierDeck?{...carrierDeck}:null,jetsLaunched,jetsUp:carrierJetsUp(),projectileList:military.projectiles.filter(p=>!p.dead).map(p=>({weapon:p.weapon,owner:p.owner})),carrierJetList:[...carrierJets].map(u=>({x:u.x,y:u.y,hp:u.hp})),deckOrder:[...deckOrder],towerIndexes:buildings.map((b,i)=>b.deco==='btower'?i:-1).filter(i=>i>=0),platformFloor:(x:number,feet:number)=>platformFloor(x,feet),playerY:player.y,playerFeet:player.y+bodyHeight(),playerGrounded:player.grounded,modeNow:mode,unitList:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,id:u.id})),cracks:cracks.map(c=>({x:c.x,quaked:c.quaked,open:c.open,big:c.big,ult:c.ult})),quakeCount,bigOne:bigOne?{t:bigOne.t,pending:bigOne.queue.filter(e=>e.t!==Infinity).length}:null,pancaked,fireCap:block.fireCap??FI.cap,fireGeysers:geysers.filter(g=>g.fire).length,
@@ -2239,8 +2309,20 @@ function act3Debug(){return {finaleState:finale?{woke:finale.woke,phase:finale.p
 function act2Debug(){return {powerhouseDown,loosed,exitSide,tumbleArmed,pendingTumble:pendingTumble.length,pendingRunaways:pendingRunaways.length,seaLions:lions.map(l=>({x:l.x,state:l.state})),lionsEscaped,
  kaibanState:kaiban?{...kaiban}:null,cutter:objective?.ship?{sink:objective.ship.sink,sinking:objective.ship.sinking,list:objective.ship.list,w:objective.ship.w,h:objective.ship.h,box:hullBox(objective.ship,waterAt(objective.x)??C.ground),deck:deckY(objective.ship,waterAt(objective.x)??C.ground)}:null,
  fogLevel:fogAt(block,player.x+bodyWidth()/2),railSpans:rails.map(r=>({x0:r.x0,x1:r.x1,alive:r.alive,hp:r.hp,y:r.y})),cameraRise:cameraY};}
+function drawBallSphere(cx:number,cy:number,r:number,t:number){
+ const g=ctx.createRadialGradient?.(cx-r*.3,cy-r*.3,r*.1,cx,cy,r);if(g&&g.addColorStop){g.addColorStop(0,'#ffffff');g.addColorStop(.55,'#cfd9ff');g.addColorStop(1,'#6c7bd6');ctx.fillStyle=g;}else ctx.fillStyle='#cfd9ff';
+ ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.35;ctx.strokeStyle='#ffffff';ctx.lineWidth=1;for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(cx+k*r*.4,cy-r*Math.sqrt(Math.max(0,1-(k*.4)**2)));ctx.lineTo(cx+k*r*.4,cy+r*Math.sqrt(Math.max(0,1-(k*.4)**2)));ctx.stroke();}ctx.globalAlpha=1;
+ for(let k=0;k<5;k++){const a=t*2.4+k*1.26;ctx.globalAlpha=.5+.5*Math.sin(a*3);rect(cx+Math.cos(a)*r*.6-1,cy+Math.sin(a*1.3)*r*.6-1,3,3,k%2?'#ff7ad6':'#7ae6ff');}ctx.globalAlpha=1;}
 // Rooftop fixtures, drawn with their building (so they squash and lean with it). x is the building's screen x, h its drawn height.
 function drawRoof(p:RoofProp,x:number,h:number){const r=roofBox(p,h),rx=r.x-p.b.x+x,ry=r.y,w=r.w,hh=r.h;
+ if(p.kind==='billboard'){// A rooftop LED screen on a steel frame: lit while its grid is, dead black after the blackout.
+  const live=p.grid<0||power[p.grid],ad=BOARD_ADS[Math.abs(Math.round(p.b.x/11))%BOARD_ADS.length],ph=Math.floor(time*.9+p.b.x*.004)%2===0;
+  rect(rx+w*.1,ry+hh-6,3,6,'#3a3f45');rect(rx+w*.85,ry+hh-6,3,6,'#3a3f45');rect(rx,ry,w,hh-6,'#16181d');
+  if(!live){rect(rx+3,ry+3,w-6,hh-12,'#090a0d');poly([[rx+5,ry+4],[rx+w*.45,ry+4],[rx+5,ry+hh*.6]],'#ffffff0d');return;}
+  ctx.globalAlpha=.22;rect(rx-5,ry-5,w+10,hh,ad[0]);ctx.globalAlpha=1;rect(rx+3,ry+3,w-6,hh-12,ph?ad[0]:ad[1]);rect(rx+3,ry+hh*.55,w-6,hh*.3,ph?ad[1]:ad[0]);
+  text(ad[2],rx+w/2,ry+hh*.5,Math.max(8,Math.floor((w-12)/ad[2].length*1.6)),ph?ad[1]:ad[0],'center');return;}
+ if(p.kind==='ball'){// One Times Square's ball on its mast: a faceted, glittering sphere.
+  drawBallSphere(rx+w/2,ry+w/2,w/2,time);rect(rx+w/2-2,ry+w,4,hh-w,'#6b6f76');rect(rx+w/2-9,ry+hh-3,18,3,'#6b6f76');return;}
  if(p.kind==='sign'){// Big rooftop letters on a steel frame.
   const word='CHOCOLATE',cw=w/word.length;rect(rx,ry+hh-4,w,4,'#4a3a30');for(let k=0;k<word.length;k+=3)rect(rx+k*cw+cw*.4,ry+hh*.5,3,hh*.5,'#4a3a30');
   for(let k=0;k<word.length;k++){const dead=p.hp<p.max*(1-(k+1)/word.length*.8);if(dead&&k%2)continue;text(word[k],rx+k*cw+cw/2,ry+hh-6,Math.round(cw*1.5),'#f2d49a','center');}return;}
@@ -2377,7 +2459,7 @@ function sfNearRow(W:number,m:{near:string,win:string,lights:number}){const step
  for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const x=i*step-off,h=76+((i*53)%5)*12,body=mixHex(sfPaint(i*7),m.near,.55);
   sfHouse(x,C.ground-4,step-2,h,body,mixHex(body,'#ffffff',.25),(i+h)%5<1+m.lights*3?m.win:mixHex(body,'#1f2830',.5),i%3===2,true);}}
 // Rain (Tokyo): streaks across the whole view, drawn in screen space over everything.
-function drawRain2(){if(!CITIES[cityIndex].mood.rain)return;ctx.strokeStyle='#a9c4dd55';ctx.lineWidth=1;ctx.beginPath();
+function drawRain2(){if(!moodNow().rain)return;ctx.strokeStyle='#a9c4dd55';ctx.lineWidth=1;ctx.beginPath();
  for(let k=0;k<90;k++){const x=((k*97+time*260)%1000)-20,y=((k*53+time*900)%600)-40;ctx.moveTo(x,y);ctx.lineTo(x-4,y+14);}ctx.stroke();}
 // River: deep water from the surface down to the riverbed (behind everything that wades in it), with a moving sheen.
 function drawRiverBack(){for(const [a,z,y] of waterSpans()){const x0=Math.max(-8,a-camera),x1=Math.min(viewW()+108,z-camera);if(x1<x0)continue;
@@ -2507,7 +2589,7 @@ function drawVehicle(v:Vehicle){
  const x=v.x-camera;if(x<-90||x>viewW()+90)return;const off=v.state==='held'||upright(v)?0:VC.laneOffset[v.lane],w=v.w,h=v.h;
  if(v.state==='flat'&&v.kind==='building'){rect(x,groundAt(v.x+v.w/2)-7,w,7,'#62625b');for(let j=0;j<w;j+=13)rect(x+j,groundAt(v.x+v.w/2)-8-(j%7),10,8+j%7,'#898879');rect(x+w*.3,groundAt(v.x+v.w/2)-12,w*.25,6,v.color);return;}
  if(v.state==='flat'){rect(x,groundAt(v.x+v.w/2)+off-5,w,5,'#485858');rect(x+3,groundAt(v.x+v.w/2)+off-7,w-8,3,v.color);return;}
- ctx.save();ctx.translate(Math.round(x+w/2),Math.round(v.y+h/2+off));ctx.rotate(v.angle);ctx.scale(v.state==='driving'?v.dir:1,v.state==='wreck'?.72:1);
+ ctx.save();ctx.translate(Math.round(x+w/2),Math.round(v.y+h/2+off));ctx.rotate(v.angle);ctx.scale(v.state==='driving'||v.kind==='carriage'?v.dir:1,v.state==='wreck'?.72:1);
  const L=-w/2,T=-h/2,glass='#b7d1c3',tire='#253839';
  if(v.kind==='lamp'&&v.pole!==undefined){const st=style(),wood=st==='tyo'||st==='hkg'?'#8d918e':'#5b4a3a';if(upright(v)){rect(-3,T,6,h,wood);rect(-16,T+6,32,4,wood);rect(-12,T+14,24,3,wood);for(const k of [-13,0,11])rect(k,T+2,3,5,'#d9dccd');
    if(st==='tyo'||st==='hkg'){rect(4,T+22,9,13,'#5c6463');rect(5,T+23,7,2,'#7b8483');rect(-12,T+40,24,2,wood);}// concrete pole with a pole-top transformer
@@ -2535,6 +2617,13 @@ function drawVehicle(v:Vehicle){
   ctx.save();ctx.beginPath();ctx.rect(L-14,T-260,w+28,h+260);ctx.clip();ctx.translate(0,h/2-C.ground);
   drawStructure({x:0,w,h:v.chunk.H,base:C.ground+v.chunk.cut,color:v.color,label:'',landmark:true,shape:v.chunk.shape,cache:false,hpNow:1,hp:1,holes:[],floors:[],floorMax:0} as unknown as typeof buildings[number],L,v.chunk.H);ctx.restore();}
  else if(v.kind==='building'){ctx.translate(0,h/2-C.ground);drawStructure({x:0,w,h,base:C.ground,color:v.color,label:v.label,landmark:false,cache:false,hpNow:1,hp:1,holes:[],floors:[],floorMax:0} as unknown as typeof buildings[number],L,h);ctx.translate(0,C.ground-h/2);}
+ else if(v.kind==='ball'){drawBallSphere(0,0,w/2,time);}
+ else if(v.kind==='carriage'){const run=v.state==='rolling'?Math.sin(time*18+v.id)*3:0,hc='#6b4528',bk='#26242a';
+  rect(L+w*.04,T+h*.34,w*.5,h*.34,bk);poly([[L+w*.04,T+h*.34],[L+w*.1,T+h*.06],[L+w*.38,T+h*.06],[L+w*.54,T+h*.34]],'#34303a');rect(L+w*.04,T+h*.62,w*.5,3,'#c9a24a');rect(L+w*.16,T+h*.14,w*.16,h*.18,glass);
+  for(const wx of [.14,.44]){ctx.strokeStyle='#d8cfae';ctx.lineWidth=2;ctx.beginPath();ctx.arc(L+w*wx,T+h*.82,h*.17,0,Math.PI*2);ctx.stroke();rect(L+w*wx-h*.17,T+h*.82-1,h*.34,2,'#d8cfae');}
+  rect(L+w*.54,T+h*.5,w*.16,2,'#5a4a34');ctx.fillStyle=hc;ctx.beginPath();ctx.ellipse(L+w*.78,T+h*.42,w*.15,h*.2,0,0,Math.PI*2);ctx.fill();
+  poly([[L+w*.88,T+h*.32],[L+w*.95,T+h*.1],[L+w*1,T+h*.16],[L+w*.97,T+h*.3],[L+w*.94,T+h*.44]],hc);poly([[L+w*.88,T+h*.3],[L+w*.9,T+h*.1],[L+w*.94,T+h*.1]],'#2a1a10');
+  for(const k of [.68,.74,.84,.9])rect(L+w*k+(k>.8?run:-run),T+h*.56,3,h*.34,hc);poly([[L+w*.64,T+h*.32],[L+w*.55,T+h*.5],[L+w*.6,T+h*.54],[L+w*.66,T+h*.42]],'#2a1a10');}
  else if(v.kind==='bull'){// The Charging Bull: bronze, head down and horns forward, on a low plinth (facing the way it was set down, forward = +x).
   const bronze='#4b3a2a',hi='#7a5f3c';rect(L-2,T+h*.86,w+4,h*.14,'#6e695c');
   ctx.fillStyle=bronze;ctx.beginPath();ctx.ellipse(-w*.1,T+h*.46,w*.38,h*.3,0,0,Math.PI*2);ctx.fill();
@@ -2726,7 +2815,7 @@ function drawSlab(b:typeof buildings[number]){
  if(k<.4)poly([[x+w*.6,top],[x+w*.64,top+t*.5],[x+w*.58,top+t],[x+w*.67,top+t*.6],[x+w*.66,top]],'#23292a');
  if(k<.4&&particles.length<C.particleCap&&Math.random()<.2)particles.push({x:b.x+Math.random()*b.w,y:top+t,vx:0,vy:60,life:.5,color:'#8a908c',size:2});}
 // Facade decorations for the SF levels (BuildingSpec.deco): drawn instead of the city's own facade, damage marks go on top.
-function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const bw=b.w-7,base=b.base,mood=CITIES[cityIndex].mood;
+function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const bw=b.w-7,base=b.base,mood=moodNow();
  const win=(wx:number,wy:number,ww:number,wh:number)=>{rect(wx,wy,ww,wh,'#2a3a42');rect(wx+1,wy+1,ww-2,wh*.45,mood.lights>.5?mood.win:'#8fb0bd');};
  switch(b.deco){
   case 'boathouse':{// A boathouse on the dock: weathered planks, a pitched roof and a wide door onto the slip.
@@ -2830,6 +2919,29 @@ function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const b
    const bays=Math.max(3,Math.round(bw/30)),bayW=bw/bays;
    for(let k=0;k<bays;k++){const bx=x+k*bayW;arch(bx+bayW*.18,mid+6,bayW*.64,base-mid-10,dark);arch(bx+bayW*.28,top+8,bayW*.44,mid-top-16,dark);rect(bx,top,2,base-top,trim);}
    break;}
+  case 'concourse':{// The Main Concourse hall: a long stone block under a vaulted roof, big arched windows, the ceiling's green showing at the eaves.
+   rect(x,y+h*.2,bw,h*.8,'#b7ab8d');rect(x-3,y+h*.2-4,bw+6,6,'#a39877');ctx.fillStyle='#3f7d78';ctx.beginPath();ctx.ellipse(x+bw/2,y+h*.22,bw/2,h*.22,0,Math.PI,0);ctx.fill();
+   for(let wx=x+bw*.1;wx<x+bw*.88;wx+=bw*.2){rect(wx,y+h*.42,bw*.12,h*.58,'#2c3a42');ctx.fillStyle='#2c3a42';ctx.beginPath();ctx.arc(wx+bw*.06,y+h*.42,bw*.06,Math.PI,0);ctx.fill();rect(wx+bw*.06-1,y+h*.42,2,h*.58,'#6b7f86');}
+   if(b.hpNow<b.hp*.5)poly([[x+bw*.3,y+h*.2],[x+bw*.4,y+h*.6],[x+bw*.34,y+h]],'#4a5a60');text('MAIN CONCOURSE',x+bw/2,y+h*.34,8,'#f1e6c0','center');break;}
+  case 'rink':{// Wollman Rink: pale ice inside low boards, skaters circling, the lodge's roof at the back.
+   rect(x,y+h*.5,bw,h*.5,'#c9dde6');rect(x,y+h*.5,bw,3,'#7f9aa6');rect(x,base-4,bw,4,'#6f8a96');rect(x,y+h*.5,3,h*.5,'#6f8a96');rect(x+bw-3,y+h*.5,3,h*.5,'#6f8a96');
+   rect(x+bw*.3,y,bw*.4,h*.5,'#8a7560');poly([[x+bw*.26,y],[x+bw*.5,y-h*.25],[x+bw*.74,y]],'#5a4a3c');
+   for(let k=0;k<4;k++){const sx=x+8+((time*(26+k*7)+k*53)%(bw-16));rect(sx,base-h*.35,3,h*.3,['#d94f4f','#3d7fd9','#e8b83d','#7a3df0'][k]);rect(sx-1,base-h*.4,5,4,'#e9c39a');}
+   text('WOLLMAN RINK',x+bw/2,y+h*.4,7,'#efe9d8','center');break;}
+  case 'bethesda':{// Bethesda Terrace: broad stone steps up to a balustraded terrace and the fountain with its angel.
+   for(let k=0;k<4;k++)rect(x+k*bw*.08,base-(k+1)*h*.18,bw-k*bw*.16,h*.18,k%2?'#c9bd9f':'#d6cbb0');
+   rect(x+bw*.3,y,bw*.4,h*.2,'#c9bd9f');for(let bx=x+bw*.3;bx<x+bw*.7;bx+=7)rect(bx,y-5,3,6,'#ece3c8');rect(x+bw*.3,y-6,bw*.4,2,'#ece3c8');
+   rect(x+bw*.47,y-18,bw*.06,14,'#9fb3b8');ctx.fillStyle='#bfd8e0';ctx.beginPath();ctx.ellipse(x+bw*.5,y-18,bw*.1,4,0,0,Math.PI*2);ctx.fill();
+   rect(x+bw*.49,y-34,2,16,'#d8d2bc');poly([[x+bw*.49-8,y-26],[x+bw*.5,y-34],[x+bw*.5+8,y-26],[x+bw*.5,y-22]],'#d8d2bc');break;}
+  case 'gapstow':{// Gapstow Bridge: a low stone arch over the Pond.
+   rect(x,y,bw,h*.22,'#8a8f86');rect(x,y-4,bw,5,'#a4a99d');for(let bx=x+4;bx<x+bw-6;bx+=10)rect(bx,y-9,3,6,'#8a8f86');
+   rect(x+bw*.1,y+h*.22,bw*.8,h*.2,'#7e8379');ctx.fillStyle='#233a46';ctx.beginPath();ctx.arc(x+bw/2,base,bw*.34,Math.PI,0);ctx.fill();ctx.strokeStyle='#a4a99d';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+bw/2,base,bw*.34+3,Math.PI,0);ctx.stroke();ctx.lineWidth=1;break;}
+  case 'subentry':{// The subway entrance: a green-railed stair kiosk with a globe lamp and the Q's yellow disc.
+   rect(x,y+h*.25,bw,h*.75,'#4a5a52');rect(x-4,y+h*.25-5,bw+8,7,'#37443d');ctx.fillStyle='#14201c';ctx.beginPath();ctx.moveTo(x+bw*.26,base);ctx.lineTo(x+bw*.26,base-h*.46);ctx.lineTo(x+bw*.74,base-h*.46);ctx.lineTo(x+bw*.74,base);ctx.fill();
+   for(let k=0;k<4;k++)rect(x+bw*.28,base-4-k*h*.1,bw*.44,2,'#2e3d36');rect(x+bw*.08,y-h*.25,3,h*.5,'#37443d');rect(x+bw*.08-5,y-h*.3,13,10,'#d9e8c0');
+   ctx.fillStyle='#f2c230';ctx.beginPath();ctx.arc(x+bw*.8,y+h*.5,9,0,Math.PI*2);ctx.fill();text('Q',x+bw*.8,y+h*.5+4,10,'#222','center');text('SUBWAY',x+bw*.5,y+h*.2,8,'#e8f0d8','center');break;}
+  case 'zoopen':{// A zoo enclosure: a low stone wall, an iron fence and a bare yard.
+   rect(x,base-h*.35,bw,h*.35,'#7a6a4a');for(let fx=x+3;fx<x+bw-3;fx+=8)rect(fx,y,2,h*.65,'#2f3a34');rect(x,y,bw,2,'#2f3a34');rect(x,y+h*.3,bw,1,'#2f3a34');break;}
   default:facade(b,x,y,h,false);}}
 // The pier: a plank deck on pilings in place of the suspension bridge. Falling spans swing down about their west end and go under.
 function drawPier(){if(!spans.length)return;const y=spans[0].y;
@@ -2924,6 +3036,23 @@ function drawObjectiveArt(o:NonNullable<typeof objective>){const x=o.x-camera,gy
   if(hp<.66)poly([[x-w*.3,top+o.h*.28],[x-w*.24,top+o.h*.6],[x-w*.33,top+o.h*.72],[x-w*.18,gy-6],[x-w*.22,top+o.h*.5]],'#4f5a60');
   if(hp<.33)for(let n=0;n<3;n++)rect(x-w*.2+n*w*.2+Math.sin(time*2+n)*4,top-10-n*10-(time*9%10),12,10,'#69736c');
   text(o.label,x,top-48,10,'#3b504a','center');return;}
+ if(o.art==='terminal'){const w=o.w,hp=o.hp/o.maxHP,top=gy-o.h,stone='#cdbf9f',trim='#a99a78',dark='#26313a',gold='#e4cf8a';
+  // Grand Central Terminal: a wide beaux-arts front, three tall arched windows between paired columns, the great clock over the middle with
+  // Mercury, Hercules and Minerva on top of it, a flag on each end pavilion.
+  rect(x-w/2,top+o.h*.34,w,o.h*.66,stone);rect(x-w/2-8,top+o.h*.34-7,w+16,9,trim);rect(x-w/2-12,top+o.h*.58,22,o.h*.42,'#bfb08f');rect(x+w/2-10,top+o.h*.58,22,o.h*.42,'#bfb08f');
+  rect(x-w/2-14,top+o.h*.58-6,26,7,trim);rect(x+w/2-12,top+o.h*.58-6,26,7,trim);
+  for(const k of [-1,0,1]){const ax=x+k*w*.27,aw=w*.15,ay=top+o.h*.46;rect(ax-aw/2,ay+aw/2,aw,gy-ay-aw/2-o.h*.1,dark);ctx.fillStyle=dark;ctx.beginPath();ctx.arc(ax,ay+aw/2,aw/2,Math.PI,0);ctx.fill();
+   ctx.strokeStyle=trim;ctx.lineWidth=3;ctx.beginPath();ctx.arc(ax,ay+aw/2,aw/2+3,Math.PI,0);ctx.stroke();ctx.lineWidth=1;rect(ax-1,ay,2,gy-ay-o.h*.1,'#4a5a64');
+   for(const d of [-1,1]){rect(ax+d*(aw/2+8)-4,ay+aw/2,8,gy-ay-aw/2,'#e2d8bc');rect(ax+d*(aw/2+8)-6,ay+aw/2,12,4,gold);}}
+  rect(x-w/2-6,gy-o.h*.1,w+12,o.h*.1,trim);for(let k=0;k<3;k++)rect(x-w/2-10+k*3,gy-k*3-3,w+20-k*6,3,'#bdb7a6');
+  poly([[x-w*.2,top+o.h*.34-7],[x,top+o.h*.18],[x+w*.2,top+o.h*.34-7]],trim);
+  ctx.fillStyle='#efe8d2';ctx.beginPath();ctx.arc(x,top+o.h*.2,o.h*.13,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#3a3a36';ctx.lineWidth=2;ctx.stroke();ctx.lineWidth=1;
+  ctx.strokeStyle='#2a2a26';ctx.beginPath();ctx.moveTo(x,top+o.h*.2);ctx.lineTo(x,top+o.h*.2-o.h*.1);ctx.moveTo(x,top+o.h*.2);ctx.lineTo(x+o.h*.07,top+o.h*.2+o.h*.02);ctx.stroke();
+  for(const [dx,s2] of [[-.22,.9],[0,1.3],[.22,.9]] as const){const fx=x+dx*w,fy=top+o.h*.18-(dx===0?o.h*.12:o.h*.02),fh=o.h*.2*s2;rect(fx-3,fy-fh*.55,6,fh*.55,'#9a8e72');rect(fx-1,fy-fh*.8,3,fh*.3,'#9a8e72');poly([[fx-8,fy-fh*.5],[fx-3,fy-fh*.7],[fx-2,fy-fh*.5]],'#9a8e72');poly([[fx+8,fy-fh*.5],[fx+3,fy-fh*.7],[fx+2,fy-fh*.5]],'#9a8e72');}
+  for(const d of [-1,1]){const px=x+d*(w/2-4);rect(px-1,top+o.h*.58-40,2,34,'#c9c9c0');poly([[px+1,top+o.h*.58-40],[px+d*20+1,top+o.h*.58-34],[px+1,top+o.h*.58-28]],'#3a5a8a');}
+  if(hp<.66)poly([[x-w*.3,top+o.h*.34],[x-w*.24,top+o.h*.62],[x-w*.33,top+o.h*.76],[x-w*.18,gy-6],[x-w*.22,top+o.h*.5]],'#4f5a60');
+  if(hp<.33)for(let n=0;n<3;n++)rect(x-w*.2+n*w*.2+Math.sin(time*2+n)*4,top-10-n*10-(time*9%10),12,10,'#69736c');
+  text(o.label,x,top-24,10,'#3b504a','center');return;}
  poly([[x-38,gy],[x-28,gy-64],[x-10,gy-40],[x+2,gy-110],[x+30,gy-74],[x+40,gy]],'#c96ea8');poly([[x-5,gy-8],[x+2,gy-98],[x+17,gy-56]],'#ffd0ed');text(o.label,x,gy-126,10,'#3b504a','center');}
 // The crystal formation under Portsmouth Square: a big growth, a cluster of tall faceted crystals.
 function drawFormation(g:{x:number,hp:number}){const x=g.x-camera,gy=groundAt(g.x),w=SFC.formationW,h=SFC.formationH,k=g.hp/SFC.formationHP;
@@ -3103,7 +3232,7 @@ function render(){
   rect(x+d*6*z-3*z,groundAt(wave.x)-(62*z+j*2),6*z,6*z,'#c9a77c');rect(x-d*8*z-2*z,groundAt(wave.x)-(48*z-j*2),4*z,4*z,'#8d7a66');
   rect(Math.min(x,x+d*40*z),groundAt(wave.x),40*z,3,'#ffe0a8');}
  if(combat.superTime>0){const x=player.x-camera;rect(x-7,player.y-7,bodyWidth()+14,bodyHeight()+10,Math.sin(time*10)>0?'#c47cab':'#8d799e');}
- drawEruptionGlow();drawTornado(false);if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawSlopes();drawVehicles(1);drawMilitary(1);drawGeysers();drawVents();drawRiverFront();drawTelegraphs();drawCityFx();
+ drawEruptionGlow();drawTornado(false);if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawSlopes();drawVehicles(1);drawMilitary(1);drawGeysers();drawVents();drawBallFall();drawRiverFront();drawTelegraphs();drawCityFx();
  if(combat.transform>0){const x=player.x-camera+bodyWidth()/2,y=player.y+bodyHeight()/2;const radius=bodyHeight()*.75;poly([[x,y-radius],[x+radius*.6,y],[x,y+radius],[x-radius*.6,y]],'#f4b0d8');poly([[x,y-radius*.85],[x+radius*.35,y],[x,y+radius*.8],[x-radius*.35,y]],'#ffe0f1');}
  if(combat.ultimateTime>0)text(ultimateLabel(),player.x-camera+bodyWidth()/2,player.y-24,10,'#fff1d8','center');
  // Launched tail quill: bone-white spike pointing along its flight, dark base, faint motion streak.
@@ -3151,4 +3280,4 @@ if((window as any).__kaijuTest)Object.defineProperty(window,'kaijuTest',{value:{
  shear:(i:number,frac:number)=>{const b=buildings[i];return !!b&&tryShear(b,1e6,{x:b.x+b.w/2,y:b.base-b.h*frac},false,1);},place:(px:number,py:number)=>{player.x=px;player.y=py-bodyHeight();player.vy=0;player.grounded=false;},
  demolish:(frac:number)=>{for(const b of [...buildings].sort((p,q)=>q.value-p.value)){if(destruction(buildings)>=frac)break;if(b.hpNow>0)hit(b,b.hpNow,false,1);}}}});
 function teleport(px:number){player.x=px;player.y=groundAt(px+bodyWidth()/2)-bodyHeight();player.vy=0;camera=Math.max(0,Math.min(worldWidth-viewW(),px-viewW()*.34));safeX=px;}
-Object.defineProperty(window,'kaijuDebug',{get:()=>({ventList:vents.map(v=>({x:v.x,state:v.state,t:v.t})),ventBlinded,ventScalded,bull:(()=>{const v=vehicles.find(o=>o.kind==='bull');return v?{x:v.x,y:v.y,w:v.w,h:v.h,state:v.state,vx:v.vx,vy:v.vy}:null;})(),band:footBand(),drowning:drown?drown.phase:null,safeX,mercy:combat.mercy,floor:combat.floor,pitDepth:pitDepth(),blockName:block.name,pocketHP:pocketRoof?pocketRoof.hpNow:null,pocketMax:pocketRoof?pocketRoof.hp:null,shows:shows.length,lanterns:strings.map(q=>({x0:q.x0,x1:q.x1,n:q.n,lit:q.lit.filter(Boolean).length,burning:q.burn.filter(v=>v>0).length,fall:q.fall??null})),slopes:slopes.map(s=>({x0:s.x0,y0:s.y0,x1:s.x1,y1:s.y1,alive:s.alive})),trucks:[...trucks].map(([v,t])=>({x:v.x,mode:t.mode})),guardCalled,formationHP:growths.find(g=>g.big)?.hp??null,formationX:growths.find(g=>g.big)?.x??null,capNow:combat.cap,objective:objective?{x:objective.x,w:objective.w,h:objective.h,art:objective.art,hp:objective.hp,shattered:objective.shattered}:null,depth:(x:number)=>depthAt(x),boats:military.units.filter(u=>u.type==='boat').map(u=>({id:u.id,x:u.x,y:u.y,hp:u.hp})),sinking:sinkers.length,rails:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,alive:r.alive,hp:r.hp})),railTrains:railTrains.length,tunnels:tunnels.size,alert,geysers:geysers.length,bombs:bombQueue.length,militaryTier:military.tier,ground:(x:number)=>groundAt(x),street:(x:number)=>bedAt(x),blazeList:[...blazes.keys()].map(b=>buildings.indexOf(b as typeof buildings[number])),blazes:blazes.size,mounds:moundList().length,sunk:buildings.filter(b=>b.sink>0).length,swaying:buildings.filter(b=>b.sway>0).length,damageTaken:combat.damageTaken,spans:spans.map(s=>({x0:s.x0,x1:s.x1,hp:s.hp,alive:s.alive})),pits:pitList().map(p=>({...p})),trains:trains.filter(t=>!t.crashed).length,trainsWrecked:wrecked,trainWrecks:trains.filter(t=>t.crashed).length,trainList:trains.map(t=>({x:t.x,dir:t.dir,hp:t.hp,crashed:t.crashed})),cutOff:{...military.cutOff},inWater:submerged(player.x+bodyWidth()/2),rampage:{heat:rampage.heat,mult:rampageMult(rampage),level:rampageLevel(rampage)},power:[...power],roofs:roofs.map(p=>({kind:p.kind,hp:p.hp,dead:p.dead,call:p.call,x:roofBox(p).x,y:roofBox(p).y})),wires:wires.length,poles:poles.map(v=>({x:v.x,upright:upright(v),snapped:!!v.snapped})),creaking:buildings.filter(b=>b.creak>0).length,roles:buildings.filter(b=>b.role).map(b=>({role:b.role,x:b.x,hp:b.hpNow})),barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],airJumps,brewing:brew?brew.t:null,swarmReleased:swarm?swarm.released:null,wasps:wasps.length,waspTargets:wasps.filter(w=>w.target&&w.target.hp!==undefined&&!w.target.base).length,face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({role:b.role,prop:b.prop,deco:b.deco,explosive:!!b.explosive,floors:b.floors.length,base:b.base,x:b.x,y:b.base-b.h,w:b.w,h:b.h,parts:hitParts(b).map(p=>({x:p.x,y:p.y,w:p.w,h:p.h,solid:p.solid})),hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown,vx:v.vx,plows:v.plows})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire&&!p.acid&&!p.venom).length,venomGlobs:globs.filter(g=>g.venom).length,venomGlobY:globs.filter(g=>g.venom).map(g=>g.y),venomGlobX:globs.filter(g=>g.venom).map(g=>g.x),venomPools:pools.filter(p=>p.venom).length,clouds:clouds.map(c=>({x:c.x,y:c.y,r:c.r})),venomPoolX:pools.filter(p=>p.venom).map(p=>p.x+p.w/2),poisoned:poison.size,acidPools:pools.filter(p=>p.acid).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,delugeSpout:!!deluge?.spout&&deluge.spoutT<deluge.spoutLen,delugeActive:!!deluge,rainDrops:rain.length,delugeSpawned:deluge?.spawned??0,delugeLandings:[...delugeLandings],delugePools:pools.filter(p=>p.acid&&p.ult).length,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,spewLand:spewState.land,spewLandOn:spewState.landOn,spewPts:spewState.pts.length,corrosion:buildings.map(b=>corr.get(b)?.stacks??0),unitCorrosion:military.units.map(u=>corr.get(u)?.stacks??0),jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,growthCap:combat.cap,growthFloor:combat.floor,cityCode:CITIES[cityIndex].code,level:{name:block.name,startStage:block.startStage,cap:block.cap,capLift:block.capLift,police:!!block.police},hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,stun:u.stun})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length,...act2Debug(),...act3Debug()})});
+Object.defineProperty(window,'kaijuDebug',{get:()=>({ventList:vents.map(v=>({x:v.x,state:v.state,t:v.t})),ventBlinded,ventScalded,bull:(()=>{const v=vehicles.find(o=>o.kind==='bull');return v?{x:v.x,y:v.y,w:v.w,h:v.h,state:v.state,vx:v.vx,vy:v.vy}:null;})(),band:footBand(),drowning:drown?drown.phase:null,safeX,mercy:combat.mercy,floor:combat.floor,pitDepth:pitDepth(),blockName:block.name,pocketHP:pocketRoof?pocketRoof.hpNow:null,pocketMax:pocketRoof?pocketRoof.hp:null,shows:shows.length,lanterns:strings.map(q=>({x0:q.x0,x1:q.x1,n:q.n,lit:q.lit.filter(Boolean).length,burning:q.burn.filter(v=>v>0).length,fall:q.fall??null})),slopes:slopes.map(s=>({x0:s.x0,y0:s.y0,x1:s.x1,y1:s.y1,alive:s.alive})),trucks:[...trucks].map(([v,t])=>({x:v.x,mode:t.mode})),guardCalled,formationHP:growths.find(g=>g.big)?.hp??null,formationX:growths.find(g=>g.big)?.x??null,capNow:combat.cap,objective:objective?{x:objective.x,w:objective.w,h:objective.h,art:objective.art,hp:objective.hp,shattered:objective.shattered}:null,depth:(x:number)=>depthAt(x),boats:military.units.filter(u=>u.type==='boat').map(u=>({id:u.id,x:u.x,y:u.y,hp:u.hp})),sinking:sinkers.length,rails:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,alive:r.alive,hp:r.hp})),railTrains:railTrains.length,tunnels:tunnels.size,alert,geysers:geysers.length,bombs:bombQueue.length,militaryTier:military.tier,ground:(x:number)=>groundAt(x),street:(x:number)=>bedAt(x),blazeList:[...blazes.keys()].map(b=>buildings.indexOf(b as typeof buildings[number])),blazes:blazes.size,mounds:moundList().length,sunk:buildings.filter(b=>b.sink>0).length,swaying:buildings.filter(b=>b.sway>0).length,damageTaken:combat.damageTaken,spans:spans.map(s=>({x0:s.x0,x1:s.x1,hp:s.hp,alive:s.alive})),pits:pitList().map(p=>({...p})),trains:trains.filter(t=>!t.crashed).length,trainsWrecked:wrecked,trainWrecks:trains.filter(t=>t.crashed).length,trainList:trains.map(t=>({x:t.x,dir:t.dir,hp:t.hp,crashed:t.crashed})),cutOff:{...military.cutOff},inWater:submerged(player.x+bodyWidth()/2),rampage:{heat:rampage.heat,mult:rampageMult(rampage),level:rampageLevel(rampage)},power:[...power],roofs:roofs.map(p=>({kind:p.kind,hp:p.hp,dead:p.dead,call:p.call,x:roofBox(p).x,y:roofBox(p).y})),wires:wires.length,poles:poles.map(v=>({x:v.x,upright:upright(v),snapped:!!v.snapped})),creaking:buildings.filter(b=>b.creak>0).length,roles:buildings.filter(b=>b.role).map(b=>({role:b.role,x:b.x,hp:b.hpNow})),barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],airJumps,brewing:brew?brew.t:null,swarmReleased:swarm?swarm.released:null,wasps:wasps.length,waspTargets:wasps.filter(w=>w.target&&w.target.hp!==undefined&&!w.target.base).length,face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({role:b.role,prop:b.prop,deco:b.deco,explosive:!!b.explosive,floors:b.floors.length,base:b.base,x:b.x,y:b.base-b.h,w:b.w,h:b.h,parts:hitParts(b).map(p=>({x:p.x,y:p.y,w:p.w,h:p.h,solid:p.solid})),hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown,vx:v.vx,plows:v.plows})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire&&!p.acid&&!p.venom).length,venomGlobs:globs.filter(g=>g.venom).length,venomGlobY:globs.filter(g=>g.venom).map(g=>g.y),venomGlobX:globs.filter(g=>g.venom).map(g=>g.x),venomPools:pools.filter(p=>p.venom).length,clouds:clouds.map(c=>({x:c.x,y:c.y,r:c.r})),venomPoolX:pools.filter(p=>p.venom).map(p=>p.x+p.w/2),poisoned:poison.size,acidPools:pools.filter(p=>p.acid).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,delugeSpout:!!deluge?.spout&&deluge.spoutT<deluge.spoutLen,delugeActive:!!deluge,rainDrops:rain.length,delugeSpawned:deluge?.spawned??0,delugeLandings:[...delugeLandings],delugePools:pools.filter(p=>p.acid&&p.ult).length,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,spewLand:spewState.land,spewLandOn:spewState.landOn,spewPts:spewState.pts.length,corrosion:buildings.map(b=>corr.get(b)?.stacks??0),unitCorrosion:military.units.map(u=>corr.get(u)?.stacks??0),jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,growthCap:combat.cap,growthFloor:combat.floor,cityCode:CITIES[cityIndex].code,level:{name:block.name,startStage:block.startStage,cap:block.cap,capLift:block.capLift,police:!!block.police},hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,stun:u.stun})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length,...act2Debug(),...act3Debug(),...nycDebug()})});

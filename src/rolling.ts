@@ -15,11 +15,11 @@ export function startRolling(v:Vehicle,push=RN.shove,fallback=1){
 export function tickRolling(v:Vehicle,dt:number,worldWidth:number):'rolling'|'stopped'{
  if(v.state!=='rolling')return 'stopped';
  const s=slopeAt(centre(v));v.vx-=s*RN.gravity*dt;
- const drag=Math.min(Math.abs(v.vx),RN.friction*dt);v.vx-=Math.sign(v.vx)*drag;
+ const drag=Math.min(Math.abs(v.vx),(v.glide??RN.friction)*dt);v.vx-=Math.sign(v.vx)*drag;
  v.vx=Math.max(-RN.maxSpeed,Math.min(RN.maxSpeed,v.vx));
  v.x+=v.vx*dt;if(v.x<0||v.x+v.w>worldWidth){v.x=Math.max(0,Math.min(worldWidth-v.w,v.x));v.vx=0;}
  v.y=groundAt(centre(v))-v.h;
- if(Math.abs(v.vx)<RN.stopSpeed&&Math.abs(s)*RN.gravity<=RN.friction){v.vx=0;v.state='parked';return 'stopped';}
+ if(Math.abs(v.vx)<RN.stopSpeed&&Math.abs(s)*RN.gravity<=(v.glide??RN.friction)){v.vx=0;v.state='parked';return 'stopped';}
  return 'rolling';
 }
 // A cable car on its line: shuttles between the ends at a steady crawl, hill or no hill (it is held by the cable).
