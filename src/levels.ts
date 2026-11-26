@@ -609,7 +609,8 @@ function nycWallStreet():BlockDef{
  // Two towers flank the command post close enough that a toppled one lands on it (toppling damage reaches a target), and two more close the canyon.
  const flank=[[4010,900],[4450,900],[3860,720],[4590,720]].map(([x,h],i)=>scaled({...BUILDING_PRESETS.x,x,h,label:'',color:cityById('nyc').colors[i+1]}));
  b={...b,buildings:[...b.buildings,...flank]};
- return {...b,subway:[[sc(1800),sc(3350)]],bull:sc(BULL_X),
+ // The line's ends are tunnel portals, so each sits in a cross-street gap rather than mid-block under a tower.
+ return {...b,subway:[[portalGap(b,sc(1800)),portalGap(b,sc(3350))]],bull:sc(BULL_X),
   target:{x:sc(T),label:'NYSE COMMAND POST',art:'exchange'},police:true,swat:[sc(2600),sc(2900),sc(3300),sc(5300)].map(x=>x),air:[sc(3000),sc(5200)],
   units:[['police',sc(1100)],['soldier',sc(2300)],['soldier',sc(3000)]]};
 }
@@ -621,6 +622,8 @@ function streetGaps(b:BlockDef,from:number,to:number,minGap:number):number[]{
  const s=b.buildings.filter(x=>x.kind!=='tiny'&&!x.landmark).sort((p,q)=>p.x-q.x),out:number[]=[];
  for(let i=1;i<s.length;i++){const a=s[i-1].x+s[i-1].w,c=s[i].x;if(c-a>=sc(minGap)&&a>=sc(from)&&c<=sc(to))out.push(Math.round((a+c)/2));}
  return out;}
+// The middle of the cross-street gap nearest x (a gap at least 60px wide), so a subway line can end in the street.
+function portalGap(b:BlockDef,x:number):number{const g=streetGaps(b,0,1e6,60/CONFIG.cityScale);return g.length?g.reduce((p,q)=>Math.abs(q-x)<Math.abs(p-x)?q:p):x;}
 function nycSoho():BlockDef{
  const CRYSTAL=3900,loft='r:brick,m:tank,r:brick,_,s:brick,m:brick,r:brick,_,m:tank,s:brick,r:brick';
  let b=cityLevel('nyc','SoHo and Canal Street',7,'district',

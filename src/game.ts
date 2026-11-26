@@ -2717,13 +2717,20 @@ function drawRiverBack(){for(const [a,z,y] of waterSpans()){const x0=Math.max(-8
 function drawRiverFront(){for(const [a,z,y] of waterSpans()){const x0=Math.max(-8,a-camera),x1=Math.min(viewW()+108,z-camera);if(x1<x0)continue;
  ctx.globalAlpha=bands()?W.frontAlpha:.55;ctx.fillStyle='#3d7088';ctx.beginPath();ctx.moveTo(x0,y);for(let x=x0;x<=x1;x+=8)ctx.lineTo(x,Math.max(y,bedAt(x+camera)+6));ctx.lineTo(x1,y);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
  for(let x=x0;x<x1;x+=16){const k=(x+camera)*.05+time*3;rect(x,y-1+Math.sin(k)*1.5,9,2,'#a8d8ee');}}}
-// Subway in cutaway: under the street along the line, a strip shows the tunnel (lights, rails) with the trains running through it.
-function drawSubway(){const line=block.subway?.[0];if(!line)return;const a=Math.max(-8,line[0]-camera),z=Math.min(viewW()+8,line[1]-camera);if(z<a)return;
- // The street slab over the tunnel: road, then a concrete tunnel roof, then the tunnel itself.
- const top=C.ground+tunnelRoof(),f=tunnelFloor();rect(a,top-6,z-a,6,'#7d8580');rect(a,top-6,z-a,1,'#a3aaa4');rect(a,top,z-a,f-top+3,'#1b2325');
- for(let yy=top+6;yy<f-8;yy+=11)rect(a,yy,z-a,1,'#253031');for(let x=a+((-camera)%60+60)%60;x<z;x+=60)rect(x,top+4,10,3,'#e3cb7c');
- rect(a,f-4,z-a,4,'#3a3a36');rect(a,f-7,z-a,2,'#8a8f88');rect(a,f+3,z-a,3,'#2a3536');
- drawTrains(a,z);}
+// Subway: the street over the line is plain street (manhole grates that glow as a train passes under, a kiosk at each portal) until it
+// caves in; the tunnel and the trains only show through a pit (drawSubwayTrains, after drawPits).
+function drawSubway(){const line=block.subway?.[0];if(!line)return;const vis=(x:number)=>x-camera>-60&&x-camera<viewW()+60;
+ const under=(x:number)=>trains.some(t=>{const b=trainBox(t);return !t.crashed&&b.w>0&&x>=b.x&&x<=b.x+b.w;});
+ const first=Math.ceil((line[0]+120)/260)*260;
+ for(let wx=first;wx<line[1]-120;wx+=260){if(!vis(wx)||pitAt(wx))continue;const x=wx-camera,y=groundAt(wx)-4,lit=under(wx)&&Math.sin(time*14)>-.3;
+  rect(x-12,y-1,24,6,'#2a3233');for(let k=0;k<5;k++)rect(x-10+k*5,y,3,4,lit?'#e3cb7c':'#566260');rect(x-12,y-1,24,1,'#6d7873');}
+ // Portals: a stair kiosk with a green globe at each end of the line, standing on the pavement (the ends sit in street gaps).
+ for(const [wx,d] of [[line[0],1],[line[1],-1]] as const){if(!vis(wx)||pitAt(wx)||buildings.some(b=>b.kind!=='tiny'&&b.hpNow>0&&wx+d*14>b.x-14&&wx+d*14<b.x+b.w+14))continue;const x=wx-camera+d*14,y=groundAt(wx)-4;
+  rect(x-9,y-3,18,3,'#6d7873');rect(x-9,y-26,2,24,'#2b3436');rect(x+7,y-26,2,24,'#2b3436');rect(x-9,y-28,18,3,'#2b3436');rect(x-7,y-3,14,3,'#1b2325');
+  ctx.fillStyle='#3fae6a';ctx.beginPath();ctx.arc(x-9,y-31,3.5,0,Math.PI*2);ctx.arc(x+9,y-31,3.5,0,Math.PI*2);ctx.fill();}}
+// The tunnel only shows through a cave-in: trains run clipped to the open pits along the line.
+function drawSubwayTrains(){const line=block.subway?.[0];if(!line)return;
+ for(const p of pitList()){const a=Math.max(-8,p.x0,line[0])-camera,z=Math.min(viewW()+8,p.x1,line[1])-camera;if(z>a)drawTrains(a,z);}}
 // Trains: three silver cars with a red stripe and lit windows; a derailed one lies buckled and burning.
 function drawTrains(a:number,z:number){const f=tunnelFloor(),car=R.trainLength/3;
  for(const t of trains){const x0=t.x-camera;if(x0+R.trainLength<a||x0>z)continue;
@@ -3536,7 +3543,7 @@ function render(){
  if(mode==='ending'){drawEnding(ctx,endingName);return;}
  if(['title','setup','selection','freeplay-select','gallery','settings','scores','confirm','progress','conquered'].includes(mode)){drawMenuBackdrop(ctx,time);if(mode==='selection')paintPreviews();return;}
  ctx.clearRect(0,0,960,540);rect(0,0,960,540,CITIES[cityIndex].sky);ctx.save();if(display.shake&&(shake>0||Math.abs(kickX)+Math.abs(kickY)>.3))ctx.translate(Math.round(Math.sin(time*63)*shake+kickX),Math.round(Math.cos(time*77)*shake*.5+kickY));
- rect(0,0,960,540,CITIES[cityIndex].sky);ctx.save();ctx.translate(0,C.ground);ctx.scale(zoom,zoom);ctx.translate(0,-C.ground+cameraY);background();drawKaiban();drawSubway();drawPits();drawCableLines();if(block.subway)drawTrains(Math.max(-8,block.subway[0][0]-camera),Math.min(viewW()+8,block.subway[0][1]-camera));drawBridge();drawCracks();for(const b of buildings)if(b.topple===2)drawFallen(b);for(const b of buildings)if(b.topple!==1)drawBuilding(b);for(const b of buildings)if(b.topple===1)drawBuilding(b);if(showHitboxes)drawHitboxes();drawMounds();drawBurns();drawDecals();drawPowerLines();drawLanterns();for(const c of chunks){const cx=c.x-camera;if(cx<-20||cx>viewW()+20)continue;ctx.globalAlpha=Math.min(1,c.life/.5);rect(cx,c.y,c.s,c.s,c.color);rect(cx,c.y+c.s-1,c.s,1,'#26343a');ctx.globalAlpha=1;}drawVehicles(0);drawPopulation();drawMilitary(0);drawSprays();drawCampaignObjective();
+ rect(0,0,960,540,CITIES[cityIndex].sky);ctx.save();ctx.translate(0,C.ground);ctx.scale(zoom,zoom);ctx.translate(0,-C.ground+cameraY);background();drawKaiban();drawSubway();drawPits();drawCableLines();drawSubwayTrains();drawBridge();drawCracks();for(const b of buildings)if(b.topple===2)drawFallen(b);for(const b of buildings)if(b.topple!==1)drawBuilding(b);for(const b of buildings)if(b.topple===1)drawBuilding(b);if(showHitboxes)drawHitboxes();drawMounds();drawBurns();drawDecals();drawPowerLines();drawLanterns();for(const c of chunks){const cx=c.x-camera;if(cx<-20||cx>viewW()+20)continue;ctx.globalAlpha=Math.min(1,c.life/.5);rect(cx,c.y,c.s,c.s,c.color);rect(cx,c.y+c.s-1,c.s,1,'#26343a');ctx.globalAlpha=1;}drawVehicles(0);drawPopulation();drawMilitary(0);drawSprays();drawCampaignObjective();
  const exitX=worldWidth-65-camera;
  rect(exitX,groundAt(worldWidth-65)-90,5,90,objectiveOpen()?'#c7ee83':'#6a7d75');
  if(objectiveOpen()){poly([[exitX-20,358],[exitX+6,358],[exitX+6,348],[exitX+27,365],[exitX+6,382],[exitX+6,372],[exitX-20,372]],'#c7ee83');text('EXIT',exitX,342,10,'#213d35','center');}
