@@ -1,4 +1,4 @@
-import {CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST} from './config.ts';
+import {CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,EMPIRE as EMP,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST} from './config.ts';
 import {groundAt,groundUnder,setTerrain,terrainPoints,hasTerrain,profileFrom,submerged,waterAt,waterSpans,bedAt,addMound,moundList,deckAt,pitAt,pitList,addPit,depthAt,setPlatforms,platformFloor} from './terrain.ts';
 import {bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from './water.ts';
 import type {Band,Drown} from './water.ts';
@@ -24,9 +24,9 @@ import {createPopulation,releaseOccupants,tickPopulation} from './population.ts'
 import type {Permanent} from './campaign.ts';
 import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,initialsValid,KAIJU,CAMPAIGN,campaignCityIndex,routeLevels,freePlayLevels,unlockSecret,secretLevelOf,secretIds,exitTarget,kaijuFor,discardLegacySaves} from './campaign.ts';
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
-import {createRival,hitRival,tickRival} from './rival.ts';
+import {createRival,hitRival,tickRival,surfaceBelow,lavaPool} from './rival.ts';
 import type {Rival} from './rival.ts';
-import {hitParts,solidParts,partHit,hitsBox,partAt,circleHits,topAt,roofUnder,nearestPart,clipParts,shapeParts} from './hitbox.ts';
+import {hitParts,solidParts,partHit,hitsBox,partAt,circleHits,topAt,roofUnder,nearestPart,clipParts,shapeParts,resetParts} from './hitbox.ts';
 import type {HitPart} from './hitbox.ts';
 import {moveList,hudScore,ROSTER,ENDINGS,INTRO_DURATION,INTRO_SCENES,introScene,selectable,validFreePlay,canViewEnding,endingFor,loadPresentationArt,loadKaijuArt,loadBossArt,hasSprite,hasAnim,holdPoint,holdBite,aimTime,spinFrom,animDuration,animImpact,drawSilhouette,drawMenuBackdrop,drawIntro,drawEnding} from './presentation.ts';
 import type {FreePlayChoice} from './presentation.ts';
@@ -798,12 +798,12 @@ function tickBridge(dt:number){
 // Kaiban waits on the span as a silhouette in the fog (dormant, untouchable) until the kaiju passes `wake`; then the shared rival moves run.
 // On top of them: the fog charge (vanish, roar and silhouette, charge), the deck giving way under both kaiju at each health break, and
 // the retreat at 0 health: it is not KO'd, it walks off into the fog (fading) while the main span comes down; once gone the city is won.
-type Finale={woke:boolean,nextBreak:number,phase:'idle'|'vanish'|'telegraph'|'charge',t:number,cool:number,dir:number,charges:number,started:boolean,hit:boolean,startX:number,queue:{t:number,s:Span}[],breaks:number};
+type Finale={woke:boolean,nextBreak:number,phase:'idle'|'vanish'|'telegraph'|'charge',t:number,cool:number,dir:number,charges:number,started:boolean,hit:boolean,startX:number,queue:{t:number,s:Span}[],breaks:number,climb:Climb|null};
 let finale:Finale|null=null;
 function setupFinale(){finale=null;if(!block.finale||!rival)return;const f=block.finale,r=rival;
  r.x=f.x-r.w/2;r.y=groundAt(r.x+r.w/2)-r.h;r.face=-1;r.dormant=true;r.retreats=true;r.alpha=.28;
- finale={woke:false,nextBreak:0,phase:'idle',t:0,cool:GT.chargeEvery,dir:1,charges:0,started:false,hit:false,startX:0,queue:[],breaks:0};}
-const bossFrozen=()=>!!finale&&(!finale.woke||finale.phase!=='idle'||!!rival?.retreating);
+ finale={woke:false,nextBreak:0,phase:'idle',t:0,cool:GT.chargeEvery,dir:1,charges:0,started:false,hit:false,startX:0,queue:[],breaks:0,climb:null};if(f.perches)setupClimb(finale!);}
+const bossFrozen=()=>!!finale&&(!finale.woke||finale.phase!=='idle'||!!rival?.retreating||climbBusy());
 function spanAt(x:number){return spans.findIndex(sp=>x>=sp.x0&&x<sp.x1);}
 // The deck gives way under both kaiju (and the spans beside them), a beat after the warning.
 function breakDeckUnder(a:number,b:number){const f=finale!,idx=new Set<number>();
@@ -812,7 +812,7 @@ function breakDeckUnder(a:number,b:number){const f=finale!,idx=new Set<number>()
  // The quake rocks Kaiban too: any move in progress is cancelled and he stays put until the spans have gone, so he goes into the bay with the kaiju.
  if(rival){rival.rocks=[];rival.charge=null;rival.windup=0;rival.stagger=Math.max(rival.stagger,.9+k*.12+.4);rival.cooldown=Math.max(rival.cooldown,1);}
  f.breaks++;shake=Math.max(shake,8);banner={label:'THE DECK IS GIVING WAY',side:0,life:1.6};action='THE DECK IS GIVING WAY';actionTime=1.4;}
-function tickFinale(dt:number,w:number,h:number){const f=finale,r=rival;if(!f||!r||r.dead)return;void h;
+function tickFinale(dt:number,w:number,h:number){const f=finale,r=rival;if(!f||!r||r.dead)return;if(f.climb){tickClimbFinale(dt,w,h);return;}
  for(const e of f.queue)if(e.t!==Infinity){e.t-=dt;if(e.t<=0){e.t=Infinity;if(e.s.alive)hitSpan(e.s,1e9,true);}}
  const pc=player.x+w/2,rc=()=>r.x+r.w/2,place=(x:number)=>{r.x=Math.max(0,Math.min(worldWidth-r.w,x));r.y=groundAt(r.x+r.w/2)-r.h;};
  if(!f.woke){if(pc>block.finale!.wake){f.woke=true;r.dormant=false;r.alpha=1;shake=Math.max(shake,GT.wakeShake);banner={label:'KAIBAN',side:0,life:2.6};action='KAIBAN EMERGES FROM THE FOG';actionTime=2.4;}else{r.alpha=.28+fogAt(block,pc)*.1;return;}}
@@ -839,6 +839,99 @@ function tickFinale(dt:number,w:number,h:number){const f=finale,r=rival;if(!f||!
  if(!f.hit&&overlaps({x:r.x,y:r.y,w:r.w,h:r.h},{x:player.x,y:player.y,w,h:bodyHeight()})){f.hit=true;f.charges++;if(receiveHit(combat,GT.chargeDamage,'boss',GT.chargeKnock,-f.dir)>0){hurtFlash=MF.hurtFlash;hurtRed=true;}shake=Math.max(shake,9);}
  const past=(rc()-pc)*-f.dir>GT.chargeOvershoot,far=Math.abs(rc()-f.startX)>GT.fogDistance*2+GT.chargeOvershoot,edge=r.x<=0||r.x>=worldWidth-r.w;
  if(past||far||edge||f.t<-6){if(!f.hit)f.charges++;f.phase='idle';f.cool=GT.chargeEvery;r.cooldown=1.2;r.face=Math.sign(pc-rc())||1;}}
+// ---- NYC Act 3: the Empire State finale (a climbing rival) ----
+// Opt-in per level through `finale.perches` (src/levels.ts nycEmpire, src/config.ts EMPIRE). Tlézcatl is dormant (underground) until the kaiju passes `wake`; the
+// street splits and he erupts out of it. He climbs the tower's setbacks ahead of the kaiju and fights from the ledges (`perches`, recomputed from the tower's
+// parts, so a ledge that gives way is simply gone). At each health break the ledge under the kaiju is cut away and both drop a tier. The summit is the last
+// stand. At 0 health he dives off the tower onto the cracked street and sinks into the magma; then the city is won.
+type Perch={x0:number,x1:number,h:number};
+type Seg={x0:number,y0:number,x1:number,y1:number,dur:number,arc:number};
+type Climb={i:number,perches:Perch[],tower:typeof buildings[number]|null,move:{segs:Seg[],t:number,tele:number,toI:number,kind:'leap'|'climb'}|null,press:number,idle:number,
+ pending:{t:number,j:number}|null,fall:{vy:number,toY:number,toI:number}|null,emerge:number,crackX:number,crackOpen:number,
+ scars:{x:number,y0:number,y1:number}[],retreat:{t:number,dur:number,x0:number,y0:number,x1:number,y1:number,phase:'dive'|'sink',landed:boolean}|null,skipped:number,moves:{leap:number,climb:number}};
+const climbBusy=()=>{const c=finale?.climb;return !!c&&(!!c.move||!!c.pending||!!c.fall||c.emerge>0);};
+function perchesOf(b:typeof buildings[number]):Perch[]{const ps=(b.parts??[]).filter(p=>!p.spire),out:Perch[]=[],top=Math.max(...ps.map(p=>p.top));
+ for(const p of ps){let segs:[number,number][]=[[p.x,p.x+p.w]];for(const q of ps)if(q.top>p.top)segs=segs.flatMap(([a,z])=>{if(q.x+q.w<=a||q.x>=z)return [[a,z]] as [number,number][];const o:[number,number][]=[];if(q.x>a)o.push([a,q.x]);if(q.x+q.w<z)o.push([q.x+q.w,z]);return o;});
+  for(const [a,z] of segs)if(z-a>=EMP.ledge*.5||p.top===top&&z-a>=100)out.push({x0:b.x+a,x1:b.x+z,h:p.top});}
+ return out.sort((p,q)=>p.h-q.h||p.x0-q.x0);}
+function setupClimb(f:Finale){const r=rival!,fin=block.finale!,t=buildings.find(b=>b.x===fin.tower)??null;if(!t)return;
+ const crack=fin.crack??fin.x;f.climb={i:-1,perches:fin.perches!.map(p=>({...p})),tower:t,move:null,press:0,idle:0,pending:null,fall:null,emerge:0,crackX:crack,crackOpen:0,scars:[],retreat:null,skipped:0,moves:{leap:0,climb:0}};
+ // Underground until the wake: untouchable and unseen.
+ r.x=crack-r.w/2;r.y=groundAt(crack)+r.h;r.face=-1;r.dormant=true;r.retreats=true;r.alpha=0;r.perch=null;}
+const perchY=(p:Perch)=>(finale!.climb!.tower?.base??C.ground)-p.h;
+const standX=(p:Perch,r:Rival)=>Math.max(p.x0,p.x1-r.w-12);
+// The highest ledge whose surface the kaiju's feet have reached (-1 on the street, or when nowhere near the tower).
+function kaijuLevel(feet:number,pcx:number){const c=finale!.climb!,t=c.tower!;if(pcx<t.x-420||pcx>t.x+t.w+420)return -1;let k=-1;c.perches.forEach((p,j)=>{if(feet<=perchY(p)+10&&pcx>=p.x0-EMP.ledge&&pcx<=p.x1+EMP.ledge)k=j;});return k;}
+function setPerch(r:Rival,c:Climb,i:number){c.i=i;if(i<0){r.perch=null;r.y=groundAt(r.x+r.w/2)-r.h;}else{const p=c.perches[i];r.perch={x0:p.x0,x1:p.x1,y:perchY(p)};r.x=Math.max(p.x0,Math.min(p.x1-r.w,r.x));r.y=r.perch.y-r.h;}}
+function cancelMoves(r:Rival){r.rocks=[];r.charge=null;r.windup=0;r.flame=null;r.dive=null;r.shots=[];}
+// The path to the next ledge: a leap when the rise is short, else along the street/ledge to the wall, up it, and over the lip.
+function planMove(r:Rival,c:Climb,toI:number):NonNullable<Climb['move']>{const to=c.perches[toI],y1=perchY(to)-r.h,x1=standX(to,r),y0=r.y,x0=r.x,rise=y0-y1;
+ if(rise<=EMP.leapRise)return {kind:'leap',toI,t:0,tele:EMP.telegraph,segs:[{x0,y0,x1,y1,dur:EMP.leapTime,arc:120}]};
+ const wallX=to.x0-r.w,mid=Math.max(0,Math.abs(wallX-x0))/380,up=Math.max(0,y0-y1)/EMP.climbSpeed;
+ return {kind:'climb',toI,t:0,tele:EMP.telegraph,segs:[{x0,y0,x1:wallX,y1:y0,dur:Math.max(.05,mid),arc:0},{x0:wallX,y0,x1:wallX,y1,dur:up,arc:0},{x0:wallX,y0:y1,x1,y1,dur:.45,arc:40}]};}
+function tickClimbFinale(dt:number,w:number,h:number){const f=finale!,c=f.climb!,r=rival!,pcx=player.x+w/2,rc=()=>r.x+r.w/2,frac=r.maxHP>0?r.hp/r.maxHP:0,E=EMP,base=c.tower?.base??C.ground,feet=player.y+h;
+ c.crackOpen=Math.min(1,c.crackOpen+(c.crackOpen>0?dt/.8:0));
+ // The wake: the street splits and he erupts out of it.
+ if(!f.woke){if(pcx<=block.finale!.wake)return;f.woke=true;c.crackOpen=.001;c.emerge=1.3;r.dormant=false;r.alpha=1;r.cooldown=2;
+  shake=Math.max(shake,E.wakeShake);banner={label:'TLÉZCATL',side:0,life:2.8};action='THE STREET SPLITS · TLÉZCATL ERUPTS';actionTime=2.6;
+  for(let k=0;k<E.pools;k++){const x=c.crackX+(k-(E.pools-1)/2)*70;lavaPool(r,x-34,68,groundAt(x),E.poolSeconds,E.poolDamage);}
+  for(let k=0;k<5;k++)burst(c.crackX+(k-2)*30,groundAt(c.crackX)-6,k%2?'#ffb13b':'#e8401a',10);}
+ if(r.retreating){return tickClimbRetreat(dt,w,h);}
+ if(c.emerge>0){c.emerge=Math.max(0,c.emerge-dt);r.y=groundAt(rc())-r.h+r.h*1.1*(c.emerge/1.3);shake=Math.max(shake,3);if(c.emerge===0){r.y=groundAt(rc())-r.h;r.stagger=.4;}return;}
+ // A ledge giving way: the warning first (rumble, dust), then the cut.
+ if(c.pending&&!c.move&&!c.fall){c.pending.t-=dt;shake=Math.max(shake,3+4*(1-Math.max(0,c.pending.t)/E.warn));
+  if(Math.random()<dt*20)burst(c.pending.j>=0?c.perches[c.pending.j].x0+Math.random()*(c.perches[c.pending.j].x1-c.perches[c.pending.j].x0):pcx,groundAt(pcx)-40-Math.random()*200,'#cfc6a8',3);
+  if(c.pending.t<=0){const j=c.pending.j;c.pending=null;cutLedge(j);}return;}
+ if(c.fall){const fl=c.fall;fl.vy+=1900*dt;r.y+=fl.vy*dt;if(r.y>=fl.toY){r.y=fl.toY;c.fall=null;setPerch(r,c,fl.toI);r.stagger=Math.max(r.stagger,E.stagger);r.cooldown=Math.max(r.cooldown,1.2);shake=Math.max(shake,9);burst(rc(),r.y+r.h,'#cfc6a8',8);}return;}
+ // Breaks: the setback under the kaiju goes; on the summit (the last stand) nothing gives way.
+ while(f.nextBreak<block.finale!.breaks.length&&frac<=block.finale!.breaks[f.nextBreak]){f.nextBreak++;const k=kaijuLevel(feet,pcx);
+  if(k===c.perches.length-1){c.skipped++;shake=Math.max(shake,6);banner={label:'THE MAST HOLDS',side:0,life:1.4};action='THE MAST HOLDS';actionTime=1.2;continue;}
+  cancelMoves(r);r.stagger=Math.max(r.stagger,E.warn+.3);c.move=null;c.pending={t:E.warn,j:Math.max(0,k)};f.breaks++;shake=Math.max(shake,8);banner={label:'THE SETBACK IS GIVING WAY',side:0,life:1.6};action='THE SETBACK IS GIVING WAY';actionTime=1.4;}
+ if(c.pending)return;
+ // Moving between ledges: telegraph, then the leap or the climb.
+ if(c.move){const m=c.move;
+  if(m.tele>0){m.tele-=dt;r.face=m.kind==='climb'?1:-1;shake=Math.max(shake,1.5);if(m.tele<=0){action=m.kind==='leap'?'TLÉZCATL LEAPS':'TLÉZCATL CLIMBS';actionTime=1;}return;}
+  m.t+=dt;let t=m.t;const segs=m.segs;let s=segs[segs.length-1],k=1;for(const sg of segs){if(t<=sg.dur){s=sg;k=sg.dur>0?t/sg.dur:1;break;}t-=sg.dur;}
+  r.x=s.x0+(s.x1-s.x0)*k;r.y=s.y0+(s.y1-s.y0)*k-s.arc*4*k*(1-k);r.face=s.x1>s.x0+1?1:s.x1<s.x0-1?-1:r.face;
+  if(m.t>=segs.reduce((a,q)=>a+q.dur,0)){c.move=null;r.x=segs[segs.length-1].x1;setPerch(r,c,m.toI);r.face=-1;c.press=0;c.idle=0;r.cooldown=1.2;r.stagger=.3;if(m.kind==='leap')c.moves.leap++;else c.moves.climb++;shake=Math.max(shake,4);burst(rc(),r.y+r.h,'#cfc6a8',6);}
+  return;}
+ // Idle on a ledge (or the street): pressed by the kaiju, or just ahead of it, he goes up.
+ const ready=r.windup<=0&&r.stagger<=0&&!r.flame&&!r.dive&&!r.charge&&r.cooldown<=0.3,k=kaijuLevel(feet,pcx),near=k>=c.i&&(c.i>=0||Math.abs(pcx-rc())<450);
+ if(near)c.press+=dt;c.idle+=dt;
+ if(ready&&c.i<c.perches.length-1&&(c.press>=E.press||c.idle>=(c.i<0?7:E.rest))){const m=planMove(r,c,c.i+1);cancelMoves(r);c.move=m;}
+}
+// The cut: the slab of the tier above the next one down is gone (its west face steps in to the next tier's), rubble falls to the street and the damage
+// stays; the kaiju (no ledge under them now) drop, and Tlézcatl comes down with them.
+function cutLedge(j:number){const f=finale!,c=f.climb!,r=rival!,t=c.tower!,E=EMP,pl=c.perches[j];if(!pl)return;
+ const part=(t.parts??[]).find(p=>!p.spire&&p.top===pl.h&&t.x+p.x<=pl.x0+1&&t.x+p.x+p.w>=pl.x1-1);if(!part)return;
+ const len=pl.x1-pl.x0,oldTop=pl.h,y0=t.base-oldTop,wasOn=c.i===j&&!!r.perch;
+ const below=Math.max(0,...(t.parts??[]).filter(p=>!p.spire&&p.top<oldTop&&t.x+p.x<pl.x1&&t.x+p.x+p.w>pl.x0).map(p=>p.top));
+ const newParts=(t.parts??[]).map(p=>p===part?{...p,x:p.x+len,w:p.w-len}:p);t.parts=newParts;resetParts(t);
+ // Visible damage: a torn face from the old surface down to the ledge below, holes in it, rubble and dust.
+ const faceX=pl.x1;c.scars.push({x:faceX,y0:t.base-oldTop,y1:t.base-below});
+ for(let n=0;n<5;n++)t.holes.push({x:faceX-t.x+18+n*7,y:below+(oldTop-below)*(.15+.18*n),r:20+(n%3)*6,seed:(n+1)*7+c.scars.length*13});
+ for(let n=0;n<E.rubble;n++)spawnSlabs(pl.x0+Math.random()*len,y0-Math.random()*40,Math.random()<.5?-1:1,t.color,1,false,1.4);
+ for(let n=0;n<8;n++)burst(pl.x0+Math.random()*len,y0+Math.random()*60,'#d8cfb2',4);
+ shake=Math.max(shake,14);banner={label:'THE TOWER GIVES WAY',side:0,life:1.6};action='A SETBACK COLLAPSES';actionTime=1.4;
+ c.perches=perchesOf(t);
+ // Where the kaiju land, and where he comes down: on the same new ledge (or the street).
+ const pcx=player.x+bodyWidth()/2,landY=surfaceBelow(buildings,pcx,player.y+bodyHeight()-4),toY=surfaceBelow(buildings,r.x+r.w/2,r.y+r.h-4);
+ const idx=(y:number)=>c.perches.findIndex(p=>Math.abs(perchY(p)-y)<3);
+ let target=wasOn&&r.x+r.w/2>=pl.x0&&r.x+r.w/2<=pl.x1?toY:landY,ti=idx(target);
+ if(!wasOn||!(r.x+r.w/2>=pl.x0&&r.x+r.w/2<=pl.x1)){if(ti>=0)r.x=standX(c.perches[ti],r);else r.x=Math.max(0,Math.min(worldWidth-r.w,pcx+80));}
+ c.i=ti;r.perch=null;c.fall={vy:0,toY:target-r.h,toI:ti};c.press=0;c.idle=0;
+ // Kaiju are rocked too.
+ combat.knockback=0;}
+function tickClimbRetreat(dt:number,w:number,h:number){const f=finale!,c=f.climb!,r=rival!,E=EMP;void w;void h;
+ if(!c.retreat){cancelMoves(r);r.perch=null;c.move=null;c.pending=null;c.fall=null;r.hidden=false;f.started=true;const gy=groundAt(c.crackX),x1=c.crackX-r.w/2,dy=Math.max(0,gy-r.h-r.y);
+  c.retreat={t:0,dur:Math.max(E.diveTime*.7,Math.sqrt(2*dy/2200)+.35),x0:r.x,y0:r.y,x1,y1:gy-r.h,phase:'dive',landed:false};r.face=x1>=r.x?1:-1;
+  shake=Math.max(shake,12);banner={label:'TLÉZCATL RETREATS INTO THE MAGMA',side:0,life:3};action='TLÉZCATL RETREATS';actionTime=3;award(P.bossHP);}
+ const m=c.retreat;m.t+=dt;r.alpha=1;
+ if(m.phase==='dive'){const k=Math.min(1,m.t/m.dur);r.x=m.x0+(m.x1-m.x0)*k;r.y=m.y0+(m.y1-m.y0)*k*k-90*4*k*(1-k);
+  if(k>=1){m.phase='sink';m.t=0;m.dur=E.sinkTime;m.landed=true;r.x=m.x1;r.y=m.y1;shake=Math.max(shake,14);for(let n=0;n<14;n++)burst(c.crackX+(n-7)*14,groundAt(c.crackX)-8,n%2?'#ffb13b':'#e8401a',6);
+   for(let n=0;n<8;n++)lavaPool(r,c.crackX-90+n*22,44,groundAt(c.crackX),E.sinkTime+2,0);c.crackOpen=1;}return;}
+ const k=Math.min(1,m.t/m.dur);r.y=m.y1+r.h*1.1*k;r.alpha=1-k*.6;if(Math.random()<dt*30)burst(c.crackX+(Math.random()-.5)*70,groundAt(c.crackX)-8,'#ff8a1f',2);
+ if(k>=1){r.dead=true;r.retreated=true;r.alpha=0;}}
 // ---- Phase 5: fire, rubble, city twists ----
 const style=()=>CITIES[cityIndex].style;
 // Burning buildings: heat 0..1 climbs while it burns; the next tick of damage / spread is due at `tick` / `spread`.
@@ -1049,7 +1142,7 @@ function resultsNoBonus(){// Reopen the interstitial without awarding its bonus 
 }
 function winCity(){if(session==='freeplay'){finishFreePlay();return;}if(!run||!rival?.dead||cleared)return;cleared=true;keys.clear();const subtotal=cityScore(),newUnlock=!permanent.unlocked.includes(CITIES[cityIndex].boss);if(!conquerCity(permanent,run,subtotal,CITIES[cityIndex].boss))return;citySettled=true;persist();
  if(run.phase==='over')writeCheckpoint(null);else{const next={...run};advanceCity(next);writeCheckpoint(checkpointOf(next));}
- mode='conquered';panel(`<div class="eyebrow">${CITIES[cityIndex].name.toUpperCase()}</div><h1>${run.phase==='over'?'CAMPAIGN':'CITY'}<br><span>${run.phase==='over'?'COMPLETE.':'CONQUERED.'}</span></h1><p>RIVAL ${bossName().toUpperCase()} ${rival?.retreated?'RETREATS INTO THE FOG':'DEFEATED'}<br>CITY SCORE ${Math.round(subtotal).toLocaleString()}<br>TOTAL SCORE ${Math.round(run.banked).toLocaleString()}${newUnlock?`<br>${bossName().toUpperCase()} UNLOCK RECORDED`:''}</p><button id="city-next" class="primary">${run.phase==='over'?'VIEW ENDING →':'CAMPAIGN ROUTE →'}</button><button id="back">MAIN MENU</button><p class="note">Shared rival moveset pending Phase 5.${run.phase==='over'?'<br>Ending and gallery slot unlocked.':''}</p>`);
+ mode='conquered';panel(`<div class="eyebrow">${CITIES[cityIndex].name.toUpperCase()}</div><h1>${run.phase==='over'?'CAMPAIGN':'CITY'}<br><span>${run.phase==='over'?'COMPLETE.':'CONQUERED.'}</span></h1><p>RIVAL ${bossName().toUpperCase()} ${rival?.retreated?(finale?.climb?'RETREATS INTO THE MAGMA':'RETREATS INTO THE FOG'):'DEFEATED'}<br>CITY SCORE ${Math.round(subtotal).toLocaleString()}<br>TOTAL SCORE ${Math.round(run.banked).toLocaleString()}${newUnlock?`<br>${bossName().toUpperCase()} UNLOCK RECORDED`:''}</p><button id="city-next" class="primary">${run.phase==='over'?'VIEW ENDING →':'CAMPAIGN ROUTE →'}</button><button id="back">MAIN MENU</button><p class="note">Shared rival moveset pending Phase 5.${run.phase==='over'?'<br>Ending and gallery slot unlocked.':''}</p>`);
  document.querySelector('#city-next')!.addEventListener('click',()=>{if(!run)return;if(run.phase==='over')endingScreen(run.kaiju,'completion');else if(advanceCity(run))progressScreen();});document.querySelector('#back')!.addEventListener('click',title);
 }
 function endIfDead(){if(rival?.dead){winCity();return true;}if(!combat.dead)return false;mode='gameover';keys.clear();cancelCharge(combat);if(session==='campaign'&&run&&loseRun(permanent,run,cityScore())){persist();writeCheckpoint(null);}panel(`<div class="eyebrow">${activeKaiju.toUpperCase()} DEFEATED</div><h1>GAME OVER</h1><p>SCORE ${netScore().toLocaleString()}<br>CITIES CONQUERED ${session==='campaign'?run?.city??0:0} / ${CAMPAIGN.length}<br>${session==='campaign'?'This campaign is over. Score recorded locally.':session==='freeplay'?'Free Play is not leaderboard eligible.':'Drill score is not leaderboard eligible.'}</p><button id="back" class="primary">MAIN MENU</button>${session!=='campaign'?`<button id="retry">${session==='freeplay'?'RETRY CITY':'RETRY DRILL'}</button>`:''}`);document.querySelector('#back')!.addEventListener('click',title);if(session!=='campaign')document.querySelector('#retry')!.addEventListener('click',()=>session==='freeplay'?startFreePlay():start());return true;}
@@ -2365,7 +2458,8 @@ function drawFog(){const a=fogAt(block,player.x+bodyWidth()/2);if(a<=0.001)retur
 function drawSeaLions(){for(const l of lions){if(l.state==='gone')continue;const x=l.x-camera,dir=l.vx<0?-1:1;if(x<-40||x>viewW()+40)continue;
  ctx.save();ctx.translate(x,l.y);ctx.scale(dir,1);ctx.fillStyle='#6b5a4c';ctx.beginPath();ctx.ellipse(0,0,15,7,-.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(13,-6,6,4,-.4,0,Math.PI*2);ctx.fill();
  poly([[-14,2],[-24,6],[-12,6]],'#4f4034');rect(14,-8,2,2,'#111');rect(1,4,8,3,'#5a493c');ctx.restore();}}
-function act3Debug(){return {finaleState:finale?{woke:finale.woke,phase:finale.phase,charges:finale.charges,nextBreak:finale.nextBreak,breaks:finale.breaks,started:finale.started,queued:finale.queue.filter(e=>e.t!==Infinity).length}:null,rivalState:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,maxHP:rival.maxHP,dead:rival.dead,alpha:rival.alpha??1,dormant:!!rival.dormant,hidden:!!rival.hidden,attack:rival.attack,windup:rival.windup,charging:!!rival.charge,rocks:rival.rocks?.length??0,face:rival.face,retreating:!!rival.retreating,retreated:!!rival.retreated,stagger:rival.stagger,cooldown:rival.cooldown,flame:rival.flame?{angle:rival.flame.angle,len:rival.flame.len,t:rival.flame.t,street:rival.flame.street}:null,globs:rival.globs?.length??0,pools:rival.pools?.filter(p=>!p.fire).length??0,patches:rival.pools?.filter(p=>p.fire).length??0,dive:!!rival.dive,mark:rival.mark??null,erupted:!!rival.erupted,tlez:!!rival.tlez}:null,upperDeck:upperPlat[0]?{hp:upperPlat[0].b.hpNow,alive:upperPlat[0].p.alive,y:upperPlat[0].p.y,x0:upperPlat[0].p.x0,x1:upperPlat[0].p.x1,index:buildings.indexOf(upperPlat[0].b)}:null,carrierDeck:carrierDeck?{...carrierDeck}:null,jetsLaunched,jetsUp:carrierJetsUp(),projectileList:military.projectiles.filter(p=>!p.dead).map(p=>({weapon:p.weapon,owner:p.owner})),carrierJetList:[...carrierJets].map(u=>({x:u.x,y:u.y,hp:u.hp})),deckOrder:[...deckOrder],towerIndexes:buildings.map((b,i)=>b.deco==='btower'?i:-1).filter(i=>i>=0),platformFloor:(x:number,feet:number)=>platformFloor(x,feet),playerY:player.y,playerFeet:player.y+bodyHeight(),playerGrounded:player.grounded,modeNow:mode,unitList:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,id:u.id})),cracks:cracks.map(c=>({x:c.x,quaked:c.quaked,open:c.open,big:c.big,ult:c.ult})),quakeCount,bigOne:bigOne?{t:bigOne.t,pending:bigOne.queue.filter(e=>e.t!==Infinity).length}:null,pancaked,fireCap:block.fireCap??FI.cap,fireGeysers:geysers.filter(g=>g.fire).length,
+function climbDebug(){const c=finale?.climb;return c?{i:c.i,perches:c.perches.map(p=>({...p,y:perchY(p)})),move:c.move?{kind:c.move.kind,toI:c.move.toI,tele:c.move.tele,t:c.move.t}:null,pending:c.pending?{...c.pending}:null,falling:!!c.fall,emerge:c.emerge,scars:c.scars.length,moves:{...c.moves},press:c.press,skipped:c.skipped,crackX:c.crackX,crackOpen:c.crackOpen,retreat:c.retreat?{phase:c.retreat.phase,t:c.retreat.t,landed:c.retreat.landed}:null,perch:rival?.perch?{...rival.perch}:null,towerParts:c.tower?.parts?.map(p=>({...p}))??[],towerX:c.tower?.x??0,towerBase:c.tower?.base??0}:null;}
+function act3Debug(){return {climbState:climbDebug(),finaleState:finale?{woke:finale.woke,phase:finale.phase,charges:finale.charges,nextBreak:finale.nextBreak,breaks:finale.breaks,started:finale.started,queued:finale.queue.filter(e=>e.t!==Infinity).length}:null,rivalState:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,maxHP:rival.maxHP,dead:rival.dead,alpha:rival.alpha??1,dormant:!!rival.dormant,hidden:!!rival.hidden,attack:rival.attack,windup:rival.windup,charging:!!rival.charge,rocks:rival.rocks?.length??0,face:rival.face,retreating:!!rival.retreating,retreated:!!rival.retreated,stagger:rival.stagger,cooldown:rival.cooldown,flame:rival.flame?{angle:rival.flame.angle,len:rival.flame.len,t:rival.flame.t,street:rival.flame.street}:null,globs:rival.globs?.length??0,pools:rival.pools?.filter(p=>!p.fire).length??0,poolYs:rival.pools?.filter(p=>!p.fire).map(p=>p.y)??[],patches:rival.pools?.filter(p=>p.fire).length??0,dive:!!rival.dive,mark:rival.mark??null,erupted:!!rival.erupted,tlez:!!rival.tlez}:null,upperDeck:upperPlat[0]?{hp:upperPlat[0].b.hpNow,alive:upperPlat[0].p.alive,y:upperPlat[0].p.y,x0:upperPlat[0].p.x0,x1:upperPlat[0].p.x1,index:buildings.indexOf(upperPlat[0].b)}:null,carrierDeck:carrierDeck?{...carrierDeck}:null,jetsLaunched,jetsUp:carrierJetsUp(),projectileList:military.projectiles.filter(p=>!p.dead).map(p=>({weapon:p.weapon,owner:p.owner})),carrierJetList:[...carrierJets].map(u=>({x:u.x,y:u.y,hp:u.hp})),deckOrder:[...deckOrder],towerIndexes:buildings.map((b,i)=>b.deco==='btower'?i:-1).filter(i=>i>=0),platformFloor:(x:number,feet:number)=>platformFloor(x,feet),playerY:player.y,playerFeet:player.y+bodyHeight(),playerGrounded:player.grounded,modeNow:mode,unitList:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,id:u.id})),cracks:cracks.map(c=>({x:c.x,quaked:c.quaked,open:c.open,big:c.big,ult:c.ult})),quakeCount,bigOne:bigOne?{t:bigOne.t,pending:bigOne.queue.filter(e=>e.t!==Infinity).length}:null,pancaked,fireCap:block.fireCap??FI.cap,fireGeysers:geysers.filter(g=>g.fire).length,
  railDecks:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,deck:r.deck??0,alive:r.alive,fellAt:r.fellAt??null}))};}
 function act2Debug(){return {powerhouseDown,loosed,exitSide,tumbleArmed,pendingTumble:pendingTumble.length,pendingRunaways:pendingRunaways.length,seaLions:lions.map(l=>({x:l.x,state:l.state})),lionsEscaped,
  kaibanState:kaiban?{...kaiban}:null,cutter:objective?.ship?{sink:objective.ship.sink,sinking:objective.ship.sinking,list:objective.ship.list,w:objective.ship.w,h:objective.ship.h,box:hullBox(objective.ship,waterAt(objective.x)??C.ground),deck:deckY(objective.ship,waterAt(objective.x)??C.ground)}:null,
@@ -3089,8 +3183,9 @@ function drawFormation(g:{x:number,hp:number}){const x=g.x-camera,gy=groundAt(g.
  text('CRYSTAL FORMATION',x,gy-h-10,10,'#334b43','center');}
 function drawCampaignObjective(){
  if(objective&&!objective.shattered){drawObjectiveArt(objective);}
+ drawClimbScars();drawStreetCrack();
  if(rival&&!rival.dead){const r=rival,x=r.x-camera;const tint=CITIES[cityIndex].colors[1];
- ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,r.alpha??1));ctx.translate(Math.round(x+r.w/2+tlezShudder(r)),Math.round(r.y+r.h+C.spriteDrop));ctx.scale(r.face,1);
+ ctx.save();if(finale?.climb?.retreat?.phase==='sink'){const gy=groundAt(finale.climb.crackX);ctx.beginPath();ctx.rect(x-200,gy-4000,400,4000+4);ctx.clip();}ctx.globalAlpha=Math.max(0,Math.min(1,r.alpha??1));ctx.translate(Math.round(x+r.w/2+tlezShudder(r)),Math.round(r.y+r.h+C.spriteDrop));ctx.scale(r.face,1);
  if(r.tlez&&hasSprite('Tlézcatl',TLEZ_STAGE)){const [anim,t]=tlezAnim(r);drawSilhouette(ctx,'Tlézcatl',0,0,TLEZ_SCALE,t,false,anim,TLEZ_STAGE);}else{poly([[-36,-16],[-46,-50],[-28,-42],[-32,-82],[-14,-74],[-7,-106],[12,-88],[28,-70],[38,-55],[35,-22]],tint);rect(-25,-75,50,62,'#4e5e59');rect(8,-74,35,27,tint);rect(27,-66,6,4,'#f1a8d4');rect(-26,-14,19,14,'#314b43');rect(10,-14,23,14,'#314b43');if(r.windup>0){rect(12,-48,35,12,'#f2b077');text('!',0,-123,20,'#f0a569','center');}}
  ctx.restore();
  if((r.alpha??1)>=.6)text(bossName().toUpperCase(),x+r.w/2,r.y-15,11,'#324c44','center');
@@ -3099,8 +3194,19 @@ function drawCampaignObjective(){
  for(const k of r.rocks??[]){const sx=k.x-camera-KB.rockSize/2;rect(sx,k.y-KB.rockSize/2,KB.rockSize,KB.rockSize,'#8b7b6a');rect(sx,k.y+KB.rockSize/2-2,KB.rockSize,2,'#26343a');}
  if(r.kaiban&&r.windup>0&&r.attack==='stampede'){const x0=r.face>0?r.x+r.w:r.x-KB.stampedeReach;ctx.globalAlpha=.18+.2*Math.abs(Math.sin(time*14));rect(x0-camera,r.y+r.h-16,KB.stampedeReach,16,'#e8401a');ctx.globalAlpha=1;}
  if(r.tlez)drawTlezcatlFx(r);
+ drawClimbMarks();
  }
 }
+// The Empire State finale's marks: the split street (jagged, glowing, magma pools sit in it), the torn faces where a setback gave way, and the ledge he is about to go to.
+function drawStreetCrack(){const c=finale?.climb;if(!c||c.crackOpen<=0)return;const gy=groundAt(c.crackX),k=Math.min(1,c.crackOpen),x=c.crackX-camera,hw=46*k;if(x<-200||x>viewW()+200)return;
+ poly([[x-hw-10,gy],[x-hw*.6,gy+22],[x-hw*.3,gy+40],[x,gy+58],[x+hw*.3,gy+40],[x+hw*.6,gy+22],[x+hw+10,gy]],'#1a0f0c');
+ poly([[x-hw,gy],[x-hw*.4,gy+16],[x,gy+40],[x+hw*.4,gy+16],[x+hw,gy]],'#d2481a');ctx.globalAlpha=.5+.3*Math.sin(time*6);poly([[x-hw*.6,gy],[x,gy+22],[x+hw*.6,gy]],'#ffb13b');ctx.globalAlpha=1;
+ for(let n=0;n<4;n++){const jx=x+(n-1.5)*hw*.6,jy=gy-3-((time*30+n*17)%22);ctx.globalAlpha=Math.max(0,1-((time*30+n*17)%22)/22);rect(jx-1,jy,3,5,'#ffb13b');ctx.globalAlpha=1;}}
+function drawClimbScars(){const c=finale?.climb;if(!c)return;for(const s of c.scars){const x=s.x-camera,h=s.y1-s.y0;if(x<-60||x>viewW()+60)continue;
+ for(let y=0;y<h;y+=22){const jag=((y*7+s.x)%5)*3;poly([[x,s.y0+y],[x-8-jag,s.y0+y+11],[x,s.y0+y+22]],'#2a2420');rect(x-6-jag,s.y0+y+8,8+jag,2,'#8a8f90');}
+ poly([[x,s.y0],[x+16,s.y0+h*.3],[x+4,s.y0+h*.6],[x+14,s.y1],[x,s.y1]],'#33403f');}}
+function drawClimbMarks(){const c=finale?.climb,r=rival;if(!c||!r)return;const m=c.move;
+ if(m&&m.tele>0){const p=c.perches[m.toI];if(p){const y=perchY(p),x0=p.x0-camera,x1=p.x1-camera;ctx.globalAlpha=.3+.4*Math.abs(Math.sin(time*14));rect(x0,y-5,x1-x0,5,'#ff7a1f');ctx.globalAlpha=1;}}}
 // Tlézcatl as a boss: his own Stage 2 sprite, drawn bigger than the kaiju's (the boss body is 78 wide to the player's 48).
 const TLEZ_STAGE=2,TLEZ_SCALE=1.6,TLEZ_ANIMS=['idle','walk','light1','jetStart','jetAim','jetEnd','heavyRear','heavyHold','crouchDown','crouch','dive','slamLand','ultCharge','ultRoar'];
 let tlezLastX=0;
@@ -3123,7 +3229,7 @@ function drawTlezcatlFx(r:Rival){const cam=camera,flick=(n:number)=>.55+.45*Math
   ctx.globalAlpha=1;}
  // Telegraphs. The jet: a flare at the jaws and the street the sweep will cross. The dive: the landing ring where the kaiju stood.
  if(r.windup>0&&r.attack==='jet'){const m={x:r.x+r.w/2+r.face*r.w*.45,y:r.y+r.h*.32},pulse=.2+.2*Math.abs(Math.sin(time*14));ctx.globalAlpha=pulse;
-  poly([[m.x-cam,m.y],[m.x+r.face*TB.jetRange*Math.cos(TB.jetUp*Math.PI/180)-cam,m.y-TB.jetRange*Math.sin(TB.jetUp*Math.PI/180)],[m.x+r.face*TB.jetRange*Math.cos(TB.jetDown*Math.PI/180)-cam,m.y-TB.jetRange*Math.sin(TB.jetDown*Math.PI/180)]],'#e8401a');
+  {const up=r.perch?EMP.jetUp:TB.jetUp,dn=r.perch?EMP.jetDown:TB.jetDown;poly([[m.x-cam,m.y],[m.x+r.face*TB.jetRange*Math.cos(up*Math.PI/180)-cam,m.y-TB.jetRange*Math.sin(up*Math.PI/180)],[m.x+r.face*TB.jetRange*Math.cos(dn*Math.PI/180)-cam,m.y-TB.jetRange*Math.sin(dn*Math.PI/180)]],'#e8401a');}
   ctx.globalAlpha=1;ctx.fillStyle='#ffb13b';ctx.beginPath();ctx.arc(m.x-cam,m.y,4+8*(1-r.windup/TB.jetTelegraph),0,7);ctx.fill();}
  if(r.windup>0&&r.attack==='dive'){const lx=r.mark===undefined?r.x+r.w/2:Math.max(r.x+r.w/2-TB.diveRange,Math.min(r.x+r.w/2+TB.diveRange,r.mark)),gy=groundAt(lx);ctx.globalAlpha=.25+.3*Math.abs(Math.sin(time*16));
   ctx.fillStyle='#e8401a';ctx.beginPath();ctx.ellipse(lx-cam,gy-3,TB.diveRadius,10,0,0,7);ctx.fill();ctx.globalAlpha=1;ctx.strokeStyle='#ffb13b';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(lx-cam,gy-3,TB.diveRadius*(1-r.windup/TB.diveTelegraph*.6),9,0,0,7);ctx.stroke();}
@@ -3345,6 +3451,10 @@ if((window as any).__kaijuTest)Object.defineProperty(window,'kaijuTest',{value:{
  torch:(i:number)=>!!buildings[i]&&setAlight(buildings[i]),smash:(i:number)=>{const b=buildings[i];if(b&&b.hpNow>0)hit(b,b.hpNow,false,1);},
  spawnUnit:(type:string,x:number)=>{spawnUnit(military,type as any,x);},spawnUnitOn:(type:string,x:number,y:number)=>{const u=spawnUnit(military,type as any,x);u.y=y-u.h;},perchOn:(i:number)=>{const b=buildings[i];if(!b)return;player.x=b.x+b.w/2-bodyWidth()/2;player.y=b.base-b.h-bodyHeight()-2;player.vy=0;},smashSpan:(i:number)=>{const sp=spans[i];if(sp&&sp.alive)hitSpan(sp,1e9);},
  // Bring balloon i down (or up) to altitude `alt` over its tether, so a test can reach it with a flame, a shot or a thrown wreck.
+ // The Empire State finale: stand Tlézcatl on ledge i (woken, erupted), so a test can start from any ledge.
+ perchRival:(i:number)=>{const f=finale,c=f?.climb,r=rival;if(!f||!c||!r)return false;f.woke=true;r.dormant=false;r.alpha=1;c.crackOpen=1;c.emerge=0;c.move=null;c.pending=null;c.fall=null;if(i>=0)r.x=standX(c.perches[i],r);else r.x=c.crackX-r.w/2;setPerch(r,c,i);r.cooldown=2;return true;},
+ // Keep the kaiju safe for `s` seconds (long climbs and falls in a test).
+ shield:(sec:number)=>{combat.mercy=sec;},
  setBalloonAlt:(i:number,alt:number)=>{const b=balloons[i];if(b)b.alt=alt;},hurtRival:(d:number)=>strikeRival(d,0,1),fillUltimate:()=>{combat.ultimate=B.ultimateMax;},smashRail:(i:number)=>{const r=rails[i];if(r&&r.alive)hitRail(r,1e9);},sinkCutter:()=>hitObjective(1e9),
  growTo:(n:number)=>{setGrowth(combat,n,3);},smashSlope:(i:number)=>{const s=slopes[i];if(s&&s.alive)hitSlope(s,1e9);},
  shear:(i:number,frac:number)=>{const b=buildings[i];return !!b&&tryShear(b,1e6,{x:b.x+b.w/2,y:b.base-b.h*frac},false,1);},place:(px:number,py:number)=>{player.x=px;player.y=py-bodyHeight();player.vy=0;player.grounded=false;},

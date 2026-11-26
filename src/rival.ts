@@ -1,8 +1,8 @@
 // M4 conventional-HP rival: shared temporary moveset so the campaign is playable.
 // M5 replaces this with individual kaiju attacks, stages and Ultimate behavior.
 import {groundAt} from './terrain.ts';
-import {CAMPAIGN as P,CONFIG as C,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB} from './config.ts';
-import {partHit} from './hitbox.ts';
+import {CAMPAIGN as P,CONFIG as C,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,EMPIRE as EM} from './config.ts';
+import {partHit,solidParts} from './hitbox.ts';
 import {overlaps,solid,damageBuilding} from './rules.ts';import type {Building} from './rules.ts';
 import {segmentHits} from './military.ts';import type {Rect} from './military.ts';
 export type Rival=Rect&{hp:number,maxHP:number,dead:boolean,face:number,turn:number,cooldown:number,windup:number,attack:'melee'|'ranged'|'shotgun'|'stampede'|'jet'|'lob'|'dive'|'erupt',stagger:number,kb:number,shots:{x:number,y:number,vx:number,life:number}[],
@@ -16,7 +16,10 @@ export type Rival=Rect&{hp:number,maxHP:number,dead:boolean,face:number,turn:num
  // the first building or the street cut it short, `street` the x where it met the street); `globs` = lava in flight; `pools` = lava pools and fire patches on the
  // street (`y` the surface, `fire` for jet patches); `dive` = a Magma Dive leap under way; `mark` = the x a dive will land on (locked in the crouch); `ring` = the
  // slam's lava ring for drawing; `erupted` = the one Eruption is spent. `combo` counts his attacks for the Dive's rhythm.
- tlez?:boolean,flame?:Flame|null,globs?:Glob[],pools?:Pool[],dive?:{t:number,x0:number,x1:number,y0:number,y1:number}|null,mark?:number,ring?:{x:number,y:number,t:number}|null,erupted?:boolean,burn?:number};
+ tlez?:boolean,flame?:Flame|null,globs?:Glob[],pools?:Pool[],dive?:{t:number,x0:number,x1:number,y0:number,y1:number}|null,mark?:number,ring?:{x:number,y:number,t:number}|null,erupted?:boolean,burn?:number,
+ // The Empire State finale (src/game.ts tickClimbFinale): `perch` = the ledge he stands on (`y` the surface, `x0`..`x1` where he may stand); while set he owns his height (no snapping
+ // to the street), never Magma Dives, flames steeply down the wall and his lava lands on the setback below the kaiju.
+ perch?:{x0:number,x1:number,y:number}|null};
 export type Flame={t:number,tick:number,mx:number,my:number,angle:number,len:number,street:number|null,hit:boolean};
 export type Glob={x:number,y:number,vx:number,vy:number,grav:number,floor:number,damage:number,size:number,pool:number,poolSeconds:number,life:number};
 export type Pool={x:number,w:number,y:number,life:number,max:number,damage:number,fire?:boolean};
@@ -39,9 +42,9 @@ export function tickRival(r:Rival,dt:number,player:Rect,worldWidth:number,buildi
  else if(r.attack==='shotgun')fanRocks(r);
  else if(r.attack==='stampede')r.charge={dir:r.face,ran:0,hit:false};
  else if(r.attack==='jet')r.flame={t:0,tick:0,mx:0,my:0,angle:TB.jetUp,len:0,street:null,hit:false};
- else if(r.attack==='lob')lobGlobs(r,player,worldWidth);
+ else if(r.attack==='lob')lobGlobs(r,player,worldWidth,buildings);
  else if(r.attack==='dive')r.dive={t:0,x0:r.x,x1:diveLanding(r,worldWidth),y0:r.y,y1:diveFloor(r,diveLanding(r,worldWidth))};
- else if(r.attack==='erupt')eruptBurst(r,worldWidth);
+ else if(r.attack==='erupt')eruptBurst(r,worldWidth,buildings);
  else if(r.shots.length<P.bossShotCap)r.shots.push({x:r.x+r.w/2,y:r.y+r.h*.6,vx:r.face*P.bossShotSpeed,life:P.bossShotLife});
  r.cooldown=r.attack==='melee'?P.bossMeleeCooldown:r.attack==='shotgun'?KB.shotgunCooldown:r.attack==='stampede'?0:r.attack==='lob'?TB.lobCooldown:r.attack==='jet'||r.attack==='dive'?0:r.attack==='erupt'?TB.eruptRecover+TB.eruptCooldown:P.bossRangedCooldown;
  if(r.attack==='erupt')r.stagger=TB.eruptRecover;
@@ -51,14 +54,16 @@ export function tickRival(r:Rival,dt:number,player:Rect,worldWidth:number,buildi
  else{
  const distance=Math.abs(player.x+player.w/2-r.x-r.w/2);
  let nx=r.x+(distance>P.bossRange+r.w*.5?r.face*(r.kaiban?KB.speed:r.tlez?TB.speed:P.bossSpeed)*dt:0)+r.kb*dt;
- for(const b of buildings){const p=solid(b)?partHit(b,{x:nx,y:r.y,w:r.w,h:r.h},true):null;if(!p)continue;
+ if(!r.perch)for(const b of buildings){const p=solid(b)?partHit(b,{x:nx,y:r.y,w:r.w,h:r.h},true):null;if(!p)continue;
  nx=r.face>0?p.x-r.w:p.x+p.w;if(r.cooldown===0){damageBuilding(b,95,'impact');r.cooldown=1;}break;
  }
  if(overlaps({x:nx,y:r.y,w:r.w,h:r.h},player))nx=r.face>0?player.x-r.w:player.x+player.w;
- r.x=Math.max(0,Math.min(worldWidth-r.w,nx));r.y=groundAt(r.x+r.w/2)-r.h;
+ if(r.perch){r.x=Math.max(r.perch.x0,Math.min(r.perch.x1-r.w,nx));r.y=r.perch.y-r.h;}else{r.x=Math.max(0,Math.min(worldWidth-r.w,nx));r.y=groundAt(r.x+r.w/2)-r.h;}
  if(r.cooldown===0){
   if(r.tlez){const n=r.combo=(r.combo??0)+1,close=distance<P.bossRange+r.w,frac=r.hp/r.maxHP;
-   const move:Rival['attack']=!r.erupted&&frac<TB.eruptBelow?'erupt':frac<TB.diveBelow&&n%TB.diveEvery===0?'dive':close?'melee':distance>=TB.far?'lob':'jet';
+   // On a ledge the gap to the kaiju matters: well below him is a flame down the wall (close in) or a lob onto the setback it stands on.
+   const gap=r.perch?player.y+player.h-feet(r):0,below=gap>140,above=gap<-140;
+   const move:Rival['attack']=!r.erupted&&frac<TB.eruptBelow?'erupt':!r.perch&&frac<TB.diveBelow&&n%TB.diveEvery===0?'dive':below?(gap<=260&&distance<=200?'jet':'lob'):above?'lob':close?'melee':distance>=TB.far?'lob':'jet';
    if(move==='erupt')r.erupted=true;if(move==='dive')r.mark=Math.max(0,Math.min(worldWidth,player.x+player.w/2));
    r.attack=move;r.windup=move==='melee'?P.bossTelegraph:move==='jet'?TB.jetTelegraph:move==='lob'?TB.lobTelegraph:move==='dive'?TB.diveTelegraph:TB.eruptCharge;}
   else if(r.kaiban){const n=r.combo=(r.combo??0)+1,close=distance<P.bossRange+r.w;
@@ -102,16 +107,18 @@ type Hit={damage:number,strength:number,direction:number};
 const feet=(r:Rival)=>r.y+r.h,mouth=(r:Rival)=>({x:r.x+r.w/2+r.face*r.w*.45,y:r.y+r.h*.32}),lerp=(a:number,b:number,k:number)=>a+(b-a)*k;
 // Flame Jet: the cone's centre line is walked out from the jaws until a building or the street stops it.
 function tickFlame(r:Rival,dt:number,player:Rect,worldWidth:number,buildings:Building[],hits:Hit[]){
- const f=r.flame!;f.t+=dt;const k=Math.min(1,f.t/(TB.jetSweep*.7)),m=mouth(r);f.mx=m.x;f.my=m.y;f.angle=lerp(TB.jetUp,TB.jetDown,k);
- const a=f.angle*Math.PI/180,dx=r.face*Math.cos(a),dy=-Math.sin(a);let len=TB.jetRange,hitB:Building|null=null;f.street=null;
+ const f=r.flame!;f.t+=dt;const k=Math.min(1,f.t/(TB.jetSweep*.7)),m=mouth(r);f.mx=m.x;f.my=m.y;f.angle=lerp(r.perch?EM.jetUp:TB.jetUp,r.perch?EM.jetDown:TB.jetDown,k);
+ const a=f.angle*Math.PI/180,dx=r.face*Math.cos(a),dy=-Math.sin(a);let len=TB.jetRange,hitB:Building|null=null,hitP:{x:number,y:number}|null=null,roof:number|null=null;f.street=null;
  for(let d=0;d<=TB.jetRange;d+=6){const x=f.mx+dx*d,y=f.my+dy*d;
   if(x<0||x>worldWidth){len=d;break;}
   if(y>=groundAt(x)){len=d;f.street=x;break;}
-  const b=buildings.find(b=>solid(b)&&partHit(b,{x:x-2,y:y-2,w:4,h:4},true));if(b){len=d;hitB=b;break;}}
+  const b=buildings.find(b=>solid(b)&&partHit(b,{x:x-2,y:y-2,w:4,h:4},true));if(b){len=d;hitB=b;hitP={x,y};const q=partHit(b,{x:x-2,y:y-2,w:4,h:4},true)!;if(r.perch&&y-q.y<=14)roof=q.y;break;}}
  f.len=len;f.tick-=dt;
  while(f.tick<=0&&f.t<TB.jetSweep+TB.jetTick){f.tick+=TB.jetTick;
   if(coneHits(f,r.face,player)){hits.push({damage:TB.jetDamage,strength:f.hit?0:TB.jetKnock,direction:r.face});f.hit=true;}
   if(hitB)damageBuilding(hitB,TB.jetBuilding,'impact');
+  // Flame washing a ledge leaves fire patches on it, as it does on the street.
+  if(roof!==null&&hitP){const half=lerp(TB.jetWidth[0],TB.jetWidth[1],len/TB.jetRange);for(let x=Math.floor((hitP.x-half)/TB.fireCell)*TB.fireCell;x<=hitP.x+half;x+=TB.fireCell)firePatch(r,x,roof);}
   if(f.street!==null){const half=lerp(TB.jetWidth[0],TB.jetWidth[1],len/TB.jetRange);
    for(let x=Math.floor((f.street-half)/TB.fireCell)*TB.fireCell;x<=f.street+half;x+=TB.fireCell)firePatch(r,x,groundAt(x+TB.fireCell/2));}}
  if(f.t>=TB.jetSweep){r.flame=null;r.stagger=TB.jetRecover;r.cooldown=TB.jetRecover+TB.jetCooldown;r.face=player.x+player.w/2>=r.x+r.w/2?1:-1;}
@@ -129,14 +136,21 @@ function firePatch(r:Rival,x:number,y:number){const old=r.pools!.find(p=>p.fire&
  r.pools!.push({x,w:TB.fireCell,y,life:TB.fireSeconds,max:TB.fireSeconds,damage:TB.fireDamage,fire:true});}
 // Lava globs: ballistic, stop on the first thing they fall onto (never on the way up). `floor` is the surface they were aimed at.
 function launch(r:Rival,x0:number,y0:number,land:number,floor:number,T:number,g:number,damage:number,pool:number,seconds:number){
+ // From a ledge the arc rises EM.lobApex above the jaws first (and takes as long as that needs), so it clears the lip of his own ledge on the way to the setback below.
+ if(r.perch){const vy=-Math.sqrt(2*g*EM.lobApex),t=(-vy+Math.sqrt(vy*vy+2*g*Math.max(0,floor-2-y0)))/g;r.globs!.push({x:x0,y:y0,vx:(land-x0)/t,vy,grav:g,floor,damage,size:TB.lobSize,pool,poolSeconds:seconds,life:t+1});return;}
  r.globs!.push({x:x0,y:y0,vx:(land-x0)/T,vy:(floor-2-y0-.5*g*T*T)/T,grav:g,floor,damage,size:TB.lobSize,pool,poolSeconds:seconds,life:T+1});}
-function lobGlobs(r:Rival,player:Rect,worldWidth:number){const m=mouth(r),n=TB.lobs,cx=player.x+player.w/2;
+// From a ledge the globs fall onto the highest roof under the landing spot that is below the jaws (a lower setback), else the street.
+export function surfaceBelow(buildings:Building[],x:number,y:number){let s=groundAt(x);for(const b of buildings)if(solid(b))for(const p of solidParts(b))if(x>=p.x&&x<=p.x+p.w&&p.y>=y&&p.y<s)s=p.y;return s;}
+const landFloor=(r:Rival,buildings:Building[],x:number,y:number)=>r.perch?surfaceBelow(buildings,x,y):groundAt(x);
+// A magma pool put down by the finale (the wake's split street): burns like any pool of his.
+export function lavaPool(r:Rival,x:number,w:number,y:number,seconds:number,damage=TB.lobPoolDamage){r.pools??=[];addPool(r,{x,w,y,life:seconds,max:seconds,damage});}
+function lobGlobs(r:Rival,player:Rect,worldWidth:number,buildings:Building[]){const m=mouth(r),n=TB.lobs,cx=player.x+player.w/2;
  for(let i=0;i<n;i++){const land=Math.max(0,Math.min(worldWidth,cx+(i-(n-1)/2)*TB.lobSpread)),T=lerp(TB.lobFlight[0],TB.lobFlight[1],n>1?i/(n-1):0);
-  launch(r,m.x,m.y,land,groundAt(land),T,TB.lobGravity,TB.lobDamage,TB.lobPool,TB.lobPoolSeconds);}}
+  launch(r,m.x,m.y,land,landFloor(r,buildings,land,m.y),T,TB.lobGravity,TB.lobDamage,TB.lobPool,TB.lobPoolSeconds);}}
 // Eruption: a burst of globs out of his middle onto random spots either side, each leaving a pool.
-function eruptBurst(r:Rival,worldWidth:number){const cx=r.x+r.w/2,cy=r.y+r.h*.4;
+function eruptBurst(r:Rival,worldWidth:number,buildings:Building[]){const cx=r.x+r.w/2,cy=r.y+r.h*.4;
  for(let i=0;i<TB.eruptGlobs;i++){const land=Math.max(0,Math.min(worldWidth,cx+(Math.random()*2-1)*TB.eruptRange)),T=lerp(TB.eruptFlight[0],TB.eruptFlight[1],Math.random());
-  launch(r,cx,cy,land,groundAt(land),T,TB.eruptGravity,TB.eruptGlobDamage,TB.eruptPool,TB.eruptPoolSeconds);}}
+  launch(r,cx,cy,land,landFloor(r,buildings,land,cy),T,TB.eruptGravity,TB.eruptGlobDamage,TB.eruptPool,TB.eruptPoolSeconds);}}
 // Magma Dive: lands where the kaiju stood when the crouch began, at most diveRange away; on a roof he stays at his own height.
 const diveLanding=(r:Rival,worldWidth:number)=>{const c=Math.max(r.x+r.w/2-TB.diveRange,Math.min(r.x+r.w/2+TB.diveRange,r.mark??r.x+r.w/2));return Math.max(0,Math.min(worldWidth-r.w,c-r.w/2));};
 const diveFloor=(r:Rival,x:number)=>feet(r)<groundAt(r.x+r.w/2)-2?r.y:groundAt(x+r.w/2)-r.h;
@@ -157,7 +171,9 @@ function tickLava(r:Rival,dt:number,player:Rect,worldWidth:number,buildings:Buil
  if(r.ring){r.ring.t+=dt;if(r.ring.t>.6)r.ring=null;}
  for(const g of r.globs!){g.vy+=g.grav*dt;g.x+=g.vx*dt;g.y+=g.vy*dt;g.life-=dt;if(g.vy<=0)continue;const box={x:g.x-g.size/2,y:g.y-g.size/2,w:g.size,h:g.size};
   if(overlaps(box,player)){hits.push({damage:g.damage,strength:TB.lobKnock,direction:Math.sign(g.vx)||1});g.life=0;continue;}
-  if(buildings.some(b=>solid(b)&&partHit(b,box,true)&&(damageBuilding(b,g.damage*2,'impact'),true))){g.life=0;continue;}
+  // A glob that meets the roof it was aimed at (a lower setback) splashes there; anything else it meets is a wall.
+  const wall=buildings.find(b=>solid(b)&&partHit(b,box,true));
+  if(wall){const q=partHit(wall,box,true)!;g.life=0;if(Math.abs(q.y-g.floor)<=8)addPool(r,{x:g.x-g.pool/2,w:g.pool,y:g.floor,life:g.poolSeconds,max:g.poolSeconds,damage:TB.lobPoolDamage});else damageBuilding(wall,g.damage*2,'impact');continue;}
   if(g.y>=g.floor-2){g.life=0;addPool(r,{x:g.x-g.pool/2,w:g.pool,y:g.floor,life:g.poolSeconds,max:g.poolSeconds,damage:TB.lobPoolDamage});}}
  r.globs=r.globs!.filter(g=>g.life>0&&g.x>=0&&g.x<worldWidth);
  // However many pools and patches the kaiju stands across, it burns once per fireTick (for the worst of them), not once each.

@@ -608,3 +608,17 @@ export const TLEZCATL_BOSS = {speed:95,far:430,
  diveBelow:.5,diveEvery:3,diveTelegraph:1.1,diveFlight:.75,diveRange:520,diveHeight:210,diveDamage:16,diveRadius:130,diveKnock:320,diveGlobs:6,diveGlobSpeed:[220,380] as [number,number],diveGlobAngle:[35,70] as [number,number],diveGlobDamage:7,divePool:90,diveRecover:2,diveCooldown:1,
  eruptBelow:.25,eruptCharge:1.8,eruptBreak:220,eruptStagger:2.6,eruptGlobs:14,eruptRange:640,eruptFlight:[.9,1.5] as [number,number],eruptGravity:1900,eruptGlobDamage:11,eruptPool:60,eruptPoolSeconds:3.5,eruptRecover:2.6,eruptCooldown:1,
  poolCap:24,meleeCooldown:2};
+
+// New York's Empire State finale (NYC rework card 6; `finale.perches` in src/levels.ts, tickClimbFinale in src/game.ts, the `perch` fields in src/rival.ts).
+// The tower is a staircase of setbacks: each ledge is `ledge` px wide (room for the kaiju and Tlézcatl side by side), the tiers rise to `tops`
+// (px above the street), the mast stands on the summit. Tlézcatl climbs ahead of the kaiju and fights from the ledges (the perches). He stays put
+// until the kaiju has stood on his ledge for `press` s (or `rest` s have passed with him idle), then telegraphs (`telegraph` s) and goes to the next
+// ledge: a leap (`leapTime` s) when the rise is at most `leapRise`, otherwise a scramble up the wall at `climbSpeed`. From a ledge his Flame Jet
+// sweeps steeply down the wall (`jetUp` to `jetDown` degrees) and his lobs land on whatever setback is below the kaiju; he never Magma Dives from
+// a ledge. At each health break the ledge under the kaiju gives way after `warn` s of rumbling: the slab above the next tier down is cut away
+// (`rubble` slabs rain to the street) and both kaiju drop a tier; `stagger` s of shaking. The wake splits the street at `crack`
+// px before the tower: `pools` magma pools burn there. At 0 health he retreats: a dive (`diveTime` s) off the tower onto the cracked street, then
+// he sinks into the magma over `sinkTime` s.
+export const EMPIRE = {tw:1500,ledge:260,tops:[300,800,1300,1750,2100] as number[],east:[1500,1440,1420,1380,1340] as number[],mast:400,
+ press:2.2,rest:16,telegraph:.9,leapRise:380,leapTime:.8,climbSpeed:250,jetUp:15,jetDown:-72,lobApex:130,
+ warn:1.1,rubble:14,stagger:2.2,crack:520,pools:5,poolSeconds:9,poolDamage:5,wakeShake:14,diveTime:1.5,sinkTime:2.6,diveHeight:260};

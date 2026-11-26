@@ -17,6 +17,8 @@ function entry(b:Shape){
  const all:HitPart[]=b.parts?.length?b.parts.map(p=>({x:b.x+p.x,y:g-p.top,w:p.w,h:p.top-(p.base??0),solid:!p.spire})):[{x:b.x,y:g-b.h,w:b.w,h:b.h,solid:true}];
  const e={x:b.x,w:b.w,h:b.h,g,all,solid:all.filter(p=>p.solid)};cache.set(b,e);return e;
 }
+// A building whose parts were rewritten in place (a tower losing a setback) must drop its cached world-space parts.
+export function resetParts(b:object){cache.delete(b);}
 // Every part: what attacks, projectiles and effects test against.
 export function hitParts(b:Shape):readonly HitPart[]{return entry(b).all;}
 // Solid parts only: what bodies collide with, stand on and climb.
