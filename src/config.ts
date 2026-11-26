@@ -561,3 +561,24 @@ export const GATE = {chargeEvery:13,vanish:.9,telegraph:1.5,chargeSpeed:430,char
 // row from point blank are broken up by a Stampede.
 export const KAIBAN_BOSS = {speed:80,shotgunTelegraph:.9,shotgunCooldown:2.6,rocks:6,rockDamage:3,rockSpeed:[380,520] as [number,number],rockAngle:[8,50] as [number,number],rockGravity:1100,rockLife:.9,rockKnock:60,rockSize:9,rockCap:12,
  stampedeTelegraph:1.3,stampedeReach:640,stampedeSpeed:400,stampedeDamage:14,stampedeKnock:360,stampedeBuilding:400,stampedeRecover:2,far:520,meleeStreak:2};
+// Tlézcatl as a boss (src/rival.ts, any boss level whose rival is Tlézcatl): the player's own kit turned on the kaiju, picked by range.
+// Up close he rakes (the shared melee). At mid range (up to `far`) a Flame Jet: a flare at the jaws (`jetTelegraph` s, he locks his
+// facing and the cone's reach shows on the street), then a cone `jetRange` long and widening to `jetWidth` that sweeps down from
+// `jetUp` to `jetDown` degrees over the first 70% of `jetSweep` s (then holds low, scorching the street), burning the kaiju for `jetDamage` every `jetTick` s. It stops at the first building and the
+// street, and leaves fire patches (`fireCell` px wide, at most `fireCap`, burning `fireSeconds` s for `fireDamage` every `fireTick`)
+// where it washes the street. It cannot be staggered, then he is winded for `jetRecover` s. From `far` away he lobs `lobs` lava globs
+// (`lobTelegraph` s rear-up, arcing `lobFlight` s onto the kaiju's spot, `lobSpread` px apart); a glob hits for `lobDamage` or splashes a pool
+// `lobPool` px wide that burns `lobPoolSeconds` s for `lobPoolDamage` every `fireTick`. Below `diveBelow` of his health every `diveEvery`th
+// attack is a Magma Dive: a crouch (`diveTelegraph` s, the landing ring shows where the kaiju stood), a leap of up to `diveRange` px that
+// cannot be staggered, and a slam (`diveDamage` inside `diveRadius`, a lava ring `diveGlobs` globs out both ways and a pool under him), then
+// `diveRecover` s winded. Below `eruptBelow` he plants for one Eruption: `eruptCharge` s of shuddering, then `eruptGlobs` globs rain on
+// random spots out to `eruptRange` px (`eruptGlobDamage` each, pools of `eruptPool` px). A hit of `eruptBreak` strength (a Heavy or an
+// Ultimate) in the charge breaks it up: it is spent and he is staggered `eruptStagger` s. Either way it is one per fight, and after the burst
+// he is winded `eruptRecover` s. Pools and patches expire; a retreat or a KO clears every move.
+export const TLEZCATL_BOSS = {speed:95,far:430,
+ jetTelegraph:.9,jetSweep:1.5,jetRange:300,jetWidth:[8,40] as [number,number],jetUp:25,jetDown:-34,jetTick:.12,jetDamage:3,jetKnock:30,jetRecover:1.6,jetBuilding:6,jetCooldown:.8,
+ fireCell:36,fireCap:16,fireSeconds:3.2,fireDamage:4,fireTick:.4,fireHeight:16,
+ lobs:3,lobTelegraph:1,lobFlight:[.9,1.15] as [number,number],lobSpread:90,lobDamage:9,lobKnock:80,lobSize:9,lobGravity:1500,lobPool:64,lobPoolSeconds:4,lobPoolDamage:4,lobCooldown:2.6,
+ diveBelow:.5,diveEvery:3,diveTelegraph:1.1,diveFlight:.75,diveRange:520,diveHeight:210,diveDamage:16,diveRadius:130,diveKnock:320,diveGlobs:6,diveGlobSpeed:[220,380] as [number,number],diveGlobAngle:[35,70] as [number,number],diveGlobDamage:7,divePool:90,diveRecover:2,diveCooldown:1,
+ eruptBelow:.25,eruptCharge:1.8,eruptBreak:220,eruptStagger:2.6,eruptGlobs:14,eruptRange:640,eruptFlight:[.9,1.5] as [number,number],eruptGravity:1900,eruptGlobDamage:11,eruptPool:60,eruptPoolSeconds:3.5,eruptRecover:2.6,eruptCooldown:1,
+ poolCap:24,meleeCooldown:2};

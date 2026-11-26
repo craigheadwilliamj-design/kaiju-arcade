@@ -941,9 +941,15 @@ export function loadPresentationArt(){for(const src of slotArt())preload(src);}
 // form plays, load and decode before the other stages, so what is on screen is ready soonest; the rest follow so that a stage change
 // in either direction never waits on the network. Calling it again for the same kaiju only reorders what is still to load.
 let artFor='';
+// A boss drawn as its kaiju's own sprite (Tlézcatl in src/game.ts): only the named strips of one stage form (and the base form it borrows
+// from) load, next to whatever the player's kaiju needs, and they survive loadKaijuArt's tidy-up while that boss is on screen.
+let bossKeep=new Set<string>();
+export function loadBossArt(name:string,stage:number,anims:string[]){const s=SPRITES[name];if(typeof Image==='undefined'||!s)return;
+ const f=form(name,stage),srcs=anims.flatMap(a=>[f?.anims[a]?.src,f?.borrow?s.anims[a]?.src:undefined]).filter(Boolean) as string[];
+ bossKeep=new Set(srcs.map(file));for(const src of srcs)preload(src);}
 export function loadKaijuArt(name:string,first=1){const s=SPRITES[name];if(typeof Image==='undefined'||!s)return;
  const now=[...new Set([...strips(form(name,first)),...strips(s)])],all=[...new Set([...now,...Object.values(s.stages??{}).flatMap(strips)])];
- if(artFor!==name){artFor=name;const keep=new Set([...slotArt(),...all].map(file));for(const src of [...images.keys()])if(!keep.has(src))images.delete(src);}
+ if(artFor!==name){artFor=name;const keep=new Set([...slotArt(),...all,...bossKeep].map(file));for(const src of [...images.keys()])if(!keep.has(src))images.delete(src);}
  for(const src of now)preload(src);
  const settled=(img:HTMLImageElement)=>img.decode?img.decode().catch(()=>{}):new Promise<void>(r=>{if(img.complete)r();else img.onload=img.onerror=()=>r();});
  Promise.all(now.map(src=>settled(images.get(file(src))!))).then(()=>{if(artFor===name)for(const src of all)preload(src);});}
