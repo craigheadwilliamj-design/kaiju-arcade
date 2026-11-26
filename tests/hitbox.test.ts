@@ -21,7 +21,8 @@ test('every landmark has a valid, distinct part silhouette',()=>{
   // Inside the footprint and above the street; crowns and spires may rise above the box.
   for(const p of hitParts(b))assert.ok(p.x>=b.x&&p.x+p.w<=b.x+b.w&&p.y+p.h<=C.ground,`${b.label} part inside its footprint`);}
  // Named NYC towers each have their own authored tiers; every other landmark's parts follow its drawn shape.
- const nyc=landmarks.filter(b=>!b.shape);assert.ok(nyc.length>=8);
+ // (The Empire State boss level's tower, hp 1e7, is the authored tiers re-proportioned into a supertall staircase: tests/nyc-act3.test.ts.)
+ const nyc=landmarks.filter(b=>!b.shape&&b.hp<1e6);assert.ok(nyc.length>=8);
  for(const b of nyc)assert.deepEqual(b.parts?.map(p=>p.top),landmarkShape(b.label)!.map(p=>Math.round(p.top*C.cityScale)),`${b.label} uses its authored tiers`);
  assert.equal(new Set(nyc.map(b=>JSON.stringify(landmarkShape(b.label)))).size,new Set(nyc.map(b=>b.label)).size,'each NYC tower has its own outline');
  for(const b of landmarks.filter(b=>b.shape))assert.ok(b.parts!.some(p=>!p.spire&&!p.base),`${b.label} (${b.shape}) stands on the street`);
