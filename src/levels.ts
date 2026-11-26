@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,BULL} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -80,7 +80,7 @@ export const CITIES:City[]=[
 // New York Act 1 (NYC rework card 2), opt-in: `vents` x of steam-vent manholes (src/config.ts STEAM): they puff now and then, and a slam or pound
 // near one bursts it into a steam jet that scalds troops, launches cars and blinds helicopters (it never sets a building alight, unlike SF's gas
 // mains). `bull` x of the Charging Bull, a heavy bronze prop (src/config.ts BULL: grabbable by a strong kaiju, thrown short and hard, immune to
-// street damage). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
+// street damage, destructible only by deliberate force; the street round it is cleared into a plaza). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
 // without making the level a there-and-back with a west exit): The Battery starts in the harbour, over a `bands` water span with a seabed `ground` profile.
 export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
  target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
@@ -610,7 +610,10 @@ function nycWallStreet():BlockDef{
  const flank=[[4010,900],[4450,900],[3860,720],[4590,720]].map(([x,h],i)=>scaled({...BUILDING_PRESETS.x,x,h,label:'',color:cityById('nyc').colors[i+1]}));
  b={...b,buildings:[...b.buildings,...flank]};
  // The line's ends are tunnel portals, so each sits in a cross-street gap rather than mid-block under a tower.
- return {...b,subway:[[portalGap(b,sc(1800)),portalGap(b,sc(3350))]],bull:sc(BULL_X),
+ // A little plaza round the Bull: no parked cars, cart, hydrant or crowd within BULL.clear (the loop also clears parked rows and lamps there).
+ const bx=sc(BULL_X),near=(x:number,w=0)=>x+w>bx-BULL.clear&&x<bx+BULL.w+BULL.clear;
+ b={...b,cars:b.cars.filter(x=>!near(x,60)),street:b.street.filter(x=>!near(x,8)),buildings:b.buildings.filter(x=>!(x.kind==='tiny'&&near(x.x,x.w)))};
+ return {...b,subway:[[portalGap(b,sc(1800)),portalGap(b,sc(3350))]],bull:bx,
   target:{x:sc(T),label:'NYSE COMMAND POST',art:'exchange'},police:true,swat:[sc(2600),sc(2900),sc(3300),sc(5300)].map(x=>x),air:[sc(3000),sc(5200)],
   units:[['police',sc(1100)],['soldier',sc(2300)],['soldier',sc(3000)]]};
 }

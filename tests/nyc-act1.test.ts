@@ -263,3 +263,62 @@ test('real loop: SoHo: the Guard roll in when the exit opens; Wall Street and th
  }finally{h.release();h.cleanup();}
  for(const b of [0,1]){const g=await boot(b);try{assert.equal(g.state().ventList.length,0,'no vents');assert.equal(g.state().bull!==null,b===1,'the Bull is Wall Street\'s alone');}finally{g.release();g.cleanup();}}
 });
+
+// Card 2 of the NYC playtest fixes: the Bull is easy to see, gives feedback, wins the grab, and can be destroyed by deliberate force only.
+const bullOf=(h:any)=>h.state().vehicles.find((v:any)=>v.kind==='bull');
+// Walk up, pick the Bull up, and throw it along the street; true once it lands (or breaks).
+const throwBull=(h:any,probe?:{delta:number})=>{const b=bullOf(h);if(!b)return false;standWest(h,b);h.step(2);if(!grab(h,'bull'))return false;h.tap('KeyH');let prev=h.state().score;for(let n=0;n<240;n++){h.step();const v=bullOf(h),sc=h.state().score;if(!v&&probe)probe.delta=sc-prev;prev=sc;if(!v||(n>8&&v.state==='parked'))return true;}return false;};
+
+test('the Bull stands in its own plaza and no other level has one',()=>{
+ const bx=WALL.bull!;for(const x of WALL.cars)assert.ok(x+60<bx-BL.clear||x>bx+BL.w+BL.clear,`no parked car in the plaza (${x})`);
+ assert.ok(!WALL.buildings.some(b=>b.kind==='tiny'&&b.x+b.w>bx-BL.clear&&b.x<bx+BL.w+BL.clear),'no cart or junk in the plaza');
+ assert.ok(!WALL.street.some(x=>x+8>bx-BL.clear&&x<bx+BL.w+BL.clear),'no crowd standing in front of it');
+ for(const [ci,city] of LEVELS.entries())for(const b of city)if(b!==WALL)assert.equal(b.bull,undefined,`${b.name} (city ${ci}) has no Bull`);
+ assert.ok(BL.hp>0&&BL.breakPoints>0);
+});
+
+test('real loop: the Bull plaza is clear in the real level, the hint shows once, a car cannot steal the grab, and walking into it clangs',async()=>{
+ const h=await boot(1);
+ try{
+  const b=bullOf(h);assert.equal(b.hp,BL.hp,'full health');
+  assert.ok(!h.state().vehicles.some((v:any)=>['car','van','bus'].includes(v.kind)&&v.x+v.w>b.x-BL.clear&&v.x<b.x+b.w+BL.clear),'no traffic parked round the Bull');
+  // Standing in reach shows the one-time hint.
+  standWest(h,b);h.step(6);assert.equal(h.state().banner,'GRAB · THE BULL');for(let n=0;n<240;n++)h.step();h.test().teleport(b.x-300);h.step(4);standWest(h,b);h.step(6);assert.notEqual(h.state().banner,'GRAB · THE BULL','shown once');
+  // The Bull wins the grab even with a car in reach.
+  const s=h.state();h.test().teleport(b.x-s.width+10);h.step(2);assert.ok(grab(h,'bull'),'grabbed the Bull first');h.tap('KeyH');h.step(120);
+ }finally{h.release();h.cleanup();}
+});
+
+test('real loop: the Bull clangs when walked into, and street damage and a weak kaiju leave its hp alone',async()=>{
+ const h=await boot(1);
+ try{
+  const b=bullOf(h);h.test().setKaiju('Mogurodon');standWest(h,b);h.step(2);h.tap('KeyH');h.step(3);assert.equal(h.state().held,null,'too heavy for a weak kaiju');
+  hit(h,20);slam(h);assert.equal(bullOf(h).hp,BL.hp,'a weak kaiju and street damage do not hurt it');
+  h.test().setKaiju('Kaiban');h.test().teleport(b.x-h.state().width*.6);h.step(2);h.down('KeyD');let clang=false;for(let n=0;n<120&&!clang;n++){h.step();clang=h.state().action==='CLANG';}h.up('KeyD');assert.ok(clang,'a clang when walking into it');
+  assert.equal(bullOf(h).hp,BL.hp,'a bump is not damage');assert.deepEqual([bullOf(h).x,bullOf(h).state],[b.x,'parked'],'it does not budge');
+ }finally{h.release();h.cleanup();}
+});
+
+test('real loop: a thrown Bull is dented by each landing, three or four hard throws break it, the points come once, and chunks and a prop remain',async()=>{
+ const h=await boot(1);
+ try{
+  const hp:number[]=[];let n=0,mostChunks=0;const probe={delta:0};
+  for(;n<6&&bullOf(h);n++){if(!throwBull(h,probe))break;const v=bullOf(h);hp.push(v?v.hp:0);mostChunks=Math.max(mostChunks,h.state().chunks);if(n===0){assert.ok(v&&v.hp<BL.hp&&v.hp>0,`one throw dents it (${v?.hp})`);}if(!v)break;}
+  assert.ok(!bullOf(h),`the Bull is broken (hp ${hp})`);assert.ok(hp.length>=3&&hp.length<=4,`three or four throws (${hp.length}: ${hp})`);
+  assert.ok(hp.every((x,i)=>i===0||x<hp[i-1]),'each throw hurts it more');
+  const s=h.state();assert.equal(s.banner,'THE BULL IS DOWN');assert.ok(mostChunks>=10,`bronze chunks fly (${mostChunks})`);
+  assert.ok(probe.delta>=BL.breakPoints,`the break frame pays out (${probe.delta})`);
+  const head=s.vehicles.find((v:any)=>v.kind==='lamp'&&v.label==='bull head');assert.ok(head,'the horns are left as a prop');
+  h.step(180);assert.equal(h.state().bullBreaks,1,'paid once');assert.equal(h.state().vehicles.filter((v:any)=>v.kind==='bull').length,0);
+  standWest(h,head);h.step(2);assert.ok(grab(h,'lamp'),'the horns can be picked up and thrown');
+ }finally{h.release();h.cleanup();}
+});
+
+test('real loop: once it is pried loose a slam hurts the Bull, but before that it is bolted down',async()=>{
+ const h=await boot(1);
+ try{
+  let b=bullOf(h);standWest(h,b);h.step(2);h.test().teleport(b.x+b.w/2-h.state().width/2);h.step(2);slam(h);assert.equal(bullOf(h).hp,BL.hp,'bolted down: a slam does nothing');
+  assert.ok(throwBull(h));b=bullOf(h);const hp0=b.hp;assert.ok(hp0<BL.hp,'the landing dented it');
+  h.test().teleport(b.x+b.w/2-h.state().width/2);h.step(2);slam(h);assert.ok(bullOf(h)===undefined||bullOf(h).hp<hp0,'a slam on the loose Bull hurts it');
+ }finally{h.release();h.cleanup();}
+});

@@ -9,7 +9,8 @@ export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'sta
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat'|'rolling'|'cable';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean,line?:[number,number],plows?:number,glide?:number,runaway?:boolean,chunk?:{shape:string,H:number,cut:number}};
+ damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean,line?:[number,number],plows?:number,glide?:number,runaway?:boolean,hp?:number,freed?:boolean,chunk?:{shape:string,H:number,cut:number}};
+// hp, freed: the Charging Bull's hit points, and whether a kaiju has pried it off its plinth (then slams and pounds hurt it).
 // chunk: a sheared-off top of a shaped landmark: the shape it was cut from, that shape's full height and how far up it was cut.
 // pole: a power pole (lamp-kind prop) on that grid index; snapped once it has been knocked out of upright.
 export const VEHICLE_SPECS={
@@ -138,7 +139,7 @@ export function tickFlying(v:Vehicle,dt:number,worldWidth:number){
 // Authored vehicles stationed at x positions (streetcars, cable cars, fire trucks, trolleybuses, cars on a garage floor). `firstId` must
 // not collide with the parked cars (1..), lamps (500..) or poles (800..): levels use 2000 and up.
 export function createFleet(kind:VehicleKind,xs:number[],firstId:number,color:string,label=''):Vehicle[]{
- return xs.map((x,i)=>{const v=make(firstId+i,kind,x,0,color);v.label=label;return v;});}
+ return xs.map((x,i)=>{const v=make(firstId+i,kind,x,0,color);v.label=label;if(kind==='bull')v.hp=BULL.hp;return v;});}
 // Parked cars standing on whatever floor is under them (a garage pit): a mix of cars and vans in the city's colours.
 export function createGarageCars(x0:number,x1:number,n:number,firstId:number):Vehicle[]{
  const out:Vehicle[]=[],step=(x1-x0)/n;for(let i=0;i<n;i++){const kind:VehicleKind=i%4===3?'van':'car',w=VEHICLE_SPECS[kind].w,x=Math.round(x0+i*step+Math.max(4,(step-w)/2));
