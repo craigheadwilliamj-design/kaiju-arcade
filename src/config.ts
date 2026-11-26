@@ -653,6 +653,12 @@ export const NYC2 = {
  // the facade screens (BuildingSpec `board`) and the roof screens (roof fixture `billboard`).
  night:{top:'#070a1d',bottom:'#2b2152',far:'#151b3b',mid:'#10162f',near:'#0b1025',win:'#ffd98a',lights:1,sun:'#dfe6ff'},
  darkWindows:.04,boardPoints:300,
+ // Day-to-night ramp (BlockDef `moodRamp`): the moods between the city's day and `night`. Blended by the camera's world x (src/game.ts `moodNow`).
+ // SoHo sinks into `golden` then `dusk`, Times Square opens at `dusk`, runs to `night` and lifts to `predawn`, Grand Central opens at `dawn` and reaches day.
+ golden:{top:'#6f93b8',bottom:'#f2b872',far:'#a39a8c',mid:'#85807a',near:'#5d5c5e',win:'#f1c776',lights:.28,sun:'#ffc06a'},
+ dusk:{top:'#3d3a6e',bottom:'#e0875a',far:'#62597a',mid:'#4f4a69',near:'#383754',win:'#ffd98a',lights:.5,sun:'#ff9a5c'},
+ predawn:{top:'#0c1230',bottom:'#8a9cc4',far:'#2a3358',mid:'#202848',near:'#161c38',win:'#ffd98a',lights:.7,sun:'#cfd8f5'},
+ dawn:{top:'#6b7fa8',bottom:'#f4b9a0',far:'#8d8a99',mid:'#76748a',near:'#555468',win:'#f0cf90',lights:.35,sun:'#ffcf8a'},
  // One Times Square's ball (roof fixture `ball`): any hit that breaks it (or the tower coming down) knocks it loose. It drops `fall` s to
  // the street, then rolls down Broadway away from the kaiju: a heavy rolling body (src/rolling.ts) starting at `speed` px/s and shedding
  // `glide` px/s of it a second, so it runs a long way. It scatters and crushes the crowd (`crowdPoints` a person) and wrecks what it hits.

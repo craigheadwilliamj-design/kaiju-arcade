@@ -131,7 +131,7 @@ Take screenshots: the ball held overhead, mid-throw, and the shatter.
 
 ---
 
-## Card 4: Day → dusk → night → dawn → day transition around Times Square
+## Card 4 (done): Day → dusk → night → dawn → day transition around Times Square
 
 **Feedback.** "Times Square is the best map so far. But the fact that it's night and the blocks around it are day is jarring. Have a transition from day to dusk to night to dawn to day as you approach and leave Times Square."
 
