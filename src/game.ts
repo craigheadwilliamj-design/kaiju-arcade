@@ -129,7 +129,7 @@ function rollImpacts(v:Vehicle){
  for(const b of buildings){if(!solid(b)||b.hpNow<=0||v.hits.has(b))continue;const p=partHit(b,box);if(!p)continue;
   v.hits.add(b);hit(b,rollDamage(v),false,dir,{x:cx,y:cy});spawnChunks(cx,cy,-dir,v.color,5);shake=Math.max(shake,6);
   if(b.hpNow<=0&&(v.plows??0)>1){v.plows!--;v.vx*=RN.plowKeep;if(!v.rewarded)rewardVehicle(v);continue;}
-  v.x=dir>0?p.x-v.w-1:p.x+p.w+1;if(v.kind==='ball'){v.vx=0;v.state='parked';return;}crashRolling(v,dir,b);return;}
+  v.x=dir>0?p.x-v.w-1:p.x+p.w+1;if(v.kind==='ball'){const sp=Math.abs(v.vx);v.vx=0;v.state='parked';if(sp>=NYC2.ballChipSpeed)ballChip(v,-dir);return;}crashRolling(v,dir,b);return;}
  for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&!NAVAL_UNITS.has(u.type)&&!v.hits.has(u)&&overlaps(box,u)){v.hits.add(u);hitUnit(military,u,RN.unitDamage,'player',180*mass(v),dir,false,'thrown');}
  if(rival&&!rival.dead&&!v.hits.has(rival)&&overlaps(box,rival)){v.hits.add(rival);strikeRival(rollDamage(v)*.3,160*mass(v),dir);crashRolling(v,dir,rival);return;}
  if(objective&&!objective.shattered&&!v.hits.has(objective)&&overlaps(box,obox())){v.hits.add(objective);hitObjective(rollDamage(v)*.5);crashRolling(v,dir,objective);return;}
@@ -158,9 +158,9 @@ function tickConey(dt:number){
 // ---- New York Act 2 (NYC rework card 3) ----
 // One Times Square's ball, Grand Central's concourse cave-in and Central Park's carriage horses (the zoo animals are the sea-lion herd, above).
 // Every part is opt-in per level (src/levels.ts); a level that sets none of it runs none of this.
-let ballFall:{x0:number,x:number,y0:number,t:number,dir:number}|null=null,ballsLoosed=0,ballCrowd=0,concourseOpen=false,concourseRoof:typeof buildings[number]|null=null,commutersDropped=0,carriagesBolted=0;
+let ballFall:{x0:number,x:number,y0:number,t:number,dir:number}|null=null,ballsLoosed=0,ballCrowd=0,ballChips=0,ballShatters=0,ballChipT=-9,ballHinted=false,concourseOpen=false,concourseRoof:typeof buildings[number]|null=null,commutersDropped=0,carriagesBolted=0;
 const bolted=new WeakSet<Vehicle>();
-function setupNyc2(){ballFall=null;ballsLoosed=0;ballCrowd=0;concourseOpen=false;commutersDropped=0;carriagesBolted=0;concourseRoof=block.concourse?buildings.find(b=>b.deco==='concourse')??null:null;}
+function setupNyc2(){ballFall=null;ballsLoosed=0;ballCrowd=0;ballChips=0;ballShatters=0;ballChipT=-9;ballHinted=false;concourseOpen=false;commutersDropped=0;carriagesBolted=0;concourseRoof=block.concourse?buildings.find(b=>b.deco==='concourse')??null:null;}
 // The ball is knocked loose (its roof fixture broke: a blow to the roof, or the tower coming down): it falls to the street and rolls away from
 // the kaiju, down Broadway.
 function dropBall(r:{x:number,y:number,w:number,h:number},b:typeof buildings[number]){const cx=r.x+r.w/2,dir=cx>=player.x+bodyWidth()/2?1:-1;
@@ -175,14 +175,39 @@ function openConcourse(){concourseOpen=true;const [x0,x1]=block.concourse!,floor
 function boltCarriage(v:Vehicle,from:number){bolted.add(v);const dir=v.x+v.w/2<from?-1:1;v.dir=dir;v.glide=NYC2.boltGlide;startRolling(v,NYC2.boltSpeed,dir);carriagesBolted++;
  for(const c of population.civilians)if(Math.abs(c.x-v.x)<480)c.panicked=true;action='THE HORSES BOLT';actionTime=1.2;}
 function tickNyc2(dt:number){
- if(ballFall){ballFall.t+=dt;if(ballFall.t>=NYC2.ballFall){const f=ballFall;ballFall=null;const v=makeProp(nextVehicle++,'ball',f.x-NYC2.ballSize/2,'#e8ecff');v.state='parked';v.glide=NYC2.ballGlide;v.y=groundAt(f.x)-v.h;vehicles.push(v);startRolling(v,NYC2.ballSpeed,f.dir);v.plows=8;
+ if(ballFall){ballFall.t+=dt;if(ballFall.t>=NYC2.ballFall){const f=ballFall;ballFall=null;const v=makeProp(nextVehicle++,'ball',f.x-NYC2.ballSize/2,'#e8ecff');v.state='parked';v.glide=NYC2.ballGlide;v.hp=NYC2.ballHp;v.y=groundAt(f.x)-v.h;vehicles.push(v);startRolling(v,NYC2.ballSpeed,f.dir);v.plows=8;
   burst(f.x,groundAt(f.x)-6,'#dfe6ff',18);shake=Math.max(shake,8);for(const c of population.civilians)if(Math.abs(c.x-f.x)<900)c.panicked=true;}}
- for(const v of vehicles){if(v.kind==='ball'&&v.state==='rolling')v.angle+=v.vx/(v.w/2)*dt;if(v.kind==='carriage'&&v.state==='rolling')v.dir=Math.sign(v.vx)||v.dir;}
+ for(const v of vehicles){if(v.kind==='ball'&&v.state==='rolling')v.angle+=v.vx/(v.w/2)*dt;if(v.kind==='ball'&&v.state==='held')v.angle+=player.face*2.2*dt;if(v.kind==='carriage'&&v.state==='rolling')v.dir=Math.sign(v.vx)||v.dir;}
+ if(!ballHinted&&combat.stage>=2&&!held&&!banner){const b=vehicles.find(o=>o.kind==='ball'&&o.state==='parked');if(b&&Math.abs(b.x+b.w/2-(player.x+bodyWidth()/2))<NYC2.ballHint){ballHinted=true;banner={label:'GRAB · THE BALL',side:0,life:2.4};}}
  if(concourseRoof&&!concourseOpen&&concourseRoof.hpNow<=0)openConcourse();
  if(block.carriages){const cx=player.x+bodyWidth()/2;for(const v of vehicles)if(v.kind==='carriage'&&v.state==='parked'&&!bolted.has(v)&&Math.abs(v.x+v.w/2-cx)<NYC2.boltRange)boltCarriage(v,cx);}}
+// ---- The ball as a prop (NYC rework fix 3): carried, bowled, lobbed, and finally shattered (src/config.ts NYC2) ----
+// A thrown ball lands and rolls again at most `ballReroll` of its speed; a slow one (or one just dropped) settles parked, grabbable.
+function landBall(v:Vehicle,vx0:number){
+ const dir=Math.sign(vx0)||player.face,sp=Math.abs(vx0)*NYC2.ballReroll,cx=v.x+v.w/2;v.y=groundAt(cx)-v.h;v.vy=0;v.spin=0;v.damage=0;v.hits=new Set();
+ if(Math.abs(vx0)>1){shake=Math.max(shake,5);burst(cx,v.y+v.h-4,'#dfe6ff',8);}
+ if(sp<NYC2.ballGrabSpeed){v.state='parked';v.vx=0;return;}
+ startRolling(v,sp,dir);v.vx=dir*Math.max(NYC2.ballRerollMin,sp);v.plows=8;v.glide=NYC2.ballGlide;}
+// A hard impact of a thrown ball costs it 1 hp; the last one shatters it.
+function ballChip(v:Vehicle,dir:number){
+ if(!v.tossed||v.hp===undefined||v.hp<=0||time-ballChipT<NYC2.ballChipGap)return;ballChipT=time;v.hp--;ballChips++;
+ const cx=v.x+v.w/2,cy=v.y+v.h/2;if(v.hp<=0){shatterBall(v,dir);return;}
+ spawnChunks(cx,cy,dir,'#cfd9ff',4,1.2);burst(cx,cy,'#7ae6ff',5);burst(cx,cy,'#ff7ad6',5);shake=Math.max(shake,6);freeze(.05);
+ action=v.hp/NYC2.ballHp<=.5?'PANELS BREAKING':'CRACKED';actionTime=.8;}
+const NYE_COLORS=['#ffd84f','#ffffff','#c9d2ff','#e8506a','#4a7ae0','#7ae6ff','#ff7ad6'];
+function shatterBall(v:Vehicle,dir:number){
+ if(ballShatters>0&&!vehicles.includes(v))return;ballShatters++;if(v===held)held=null;vehicles=vehicles.filter(o=>o!==v);
+ const cx=v.x+v.w/2,cy=v.y+v.h/2;
+ spawnChunks(cx,cy,dir,'#cfd9ff',10,1.8);spawnChunks(cx,cy,-dir,'#7ae6ff',8,1.6);spawnChunks(cx,cy,dir,'#ff7ad6',6,1.4);
+ sparks(cx,cy,dir,14,'#ffffff');sparks(cx,cy,-dir,10,'#7ae6ff');for(const c of NYE_COLORS)burst(cx,cy-v.h*.3,c,7);
+ shake=Math.max(shake,14);freeze(F.hitstopTopple);banner={label:'HAPPY NEW YEAR',side:0,life:2.6};award(NYC2.ballShatterPoints);heatUp(12);}
+// After a thrown ball's flight step: any building, the rival or the target it struck counts as one hard impact.
+function ballImpact(v:Vehicle,n0:number){
+ if(v.kind!=='ball'||v.hits.size<=n0)return;const dir=-(Math.sign(v.vx)||1);
+ for(const o of [...v.hits].slice(n0))if(buildings.includes(o as typeof buildings[number])||o===rival||o===objective){ballChip(v,dir);return;}}
 function drawBallFall(){if(!ballFall)return;const k=Math.min(1,ballFall.t/NYC2.ballFall),gy=groundAt(ballFall.x)-NYC2.ballSize/2,y=ballFall.y0+(gy-ballFall.y0)*k*k;drawBallSphere(ballFall.x0+(ballFall.x-ballFall.x0)*k-camera,y,NYC2.ballSize/2,time);}
 function nycDebug(){return {ballsLoosed,ballFalling:!!ballFall,ballCrowd,concourseOpen,commutersDropped,carriagesBolted,
- ball:(()=>{const v=vehicles.find(o=>o.kind==='ball');return v?{x:v.x,y:v.y,w:v.w,vx:v.vx,state:v.state}:null;})(),
+ ball:(()=>{const v=vehicles.find(o=>o.kind==='ball');return v?{x:v.x,y:v.y,w:v.w,vx:v.vx,state:v.state,hp:v.hp,tossed:!!v.tossed}:null;})(),ballChips,ballShatters,
  carriageList:vehicles.filter(v=>v.kind==='carriage').map(v=>({x:v.x,y:v.y,state:v.state,vx:v.vx})),
  zooList:lions.filter(l=>l.zoo).map(l=>({x:l.x,state:l.state,sp:l.zoo!.sp})),
  roofList:roofs.map(p=>({kind:p.kind,dead:p.dead,grid:p.grid,lit:p.grid<0||power[p.grid]})),gridPower:[...power],
@@ -1824,10 +1849,12 @@ const bullCarrier=()=>(ROSTER.find(r=>r.name===activeKaiju)?.ratings[0]??0)>=BL.
 // H grabs the nearest thing in reach: loose vehicles/wrecks, enemy ground vehicles, or small structures.
 function tryGrab(){if(held||!canAct(combat)||combat.charging||clingTo||combat.ultimateTime>0)return false;
  // Ranked by gap from the body's leading edge, so what is directly in front beats props under a wide Stage 3 body.
- const box=grabBox(),front=player.face>0?player.x+bodyWidth():player.x,dist=(r:{x:number,w:number})=>Math.abs(player.face>0?r.x-front:front-(r.x+r.w)),options:{d:number,take:()=>Vehicle,bull?:boolean}[]=[];
+ const box=grabBox(),front=player.face>0?player.x+bodyWidth():player.x,dist=(r:{x:number,w:number})=>Math.abs(player.face>0?r.x-front:front-(r.x+r.w)),options:{d:number,take:()=>Vehicle,bull?:boolean}[]=[];// bull: a priority pick (the Bull, the ball)
  for(const v of vehicles)if(loose(v)&&overlaps(box,vehicleBox(v)))options.push({d:dist(v),take:()=>v});
  // The Charging Bull is lifted by a strong kaiju only (src/config.ts BULL); anyone else just bumps into it.
  for(const v of vehicles)if(v.kind==='bull'&&v.state!=='held'&&v.state!=='flying'&&overlaps(box,vehicleBox(v))){if(bullCarrier())options.push({d:dist(v),take:()=>v,bull:true});else{action='TOO HEAVY';actionTime=.9;}}
+ // Times Square's ball, once it is down on the street: parked, or rolling slowly. Any kaiju at Stage 2+ lifts it.
+ for(const v of vehicles)if(v.kind==='ball'&&(v.state==='parked'||(v.state==='rolling'&&Math.abs(v.vx)<NYC2.ballGrabSpeed))&&overlaps(box,vehicleBox(v))){if(combat.stage>=2)options.push({d:dist(v),take:()=>v,bull:true});else{action='TOO HEAVY';actionTime=.9;}}
  // A balloon's tether (Herald Square): grabbed, it drags the balloon along overhead.
  for(const v of vehicles)if(v.kind==='tether'&&v.state==='parked'&&overlaps(box,vehicleBox(v)))options.push({d:dist(v),take:()=>v});
  for(const u of military.units)if(u.hp>0&&GRABBABLE_UNITS.has(u.type)&&overlaps(box,u))options.push({d:dist(u),take:()=>{captureUnit(military,u);drainMilitary();const p=makeProp(nextVehicle++,u.type as Vehicle['kind'],u.x,UNIT_COLORS[u.type]);vehicles.push(p);return p;}});
@@ -1841,12 +1868,15 @@ function tryGrab(){if(held||!canAct(combat)||combat.charging||clingTo||combat.ul
    shake=Math.max(shake,10);banner={label:'TRAIN SNATCHED',side:0,life:2};vehicles.push(v);return v;}});}
  // The Bull wins a grab whenever it is in reach (a car beside it must not steal the key press).
  options.sort((a,b)=>(a.bull?0:1)-(b.bull?0:1)||a.d-b.d);if(!options.length)return false;
- const pick=options[0].take();if(pick.kind==='bull')pick.freed=true;uproot(pick);held=pick;pick.state='held';pick.angle=0;pick.vx=pick.vy=0;pick.panic=0;pick.lane=1;attack=animDuration(activeKaiju,'grab',combat.stage)?{anim:'grab',t:0}:null;action=`GRAB · ${pick.kind.toUpperCase()}`;actionTime=.9;return true;}
+ const pick=options[0].take();if(pick.kind==='bull')pick.freed=true;if(pick.kind==='ball')pick.tossed=false;uproot(pick);held=pick;pick.state='held';pick.angle=0;pick.vx=pick.vy=0;pick.panic=0;pick.lane=1;attack=animDuration(activeKaiju,'grab',combat.stage)?{anim:'grab',t:0}:null;action=`GRAB · ${pick.kind.toUpperCase()}`;actionTime=.9;return true;}
 // Throw forward, or with W held lob it high (anti-air). Damage scales with the vehicle's mass and the kaiju's stage.
 function throwHeld(){if(!held||!canAct(combat))return;
  // Throw a balloon's tether and the balloon floats off (nothing flies: the tether goes up with it).
  if(held.kind==='tether'){const t=held,b=balloons.find(o=>o.tether===t);held=null;if(b)floatAway(b,player.face);else vehicles=vehicles.filter(o=>o!==t);attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;action='LET GO · THE BALLOON FLOATS OFF';actionTime=1.1;return;}
  const v=held,m=mass(v),up=keys.has('KeyW');held=null;
+ // The ball: a flat bowling arc, or with W a high lob for anti-air. It is a hard hitter and rolls again where it lands (landBall).
+ if(v.kind==='ball'){launch(v,player.face*(up?NYC2.ballLobSpeed:NYC2.ballThrowSpeed),-(up?NYC2.ballLobLift:NYC2.ballThrowLift),NYC2.ballThrowDamage*damageMultiplier(combat));v.tossed=true;v.lane=1;
+  attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,4);action=up?'LOB · UP':'BOWL';actionTime=.7;return;}
  // The Bull is thrown short and hard: a low flat lob that carries BL.throwDamage.
  const bull=v.kind==='bull';
  launch(v,player.face*(up?VC.upSpeed:bull?BL.throwSpeed:VC.throwSpeed/Math.pow(m,VC.throwMassExp)),-(up?VC.upLift:bull?BL.throwLift:v.kind==='lamp'?VC.lampLift:VC.throwLift)/(up?Math.sqrt(m):1),(bull?BL.throwDamage:VC.throwDamage*impact(v))*damageMultiplier(combat));
@@ -1882,7 +1912,8 @@ function tickVehicles(dt:number){
   if(v.shield)v.shield=Math.max(0,v.shield-dt);if(v.calm)v.calm=Math.max(0,v.calm-dt);
   if(v.state==='cable'&&v.kind!=='coaster')tickCable(v,dt);else if(v.state==='rolling'){if(tickRolling(v,dt,worldWidth)==='rolling')rollImpacts(v);else v.runaway=false;}
   tickDriving(v,dt,cx);
-  const wasFlying=v.state==='flying',vy0=v.vy,settled=tickFlying(v,dt,worldWidth);if(wasFlying)vehicleImpacts(v);if(settled&&v.runaway){startRunaway(v);spawnChunks(v.x+v.w/2,v.y+v.h,Math.sign(v.vx)||1,v.color,6,1.3);shake=Math.max(shake,8);}else if(settled)detonate(v);
+  const wasFlying=v.state==='flying',vy0=v.vy,vx0=v.vx,n0=v.hits.size,settled=tickFlying(v,dt,worldWidth);if(wasFlying){vehicleImpacts(v);ballImpact(v,n0);}
+  if(wasFlying&&v.kind==='ball'&&vehicles.includes(v)&&(settled||(v.state==='flying'&&v.vy<0&&vy0>0)))landBall(v,vx0);if(settled&&v.runaway){startRunaway(v);spawnChunks(v.x+v.w/2,v.y+v.h,Math.sign(v.vx)||1,v.color,6,1.3);shake=Math.max(shake,8);}else if(settled)detonate(v);
   // A thrown Bull thuds into the street: it breaks spans and caves the street in like a thrown building, then stands there again (never a wreck).
   if(settled&&v.kind==='bull'){heavyLanding(v);v.state='parked';v.angle=0;v.spin=0;v.y=groundAt(v.x+v.w/2)-v.h;spawnChunks(v.x+v.w/2,groundAt(v.x+v.w/2)-6,Math.sign(v.vx)||player.face,'#5b4a3a',5,1.3);burst(v.x+v.w/2,groundAt(v.x+v.w/2)-6,'#b1ac91',10);shake=Math.max(shake,6);}
   // Every hard landing (the first touchdown and any bounce) dents it, by how fast it came down.
@@ -2587,10 +2618,14 @@ function act3Debug(){return {climbState:climbDebug(),finaleState:finale?{woke:fi
 function act2Debug(){return {powerhouseDown,loosed,exitSide,tumbleArmed,pendingTumble:pendingTumble.length,pendingRunaways:pendingRunaways.length,seaLions:lions.map(l=>({x:l.x,state:l.state})),lionsEscaped,
  kaibanState:kaiban?{...kaiban}:null,cutter:objective?.ship?{sink:objective.ship.sink,sinking:objective.ship.sinking,list:objective.ship.list,w:objective.ship.w,h:objective.ship.h,box:hullBox(objective.ship,waterAt(objective.x)??C.ground),deck:deckY(objective.ship,waterAt(objective.x)??C.ground)}:null,
  fogLevel:fogAt(block,player.x+bodyWidth()/2),railSpans:rails.map(r=>({x0:r.x0,x1:r.x1,alive:r.alive,hp:r.hp,y:r.y})),cameraRise:cameraY};}
-function drawBallSphere(cx:number,cy:number,r:number,t:number){
+function drawBallSphere(cx:number,cy:number,r:number,t:number,health=1,glow=false){
+ if(glow){const h=ctx.createRadialGradient?.(cx,cy,r*.5,cx,cy,r*1.9);if(h&&h.addColorStop){h.addColorStop(0,'rgba(190,210,255,.55)');h.addColorStop(1,'rgba(190,210,255,0)');ctx.fillStyle=h;ctx.beginPath();ctx.arc(cx,cy,r*1.9,0,Math.PI*2);ctx.fill();}}
  const g=ctx.createRadialGradient?.(cx-r*.3,cy-r*.3,r*.1,cx,cy,r);if(g&&g.addColorStop){g.addColorStop(0,'#ffffff');g.addColorStop(.55,'#cfd9ff');g.addColorStop(1,'#6c7bd6');ctx.fillStyle=g;}else ctx.fillStyle='#cfd9ff';
  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.35;ctx.strokeStyle='#ffffff';ctx.lineWidth=1;for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(cx+k*r*.4,cy-r*Math.sqrt(Math.max(0,1-(k*.4)**2)));ctx.lineTo(cx+k*r*.4,cy+r*Math.sqrt(Math.max(0,1-(k*.4)**2)));ctx.stroke();}ctx.globalAlpha=1;
- for(let k=0;k<5;k++){const a=t*2.4+k*1.26;ctx.globalAlpha=.5+.5*Math.sin(a*3);rect(cx+Math.cos(a)*r*.6-1,cy+Math.sin(a*1.3)*r*.6-1,3,3,k%2?'#ff7ad6':'#7ae6ff');}ctx.globalAlpha=1;}
+ for(let k=0;k<5;k++){const a=t*2.4+k*1.26;ctx.globalAlpha=.5+.5*Math.sin(a*3);rect(cx+Math.cos(a)*r*.6-1,cy+Math.sin(a*1.3)*r*.6-1,3,3,k%2?'#ff7ad6':'#7ae6ff');}ctx.globalAlpha=1;
+ // Damage: cracked panels from the first chip, broken (missing) segments from half health.
+ if(health<1){ctx.strokeStyle='#1c2250';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(cx-r*.1,cy-r*.8);ctx.lineTo(cx+r*.05,cy-r*.35);ctx.lineTo(cx-r*.25,cy+r*.05);ctx.lineTo(cx-r*.1,cy+r*.5);ctx.moveTo(cx+r*.05,cy-r*.35);ctx.lineTo(cx+r*.4,cy-r*.1);ctx.stroke();}
+ if(health<=.5){poly([[cx+r*.15,cy+r*.1],[cx+r*.72,cy-r*.05],[cx+r*.62,cy+r*.55],[cx+r*.2,cy+r*.62]],'#161a3c');poly([[cx-r*.78,cy-r*.15],[cx-r*.35,cy-r*.5],[cx-r*.3,cy+r*.1]],'#161a3c');rect(cx+r*.3,cy+r*.2,3,3,'#ff7ad6');}}
 // Rooftop fixtures, drawn with their building (so they squash and lean with it). x is the building's screen x, h its drawn height.
 function drawRoof(p:RoofProp,x:number,h:number){const r=roofBox(p,h),rx=r.x-p.b.x+x,ry=r.y,w=r.w,hh=r.h;
  if(p.kind==='billboard'){// A rooftop LED screen on a steel frame: lit while its grid is, dead black after the blackout.
@@ -2925,7 +2960,7 @@ function drawVehicle(v:Vehicle){
   ctx.fillStyle='#8d8f86';ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e9d6a2';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();}
  else if(v.kind==='coaster'){// The coaster train: three low open cars nose to tail, riders with their arms up.
   const car=w/3;for(let k=0;k<3;k++){const cx=L+k*car;rect(cx+2,T+h*.3,car-4,h*.7,k===0?'#b9402f':'#d9822b');rect(cx+2,T+h*.3,car-4,3,'#f2e6a8');for(const px of [.22,.62]){rect(cx+car*px,T,6,h*.34,'#e6c9a8');rect(cx+car*px-2,T-4,2,6,'#e6c9a8');rect(cx+car*px+6,T-4,2,6,'#e6c9a8');}rect(cx+5,T+h*.88,6,h*.14,tire);rect(cx+car-11,T+h*.88,6,h*.14,tire);}}
- else if(v.kind==='ball'){drawBallSphere(0,0,w/2,time);}
+ else if(v.kind==='ball'){drawBallSphere(0,0,w/2,time,(v.hp??NYC2.ballHp)/NYC2.ballHp,true);}
  else if(v.kind==='carriage'){const run=v.state==='rolling'?Math.sin(time*18+v.id)*3:0,hc='#6b4528',bk='#26242a';
   rect(L+w*.04,T+h*.34,w*.5,h*.34,bk);poly([[L+w*.04,T+h*.34],[L+w*.1,T+h*.06],[L+w*.38,T+h*.06],[L+w*.54,T+h*.34]],'#34303a');rect(L+w*.04,T+h*.62,w*.5,3,'#c9a24a');rect(L+w*.16,T+h*.14,w*.16,h*.18,glass);
   for(const wx of [.14,.44]){ctx.strokeStyle='#d8cfae';ctx.lineWidth=2;ctx.beginPath();ctx.arc(L+w*wx,T+h*.82,h*.17,0,Math.PI*2);ctx.stroke();rect(L+w*wx-h*.17,T+h*.82-1,h*.34,2,'#d8cfae');}
@@ -3679,7 +3714,11 @@ if((window as any).__kaijuTest)Object.defineProperty(window,'kaijuTest',{value:{
  perchRival:(i:number)=>{const f=finale,c=f?.climb,r=rival;if(!f||!c||!r)return false;f.woke=true;r.dormant=false;r.alpha=1;c.crackOpen=1;c.emerge=0;c.move=null;c.pending=null;c.fall=null;if(i>=0)r.x=standX(c.perches[i],r);else r.x=c.crackX-r.w/2;setPerch(r,c,i);r.cooldown=2;return true;},
  // Keep the kaiju safe for `s` seconds (long climbs and falls in a test).
  shield:(sec:number)=>{combat.mercy=sec;},
- setBalloonAlt:(i:number,alt:number)=>{const b=balloons[i];if(b)b.alt=alt;},hurtRival:(d:number)=>strikeRival(d,0,1),fillUltimate:()=>{combat.ultimate=B.ultimateMax;},smashRail:(i:number)=>{const r=rails[i];if(r&&r.alive)hitRail(r,1e9);},sinkCutter:()=>hitObjective(1e9),
+ setBalloonAlt:(i:number,alt:number)=>{const b=balloons[i];if(b)b.alt=alt;},
+ // Put Times Square's ball down on the street at x, parked (as if it had rolled to rest), with a few civilians standing at the given xs.
+ // Count n hard impacts against the ball (as if thrown), so a test or screenshot can reach a damaged or shattered ball.
+ chipBall:(n:number)=>{const v=vehicles.find(o=>o.kind==='ball');if(!v)return false;v.tossed=true;for(let i=0;i<n;i++){ballChipT=-9;ballChip(v,1);}return true;},
+ placeBall:(x:number,crowd:number[]=[])=>{vehicles=vehicles.filter(o=>o.kind!=='ball');const v=makeProp(nextVehicle++,'ball',x,'#e8ecff');v.state='parked';v.glide=NYC2.ballGlide;v.hp=NYC2.ballHp;v.y=groundAt(x+v.w/2)-v.h;vehicles.push(v);crowd.forEach((cx,i)=>population.civilians.push({x:cx,variant:i%3,escaped:false,squashed:false,panicked:false}));return true;},hurtRival:(d:number)=>strikeRival(d,0,1),fillUltimate:()=>{combat.ultimate=B.ultimateMax;},smashRail:(i:number)=>{const r=rails[i];if(r&&r.alive)hitRail(r,1e9);},sinkCutter:()=>hitObjective(1e9),
  growTo:(n:number)=>{setGrowth(combat,n,3);},smashSlope:(i:number)=>{const s=slopes[i];if(s&&s.alive)hitSlope(s,1e9);},
  shear:(i:number,frac:number)=>{const b=buildings[i];return !!b&&tryShear(b,1e6,{x:b.x+b.w/2,y:b.base-b.h*frac},false,1);},place:(px:number,py:number)=>{player.x=px;player.y=py-bodyHeight();player.vy=0;player.grounded=false;},
  demolish:(frac:number)=>{for(const b of [...buildings].sort((p,q)=>q.value-p.value)){if(destruction(buildings)>=frac)break;if(b.hpNow>0)hit(b,b.hpNow,false,1);}}}});
