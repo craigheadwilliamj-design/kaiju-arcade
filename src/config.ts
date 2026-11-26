@@ -199,6 +199,10 @@ export const BUILDING_PRESETS={
  b:{w:42,h:48,hp:230,value:80,kind:'large'},
  x:{w:108,h:520,hp:780,value:520,kind:'medium'},
  n:{w:64,h:460,hp:540,value:340,kind:'medium'},
+ // NYC fix card 5: chunky towers for the New York route levels in place of the needle presets x (108x520) and n (64x460), which stand over 4.5x as tall as they are wide.
+ // y is the pair `x,n` as one wide tower (176 + the 4px gap = the pair's 180, so the layout's rhythm holds); u replaces a lone x or n. Heights stay put.
+ y:{w:176,h:520,hp:1000,value:640,kind:'medium'},
+ u:{w:132,h:440,hp:640,value:380,kind:'medium'},
  L:{w:190,h:500,hp:1200,value:1000,kind:'large'},
  // City systems (src/city.ts): a fenced power substation and a fuel depot. Low yards you walk past like a newsstand (tiny kind,
  // so they never wall off a street) but they do not break on contact; you have to attack them. Not liftable.
@@ -681,4 +685,15 @@ export const NYC2 = {
  // the carriage runs away at `boltSpeed` px/s, shedding `boltGlide` px/s of it a second, and smashes through what stands in its way.
  zooAlarm:380,zooSpeed:150,zooRun:620,zooPoints:80,
  carriageW:Math.round(92*CITY_SCALE),carriageH:Math.round(34*CITY_SCALE),carriageMass:2,carriagePoints:220,boltRange:420,boltSpeed:340,boltGlide:24,
+};
+
+// NYC fix card 5: density behind and in the street of the New York route levels. Art tunables and the clutter's placement; every field is read only by a level
+// that opts in (cityLevel's `clutter` option, and the NYC districts in src/game.ts), so no other city changes.
+// Back row (drawn behind the playable row, in front of the skyline): `backParallax` of the camera's speed, in cells `backCell` wide.
+// Clutter: `perGap` pieces tried per street gap (`edge` and `lotMax` in authored units: nothing within `edge` of the world's ends or in an open lot wider than `lotMax`,
+// nothing within `targetClear` of a stronghold's target); `dims` is [w, h, value, hp] per walk-through prop kind.
+export const NYC5 = {
+ backParallax:.82,backCell:150,midParallax:.3,farStep:38,
+ edge:200,lotMax:700,targetClear:250,perGap:3,
+ dims:{kiosk:[40,42,25,14],cab:[54,26,35,12],cart:[36,32,30,10],scaffold:[130,44,40,16],news:[32,43,20,20]} as Record<string,[number,number,number,number]>,
 };
