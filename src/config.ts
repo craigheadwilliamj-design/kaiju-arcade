@@ -473,7 +473,17 @@ export const NYC1 = {fortW:176,fortH:70,exchangeW:184,exchangeH:132};
 // alone, and a thrown one is never wrecked or exploded). It is thrown short and hard: `throwSpeed` and `throwLift` replace the usual
 // throw, `throwDamage` is the damage of the flying body, and where it lands it breaks the street (spans, a cave-in)
 // like a thrown building. Lifting it pays `points` once.
-export const BULL = {w:70,h:40,mass:5,points:600,minStrength:4,throwSpeed:420,throwLift:260,throwDamage:150};
+// It is bolted to its plinth until a kaiju lifts it, and it is destructible, but only by deliberate force: `hp` is its hit points and
+// `breakPoints` the score for smashing it (once). Street damage never touches it. What hurts it: its own landing from a throw
+// (`landDamage` at `landRef` px/s of fall speed, scaled by speed: a throw is two or three landings, bounces included), a slam or pound once it has been
+// pried loose (`slam`, `pound`), a Meteor Drop rock (`rock`; a dive from at least `rockFall` px up, not a hop-slam), another thrown heavy prop (`hitByProp` x that prop's damage) and
+// the Bull itself hitting a building or target hard in flight (`crash` x its flight damage). The damage states are a dent below
+// `dentAt` of its hp, cracks below `crackAt`, a horn missing below `hornAt`. When it breaks the horns stay behind as a small grabbable prop
+// (`headPoints` for the first lift). Around its spot the street is cleared of parked cars, lamps, junk and crowds within `clear` px,
+// and `hintReach` is how close the kaiju must stand for the one-time "GRAB" hint.
+export const BULL = {w:70,h:40,mass:5,points:600,minStrength:4,throwSpeed:420,throwLift:260,throwDamage:150,
+ hp:400,breakPoints:900,landDamage:60,landRef:300,slam:60,pound:45,rock:35,hitByProp:.8,crash:.35,dentAt:.7,crackAt:.4,hornAt:.18,
+ headPoints:150,rockFall:200,clear:190,hintReach:60,bump:.7};
 // Steam vents (SoHo and Canal Street, a level's `vents`): the foreshadowing hazard. A manhole puffs harmlessly for `puff` s every
 // `every` s (the first after `first` s, staggered by `stagger` s a vent). A slam or pound within `reach` of it (an Ultimate within
 // `ultReach`) bursts it: a steam jet `height` tall for `seconds` s that, every `tick` s, scalds ground troops within `radius` (`damage`,
