@@ -136,7 +136,7 @@ test('Bay Bridge data: eight screens, a target (the carrier, the cutter scaled u
  const bed=profileY(gp,(BAY.bridge!.x1+BAY.water![0][1])/2),depth=bed-BAY.water![0][2];
  assert.ok(depth/(C.playerHeight*2.8)>.25&&depth/(C.playerHeight*2.8)<.65,`chest-deep at Stage 3 (${depth})`);assert.ok(depth/(C.playerHeight*1.4)>.65,'over the head at Stage 2');
  // Nothing else gained the new fields.
- for(const b of LEVELS.flat().filter(x=>x!==BAY&&x!==GG)){assert.equal(b.warships,undefined,b.name);assert.equal(b.deckUnits,undefined,b.name);assert.equal(b.bridge?.rise,undefined,b.name);assert.equal(b.bridge?.more,undefined,b.name);assert.ok(!b.buildings.some(x=>x.upperDeck||x.deco==='btower'),b.name);}
+ for(const b of LEVELS.flat().filter(x=>x!==BAY&&x!==GG&&x.name!=='Grand Central')){assert.equal(b.warships,undefined,b.name);assert.equal(b.deckUnits,undefined,b.name);assert.equal(b.bridge?.rise,undefined,b.name);assert.equal(b.bridge?.more,undefined,b.name);assert.ok(!b.buildings.some(x=>x.upperDeck||x.deco==='btower'),b.name);}
 });
 
 test('the upper deck uses stacked-tier hit parts at length: two climbable towers and a slab above the lower road',()=>{

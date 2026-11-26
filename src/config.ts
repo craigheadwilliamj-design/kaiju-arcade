@@ -553,7 +553,7 @@ export const SF2 = {
  // Kaiban's silhouette wades across the bay behind the fog, roaring when the kaiju reaches its trigger.
  kaibanSpeed:14,kaibanRoar:3,
  // Roof fixtures of the Wharf and the Financial District: hit points and the score for smashing each.
- roofHP:{sign:40,crab:60,helipad:90} as Record<'sign'|'crab'|'helipad',number>,roofPoints:{sign:600,crab:800,helipad:900} as Record<'sign'|'crab'|'helipad',number>,
+ roofHP:{sign:40,crab:60,helipad:90,billboard:50,ball:30} as Record<'sign'|'crab'|'helipad'|'billboard'|'ball',number>,roofPoints:{sign:600,crab:800,helipad:900,billboard:700,ball:0} as Record<'sign'|'crab'|'helipad'|'billboard'|'ball',number>,
 };
 // Fog (Fisherman's Wharf; the Golden Gate reuses it): a level's `fog` is {from, to, max}: the overlay is clear before `from`,
 // thickens linearly to `max` (0-1 opacity) at `to`, and holds. `tint` is the fog colour.
@@ -634,3 +634,27 @@ export const TLEZCATL_BOSS = {speed:95,far:430,
 export const EMPIRE = {tw:1500,ledge:260,tops:[300,800,1300,1750,2100] as number[],east:[1500,1440,1420,1380,1340] as number[],mast:400,
  press:2.2,rest:16,telegraph:.9,leapRise:380,leapTime:.8,climbSpeed:250,jetUp:15,jetDown:-72,lobApex:130,
  warn:1.1,rubble:14,stagger:2.2,crack:520,pools:5,poolSeconds:9,poolDamage:5,wakeShake:14,diveTime:1.5,sinkTime:2.6,diveHeight:260};
+
+// New York Act 2 (NYC rework card 3): Times Square, Grand Central and Central Park. Every field below is read only by a level that opts in
+// through a BlockDef field (src/levels.ts), so no other level changes.
+export const NYC2 = {
+ // Times Square, the only night level (BlockDef `night`): the city's own mood is swapped for this one wherever the game reads it. A grid
+ // blackout (the substation destroyed) darkens that grid's windows (only `darkWindows` of them stay lit) and every billboard on it:
+ // the facade screens (BuildingSpec `board`) and the roof screens (roof fixture `billboard`).
+ night:{top:'#070a1d',bottom:'#2b2152',far:'#151b3b',mid:'#10162f',near:'#0b1025',win:'#ffd98a',lights:1,sun:'#dfe6ff'},
+ darkWindows:.04,boardPoints:300,
+ // One Times Square's ball (roof fixture `ball`): any hit that breaks it (or the tower coming down) knocks it loose. It drops `fall` s to
+ // the street, then rolls down Broadway away from the kaiju: a heavy rolling body (src/rolling.ts) starting at `speed` px/s and shedding
+ // `glide` px/s of it a second, so it runs a long way. It scatters and crushes the crowd (`crowdPoints` a person) and wrecks what it hits.
+ ballSize:Math.round(46*CITY_SCALE),ballMass:6,ballSpeed:330,ballGlide:14,ballFall:.9,ballPoints:1500,crowdPoints:10,
+ // Grand Central. The terminal target (`art:'terminal'`) is a wide stone facade with a clock and a statue group. The concourse
+ // (BlockDef `concourse`) is the roof over the Main Concourse: a building you stand on; once it is broken the pit opens with
+ // `commuters` people and `police` officers in it.
+ terminalW:Math.round(150*CITY_SCALE),terminalH:Math.round(104*CITY_SCALE),
+ concourseHP:260,concoursePoints:1800,commuters:26,police:4,
+ // Central Park. The zoo's animals (BlockDef `zoo`) bolt from the kaiju once it is within `zooAlarm` and run `zooRun` px before they are
+ // gone (the sea-lion logic, with nowhere to dive). Carriage horses (BlockDef `carriages`) bolt too: once the kaiju is within `boltRange`
+ // the carriage runs away at `boltSpeed` px/s, shedding `boltGlide` px/s of it a second, and smashes through what stands in its way.
+ zooAlarm:380,zooSpeed:150,zooRun:620,zooPoints:80,
+ carriageW:Math.round(92*CITY_SCALE),carriageH:Math.round(34*CITY_SCALE),carriageMass:2,carriagePoints:220,boltRange:420,boltSpeed:340,boltGlide:24,
+};
