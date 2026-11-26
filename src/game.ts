@@ -1,4 +1,4 @@
-import {CONEY,CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,EMPIRE as EMP,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST,NYC2} from './config.ts';
+import {CONEY,CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,EMPIRE as EMP,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST,NYC2,NYC5} from './config.ts';
 import {groundAt,groundUnder,setTerrain,terrainPoints,hasTerrain,profileFrom,submerged,waterAt,waterSpans,bedAt,addMound,moundList,deckAt,pitAt,pitList,addPit,depthAt,setPlatforms,platformFloor} from './terrain.ts';
 import {bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from './water.ts';
 import type {Band,Drown} from './water.ts';
@@ -1252,7 +1252,7 @@ function dropShards(x:number,count:number){
 // dir: direction of the blow (away from the attacker); at: world point struck, for the hole and debris.
 // `quiet`: a rapid damage tick (the Flame Jet), so no hole, hitstop or shake per tick unless it brings the building down.
 function hit(b:typeof buildings[number],damage:number,fromUltimate=false,dir=player.face,at?:{x:number,y:number},quiet=false){
- if(b.prop&&b.hpNow>0&&damage>=b.hpNow){const c=({vending:'#d94f4f',trash:'#6d7a52',hotdog:'#e9b44c',taco:'#2f8f6a',morris:'#2f5a45',cafe:'#b9473b',stall:'#c2312b',workbench:'#7a6a4a'} as Record<string,string>)[b.prop]??'#888';spawnChunks(b.x+b.w/2,b.base-b.h/2,dir,c,8,1.2);burst(b.x+b.w/2,b.base-b.h/2,c,8);}
+ if(b.prop&&b.hpNow>0&&damage>=b.hpNow){const c=({vending:'#d94f4f',trash:'#6d7a52',hotdog:'#e9b44c',taco:'#2f8f6a',morris:'#2f5a45',cafe:'#b9473b',stall:'#c2312b',workbench:'#7a6a4a',kiosk:'#2d5a3f',cab:'#f2c230',cart:'#c2312b',scaffold:'#2f5a45'} as Record<string,string>)[b.prop]??'#888';spawnChunks(b.x+b.w/2,b.base-b.h/2,dir,c,8,1.2);burst(b.x+b.w/2,b.base-b.h/2,c,8);}
  if(style()==='tyo'&&b.h>=TW.quakeHeight&&!quiet&&!fromUltimate&&b.kind!=='tiny'){b.sway=TW.swaySeconds;if(damage<TW.quakeBreak)damage*=TW.quakeKeep;}
  const r=damageBuilding(b,damage*vuln(b));if(!r.damage)return;releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);award(r.points);heatUp(r.damage*Y.gainPerDamage);if(r.destroyed&&fromUltimate)ultKill.add(b);creditDamage(combat,r.damage,'player',fromUltimate);if(r.destroyed)dropShards(b.x+b.w/2,B.buildingShards);if(!quiet||r.destroyed)burst(b.x+b.w/2,groundAt(b.x+b.w/2)-Math.min(b.h,60),'#e8d8ab',r.destroyed?23:7);if(!quiet||r.destroyed)shake=r.destroyed?5:2;if(r.destroyed||!quiet||!fromUltimate){action=r.destroyed?'STRUCTURE COLLAPSED':quiet?(isBelial()?'ACID':'FLAME JET'):`IMPACT −${Math.round(r.damage)}`;actionTime=1.2;}
  // Fully corroded, it gives way well before its HP runs out.
@@ -2362,15 +2362,17 @@ function background(){
   else{const sx=W*.72-camera*.02,sy=m.lights>.6?150:m.lights>.35?250:170,r=m.lights>.35&&m.lights<.6?46:m.lights>.6?18:30;ctx.globalAlpha=m.lights>.6?.9:.75;
   ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();if(!night){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}}
  if(th.id==='sfo')sfBackdrop(W,m);else{farSkyline(th.style,W,m);
+ if(nycDist())nycMidLayers(W,m);else{
  // Two parallax layers of city in the mood's colours; windows light up as the light goes.
  for(let i=-1,n=W/79+1;i<n;i++){const x=i*79-(camera*.13)%79,h=50+((i+22)*47%115);rect(x,315-h,50,h,m.far);rect(x+18,305-h,10,10,m.far);
   if(nightA>0){ctx.globalAlpha=nightA;for(let yy=322-h;yy<310;yy+=12)for(let xx=6;xx<44;xx+=11)if(((i*31+yy*7+xx)>>1)%4===0)rect(x+xx,yy,3,4,m.win+'99');ctx.globalAlpha=1;}}
  for(let i=-1,n=W/102+1;i<n;i++){const x=i*102-(camera*.26)%102,h=80+((i+17)*37%110);rect(x,370-h,65,h,m.mid);rect(x+4,374-h,56,4,m.far);
   for(let yy=390-h;yy<360;yy+=15)for(let xx=8;xx<59;xx+=15){const on=((i*13+yy*3+xx)>>2)%5<m.lights*4;rect(x+xx,yy,5,7,on?m.win:nightA>0?(block.moodRamp&&hexOk(m.far)?mixHex(m.far,'#1d2536',nightA):'#1d2536'):m.far);}}
- }
+ }}
  if(m.smog){ctx.globalAlpha=.28;rect(0,250,W,C.ground-250,'#e8b778');ctx.globalAlpha=1;}
  // Dense near-layer towers crowd the street and close in the skyline. Open layouts skip them so plazas read as open ground.
  if(!openLayout()&&th.id==='sfo')sfNearRow(W,m);
+ else if(nycDist())nycBackRow(W,m,nycDist()!);
  else if(!openLayout())for(let i=-1,n=W/88+1;i<n;i++){const x=i*88-(camera*.5)%88,h=170+((i+31)*53%150);rect(x,C.ground-4-h,78,h,m.near);rect(x+78,C.ground-4-h,10,h,m.near);rect(x-2,C.ground-4-h,82,5,m.mid);for(let yy=C.ground-h+4;yy<C.ground-20;yy+=17)for(let xx=7;xx<72;xx+=16)rect(x+xx,yy,7,9,(i+yy)%5<1+m.lights*2?m.win:'#2a3540');}
  if(!hasTerrain()){rect(0,C.ground-4,W,10,'#c9c5ab');rect(0,C.ground+6,W,99,'#4c5755');rect(0,C.ground+8,W,3,'#202e31');
  for(let i=-1,n=W/85+1;i<n;i++)rect(i*85-camera%85,487,37,3,'#b4b294');rect(0,513,W,27+C.ground/zoom,'#34413f');}
@@ -2497,7 +2499,8 @@ function facade(b:typeof buildings[number],x:number,y:number,h:number,gridLit:bo
   for(let yy=22;yy<h-30;yy+=22)for(let xx=10;xx<bw-10;xx+=19){rect(x+xx,y+yy,10,13,win(xx,yy,'#2c3a42'));rect(x+xx-1,y+yy-2,12,2,'#d8cdb4');}
   if(bw>70&&h>120){const fx=x+bw*.52,fw=bw*.42;ctx.strokeStyle='#262626';ctx.lineWidth=1;for(let yy=y+40;yy<base-40;yy+=44){rect(fx,yy+14,fw,2,'#262626');rect(fx,yy+8,fw,1,'#262626');
     ctx.beginPath();ctx.moveTo(fx+fw*.15,yy+16);ctx.lineTo(fx+fw*.85,yy+58);ctx.stroke();}}
-  rect(x+14,base-26,16,26,'#2b2420');rect(x+12,base-29,20,3,'#d8cdb4');}
+  rect(x+14,base-26,16,26,'#2b2420');rect(x+12,base-29,20,3,'#d8cdb4');
+  if(nycDist()&&!b.landmark)nycFacade(b,x,y,h,bw,win,seed);}
  else if(st==='mex'){rect(x-2,y-6,bw+4,8,'#f2ead8');if(seed(1)<.6)rect(x+bw*.62,y-18,14,12,'#1e1e1e');
   for(let yy=26;yy<h-44;yy+=24){rect(x,y+yy-4,bw,2,'#ffffff33');for(let xx=10;xx<bw-12;xx+=20){rect(x+xx,y+yy,10,14,win(xx,yy,'#3b2f2a'));if((yy/24|0)%2===0){rect(x+xx-3,y+yy+14,16,2,'#2b2b2b');rect(x+xx-3,y+yy+10,1,4,'#2b2b2b');rect(x+xx+12,y+yy+10,1,4,'#2b2b2b');}}}
   for(let ax=x+4;ax<x+bw-16;ax+=22){rect(ax,base-26,16,26,'#3a2a22');ctx.fillStyle='#3a2a22';ctx.beginPath();ctx.arc(ax+8,base-26,8,Math.PI,0);ctx.fill();}}
@@ -2516,6 +2519,25 @@ function facade(b:typeof buildings[number],x:number,y:number,h:number,gridLit:bo
   if(h>140){const sx=x-13,sy=y+h*.22,sl=Math.min(150,h*.4),c=['#ff4fa3','#ffd84f','#4fd1ff'][Math.floor(seed(5)*3)];rect(sx,sy,12,sl,'#14141c');rect(sx+1,sy+1,10,sl-2,Math.sin(time*9+b.x*.3)>-.9?c:'#3a2a3a');for(let k=sy+5;k<sy+sl-8;k+=12)rect(sx+3,k,6,7,'#14141c');}
   if(seed(9)<.5&&bw>60){rect(x+6,y-26,bw-12,22,'#14141c');rect(x+8,y-24,bw-16,18,Math.sin(time*2+b.x)>0?'#e04a7a':'#4a7ae0');rect(x+12,y-18,bw-24,2,'#ffffff');rect(x+12,y-12,(bw-24)*.6,2,'#ffffff');}
   rect(x+12,base-24,20,24,'#9fe6ff55');}}
+// NYC fix card 5: a busier facade on the New York route levels' ordinary buildings: window AC units and awnings, hanging store signs and blade signs, a second fire escape,
+// and a rooftop water tank (unless the building already carries a roof fixture). Drawing only: nothing here is a hitbox.
+const NYC_SHOPS=['DELI','PIZZA','BAR','CAFE','NAILS','LIQUOR','BAGELS','LAUNDRY'],NYC_AWN=['#b9473b','#2f6a54','#2f5a8a','#d4a62f'];
+function nycFacade(b:typeof buildings[number],x:number,y:number,h:number,bw:number,win:(xx:number,yy:number,off:string)=>string,seed:(n:number)=>number){
+ const base=b.base,m=moodNow();
+ // Window AC units, and the odd striped window awning.
+ for(let yy=22;yy<h-30;yy+=44)for(let xx=10;xx<bw-10;xx+=38){const s=seed(xx*3+yy*11);
+  if(s<.4){rect(x+xx+1,y+yy+13,8,5,'#9aa0a3');rect(x+xx+1,y+yy+17,8,1,'#5a6064');rect(x+xx+2,y+yy+14,6,1,'#c4c9cc');}
+  else if(s<.55){const c=NYC_AWN[Math.floor(seed(yy)*4)];for(let k=0;k<5;k++)rect(x+xx-1+k*2.4,y+yy-3,2.4,5,k%2?c:'#e8dfc8');}}
+ // A second fire escape on the left of a wide building, platforms and a ladder.
+ if(bw>90&&h>150){const fx=x+bw*.06,fw=bw*.3;ctx.strokeStyle='#262626';ctx.lineWidth=1;ctx.beginPath();for(let yy=y+60,k=0;yy<base-60;yy+=44,k++){rect(fx,yy+14,fw,2,'#262626');ctx.moveTo(fx+(k%2?fw*.85:fw*.15),yy+16);ctx.lineTo(fx+(k%2?fw*.15:fw*.85),yy+58);}ctx.stroke();}
+ // Ground floor: a striped awning over a shop sign, and a blade sign on the corner.
+ if(bw>56){const c=NYC_AWN[Math.floor(seed(3)*4)],ax=x+bw*.38,aw=bw*.5,sh=NYC_SHOPS[Math.floor(seed(4)*NYC_SHOPS.length)];
+  for(let k=0;k*6<aw;k++)rect(ax+k*6,base-34,6,9,k%2?c:'#e8dfc8');rect(ax,base-25,aw,2,'#00000044');
+  rect(ax,base-45,aw,9,'#1b1f22');text(sh,ax+aw/2,base-37.5,7,m.lights>.35?'#ffd98a':'#cbbf9a','center');
+  rect(x-6,base-84,6,30,'#1b1f22');rect(x-5,base-83,4,28,seed(5)<.5?'#d94f4f':'#4fa3d9');}
+ // A rooftop water tank on some of the taller buildings (a building with a roof fixture keeps its own).
+ if(!b.roof&&h>150&&seed(77)<.45)nycWaterTower(x+bw*(.12+.45*seed(78)),y,28,'#4a3d32');
+}
 // Landmark silhouettes: the box is still the hitbox; the drawing is the monument.
 function drawLandmarkShape(b:typeof buildings[number],x:number,y:number,h:number){const st=CITIES[cityIndex].style,bw=b.w-7,base=b.base,cx=x+bw/2,sh=b.shape;
  if(sh==='lattice'){const col=st==='tyo'?'#d9452f':'#6e5a48';ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,base);ctx.quadraticCurveTo(x+bw*.3,y+h*.45,cx-3,y+18);ctx.moveTo(x+bw,base);ctx.quadraticCurveTo(x+bw*.7,y+h*.45,cx+3,y+18);ctx.stroke();
@@ -2559,6 +2581,20 @@ function drawProp(b:typeof buildings[number],x:number,h:number){const y=b.base-h
    rect(x,y+h*.35,w,4,'#8a7a58');rect(x+2,y+h*.35+4,3,h*.65-4,'#4a4236');rect(x+w-5,y+h*.35+4,3,h*.65-4,'#4a4236');rect(x+3,y+h*.1,5,h*.25,'#9aa3a8');rect(x+w*.5,y+h*.18,3,h*.17,'#c9a91f');
    poly([[x+w*.68,y+h*.35],[x+w*.74,y+h*.02],[x+w*.84,y+h*.35]],Math.sin(time*3+x)>0?'#f291ca':'#d46fae');break;}
   case 'stall':{rect(x,y+h*.45,w,h*.55,'#7a5a3a');for(let k=0;k<4;k++)rect(x+3+k*(w-6)/4,y+h*.47,(w-6)/4-2,6,['#e8d26a','#d94f4f','#6fb36a','#e89a3a'][k]);poly([[x-4,y+h*.42],[x+2,y],[x+w-2,y],[x+w+4,y+h*.42]],'#c2312b');for(let k=0;k<4;k++)rect(x+4+k*w/4,y+2,w/8,h*.38,'#f2ead8');break;}
+  // NYC fix card 5 street clutter: a subway entrance, a parked cab, a vendor's cart, a sidewalk shed.
+  case 'kiosk':{rect(x,y+h*.34,w,h*.66,'#2d5a3f');rect(x+3,y+h*.46,w-6,h*.54,'#0d1114');for(let k=0;k<4;k++)rect(x+4,y+h*.56+k*h*.1,w-8,1,'#3a4a44');
+   rect(x+w*.1,y+h*.05,2,h*.35,'#2d5a3f');rect(x+w*.9-2,y+h*.05,2,h*.35,'#2d5a3f');ctx.fillStyle=Math.sin(time*3+x)>-.7?'#bfe8c8':'#7fa88a';ctx.beginPath();ctx.arc(x+w*.1+1,y+h*.05,3.5,0,Math.PI*2);ctx.arc(x+w*.9-1,y+h*.05,3.5,0,Math.PI*2);ctx.fill();
+   rect(x+w*.3,y+h*.2,w*.4,h*.14,'#e8f2e8');rect(x+w*.34,y+h*.25,w*.32,2,'#2d5a3f');break;}
+  case 'cab':{rect(x,y+h*.42,w,h*.42,'#f2c230');poly([[x+w*.2,y+h*.42],[x+w*.3,y+h*.08],[x+w*.72,y+h*.08],[x+w*.84,y+h*.42]],'#f2c230');
+   poly([[x+w*.26,y+h*.4],[x+w*.33,y+h*.14],[x+w*.48,y+h*.14],[x+w*.48,y+h*.4]],'#2c3a42');poly([[x+w*.52,y+h*.4],[x+w*.52,y+h*.14],[x+w*.68,y+h*.14],[x+w*.78,y+h*.4]],'#2c3a42');
+   rect(x+w*.4,y,w*.2,h*.1,'#fff3c4');rect(x,y+h*.62,w,2,'#1c1c1c');rect(x+w-3,y+h*.5,3,5,moodNow().lights>.4?'#fff2b0':'#d9d2a0');
+   for(const k of [.24,.76]){ctx.fillStyle='#1c1c1c';ctx.beginPath();ctx.arc(x+w*k,base-3,4,0,Math.PI*2);ctx.fill();}break;}
+  case 'cart':{const cs=['#c2312b','#2f6fb0','#e9b44c'],cc=cs[Math.floor(x/7)%3<0?0:Math.floor(x/7)%3];rect(x+w*.46,y+h*.1,2,h*.5,'#555');poly([[x-3,y+h*.18],[x+w*.5,y-2],[x+w+3,y+h*.18]],cc);
+   rect(x+w*.08,y+h*.5,w*.84,h*.34,'#cfd2d4');rect(x+w*.08,y+h*.5,w*.84,3,shade('#cfd2d4',.3));for(let k=0;k<3;k++)rect(x+w*.14+k*w*.26,y+h*.38,w*.18,h*.12,['#e8b04a','#d94f4f','#6fb36a'][(k+Math.floor(x))%3&3?k:0]);
+   for(const k of [.22,.78]){ctx.fillStyle='#2b2b2b';ctx.beginPath();ctx.arc(x+w*k,base-3,3.5,0,Math.PI*2);ctx.fill();}break;}
+  case 'scaffold':{const lit=moodNow().lights>.4;rect(x,y+h*.14,w,h*.14,'#2f5a45');rect(x,y+h*.28,w,2,'#1f3a2d');
+   for(let k=0;k<=5;k++)rect(x+k*(w-3)/5,y+h*.28,3,h*.72,'#4a4f52');rect(x+2,y+h*.46,w-4,3,lit?'#e8c660':'#8a8460');
+   for(let k=0;k<w-6;k+=12)rect(x+3+k,y+h*.3,1,h*.14,'#243f33');rect(x+w*.4,y+h*.02,w*.2,h*.12,'#f0c53a');break;}
   case 'tree':{// A park tree: a trunk and a round, layered crown.
    rect(x+w*.43,y+h*.42,w*.14,h*.58,'#6b4f33');ctx.fillStyle=b.color||'#4f7d4a';for(const [dx,dy,r] of [[.5,.26,.34],[.28,.4,.24],[.72,.4,.24],[.5,.12,.22]]){ctx.beginPath();ctx.arc(x+w*dx,y+h*dy,w*r+4,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#00000018';ctx.beginPath();ctx.arc(x+w*.6,y+h*.34,w*.3,0,Math.PI*2);ctx.fill();break;}
   case 'palm':{rect(x+w*.44,y+h*.28,w*.12,h*.72,'#7a5a3a');for(let k=0;k<5;k++)rect(x+w*.44,y+h*.34+k*h*.12,w*.12,2,'#5a4028');
@@ -2704,6 +2740,103 @@ function drawCityFx(){
   if(k>.6)text('RADAR LOCK',r.x+r.w/2-camera,r.y-10,10,col,'center');}
 }
 // Far skyline: each city's signature silhouettes on the horizon, parallaxing slowly so they stay in view across the block.
+// ---- NYC fix card 5: a city behind the street (art only; no hitbox, no interaction) ----
+// The New York route levels show city where they used to show sky: a taller, busier far skyline (One World Trade from downtown, the Empire State and the Chrysler
+// from Midtown), two hazy mid layers, and a dark back row of buildings just behind the playable one, parallaxing a little slower than the street, so a gap between
+// two towers looks down a cross street lined with buildings. The back row is styled per district and obeys moodNow() (lit windows at night, a blackout where the grid
+// is down). Keyed by level name so Combat Drills, nyc-classic, Coney Island and every other city draw exactly as before.
+type NycDistrict='canyon'|'soho'|'midtown'|'park';
+const NYC_DISTRICT:Record<string,NycDistrict>={'The Battery':'canyon','Wall Street':'canyon','SoHo and Canal Street':'soho','Times Square':'midtown','Grand Central':'midtown','Herald Square':'midtown','Hudson Yards':'midtown','Empire State':'midtown','Central Park':'park'};
+const nycDist=():NycDistrict|undefined=>CITIES[cityIndex].id==='nyc'?NYC_DISTRICT[block.name]:undefined;
+const nh=(n:number)=>((n*2654435761)>>>0)%1000/1000;
+const shade=(c:string,t:number,to='#070b10')=>hexOk(c)&&hexOk(to)?mixHex(c,to,t):c;
+type SkyMood={far:string,mid:string,near:string,win:string,lights:number,bottom:string};
+// A wooden rooftop water tank on stilts, s wide: legs, banded barrel, conical cap.
+function nycWaterTower(x:number,by:number,s:number,c:string){
+ for(const k of [0,.35,.7])rect(x+k*s*.5,by-s*.5,2,s*.5,c);rect(x-2,by-s*.5,s*.5+4,2,c);
+ rect(x,by-s*1.1,s*.5,s*.6,c);poly([[x-3,by-s*1.1],[x+s*.25,by-s*1.45],[x+s*.5+3,by-s*1.1]],c);for(let k=1;k<4;k++)rect(x,by-s*.5-k*s*.15,s*.5,1,shade(c,.4));}
+// The far skyline's landmarks, drawn in the layer colour c with base the skyline's ground line.
+function nycOneWTC(sx:number,base:number,c:string){poly([[sx-21,base],[sx-21,base-210],[sx-5,base-300],[sx+5,base-300],[sx+21,base-210],[sx+21,base]],c);rect(sx-1.5,base-390,3,92,c);
+ if(Math.sin(time*2)>0)rect(sx-2,base-392,4,4,'#ff6a5a');}
+function nycEmpireFar(sx:number,base:number,c:string){rect(sx-46,base-92,92,92,c);rect(sx-35,base-152,70,60,c);rect(sx-25,base-208,50,56,c);rect(sx-16,base-250,32,42,c);rect(sx-10,base-278,20,28,c);rect(sx-5,base-296,10,18,c);rect(sx-1.5,base-352,3,56,c);
+ ctx.globalAlpha=.55;rect(sx-9,base-300,18,3,'#ffd9a0');ctx.globalAlpha=.8;}
+function nycChryslerFar(sx:number,base:number,c:string,win:string,nightA:number){rect(sx-19,base-180,38,180,c);rect(sx-15,base-208,30,30,c);
+ for(let k=0;k<4;k++){const w=15-k*3,y=base-208-k*17;poly([[sx-w,y],[sx,y-26-k*3],[sx+w,y]],c);}rect(sx-1,base-318,2,60,c);
+ if(nightA>0){ctx.globalAlpha=nightA*.7;for(let k=0;k<4;k++){const w=12-k*3,y=base-210-k*17;poly([[sx-w,y],[sx,y-18],[sx+w,y]],win);}ctx.globalAlpha=.8;}}
+// Which landmarks each district's far skyline carries, at fractions of the view width.
+const NYC_FAR:Record<string,[string,number][]>={
+ 'The Battery':[['wtc',.86]],'Wall Street':[['wtc',.86]],'SoHo and Canal Street':[['wtc',.2],['esb',.66]],
+ 'Times Square':[['esb',.32],['chrysler',.58]],'Grand Central':[['esb',.28],['chrysler',.85]],'Herald Square':[['chrysler',.45]],
+ 'Hudson Yards':[['esb',.55],['chrysler',.8]],'Empire State':[['wtc',.12],['chrysler',.7]],'Central Park':[['chrysler',.25],['esb',.58]]};
+// Many towers, tall and close-packed, in the layer colour: the sky above the street is mostly city. Windows light per mood.
+function nycFarSkyline(W:number,m:SkyMood,c:string,base:number){
+ const night=thr(m.lights,.6,.4),step=NYC5.farStep,off=camera*.05;
+ for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){
+  const r=nh(i*3+1),r2=nh(i*7+2),r3=nh(i*11+3),x=i*step-off,w=step-4+(r2*8|0)-2,h=120+r*210;
+  rect(x,base-h,w,h+4,c);
+  if(r3<.25){rect(x+w*.18,base-h-22,w*.64,22,c);rect(x+w*.4,base-h-44,w*.2,22,c);}                       // a stepped crown
+  else if(r3<.45){poly([[x,base-h],[x+w/2,base-h-w*.8],[x+w,base-h]],c);}                                  // a pyramid roof
+  else if(r3<.62){rect(x+w/2-1,base-h-48,2,48,c);}                                                         // an antenna
+  else if(r3<.72){rect(x+w*.2,base-h-14,w*.6,14,c);rect(x+w*.3,base-h-16,5,16,c);}                         // a water tank on the roof
+  if(night>0){ctx.globalAlpha=.5*night;for(let yy=base-h+7;yy<base-4;yy+=9)if(nh(i*37+yy)<.62)rect(x+3,yy,w-6,2,m.win);ctx.globalAlpha=.8;}}
+ for(const [k,f] of NYC_FAR[block.name]??[]){const sx=f*W-off;if(k==='wtc')nycOneWTC(sx,base,c);else if(k==='esb')nycEmpireFar(sx,base,c);else nycChryslerFar(sx,base,c,m.win,night);}}
+// Two hazy layers of the city between the skyline and the back row (taller and denser than the bands other cities draw).
+function nycMidLayers(W:number,m:SkyMood){
+ const night=thr(m.lights,.6,.4),ground=C.ground-4;
+ const lay=(step:number,par:number,w:number,lo:number,span:number,col:string,seed:number)=>{const off=camera*par;
+  for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const r=nh(i*5+seed),bw=w-(nh(i*3+seed)*10|0),h=lo+r*span,x=i*step-off;
+   rect(x,ground-h,bw,h+8,col);if(r>.62)rect(x+bw*.2,ground-h-12,bw*.6,12,col);if(r<.14)rect(x+bw*.45,ground-h-28,2,28,col);
+   if(night>0){ctx.globalAlpha=night*.5;for(let yy=ground-h+9;yy<ground-8;yy+=12)if(nh(i*31+yy+seed)<.66)rect(x+4,yy,bw-8,2,m.win);ctx.globalAlpha=1;}}};
+ lay(56,.13,48,200,190,m.far,1);lay(78,NYC5.midParallax,66,150,170,m.mid,2);}
+// The back row: dark, a little smaller than the playable row, a continuous run of buildings (a narrow slot now and then, where the mid layers show through).
+function nycBackRow(W:number,m:SkyMood,kind:NycDistrict){
+ const cell=NYC5.backCell,off=camera*NYC5.backParallax,base=C.ground-4,night=thr(m.lights,.6,.4),topY=C.ground-(C.ground+cameraY)/zoom-20,dayTint={canyon:'#4b5560',soho:'#5d4437',midtown:'#4a5a68',park:'#6a5f52'}[kind];
+ for(let i=Math.floor(off/cell)-1,n=Math.ceil((off+W)/cell)+1;i<n;i++){
+  const r2=nh(i*13+5),parts=kind==='park'?1:r2<.35?2:1,slot=kind!=='park'&&i%7===3?30:0;
+  for(let j=0;j<parts;j++){const seed=i*2+j,r=nh(seed*7+kind.length),r3=nh(seed*29+11),pw=(cell-slot)/parts-4,px=i*cell-off+slot/2+j*(cell-slot)/parts;
+   if(px>W||px+pw<0)continue;
+   const h=kind==='canyon'?300+r*230:kind==='soho'?140+r*90+(r3>.82?90:0):kind==='midtown'?250+r*250:210+r*70;
+   const body=shade(mixHex(dayTint,hexOk(m.near)?m.near:dayTint,.45),.28),hole=shade(body,.38),dark=!!(block.night||block.moodRamp)&&!powered(camera+px+pw/2);
+   const lights=dark?NYC2.darkWindows:m.lights*.75,glassDay=kind==='midtown'&&seed%3===0,dayWin=glassDay?mixHex(body,'#9fbccb',.3):shade(body,.3,'#9fb0b8'),offWin=nightMix(dayWin,hole,night);
+   nycBackBuilding(px,pw,h,seed,kind,body,hole,offWin,m.win,lights,night,topY,base);}}
+ if(kind==='park'){// the park's tree line in front of the wall
+  ctx.fillStyle=shade('#3f6a3f',.35);for(let x=-((off%22)+22);x<W+22;x+=22){const t=nh(Math.floor((x+off)/22)),y=base-18-t*26;ctx.beginPath();ctx.arc(x,y,16+t*8,0,Math.PI*2);ctx.fill();}rect(0,base-10,W,12,shade('#3f6a3f',.35));}}
+const nightMix=(a:string,b:string,t:number)=>hexOk(a)&&hexOk(b)?mixHex(a,b,Math.max(0,Math.min(1,t))):a;
+function nycBackBuilding(x:number,w:number,h:number,seed:number,kind:NycDistrict,body:string,hole:string,offWin:string,win:string,lights:number,night:number,topY:number,base:number){
+ const y=base-h,lit=(a:number,b:number)=>nh(seed*131+a*7+b*3)<lights;
+ rect(x,y,w,h+6,body);rect(x+w-3,y,3,h+6,shade(body,.25));
+ const sh=kind==='soho'?20:16,sv=kind==='soho'?24:19,ww=kind==='soho'?7:6,wh=kind==='soho'?13:9;
+ // Windows: a grid, lit per mood (a window is lit or its day/night off colour).
+ for(let k=Math.max(0,Math.floor((topY-sv-y-14)/sv));;k++){const yy=y+14+k*sv;if(yy>=base-30)break;rect(x+8,yy,w-18,wh,offWin);for(let xx=8;xx<w-10;xx+=sh)if(lit(xx,yy|0))rect(x+xx,yy,ww,wh,win);}
+ if(kind==='canyon'){// pilasters, a stepped crown, an arcade at the foot
+  ctx.globalAlpha=.16;for(let xx=18;xx<w-6;xx+=24)rect(x+xx,y,1,h,'#000000');ctx.globalAlpha=1;
+  if(seed%3!==0){rect(x+w*.17,y-34,w*.66,34,body);rect(x+w*.34,y-58,w*.32,24,body);if(seed%2)poly([[x+w*.34,y-58],[x+w*.5,y-92],[x+w*.66,y-58]],body);else rect(x+w*.5-1,y-92,2,34,body);}
+  else rect(x-1,y-4,w+2,5,shade(body,.2,'#8a96a0'));
+  for(let xx=6;xx<w-10;xx+=16){rect(x+xx,base-26,9,26,hole);ctx.fillStyle=hole;ctx.beginPath();ctx.arc(x+xx+4.5,base-26,4.5,Math.PI,0);ctx.fill();}}
+ else if(kind==='soho'){// cornice and brackets, cast-iron columns, a fire escape, a water tank, a lit shopfront
+  rect(x-2,y-2,w+4,6,shade(body,.25,'#9a8a7a'));for(let xx=2;xx<w-6;xx+=10)rect(x+xx,y+4,4,5,shade(body,.2,'#9a8a7a'));
+  ctx.globalAlpha=.3;for(let xx=sh+3;xx<w-8;xx+=sh)rect(x+xx,y+10,1,h-40,'#d0c0a8');ctx.globalAlpha=1;
+  const fx=x+w*.58,fw=w*.34;ctx.strokeStyle=shade(body,.55);ctx.lineWidth=1;ctx.beginPath();
+  for(let yy=y+34,k=0;yy<base-34;yy+=sv*2,k++){rect(fx,yy+sv-4,fw,2,shade(body,.55));ctx.moveTo(fx+(k%2?fw:0),yy+sv-3);ctx.lineTo(fx+(k%2?0:fw),yy+sv*2-3);}ctx.stroke();
+  if(seed%2===0)nycWaterTower(x+w*.18,y,26,shade(body,.35));
+  rect(x+4,base-26,w-8,22,nh(seed)<lights+.3?shade('#d9a84e',.2):hole);}
+ else if(kind==='midtown'){const t=seed%3;
+  if(t===0){// glass: mullions, a bright edge, a setback crown and mast
+   ctx.globalAlpha=.22;for(let yy=y+10;yy<base-30;yy+=15)rect(x,yy,w,1,'#cfe6f2');ctx.globalAlpha=.1;rect(x+w*.1,y,w*.22,h,'#ffffff');ctx.globalAlpha=1;
+   rect(x+w*.2,y-26,w*.6,26,body);rect(x+w*.5-1,y-70,2,44,body);}
+  else if(t===1){// masonry with two setbacks
+   rect(x+w*.12,y-36,w*.76,36,body);rect(x+w*.28,y-70,w*.44,34,body);rect(x+w*.5-1,y-96,2,26,body);ctx.globalAlpha=.14;for(let xx=18;xx<w-6;xx+=24)rect(x+xx,y,1,h,'#000000');ctx.globalAlpha=1;}
+  else{// a mid-rise with a rooftop sign and a water tank
+   rect(x+w*.1,y-24,w*.8,24,shade(body,.2));rect(x+w*.12,y-44,w*.4,20,shade(body,.35,'#ff4fa3'));nycWaterTower(x+w*.62,y,24,shade(body,.3));}
+  // neon on the lower floors, strongest at night
+  if(night>0){ctx.globalAlpha=night*.85;const cs=['#ff4fa3','#ffd84f','#4fd1ff'];for(let k=0;k<2;k++)rect(x+6+k*(w/2),base-56-(seed%3)*16,w/2-10,7,cs[(seed+k)%3]);rect(x+w-10,base-120,6,40,cs[seed%3]);ctx.globalAlpha=1;}
+  rect(x+4,base-24,w-8,20,lights>.3?shade('#d9a84e',.25):hole);}
+ else{// Fifth Avenue and Central Park West: pre-war apartment houses with mansard roofs, twin towers now and then, water tanks
+  rect(x-2,y-3,w+4,5,shade(body,.2,'#9a8f7e'));poly([[x-2,y-3],[x+10,y-22],[x+w-10,y-22],[x+w+2,y-3]],shade(body,.15,'#4a6a60'));
+  for(let xx=14;xx<w-14;xx+=24)rect(x+xx,y-17,8,12,hole);
+  if(seed%6===0){for(const dx of [.12,.66]){rect(x+w*dx,y-74,w*.22,56,body);ctx.fillStyle=shade(body,.1,'#4a6a60');ctx.beginPath();ctx.arc(x+w*dx+w*.11,y-74,w*.11,Math.PI,0);ctx.fill();}}
+  else if(seed%2)nycWaterTower(x+w*.6,y-20,24,shade(body,.35));
+  rect(x+4,base-24,w-8,20,lights>.3?shade('#d9a84e',.3):hole);}}
 function farSkyline(style:string,W:number,m:{far:string,mid:string,win:string,lights:number}){const base=320,c=m.far,night=m.lights>.6,px=(k:number,period=1500)=>((k*period-camera*.05)%(period*2)+period*2)%(period*2)-200;
  ctx.globalAlpha=.8;
  if(style==='nyc'){
@@ -2717,7 +2850,8 @@ function farSkyline(style:string,W:number,m:{far:string,mid:string,win:string,li
   if(block.name==='Herald Square'){const sx=viewW()-170-(worldWidth-viewW()-camera)*.15;
    rect(sx-46,base-92,92,92,c);rect(sx-35,base-152,70,60,c);rect(sx-25,base-208,50,56,c);rect(sx-16,base-250,32,42,c);rect(sx-10,base-278,20,28,c);rect(sx-5,base-296,10,18,c);rect(sx-1.5,base-352,3,56,c);
    ctx.globalAlpha=.55;rect(sx-9,base-300,18,3,'#ffd9a0');ctx.globalAlpha=.8;}
-  for(const k of [0,1]){const x=px(k);rect(x,base-150,26,150,c);rect(x+5,base-172,16,22,c);rect(x+9,base-190,8,18,c);rect(x+12,base-215,2,25,c);
+  if(nycDist())nycFarSkyline(W,m,c,base);
+  else for(const k of [0,1]){const x=px(k);rect(x,base-150,26,150,c);rect(x+5,base-172,16,22,c);rect(x+9,base-190,8,18,c);rect(x+12,base-215,2,25,c);
    const y=px(k,1500)+620;rect(y,base-130,22,130,c);poly([[y,base-130],[y+11,base-175],[y+22,base-130]],c);rect(y+10,base-195,2,20,c);}}
  else if(style==='mex'){// Popocatépetl, smoking, with Iztaccíhuatl beside it, and the Torre Latinoamericana.
   const x=px(0,2000)+200;poly([[x-260,base],[x-40,base-190],[x+30,base-190],[x+250,base]],c);poly([[x-58,base-172],[x-40,base-190],[x+30,base-190],[x+48,base-172],[x+20,base-176],[x-10,base-168],[x-30,base-176]],'#efe6d8');
