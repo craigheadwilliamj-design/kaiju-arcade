@@ -1,4 +1,4 @@
-import {CITY as Y,CONFIG as C,SF2} from './config.ts';
+import {CITY as Y,CONFIG as C,SF2,NYC2} from './config.ts';
 import type {Building} from './rules.ts';
 
 // Rampage: a heat gauge fed by destruction. It holds for a short grace period after the last feed, then drains.
@@ -20,9 +20,10 @@ export function substations(buildings:Building[],grids:[number,number][]|undefin
 export function gridPowered(subs:(Building|null)[]){return subs.map(b=>!!b&&b.hpNow>0);}
 
 // Rooftop fixtures sit on their host's roof; boxes are in world coordinates with y measured down from the top of the canvas.
-export type RoofProp={b:Building,kind:'radar'|'tank'|'sign'|'crab'|'helipad',hp:number,max:number,dead:boolean,call:number,grid:number};
+export type RoofProp={b:Building,kind:'radar'|'tank'|'sign'|'crab'|'helipad'|'billboard'|'ball',hp:number,max:number,dead:boolean,call:number,grid:number};
 const ROOF={radar:{w:Math.round(30*C.cityScale),h:Math.round(34*C.cityScale),at:.62},tank:{w:Math.round(34*C.cityScale),h:Math.round(46*C.cityScale),at:.28},
- sign:{w:Math.round(86*C.cityScale),h:Math.round(30*C.cityScale),at:.5},crab:{w:Math.round(62*C.cityScale),h:Math.round(44*C.cityScale),at:.5},helipad:{w:Math.round(76*C.cityScale),h:Math.round(12*C.cityScale),at:.5}};
+ sign:{w:Math.round(86*C.cityScale),h:Math.round(30*C.cityScale),at:.5},crab:{w:Math.round(62*C.cityScale),h:Math.round(44*C.cityScale),at:.5},helipad:{w:Math.round(76*C.cityScale),h:Math.round(12*C.cityScale),at:.5},
+ billboard:{w:Math.round(92*C.cityScale),h:Math.round(46*C.cityScale),at:.5},ball:{w:NYC2.ballSize,h:NYC2.ballSize+Math.round(14*C.cityScale),at:.5}};
 export function createRoofProps(buildings:Building[],grids:[number,number][]|undefined):RoofProp[]{
  return buildings.filter(b=>b.roof).map(b=>{const kind=b.roof!,max=kind==='radar'?Y.radarHP:kind==='tank'?Y.tankHP:SF2.roofHP[kind];return {b,kind,hp:max,max,dead:false,call:0,grid:gridOf(b.x+b.w/2,grids)};});}
 export function roofBox(p:RoofProp,height=p.b.h){const d=ROOF[p.kind],x=Math.round(p.b.x+(p.b.w-7)*d.at-d.w/2);return {x,y:p.b.base-height-d.h,w:d.w,h:d.h};}
