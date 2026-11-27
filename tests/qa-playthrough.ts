@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';import {writeFile} from 'node:fs/promises';
 import {bootGame} from './helpers/game-harness.ts';import {MILITARY as M,COMBAT as B,CONFIG as C} from '../src/config.ts';
-import {CHECKPOINT_KEY,PERMANENT_KEY,CAMPAIGN,campaignCityIndex,routeLevels} from '../src/campaign.ts';import {cityIndexOf} from '../src/levels.ts';import {NAVAL_UNITS} from '../src/military.ts';
+import {CHECKPOINT_KEY,PERMANENT_KEY,CAMPAIGN,campaignCityIndex,routeLevels} from '../src/campaign.ts';import {cityIndexOf,LEVELS} from '../src/levels.ts';import {NAVAL_UNITS} from '../src/military.ts';
 const h=await bootGame(.75),rows:any[]=[],peaks:Record<string,number>={};let polls=0,landingProbe=false,cityStart=0,peakStage=1,evolutions:Record<string,number>={};
 const check=(s:any)=>{assert.ok(Number.isFinite(s.x)&&Number.isFinite(s.y)&&Number.isFinite(s.hp)&&Number.isFinite(s.score));assert.ok(s.x>=-.001&&s.x+s.width<=s.worldWidth+.001);assert.ok(s.hp>=0&&s.hp<=100);for(const [k,v] of Object.entries(s.entityCounts))peaks[k]=Math.max(peaks[k]||0,Number(v));// Police boats are stationed on the water and sit outside the squad cap (src/military.ts fielded()); everything else is under it.
  // Naval units (police boats, Bay Bridge's warships) are outside the cap, as in the game (NAVAL_UNITS in src/military.ts).
@@ -20,8 +20,10 @@ function fightBlock(){
   // Chinatown's crystal formation lifts the cap to Stage 2: the bot detours to shatter it once it is within a screen or two of the way.
   const formation=s.formationHP>0&&s.formationX!==null&&!s.exitOpen?{x:s.formationX-66,y:285,w:132,h:150,hp:s.formationHP}:null;
   let target:any=null,goal=s.worldWidth-s.width;
-  // Fisherman's Wharf is there-and-back: the main route leaves by the west exit (to The Fault); the east exit is the secret Alcatraz.
-  if(s.exitOpen&&s.level.name==='Fisherman\'s Wharf')goal=0;
+  // A level with two exits (Fisherman's Wharf, Central Park): the route leaves by the side whose level is not a secret one
+  // (west to The Fault / Hudson Yards; east is the secret Alcatraz / Coney Island).
+  const lv=LEVELS[s.cityIndex]?.[s.blockIndex],route=lv?.exits&&(['west','east'] as const).find(side=>{const to=LEVELS[s.cityIndex].find(b=>b.name===lv.exits![side]);return to&&!to.secret;});
+  if(s.exitOpen&&route)goal=route==='west'?0:s.worldWidth-s.width;
   if(s.rival){target=s.rival;goal=target.x-s.width-25;}
   // A crystal formation comes before a stronghold's objective: the Wharf's cutter sits past deep water that only the Stage 3 lift opens.
   else if(formation){target=formation;goal=target.x-s.width-25;}
