@@ -36,7 +36,7 @@ test('The Fault data: eight screens, destruction, Stage 3 throughout, full milit
  for(const b of createBuildings(solid)){assert.ok(b.x>=0&&b.x+b.w<=W);assert.deepEqual(checkParts(b),[]);}
  for(let i=0;i<solid.length;i++)for(let j=i+1;j<solid.length;j++)assert.ok(!overlaps({x:solid[i].x,y:0,w:solid[i].w,h:1},{x:solid[j].x,y:0,w:solid[j].w,h:1}));
  // Nothing else gained the fault fields.
- for(const b of LEVELS.flat().filter(x=>x!==FAULT)){assert.equal(b.cracks,undefined,b.name);assert.equal(b.gas,undefined,b.name);assert.equal(b.fireCap,undefined,b.name);assert.equal(b.elevatedDecks,undefined,b.name);}
+ for(const b of LEVELS.flat().filter(x=>x!==FAULT)){assert.equal(b.cracks,undefined,b.name);assert.equal(b.gas,undefined,b.name);assert.equal(b.fireCap,undefined,b.name);if(b.name!=='Ciudad Universitaria')assert.equal(b.elevatedDecks,undefined,b.name);}// Mexico City's Periférico (card 6) is the other double-deck freeway
 });
 
 test('real loop: a slam at a crack sets off a district quake: shake, damage, sway, shockwaves, gas mains burst into fire geysers, the other cracks stay sealed',async()=>{
@@ -136,7 +136,7 @@ test('Bay Bridge data: eight screens, a target (the carrier, the cutter scaled u
  const bed=profileY(gp,(BAY.bridge!.x1+BAY.water![0][1])/2),depth=bed-BAY.water![0][2];
  assert.ok(depth/(C.playerHeight*2.8)>.25&&depth/(C.playerHeight*2.8)<.65,`chest-deep at Stage 3 (${depth})`);assert.ok(depth/(C.playerHeight*1.4)>.65,'over the head at Stage 2');
  // Nothing else gained the new fields.
- for(const b of LEVELS.flat().filter(x=>x!==BAY&&x!==GG&&x.name!=='Grand Central')){assert.equal(b.warships,undefined,b.name);assert.equal(b.deckUnits,undefined,b.name);assert.equal(b.bridge?.rise,undefined,b.name);assert.equal(b.bridge?.more,undefined,b.name);assert.ok(!b.buildings.some(x=>x.upperDeck||x.deco==='btower'),b.name);}
+ for(const b of LEVELS.flat().filter(x=>x!==BAY&&x!==GG&&x.name!=='Grand Central')){assert.equal(b.warships,undefined,b.name);if(b.name!=='Ciudad Universitaria')assert.equal(b.deckUnits,undefined,b.name);assert.equal(b.bridge?.rise,undefined,b.name);assert.equal(b.bridge?.more,undefined,b.name);assert.ok(!b.buildings.some(x=>x.upperDeck||x.deco==='btower'),b.name);}
 });
 
 test('the upper deck uses stacked-tier hit parts at length: two climbable towers and a slab above the lower road',()=>{

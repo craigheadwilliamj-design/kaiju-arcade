@@ -837,3 +837,27 @@ export const ANGEL = {length:Math.round(420*CITY_SCALE),w:Math.round(60*CITY_SCA
 // `rerollMin`) on `glide` px/s of friction, plowing `plows` buildings. It never breaks. `points` the first time it is lifted. `near`: how close to the castle's crystal the level sets it,
 // so a player who takes the crystal (and grows to Stage 3) is standing beside it whichever exit they head for.
 export const STONE = {d:Math.round(54*CITY_SCALE),mass:7,minStage:3,points:600,throwSpeed:560,throwLift:200,throwDamage:170,reroll:.9,rerollMin:200,glide:60,plows:6,grabSpeed:70,near:480,hint:300};
+
+// ---- Mexico City rework, card 6: Act 3 levels 7-8 (Ciudad Universitaria, Calzada de Tlalpan). docs/MEX_REWORK.md ----
+// Every part is opt-in per level (src/levels.ts BlockDef: `seepsAuto`, `rock`, `sinkholes`, `tren`); a level that sets none of it runs none of this. Numbers are read in src/game.ts and src/levels.ts.
+// MEX3: the level tuning (authored x unless noted).
+//  `cu`: Ciudad Universitaria. `freeway` the Periférico's double-deck run and `approach` its ramps' length; `run` the two runs of storm drains (`seepsAuto`) that go off one after another
+//   (`n` seeps from x0 to x1: the first on Insurgentes, the second on the Pedregal under UNAM); `rock` the stretches of volcanic ground; `library`/`stadium` the UNAM landmarks' x.
+//  `tlalpan`: Calzada de Tlalpan. `T` the field HQ's x; `tren` the Tren Ligero's surface line; `holes` the convoy lane's and the car park's sinkholes; `wall` a third one under the target's walls
+//   (x offsets from T: it spans the barricade ring west of the HQ, whichever barricades stand there).
+//  `tren`: the Tren Ligero (vehicle-sized light rail on a surface track beside the road, in the same `trains` list as the subway's): a train every `every` s at `speed` px/s, `h` tall (px),
+//   attacked like the subway trains (R.trainHP, derails into a burning wreck, R.trainPoints) and grabbable at Stage 3 without a pit. After R.trainWrecks derailments the line is closed.
+export const MEX3 = {
+ cu:{freeway:[2350,4050] as [number,number],approach:420,run:[{x0:900,x1:2150,n:7},{x0:4700,x1:6600,n:5}] as {x0:number,x1:number,n:number}[],
+  rock:[[1500,2300],[4500,5750],[6000,7000]] as [number,number][],library:4950,stadium:6150},
+ tlalpan:{T:5500,tren:[1000,3200] as [number,number],holes:[[3450,3900],[4200,4650]] as [number,number][],wall:{x0:-460,x1:-110}},
+ tren:{every:9,speed:520,h:Math.round(40*CITY_SCALE),stationW:Math.round(60*CITY_SCALE)},
+};
+// ROCK (a level's `rock:[x0,x1][]`, authored x): volcanic ground, the Pedregal's lava field. Tlézcatl's lava pools whose middle is on it (the Magma Dive's pool, the globs' pools, the Eruption's rain
+// and card 2's volcanic bombs) last `poolLife` x longer and spread `spread` x wider, so a Magma Dive there leaves a lasting trap. Damage per tick is unchanged. Drawn as dark broken rock.
+export const ROCK = {poolLife:2.6,spread:1.35,color:'#2c2724',edge:'#4a403a'};
+// SINKHOLE (a level's `sinkholes:[x0,x1][]`, authored x): a marked stretch of street (drawn cracked) that the acid has hollowed. A heavy landing within `reach` px of it (a Magma Dive, a thrown building,
+// a toppling tower: anything that calls the cave-in code) opens it: the street over [x0,x1] becomes a pit `depth` px deep (shallow enough to walk out of: a kaiju standing on it drops in about waist-deep
+// and walks or climbs out, it never traps him). Troops in it take the pit's fall damage plus `damage`; loose vehicles are thrown in (`launch`); every building whose middle stood on it sinks and collapses
+// where it is (Hudson Yards' yard code, NYC3.yard). Each opens once. `points`/`heat` for the collapse.
+export const SINKHOLE = {depth:Math.round(64*CITY_SCALE),reach:Math.round(90*CITY_SCALE),damage:25,points:700,heat:8,crack:'#1c1a18'};
