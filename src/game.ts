@@ -22,7 +22,7 @@ import type {MilitaryEvent} from './military.ts';
 import type {Rect,Unit} from './military.ts';
 import {createPopulation,releaseOccupants,tickPopulation,civilianBox} from './population.ts';
 import type {Permanent} from './campaign.ts';
-import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,initialsValid,KAIJU,CAMPAIGN,campaignCityIndex,routeLevels,freePlayLevels,unlockSecret,secretLevelOf,secretIds,exitTarget,kaijuFor,discardLegacySaves} from './campaign.ts';
+import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,initialsValid,KAIJU,CAMPAIGN,campaignCityIndex,routeLevels,freePlayLevels,unlockSecret,secretLevelOf,secretIds,exitTarget,kaijuFor,discardLegacySaves,migrateV2Saves} from './campaign.ts';
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
 import {createRival,hitRival,tickRival,surfaceBelow,lavaPool} from './rival.ts';
 import type {Rival} from './rival.ts';
@@ -44,7 +44,7 @@ type Mode='title'|'playing'|'paused'|'confirm'|'results'|'gameover'|'setup'|'pro
 let mode:Mode='title',buildings=createBuildings(NEW_YORK_BLOCK_ONE),score=0,camera=0,cameraY=0,zoom=C.zoom,time=0,shake=0,cleared=false,action='',actionTime=0;
 const keys=new Set<string>();
 let storage:StorageLike|undefined;try{storage=window.localStorage;}catch{}
-discardLegacySaves(storage);let {permanent,checkpoint,available:storageOK}=readSaves(storage);
+migrateV2Saves(storage);discardLegacySaves(storage);let {permanent,checkpoint,available:storageOK}=readSaves(storage);
 let run:Run|null=null,session:'campaign'|'drill'|'freeplay'='drill',citySettled=false;
 let activeKaiju='Mogurodon',selectedKaiju='Mogurodon',pendingInitials='AAA',freeBlockStart=0;
 let freeChoice:FreePlayChoice={kaiju:'Mogurodon',city:0,boss:'Mogurodon'};

@@ -10,6 +10,8 @@ Five updates, turned into four work cards:
 
 Each card stands alone: start a session with the card's text. Read this whole file first.
 
+Status: **cards 1–3 done**: Atomotitan in the roster (card 1), Sydney as a city (card 2) and the route shuffle (card 3). The route is now San Francisco → New York → Mexico City → Paris → Sydney → Hong Kong → Tokyo (43 route levels) on v3 saves. Card 4 (Atomotitan's kit and art) stays **parked**. See "Done: notes for later cards" at the end.
+
 **Order.**
 - Cards 1 and 2 can run in parallel.
 - Card 3 needs both of them.
@@ -75,14 +77,14 @@ The three moves are one card on purpose. Done one at a time, they leave the rout
 - **Seeing it in the browser.**
   1. `npm run build`, then serve `dist/`.
   2. In a Playwright init script, set `window.__kaijuTest=true`. This exposes `kaijuTest` and `kaijuDebug`.
-  3. Seed the save keys from `src/campaign.ts`. These are the v2 keys until card 3 lands and the v3 keys after it. Card 3 updates `docs/NYC_FIXES.md` to match.
+  3. Seed the save keys from `src/campaign.ts`: since card 3 these are the v3 keys (`kaiju-arcade:permanent:v3`, `kaiju-arcade:campaign:v3`, checkpoint `version:3`). A seeded v2 checkpoint is migrated at boot.
   4. Continue, then Begin City, then `kaijuTest.goto(block, x)`.
-  5. For an off-route city, use `kaijuTest.gotoCity(id, block)`.
+  5. For an off-route city (today only `nyc-classic`), use `kaijuTest.gotoCity(id, block)`. Sydney is on the route since card 3.
 - **Screenshots.** Save before/after shots to `docs/screenshots/` (`route-<card>-*.png`).
 
 ---
 
-## Card 1: Add Atomotitan to the roster (data only)
+## Card 1: Add Atomotitan to the roster (data only) — **done**
 
 **Goal.** Atomotitan exists as a seventh kaiju in data, the way Sargathoth does today: locked, with a geometric stand-in and provisional ratings. No route change and no moveset. This unblocks card 3, which needs a valid boss name, and card 4.
 
@@ -104,7 +106,7 @@ The three moves are one card on purpose. Done one at a time, they leave the rout
 
 ---
 
-## Card 2: Add Sydney as a city (off-route)
+## Card 2: Add Sydney as a city (off-route) — **done**
 
 **Goal.** Sydney is a complete city at the same depth as Hong Kong or Tokyo: five districts, its own look and one twist. It isn't on the route yet. Card 3 puts it there. Until then it is reachable only through `kaijuTest.gotoCity('syd', block)`, like `nyc-classic`.
 
@@ -146,7 +148,7 @@ Also add `'syd'` to the `ORIGINAL` city lists in `tests/campaign.test.ts`, `test
 
 ---
 
-## Card 3: Shuffle the route (Myrmex → Sydney, Sargathoth → Hong Kong, Atomotitan → Tokyo)
+## Card 3: Shuffle the route (Myrmex → Sydney, Sargathoth → Hong Kong, Atomotitan → Tokyo) — **done**
 
 **Needs cards 1 and 2.**
 
@@ -234,3 +236,15 @@ Also add `'syd'` to the `ORIGINAL` city lists in `tests/campaign.test.ts`, `test
 - **README:** add the kit to the controls line (`U` … `Atomotitan: <Ultimate>`) and add a section like the other kaiju's.
 
 **Done when** Atomotitan plays all three stages with his own strips and moves, the tests are green, and screenshots of each stage and each signature move are in `docs/screenshots/`.
+
+---
+
+## Done: notes for later cards
+
+1. **Atomotitan in the roster (done, PR #146).** `'Atomotitan'` is the seventh `KAIJU` entry; `ROSTER` in `src/presentation.ts` has a neutral colour, ratings `[3,3,3,3]` and ending `'TBD'`, commented as a placeholder until card 4. `ENDINGS`/`ART_SLOTS` pick him up; he draws as a plain-block geometric stand-in; `ultimateLabel()` and the dive label fall through to the generic text. The roster grid in `public/style.css` went to seven columns. Notes for card 4: replace the stand-in branch and the `ROSTER` placeholder values together, and give him an `isAtomotitan()` gate; nothing else keys off his placeholder state.
+2. **Sydney as a city (done, PR #147).** `'syd'` is appended after `nyc-classic` in `CITIES`/`LEVELS` (so no index moved) with its own `'syd'` style. Districts: **The Rocks**, **George Street**, **Barangaroo Bastion**, **Harbour Bridge Assault** and the arena (named **Myrmex Arena**), mirroring Hong Kong's 4/6/8/8/4 one for one. Landmarks include the Opera House on a new `sails` shape and a Sydney Tower `needle`, each with hitbox parts; Luna Park uses `arch`. Junk: bus shelters and wheelie bins. Twist: the **southerly buster**, a fixed per-level `BlockDef.wind` that pushes fire spread downwind (numbers in `TWISTS` in `src/config.ts`). Tests in `tests/sydney.test.ts`; `'syd'` is in the `ORIGINAL` placeholder lists. Notes for a Sydney rework: `wind` is per level, so a rework can keep or drop it level by level; the `syd` style branches in `src/game.ts`/`src/hitbox.ts` are explicit, so no bare `else` falls into Tokyo.
+3. **Route shuffle (done).** `CAMPAIGN=['sfo','nyc','mex','par','syd','hkg','tyo']`; HK's boss is Sargathoth and Tokyo's is Atomotitan (difficulties unchanged: syd 2.5, hkg 3, tyo 4); the arenas are renamed **Sargathoth Arena** (HK) and **Atomotitan Arena** (Tokyo), layouts untouched (`tests/sydney.test.ts` proves putting the old boss and arena name back reproduces the card-2 hashes). Saves are **v3** (`SAVE_VERSION=3`, keys `kaiju-arcade:permanent:v3` / `kaiju-arcade:campaign:v3`). `migrateV2Saves` in `src/campaign.ts` runs at boot before `discardLegacySaves`/`readSaves`: a v2 checkpoint's position p becomes `CAMPAIGN.indexOf(OLD_V2_ROUTE[p])` (hkg 4 → 5, tyo 5 → 6), a v2 permanent save copies across with only `version` changed, garbage is ignored, an existing v3 save is never overwritten, and the v2 keys are on `LEGACY_KEYS` so they are removed. Tests in `tests/campaign.test.ts` (route, counts `[9,9,5,5,5,5,5]`, banked 7000, cities 7, migration, each moved boss's unlock); the QA playthrough expects 7 unlocks. Notes for later cards:
+   - **Another route change** should do the same: bump `SAVE_VERSION`, keep the previous route as a constant like `OLD_V2_ROUTE`, and map checkpoint positions by city id. `migrateV2Saves` only reads v2; a v4 migration should read v3 (and can chain v2 → v3 first).
+   - **Reworking Sydney, HK or Tokyo** the redesign way moves each boss one city earlier (Paris → Myrmex, Sydney → Sargathoth, HK → Atomotitan) and gives the city a `kaiju`. Rename the arena again by string search (`after`/`exits`, tests, README).
+   - **Card 4** (parked): Tokyo already spawns Atomotitan as its rival with the shared M4 moveset and the stand-in, so his kit plugs in without route work. A boss kit at Tokyo is its own card.
+
