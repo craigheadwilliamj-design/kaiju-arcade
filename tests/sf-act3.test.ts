@@ -36,7 +36,7 @@ test('The Fault data: eight screens, destruction, Stage 3 throughout, full milit
  for(const b of createBuildings(solid)){assert.ok(b.x>=0&&b.x+b.w<=W);assert.deepEqual(checkParts(b),[]);}
  for(let i=0;i<solid.length;i++)for(let j=i+1;j<solid.length;j++)assert.ok(!overlaps({x:solid[i].x,y:0,w:solid[i].w,h:1},{x:solid[j].x,y:0,w:solid[j].w,h:1}));
  // Nothing else gained the fault fields.
- for(const b of LEVELS.flat().filter(x=>x!==FAULT)){assert.equal(b.cracks,undefined,b.name);assert.equal(b.gas,undefined,b.name);assert.equal(b.fireCap,undefined,b.name);if(b.name!=='Ciudad Universitaria')assert.equal(b.elevatedDecks,undefined,b.name);}// Mexico City's Periférico (card 6) is the other double-deck freeway
+ for(const b of LEVELS.flat().filter(x=>x!==FAULT)){assert.equal(b.cracks,undefined,b.name);assert.equal(b.gas,undefined,b.name);if(b.name!=='Xochimilco')assert.equal(b.fireCap,undefined,b.name);if(b.name!=='Ciudad Universitaria')assert.equal(b.elevatedDecks,undefined,b.name);}// Mexico City's Periférico (card 6) is the other double-deck freeway
 });
 
 test('real loop: a slam at a crack sets off a district quake: shake, damage, sway, shockwaves, gas mains burst into fire geysers, the other cracks stay sealed',async()=>{

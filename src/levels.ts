@@ -1201,7 +1201,7 @@ function mexXochimilco():BlockDef{
  const trees=(x0:number,x1:number,step:number,value:number)=>{const out:BuildingSpec[]=[];for(let x=x0;x<x1;x+=step+Math.floor(rnd()*14))out.push(scaled({x,w:20,h:78+Math.floor(rnd()*28),hp:60,value,kind:'tiny' as const,label:'',color:['#5f8a4f','#6c9556','#527a45'][Math.floor(rnd()*3)],prop:'ahuejote'}));return out;};
  const hut=(x:number,label='')=>hall(x,58,44,label,'#b99a6a','choza',90);
  const dock=[hall(150,180,64,'ESTACIÓN','#d9d6c8','estacion',260),hall(372,44,46,'','#c0392b','mstall',60),hall(432,44,48,'','#d9a441','mstall',60)];
- const east=hall(4580,180,64,'ESTACIÓN','#d9d6c8','estacion',260);
+ const east=hall(4550,170,64,'ESTACIÓN','#d9d6c8','estacion',260);
  const fixtures=[...trees(2906,3370,46,25),hut(3040),hut(3300),...trees(3668,4070,40,0),hut(3860),...trees(4308,4552,44,25),hut(4400)];
  b={...b,buildings:[...dock,east,...fixtures],cars:[]};
  const boat=(x:number,v:'plain'|'food'|'mariachi',m:0|1)=>[sc(x),v,m] as [number,'plain'|'food'|'mariachi',0|1];

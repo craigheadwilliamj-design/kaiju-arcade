@@ -1849,7 +1849,7 @@ function breathe(j:Jet){const s=scale(combat),g=Math.sqrt(s),w=bodyWidth(),h=bod
  for(const gr of growths)if(gr.hp>0&&inCone(gbox(gr)))tick(gr,()=>hitGrowth(gr,dmg));
  for(const u of military.units)if(u.hp>0&&inCone(u))tick(u,()=>hitUnit(military,u,UNITS[u.type].air?dmg*B.jetAirMult:dmg,'player',kb,dir,false,'ranged'));
  for(const p of military.projectiles)if(!p.dead&&WEAPONS[p.weapon].interceptable&&inCone({x:p.x-8,y:p.y-8,w:16,h:16}))intercept(military,p);
- if(!bel)for(const v of vehicles)if(BURNS.has(v.kind)&&inCone(vehicleBox(v)))igniteVehicle(v);
+ if(!isBelial())for(const v of vehicles)if(BURNS.has(v.kind)&&inCone(vehicleBox(v)))igniteVehicle(v);
  for(const v of vehicles)if(loose(v)&&!(v.calm>0)&&inCone(vehicleBox(v)))tick(v,()=>puntVehicle(v,dmg*B.jetCarPush,dir));
  // Embers off the flame and a splash where it hits a wall or the street.
  const [tx,ty]=jetPoint(j,j.len,w1*g);
