@@ -86,16 +86,16 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 ### Act 2: Reforma and Chapultepec (Stage 2, the Guardia Nacional, then the army's armour)
 
 **4. Alameda and Bellas Artes** (7 / district / 2-2 / tier 2)
-- **Route:** the Alameda Central's trees and fountains, the Palacio de Bellas Artes (a `|dome` that has sunk metres into the lake bed), and the Torre Latinoamericana (climbable). The Día de Muertos procession is out: marigolds, candles, papel picado strung across the street. It's dusk going to night, using the mood ramp from NYC fix 4.
-- **Acid:** a few seeps along the procession route, glowing green against the marigold orange. One sits by Bellas Artes: burst it and the dome drops another step into the ground and tilts, the acid and the sinking hitting one landmark together. The Alameda's fountains run green (art only).
+- **Route:** the Alameda Central's trees and fountains, the Palacio de Bellas Artes (a `|dome` that has sunk metres into the lake bed), and the Torre Latinoamericana (climbable). Daytime under the city's smog, like the rest of Mexico City (there's no night level). Papel picado is strung across the streets, as it is for any fiesta.
+- **Acid:** a few seeps along the street, bright green against the pale stone. One sits by Bellas Artes: burst it and the dome drops another step into the ground and tilts, the acid and the sinking hitting one landmark together. The Alameda's fountains run green (art only).
 - **Volcano:** state 2. From the top of the Torre Latino the plume is clearly bigger than in Act 1.
-- **Reuses:** `night` / the mood ramp, park trees from Central Park, climbing, the sinking twist, `ACID`/`seeps`.
+- **Reuses:** park trees from Central Park, climbing, the sinking twist, `ACID`/`seeps`.
 - **New:** **papel picado lines.** Strings of paper banners across the street, burnable at a touch, that carry fire across the gap from building to building. It's the one level where fire jumps the street.
 
 **5. Paseo de la Reforma** (8 / stronghold / 2-2 / tier 3)
-- **Route:** the long straight boulevard of glass towers (Torre Mayor, Torre Reforma) with the glorietas. El Ángel de la Independencia stands on its column in the middle. The army holds the avenue with tanks, and the target is the Monumento a la Revolución at the far end: the domed arch, with the field HQ dug in under it.
+- **Route:** the long straight boulevard of glass towers (Torre Mayor, Torre Reforma) with the glorietas. El Ángel de la Independencia stands on its column in the middle. The **Día de Muertos parade** is on, in daylight, as the real one is (it runs down Reforma in the afternoon): giant catrinas and skeleton puppets, alebrije and marigold floats, crowds in catrina makeup fleeing. The army holds the avenue with tanks, using the floats as cover the way Herald Square's troops do, and the target is the Monumento a la Revolución at the far end: the domed arch, with the field HQ dug in under it.
 - **Acid:** more seeps, placed in the glorietas where the armour stands. Bursting one under a tank eats it.
-- **Reuses:** stronghold, tanks, flank toppling, the elevated system where it fits, the existing `|needle` / `|arch` landmark shapes, `ACID`/`seeps`.
+- **Reuses:** stronghold, tanks, flank toppling, the elevated system where it fits, the existing `|needle` / `|arch` landmark shapes, `ACID`/`seeps`, Herald Square's parade floats as cover (reskinned: catrinas, skeletons, alebrijes, marigolds; floats burn). The parade is content and art, not a new system, so it doesn't repeat NYC's balloons as a mechanic.
 - **New:** **El Ángel falls.** Break the column's base and it topples along the avenue, a long falling body that crushes everything in its lane, convoys included. Plus target art for the monument (`art:'monument'`).
 
 **6. Chapultepec** (8 / open, two exits / 2-2(3) / tier 3)
@@ -180,7 +180,7 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 1. **Scaffold.** City entry (`kaiju:'Tlézcatl'`, `boss:'Belial'`), nine plus one placeholder levels with growth, exits and `after`, the `mex-classic` fixture and test retargeting, counts, QA and README. *Blocks everything else.*
 2. **Popocatépetl:** the `volcano` level field and its skyline states for `style()==='mex'`, the ash mood, the level 8 trigger hook (switch to state 4 when the stronghold target falls), the Eruption flare and tremor, and `VOLCANO` bombs on Tlézcatl's Ultimate at state 4. Tests that no other city draws or fires any of it. Can run in parallel with the act cards; each act card sets its levels' `volcano` value.
 3. **Act 1:** Templo Mayor, Zócalo, La Merced (pit start, `lean`, the flagpole, palace art, `ACID`/`seeps`, tarp runs).
-4. **Act 2:** Alameda, Reforma, Chapultepec (papel picado, El Ángel falls, monument art, the Sun Stone, the lake and both exits, seeps at Alameda and Reforma, the Bellas Artes sink).
+4. **Act 2:** Alameda, Reforma, Chapultepec (papel picado, El Ángel falls, monument art, the Día de Muertos parade floats on Reforma, the Sun Stone, the lake and both exits, seeps at Alameda and Reforma, the Bellas Artes sink).
 5. **Belial boss kit:** `BELIAL_BOSS` in `src/config.ts` (every number commented, like `TLEZCATL_BOSS`), a `belial` branch in `src/rival.ts`, tests in `tests/belial-boss.test.ts`. The full kit: his player moves turned on the kaiju and picked by range. Can run in parallel with cards 2 to 4.
    - **Character: a kiter.** Fast and fragile (4/5/1/4), so he fights from mid range and leaves when you close. Fewer HP than Tlézcatl but harder to pin down. HP is playtest tuning.
    - **Up close:** the shared claw and bite, but if the kaiju stays close for `pressSeconds` or lands a hit, he **back-pounces**: a quick leap away that leaves an acid puddle where he stood. It has a cooldown and needs room behind him; a cornered Belial fights instead of fleeing (so slow kaiju in Free Play aren't left chasing).
@@ -199,7 +199,7 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 ## Open questions
 
 1. **Boss arena.** Estadio Azteca with a rising acid flood is the proposal. Alternatives: the Pyramid of the Sun at Teotihuacan (another vertical fight, too close to the Empire State), or the Drenaje Profundo itself (an underground fight in the tunnels, Belial's home turf, but dark and cramped for a fast kaiju).
-2. **Night level.** NYC had one night level (Times Square) and a mood ramp. Proposal: Alameda at Día de Muertos, dusk into night. Or keep Mexico City all smog-and-sun.
+2. **Night level.** Settled: none. Mexico City stays smog and sun; the eruption's red-black sky in Act 3 is its one dramatic change of light. Día de Muertos is the daytime parade on Reforma.
 3. **Act 2 target.** The Monumento a la Revolución at the end of Reforma, or something more military (Campo Marte, the army's parade ground beside Chapultepec)?
 4. **Free Play and Tlézcatl as a boss.** After the rework nothing on the Free Play city list ends on Tlézcatl unless Free Play keeps letting you pick any boss for any arena. Check how Free Play picks bosses before card 1 and decide whether anything needs to change.
 5. **Belial's boss kit depth.** Settled: the full kit (card 5).
