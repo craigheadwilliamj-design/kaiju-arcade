@@ -84,7 +84,7 @@ test('La Merced data: tarp runs, the Metro, the market hall over the crystal, ac
 
 test('opt-in: no other level sets lean, pole, tarp, seeps or pit, and the pole is never a loose street object',()=>{
  const mine=[TEMPLO,ZOCALO,MERCED];
- const act2=LEVELS[MEX].slice(3,6);// Mexico City Act 2 (card 4) has seeps of its own
+ const act2=LEVELS[MEX].slice(3,7);// Mexico City Act 2 (card 4) and Ciudad Universitaria (card 6) have seeps of their own
  for(const b of LEVELS.flat().filter(x=>!mine.includes(x))){for(const k of ['pole','seeps','pit'])if(!(k==='seeps'&&act2.includes(b)))assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
   assert.ok(!b.buildings.some(x=>x.lean!==undefined||x.tarp!==undefined||x.deco==='ruinwall'||x.deco==='mercado'||x.deco==='mstall'),`${b.name} has no lean, tarp or Mexico City decos`);assert.notEqual(b.target?.art,'palace',`${b.name} keeps its own target art`);}
  assert.deepEqual(mine.map(b=>[b.pole!==undefined,b.seeps!==undefined,b.pit!==undefined,b.buildings.some(x=>x.lean!==undefined),b.buildings.some(x=>x.tarp!==undefined)]),[[false,false,true,true,false],[true,false,false,true,false],[false,true,false,false,true]]);

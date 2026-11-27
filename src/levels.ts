@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,MEX2,LEAN,FLAG,TARP,ANGEL,STONE} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,MEX2,MEX3,LEAN,FLAG,TARP,ANGEL,STONE} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -127,7 +127,13 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // Mexico City Act 1 (MEX rework card 3), all opt-in. See the notes below.
  pole?:number,seeps?:number[],pit?:{x0:number,x1:number,floor:number,slabX:number,slabH:number,ramp:number,short:number},
  // Mexico City Act 2 (MEX rework card 4), all opt-in. See the notes below.
- banners?:[number,number,number][],domeSeep?:number,angel?:number,stone?:number,catrinas?:boolean,lakeGreen?:[number,number][]};
+ banners?:[number,number,number][],domeSeep?:number,angel?:number,stone?:number,catrinas?:boolean,lakeGreen?:[number,number][],
+ // Mexico City Act 3 (MEX rework card 6), all opt-in. See the notes below.
+ seepsAuto?:boolean,rock?:[number,number][],sinkholes?:[number,number][],tren?:[number,number]};
+// Mexico City Act 3 (MEX rework card 6), opt-in. `seepsAuto`: the level's `seeps` burst on their own every ACID.auto.every s after a warning, no slam needed, one after another in the order of the list (the counterpart
+// of `ventsAuto`). `rock` [x0,x1] ranges of volcanic ground (src/config.ts ROCK): Tlézcatl's lava pools on it last longer and spread wider; drawn as dark broken rock. `sinkholes` [x0,x1] marked
+// stretches of street (drawn cracked) that cave into a pit under a heavy landing and take what stands on them (src/config.ts SINKHOLE); never traps the kaiju. `tren` [x0,x1] the Tren Ligero's surface
+// line: light-rail trains run beside the road (src/config.ts MEX3.tren), attacked like the subway's and grabbable at Stage 3 with no pit needed. Target art `command` is the Calzada's field HQ.
 // Mexico City Act 2 (MEX rework card 4), opt-in. `banners` [x0,x1,height]: papel picado strung across the street between two buildings (src/config.ts PICADO): fire touching a string burns it,
 // and the building at its far end catches. `domeSeep`: the index in `seeps` of the seep beside Bellas Artes whose first burst drops the dome (src/config.ts MEX2.dome). `angel`: x of El Ángel's
 // column (ANGEL). `stone`: x of the Sun Stone, vehicle kind `stone` (STONE). `catrinas`: the street crowds are drawn in catrina makeup. `lakeGreen`: x ranges of the lake drawn green by the storm drains (art only).
@@ -1106,6 +1112,58 @@ function mexChapultepec():BlockDef{
   units:[['soldier',sc(1500)],['apc',sc(2200)],['soldier',sc(3000)],['soldier',sc(5330)],['apc',sc(5420)],['soldier',sc(6060)],['tank',sc(6140)],['soldier',sc(4100)],['soldier',sc(6900)],['apc',sc(7300)]],air:[sc(3000),sc(5000)],
   exits:{west:'Ciudad Universitaria',east:'Xochimilco'}};
 }
+
+// ---- Mexico City Act 3 (MEX rework card 6): Ciudad Universitaria and Calzada de Tlalpan ----
+// `n` storm-drain spots from sc(x0) to sc(x1): the gaps between solid buildings (so the acid pools against a wall), topped up with open street where there are too few.
+function seepSpots(b:BlockDef,x0:number,x1:number,n:number):number[]{
+ const lo=sc(x0),hi=sc(x1),edges=b.buildings.filter(x=>x.kind!=='tiny'&&!x.deco).sort((p,q)=>p.x-q.x),cand:number[]=[];
+ for(let i=1;i<edges.length;i++){const a=edges[i-1].x+edges[i-1].w,g=edges[i].x-a;if(g>=sc(70)&&a>lo&&a<hi)cand.push(g<sc(160)?Math.round(a+g/2):a+sc(30));}
+ const out=spread(cand,n);
+ for(let k=0;out.length<n&&k<n*16;k++){const x=Math.round(lo+(hi-lo)*(k+.5)/(n*16));if(!out.some(v=>Math.abs(v-x)<sc(100))&&!edges.some(o=>x+sc(40)>o.x&&x-sc(40)<o.x+o.w))out.push(x);}
+ return out.sort((p,q)=>p-q);}
+// Level 7. Ciudad Universitaria: Insurgentes Sur and its Metrobús lane (buses), the Periférico's double-deck freeway on the Pedregal (troops on the lower deck), then UNAM: the Central
+// Library's mosaic tower and the Estadio Olímpico. Seeps burst on their own, a run of them one after another along Insurgentes and another on the lava field under UNAM (Belial is close);
+// the ground on the Pedregal is dark volcanic rock where Tlézcatl's lava pools last. Ash falls (volcano 3). Act 3's busiest hazards are here, so the military is light.
+function mexCU():BlockDef{
+ const M=MEX3.cu,F=M.freeway;
+ let b=cityLevel('mex','Ciudad Universitaria',8,'district',
+  `>400,x,n,l,_,h,x,_,n,l,x,_,h,n,_,>${F[1]+M.approach+60},x,n,_,>${M.library},L,_,h,x,l,_,n,x,_,>${M.stadium},L,_,n,h,x,_,l,n,x,_,h,n`,['BIBLIOTECA CENTRAL|tower','ESTADIO OLÍMPICO|dome'],{startStage:3,cap:3,tier:4});
+ // The Periférico's ramps and the deck's footprint are clear of buildings (the SF freeway's rule); the library's plaza is open street.
+ b=clearClutter(b,[[F[0]-M.approach,F[1]+M.approach]],true);
+ b=clearClutter(b,[[M.library-80,M.library+260]]);
+ // A run of drains along Insurgentes and another across the lava field: they go off in list order, one after another, as if something were moving underneath.
+ const seeps=[...seepSpots(b,M.run[0].x0,M.run[0].x1,M.run[0].n),...seepSpots(b,M.run[1].x0,M.run[1].x1,M.run[1].n)];
+ b=clearProps(b,seeps,sc(40));
+ const cars=b.cars.filter(x=>!seeps.some(v=>Math.abs(v-x)<sc(60)));
+ return {...b,cars,seeps,seepsAuto:true,rock:M.rock.map(([a,z])=>[sc(a),sc(z)] as [number,number]),volcano:3,guard:true,police:true,
+  // Insurgentes' Metrobús lane: buses in a row down the avenue's west half.
+  buses:[700,1050,1400,1750].map(sc),
+  elevated:[sc(F[0]),sc(F[1])],elevatedLook:'freeway',elevatedDecks:2,approach:sc(M.approach),
+  deckUnits:[['soldier',sc(F[0]+300)],['apc',sc(F[0]+800)],['soldier',sc(F[0]+1300)]],
+  air:[sc(2600),sc(5200)],units:[['soldier',sc(1000)],['patrol',sc(1700)],['apc',sc(2000)],['soldier',sc(4500)],['soldier',sc(5400)],['apc',sc(6700)]]};
+}
+// Level 8. Calzada de Tlalpan: south down the avenue. The Tren Ligero runs on its own track along the open stretch (grab a train at Stage 3), a convoy waits on a hollowed stretch of the road
+// (the acid has eaten the ground: a heavy landing drops it into the pit), and the army's last line stands round the field HQ with its barricades on another sinkhole. The full military,
+// heavier than level 7. When the HQ falls Popocatépetl erupts (volcano 3 -> 4); a few troops stand between the HQ and the exit for the first volcanic Eruption.
+function mexTlalpan():BlockDef{
+ const M=MEX3.tlalpan,T=M.T,[L0,L1]=M.tren;
+ let b=cityLevel('mex','Calzada de Tlalpan',8,'stronghold',
+  `>400,s,m,h,_,l,s,m,_,h,r,_,>${L1+160},s,m,_,h,l,_,>4380,m,s,_,>${T+640},h,m,s,_,l,r,m,_,h,s`,[],{startStage:3,cap:3,tier:4},{target:T,ring:[-760,-560,-330,-170,190,420]});
+ // The Tren's right of way is open street (stations at each end); everything solid is cleared off it.
+ b=clearClutter(b,[[L0-60,L1+60]],true);
+ // The sinkholes: the convoy's stretch and the car park (marked in the road), and one under the HQ's barricade ring: wherever its west walls stand.
+ const ring=b.buildings.filter(x=>x.label==='BARRIER'&&x.x>=sc(T+M.wall.x0-120)&&x.x<=sc(T+M.wall.x1+120)),wx0=ring.length?Math.min(...ring.map(x=>x.x))-sc(12):sc(T+M.wall.x0),wx1=ring.length?Math.max(...ring.map(x=>x.x+x.w))+sc(12):sc(T+M.wall.x1);
+ const sinkholes:[number,number][]=[...M.holes.map(([a,z])=>[sc(a),sc(z)] as [number,number]),[wx0,wx1]].sort((p,q)=>p[0]-q[0]);
+ b=clearClutter(b,M.holes.map(([a,z])=>[a,z] as [number,number]));
+ // A convoy of cars stops on the first hollow, and a line of cars in the car park.
+ const hx=M.holes[0],cars=[...b.cars.filter(x=>!(x>sc(hx[0])&&x<sc(hx[1]))),...[hx[0]+60,hx[0]+200,hx[0]+340].map(sc)].sort((p,q)=>p-q);
+ return {...b,cars,sinkholes,tren:[sc(L0),sc(L1)],volcano:3,volcanoOn:'target',
+  target:{x:sc(T),label:'FIELD HQ',art:'command'},guard:true,police:true,
+  // The full military down the avenue; the convoy sits on the first sinkhole; a few troops stand between the HQ and the exit.
+  units:[['tank',sc(1500)],['apc',sc(2700)],['tank',sc(hx[0]+120)],['apc',sc(hx[0]+260)],['soldier',sc(hx[0]+380)],['artillery',sc(4300)],
+   ['soldier',sc(T-1100)],['tank',sc(T-950)],['emplacement',sc(T-900)],['soldier',sc(T+720)],['apc',sc(T+1000)],['soldier',sc(T+1280)],['helicopter',sc(2400),620]],
+  garrison:[['tank',-420],['emplacement',-230],['soldier',250],['tank',330],['apc',470],['artillery',600]],air:[sc(2000),sc(4200)]};
+}
 const MEXICO_CITY:BlockDef[]=[
  // 1. Act 1 (Stage 1, cap 1). Templo Mayor: the pit start, leaning colonial blocks and the only level with the sinking twist (MEX rework card 3).
  mexTemplo(),
@@ -1120,10 +1178,10 @@ const MEXICO_CITY:BlockDef[]=[
  // 6. Chapultepec: there and back from mid-map. The castle's crystal lifts the cap to 3 and the Sun Stone stands beside it. West exit leads to Ciudad Universitaria (the main
  // route); the east exit, past the lake, leads to the secret Xochimilco.
  mexChapultepec(),
- // 7. Act 3 (Stage 3, cap 3). Ciudad Universitaria. 8. Calzada de Tlalpan and the field HQ.
- {...cityLevel('mex','Ciudad Universitaria',8,'district',mexRep(MEX_TALL,6),[],{startStage:3,cap:3,tier:4}),guard:true,police:true,air:[sc(2600),sc(4400),sc(6400)]},
- {...cityLevel('mex','Calzada de Tlalpan',8,'stronghold',mexRep(MEX_ROW,5),[],{startStage:3,cap:3,tier:4},{target:5600}),
-  target:{x:sc(5600),label:'FIELD HQ',art:'pyramid'},guard:true,police:true,air:[sc(2600),sc(4000)]},
+ // 7. Act 3 (Stage 3, cap 3). Ciudad Universitaria: auto seeps, the Periférico, volcanic ground (MEX rework card 6).
+ mexCU(),
+ // 8. Calzada de Tlalpan: the Tren Ligero, sinkholes and the field HQ whose fall erupts Popocatépetl.
+ mexTlalpan(),
  // 9. Estadio Azteca (boss): the approach, then the arena. Belial is the rival (shared moveset until his kit).
  cityLevel('mex','Estadio Azteca',6,'boss',`r,s,m,h,_,s,m,l,_,m,s`,[],{startStage:3,cap:3,tier:5}),
  // Secret. Xochimilco, reached from Chapultepec's east exit; rejoins the route at Ciudad Universitaria.
