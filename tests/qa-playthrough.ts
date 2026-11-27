@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';import {writeFile} from 'node:fs/promises';
 import {bootGame} from './helpers/game-harness.ts';import {MILITARY as M,COMBAT as B,CONFIG as C} from '../src/config.ts';
-import {CHECKPOINT_KEY,PERMANENT_KEY,CAMPAIGN,campaignCityIndex,routeLevels} from '../src/campaign.ts';import {cityIndexOf} from '../src/levels.ts';
+import {CHECKPOINT_KEY,PERMANENT_KEY,CAMPAIGN,campaignCityIndex,routeLevels} from '../src/campaign.ts';import {cityIndexOf,LEVELS} from '../src/levels.ts';import {NAVAL_UNITS} from '../src/military.ts';
 const h=await bootGame(.75),rows:any[]=[],peaks:Record<string,number>={};let polls=0,landingProbe=false,cityStart=0,peakStage=1,evolutions:Record<string,number>={};
 const check=(s:any)=>{assert.ok(Number.isFinite(s.x)&&Number.isFinite(s.y)&&Number.isFinite(s.hp)&&Number.isFinite(s.score));assert.ok(s.x>=-.001&&s.x+s.width<=s.worldWidth+.001);assert.ok(s.hp>=0&&s.hp<=100);for(const [k,v] of Object.entries(s.entityCounts))peaks[k]=Math.max(peaks[k]||0,Number(v));// Police boats are stationed on the water and sit outside the squad cap (src/military.ts fielded()); everything else is under it.
- assert.ok(s.entityCounts.units-s.military.filter((u:any)=>u.type==='boat').length<=M.caps[s.militaryTier-1], 'military cap');assert.ok(s.entityCounts.enemyShots<=M.projectileCap);assert.ok(s.entityCounts.wrecks<=M.wreckCap);assert.ok(s.shards<=B.shardCap);assert.ok(s.particleCount<=C.particleCap);};
+ // Naval units (police boats, Bay Bridge's warships) are outside the cap, as in the game (NAVAL_UNITS in src/military.ts).
+ assert.ok(s.entityCounts.units-s.military.filter((u:any)=>NAVAL_UNITS.has(u.type)).length<=M.caps[s.militaryTier-1], 'military cap');assert.ok(s.entityCounts.enemyShots<=M.projectileCap);assert.ok(s.entityCounts.wrecks<=M.wreckCap);assert.ok(s.shards<=B.shardCap);assert.ok(s.particleCount<=C.particleCap);};
 function fightBlock(){
  const startFrames=h.frames();let lastX=-1,stuck=0;
  for(let n=0;n<4000;n++){
@@ -19,8 +20,10 @@ function fightBlock(){
   // Chinatown's crystal formation lifts the cap to Stage 2: the bot detours to shatter it once it is within a screen or two of the way.
   const formation=s.formationHP>0&&s.formationX!==null&&!s.exitOpen?{x:s.formationX-66,y:285,w:132,h:150,hp:s.formationHP}:null;
   let target:any=null,goal=s.worldWidth-s.width;
-  // Fisherman's Wharf is there-and-back: the main route leaves by the west exit (to The Fault); the east exit is the secret Alcatraz.
-  if(s.exitOpen&&s.level.name==='Fisherman\'s Wharf')goal=0;
+  // A level with two exits (Fisherman's Wharf, Central Park): the route leaves by the side whose level is not a secret one
+  // (west to The Fault / Hudson Yards; east is the secret Alcatraz / Coney Island).
+  const lv=LEVELS[s.cityIndex]?.[s.blockIndex],route=lv?.exits&&(['west','east'] as const).find(side=>{const to=LEVELS[s.cityIndex].find(b=>b.name===lv.exits![side]);return to&&!to.secret;});
+  if(s.exitOpen&&route)goal=route==='west'?0:s.worldWidth-s.width;
   if(s.rival){target=s.rival;goal=target.x-s.width-25;}
   // A crystal formation comes before a stronghold's objective: the Wharf's cutter sits past deep water that only the Stage 3 lift opens.
   else if(formation){target=formation;goal=target.x-s.width-25;}
@@ -34,6 +37,22 @@ function fightBlock(){
    h.release();h.down('KeyD');h.tap('Space');let penetrated=false;
    for(let frame=0;frame<85;frame++){h.step();const p=h.state();const b=p.buildings.find((x:any)=>x.x===short.x);if(b?.hp>0&&p.x<b.x+b.w&&p.x+p.width>b.x&&p.y<b.y+b.h&&p.y+p.height>b.y+.01)penetrated=true;}
    h.release();landingProbe=true;console.log(`Landing collision probe: penetration=${penetrated}`);assert.equal(penetrated,false,'Landing must not embed a kaiju in a short solid barricade');
+  }
+  // Wading (Bay Bridge): a firing line on the far shore out-ranges the kaiju's punches but not Mogurodon's Tremor Slam (L on the
+  // ground, about 670px at Stage 3 against a tank's 320). Hold just outside their reach and slam them before wading in: a volley
+  // mid-bay would shrink the kaiju below the stage it needs to stay afloat.
+  const ahead=goal>s.x?1:-1,edge=ahead>0?s.x+s.width:s.x,gap=(u:any)=>(u.x-edge)*ahead;
+  const shore=s.inWater?s.military.filter((u:any)=>u.hp>0&&u.y>370&&['tank','apc','artillery','soldier'].includes(u.type)&&gap(u)>0&&gap(u)<620):[];
+  if(shore.length&&Math.min(...shore.map(gap))>380){
+   h.up('KeyA');h.up('KeyD');if(s.face!==ahead){h.down(ahead>0?'KeyD':'KeyA');h.step();h.up('KeyA');h.up('KeyD');}
+   if(s.canAct&&s.rangedCooldown<=0&&s.cooldown<=0)h.tap('KeyL');h.step(6);continue;}
+  // A target under a bridge deck (Bay Bridge's carrier): stand over the hull and Pound (crouch + light) through the span beneath,
+  // which drops the kaiju onto the flight deck to finish it there.
+  const deck=s.carrierDeck,feet=s.y+s.height;
+  if(s.objectiveHP>0&&deck?.alive&&feet<deck.y-20&&s.grounded&&Math.abs(px-s.objective.x)<s.objective.w){
+   const hull=s.objective,over=hull.x-s.width/2;
+   if(Math.abs(s.x-over)>hull.w/4){goal=over;}
+   else{h.up('KeyA');h.up('KeyD');h.down('KeyS');h.step();if(s.canAct&&s.cooldown<=0)h.tap('KeyJ');h.step(6);h.up('KeyS');continue;}
   }
   let direction=goal>s.x+2?1:goal<s.x-2?-1:0;
   h.up('KeyA');h.up('KeyD');if(direction)h.down(direction>0?'KeyD':'KeyA');
