@@ -126,10 +126,21 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 - **The approach:** two screens of the stadium concourse and the last military push.
 - **Volcano:** state 4 throughout. Red-black sky, ash, and Eruption calls bombs. Fire comes down while acid comes up.
 - **The arena:** the pitch inside the bowl. The stands rise on both sides as terrain tiers. The pitch splits and Belial comes up out of the drainage.
-- **Breaks:** at each health break, acid floods the pitch higher (a rising acid pool), and the fight is pushed up into the stands. It's the inverse of the Empire State: there the fight went up a tower, here the floor comes up after you. Belial is fast and fragile (ratings 4/5/1/4), so the arena is wide and open for him to circle.
-- **Finale:** at 0 health Belial, driven off by the fire, dives into the storm drain at centre field and is gone. `conquerCity` unlocks Belial and Paris.
+- **Breaks:** at each health break, acid floods the pitch higher (a rising acid pool), and the fight is pushed up into the stands. It's the inverse of the Empire State: there the fight went up a tower, here the floor comes up after you. Belial is fast and fragile (ratings 4/5/1/4), so the arena is wide and open for him to circle. With three breaks:
+  1. The pitch.
+  2. The pitch floods: the lower tiers.
+  3. The lower tiers flood: the upper tiers.
+  4. The last stretch on the rim.
+- **The flood is a water band.** An acid band whose surface rises to the next tier at each break (eased over a couple of seconds, with a warning bubble-up first). It reuses the water code (depth, wading, drowning, troops and wrecks sinking) and adds `ACID` damage per second to anything standing in it. Belial is immune and moves through it freely.
+- **Lava on acid makes rock.** Tlézcatl's lava landing in the flood (Magma Dive globs, the lava pool under a dive, `VOLCANO` bombs from his Eruption) cools into a **crust**: a temporary solid platform on the acid's surface, the width of the pool or glob that made it. It lasts `ACID.crustLife` seconds, cracks visibly near the end, then sinks. It rides the surface when the flood rises.
+  - This is the city's two threads meeting as a mechanic: the volcano's fire builds footing over Belial's acid.
+  - It gives the player something to do about the flood. Without it the rising acid only squeezes you into a shrinking space.
+  - Belial can use it too (he pounces onto and off crusts), and his acid attacks dissolve a crust early.
+  - Crust only forms on `finale.flood` acid, not on seeps or water anywhere else.
+- **Fallback: the rim walkway.** In a side view the stands are two separate ledges at the ends of the bowl. If the crusts don't play well, the top tier is joined across the top by a walkway around the rim (the stadium's roof ring), so the two sides are never cut off. Build it either way, but only open it at the last break if the crusts work.
+- **Finale:** at 0 health Belial, driven off by the fire, dives into the acid at centre field and down the storm drain, and is gone. `conquerCity` unlocks Belial and Paris.
 - **Reuses:** the `finale` machinery (`wake`, `breaks`, `retreats`), the rival framework, terrain, `ACID` pools, `VOLCANO` bombs.
-- **New:** **Belial's boss kit** (card 5) and **a rising-hazard finale**: an opt-in `finale.flood` that raises an acid level at each break.
+- **New:** **Belial's boss kit** (card 5), **a rising-hazard finale** (an opt-in `finale.flood` that raises an acid band at each break) and **lava crust** on that acid. Test that crust forms from each lava source, carries a kaiju, rides the rising surface, expires, and never forms outside `finale.flood`.
 
 ### Secret: Xochimilco (4 / district / 3-3 / tier 5, `secret:true`, `after:'Ciudad Universitaria'`)
 - **Route:** reached from Chapultepec's south exit by the Tren Ligero. The canals (water bands), the chinampas (floating garden islands), the colourful trajinera boats and mariachi boats, and the island of hanging dolls (named generically). It rejoins the route at Ciudad Universitaria.
@@ -156,7 +167,7 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 4. **Act 2:** Alameda, Reforma, Chapultepec (papel picado, El Ángel falls, monument art, the Sun Stone, the lake and both exits, seeps at Alameda and Reforma, the Bellas Artes sink).
 5. **Belial boss kit:** `BELIAL_BOSS` in `src/config.ts` and a `belial` branch in `src/rival.ts`, his player moves (Acid Vomit, Acid Pounce, Acid Deluge) turned on the kaiju and picked by range, the way `TLEZCATL_BOSS` did it. Tests in `tests/belial-boss.test.ts`. Can run in parallel with cards 2 to 4.
 6. **Act 3 levels 7–8:** Ciudad Universitaria and Calzada de Tlalpan (`seepsAuto`, volcanic ground, `sinkholes`, the eruption at the end of level 8). Needs card 2 (the volcano) and card 3 (`ACID`).
-7. **Estadio Azteca boss level:** the bowl arena, the approach, `finale.flood`, Belial's retreat down the drain, bombs in the boss fight. Needs cards 5 and 6.
+7. **Estadio Azteca boss level:** the bowl arena, the approach, `finale.flood` as a rising acid water band, lava crust platforms, the rim walkway fallback, Belial's retreat down the drain, bombs in the boss fight. Needs cards 5 and 6.
 8. **Xochimilco secret level:** canals with current, trajineras, fire boats, chinampa ground.
 
 ## Open questions
