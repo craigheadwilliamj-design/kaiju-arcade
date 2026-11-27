@@ -1,6 +1,6 @@
 # Mexico City rework plan (campaign redesign, city 3)
 
-**Status: card 1 (scaffold) done.** Eight work cards are at the end of this file; cards 2, 3, 5 and 8 can go next, in parallel. The city entry, the nine placeholder route levels plus Xochimilco, the `mex-classic` fixture city, the opt-in `sinking` field, the retargeted tests, `tests/mex-scaffold.test.ts`, the QA playthrough (47 levels) and the README are in. All the open questions are settled.
+**Status: cards 1 (scaffold) and 2 (Popocatépetl) done.** Eight work cards are at the end of this file; cards 3, 5 and 8 can go next, in parallel. The city entry, the nine placeholder route levels plus Xochimilco, the `mex-classic` fixture city, the opt-in `sinking` field, the retargeted tests, `tests/mex-scaffold.test.ts`, the QA playthrough (47 levels) and the README are in. All the open questions are settled.
 
 Mexico City gets the treatment San Francisco and New York got: nine route levels plus one secret level in three acts, its own playable kaiju and boss, per-level growth, and one new opt-in mechanic per level (a `BlockDef` field or config block). Everything SF and NYC built is reusable: `cityLevel`, exits, `capLift`, water bands, elevated, subways, fire, the `finale` machinery, the rival framework, the climbing finale, rolling bodies, heavy props.
 
@@ -256,6 +256,8 @@ Each card stands alone: start a session with the card's text. Read this whole fi
 
 ## Card 2: Popocatépetl — the volcano schedule
 
+**Done.** Notes for later cards are under "Done: notes for later cards".
+
 **Needs card 1.** Can run in parallel with cards 3, 5 and 8.
 
 **Goal.** The volcano in Mexico City's far skyline wakes on a fixed schedule set per level, erupts when the Calzada de Tlalpan stronghold falls, and from then on Tlézcatl's Eruption calls volcanic bombs.
@@ -495,4 +497,12 @@ Each card stands alone: start a session with the card's text. Read this whole fi
   - Tests that scan "no other level has field X" (`tests/alcatraz.test.ts`, `sf-act1`, `sf-act2`) now exclude Mexico City's route levels or Xochimilco. A new Mexico City field that these scan for needs the same exclusion.
   - The placeholders carry `police`/`guard`/`air` like the NYC ones did. Act 3's soft floor needed no setting: NYC's placeholders set none either.
   - Screenshots: `docs/screenshots/mex-1-*.png` (Templo Mayor, Chapultepec, Estadio Azteca with Belial as the rival, and the classic Tlézcatl Arena).
-
+- **Card 2 (Popocatépetl).**
+  - `BlockDef` gains `volcano?:1|2|3|4`, `volcanoOn?:'target'` and `ashLate?:number`. No route level sets them yet: **cards 3, 4, 6, 7 and 8 set them from the plan's table** (1 for levels 1–3; 2 for 4–6 with `ashLate` on Chapultepec; 3 for Ciudad Universitaria and Xochimilco; 3 plus `volcanoOn:'target'` on Calzada de Tlalpan; 4 on Estadio Azteca). No other city or `mex-classic` may set them (`tests/mex-volcano.test.ts` pins it); the `mex` pin in `tests/sydney.test.ts` is unchanged because no level data moved.
+  - `volcanoPuff()` is in `src/game.ts` and not exported. Card 3 calls it from Templo Mayor's arrival (for example from `loadBlock` or the level's start trigger). It does nothing at state 0.
+  - `kaijuTest.setVolcano(state,{on,ashLate})` jumps to a state and arms the target trigger, so tests do not need a level that sets them. `kaijuDebug.volcano` reads `{state,ash,flare,flares,puffs,queued,bombs,dropped,blown,mood}`.
+  - The trigger polls `objective.shattered` each frame (state 3 and `volcanoOn` only), so any way of killing the target counts. It fires once per level load.
+  - `moodNow()` now wraps `baseMood()` (the old function). At states 3 and 4 it returns a tinted copy with `smog:true`; below 3 it returns the base mood object untouched. Anything that reads the mood sees the eruption sky (the lit-window thresholds read `lights`, which is not changed).
+  - Bombs are globs with `ult:true,bomb:true`: they use the Eruption glob's hit rules (Ultimate damage, no meter, no hitstop, they collide only while falling) and a small `VOLCANO.poolWidth` pool. `debug.eruptGlobs` and `eruptPools` count them with the Eruption's own, so a test that wants only the Eruption's globs should stay at state 0. Troops spawned by the blast arrive about 14 s later and hurt the player; wait that out or shield the kaiju when measuring.
+  - Ash is drawn in screen space by `drawAsh()` just before the HUD; the skyline states are `volcanoPlume()`, called from the `style==='mex'` branch only when `volcano` is non-zero. The far cone sits at the left edge near the start of a level and scrolls away with the far parallax, so it is visible only in the first screen or two.
+  - Screenshots: `docs/screenshots/mex-2-state1.png` … `state4.png` (skyline, camera moved off the street with `setCamera`), `mex-2-ash.png` and `mex-2-bombs.png`.

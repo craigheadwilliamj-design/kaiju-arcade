@@ -702,3 +702,34 @@ export const NYC5 = {
  edge:200,lotMax:700,targetClear:250,perGap:3,
  dims:{kiosk:[40,42,25,14],cab:[54,26,35,12],cart:[36,32,30,10],scaffold:[130,44,40,16],news:[32,43,20,20]} as Record<string,[number,number,number,number]>,
 };
+
+// ---- Mexico City rework, card 2: Popocatépetl (the volcano schedule). docs/MEX_REWORK.md ----
+// A level opts in with `volcano:1|2|3|4` (src/levels.ts BlockDef); a level without it is state 0, today's skyline, nothing else. Every number is read in src/game.ts.
+export const VOLCANO = {
+ // Skyline plume per state 1-4 (`puffs` smoke puffs in a loop, `speed` loop rate, `size` radius scale, `rise` how high the column climbs in px,
+ // `drift` sideways px, `alpha` opacity, `color` smoke). State 0 keeps the old six-puff loop untouched.
+ plume:[
+  {puffs:3,speed:.04,size:.7,rise:90,drift:50,alpha:.28,color:'#d9cbbb'},   // 1 wisp: thinner and slower than the old smoke
+  {puffs:7,speed:.09,size:1.25,rise:150,drift:110,alpha:.5,color:'#9a8f82'},   // 2 plume: bigger and darker
+  {puffs:9,speed:.1,size:1.7,rise:200,drift:90,alpha:.62,color:'#5f5851'},    // 3 ash: a heavy column
+  {puffs:11,speed:.14,size:2.1,rise:230,drift:70,alpha:.72,color:'#2e2524'},  // 4 erupting: a dark eruption column with a glowing base
+ ],
+ puffSeconds:4,         // volcanoPuff(): one extra puff rises from the crater for this long (the hook Templo Mayor's arrival calls)
+ flareSeconds:1.6,      // an Eruption flares the crater for this long (state 2 and up)
+ tremor:5,              // the light shake an Eruption's flare adds (px of `shake`, state 2 and up; the Ultimate's own shake is bigger)
+ erupt:{shake:16,banner:'POPOCATÉPETL ERUPTS',bannerSeconds:2.8,flare:3},  // the scripted switch to state 4: big shake, banner, a long flare
+ // Ash fall (states 3-4, and state 2 past a level's `ashLate`): grey flakes drifting down over the whole view.
+ flakes:[70,110],       // flake count at state 3 / 4 (state 2 past ashLate uses the first number)
+ ashFall:[40,90],       // fall speed px/s, slowest and fastest flake
+ ashDrift:22,           // sideways drift px/s
+ // The sky at states 3 and 4: the city's mood mixed toward these colours by `k`, smog on (state 4 is the eruption's red-black).
+ tint:[
+  {k:.32,top:'#7b7167',bottom:'#9c8f7f',far:'#6f675e',mid:'#6a625a',near:'#5a544e',sun:'#8a7f70'},   // 3 ash: a dimmer sun
+  {k:.72,top:'#190808',bottom:'#8a2f1c',far:'#2a1715',mid:'#241311',near:'#1c0f0e',sun:'#b3321c'},   // 4 erupting: red and black
+ ],
+ // Volcanic bombs: only from Tlézcatl's Eruption at state 4. `bombs` molten rocks drop from above the view, each at a random spot within
+ // `bombRange` px of him, staggered over `bombDelay` seconds. Each hits like a lava glob (Ultimate damage, no meter) and leaves a small pool.
+ // They never hit the player; there are no ambient bombs.
+ bombs:10,bombRange:620,bombDelay:1.4,bombDamage:22,bombSpeed:260,bombSize:9,
+ poolWidth:44,poolDamage:6,poolSeconds:3,
+};
