@@ -24,7 +24,7 @@ test('Act 2 data: three levels in order with the right goals, screens, growth an
   for(let i=0;i<solid.length;i++)for(let j=i+1;j<solid.length;j++)assert.ok(!overlaps({x:solid[i].x,y:0,w:solid[i].w,h:1},{x:solid[j].x,y:0,w:solid[j].w,h:1}),`${b.name}: solid buildings overlap`);}
  // The new fields are opt-in: no other level sets them.
  const fields=['night','concourse','zoo','carriages'];
- for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)))for(const k of fields)assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
+ for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)&&x.name!=='Chapultepec'))for(const k of fields)assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);// Chapultepec (Mexico City Act 2) has its own zoo
  for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)))for(const x of b.buildings){assert.equal(x.board,undefined);assert.ok(x.roof!=='billboard'&&x.roof!=='ball');}
 });
 

@@ -1,11 +1,11 @@
 import {groundAt,streetAt,waterAt} from './terrain.ts';
-import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F,BULL,PARADE,CONEY,NYC2,FLAG} from './config.ts';
+import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F,BULL,PARADE,CONEY,NYC2,FLAG,STONE} from './config.ts';
 
 // Civilian vehicles: parked cars, passing traffic, and anything the kaiju punts, carries or throws.
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
 // Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
-export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer'|'bull'|'ball'|'carriage'|'tether'|'wheel'|'coaster'|'pole';
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer'|'bull'|'ball'|'carriage'|'tether'|'wheel'|'coaster'|'pole'|'stone';
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat'|'rolling'|'cable';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
@@ -51,6 +51,8 @@ export const VEHICLE_SPECS={
  coaster:{w:CONEY.coaster.trainW,h:CONEY.coaster.trainH,mass:CONEY.coaster.mass,points:CONEY.coaster.points},
  // Mexico City Act 1: the Zócalo's flagpole (src/config.ts FLAG). Stands upright (thick x len) on its plinth; once lifted it is laid flat like a lamppost. Not loose: see loose().
  pole:{w:FLAG.thick,h:FLAG.len,mass:FLAG.mass,points:0},
+ // Mexico City Act 2: Chapultepec's Sun Stone (src/config.ts STONE), a heavy round disc only a Stage 3 kaiju lifts. Not loose: see loose().
+ stone:{w:STONE.d,h:STONE.d,mass:STONE.mass,points:0},
 } as const;
 // Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
 // Road vehicles: what explodes when thrown and wrecks with a bang.
@@ -68,7 +70,7 @@ export function mass(v:Vehicle){return v.mass??VEHICLE_SPECS[v.kind].mass;}
 export function grounded(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='flat'||v.state==='rolling'||v.state==='cable';}
 // Can be stomped, punted or picked up.
 // The Charging Bull, the Zócalo's flagpole, a balloon's tether, the Ferris wheel and Times Square's ball are never loose, and neither is a coaster train on its track: nothing on the street stomps, punts or wrecks it; only a kaiju strong enough carries it (tryGrab).
-export function loose(v:Vehicle){return v.kind!=='bull'&&v.kind!=='pole'&&v.kind!=='ball'&&v.kind!=='tether'&&v.kind!=='wheel'&&!(v.kind==='coaster'&&v.state==='cable')&&(v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='rolling'||v.state==='cable');}
+export function loose(v:Vehicle){return v.kind!=='bull'&&v.kind!=='pole'&&v.kind!=='stone'&&v.kind!=='ball'&&v.kind!=='tether'&&v.kind!=='wheel'&&!(v.kind==='coaster'&&v.state==='cable')&&(v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='rolling'||v.state==='cable');}
 
 function make(id:number,kind:VehicleKind,x:number,lane:0|1,color:string):Vehicle{
  const s=VEHICLE_SPECS[kind];
