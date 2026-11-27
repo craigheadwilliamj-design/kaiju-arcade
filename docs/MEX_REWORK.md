@@ -142,10 +142,26 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 - **Reuses:** the `finale` machinery (`wake`, `breaks`, `retreats`), the rival framework, terrain, `ACID` pools, `VOLCANO` bombs.
 - **New:** **Belial's boss kit** (card 5), **a rising-hazard finale** (an opt-in `finale.flood` that raises an acid band at each break) and **lava crust** on that acid. Test that crust forms from each lava source, carries a kaiju, rides the rising surface, expires, and never forms outside `finale.flood`.
 
-### Secret: Xochimilco (4 / district / 3-3 / tier 5, `secret:true`, `after:'Ciudad Universitaria'`)
-- **Route:** reached from Chapultepec's south exit by the Tren Ligero. The canals (water bands), the chinampas (floating garden islands), the colourful trajinera boats and mariachi boats, and the island of hanging dolls (named generically). It rejoins the route at Ciudad Universitaria.
-- **Volcano:** state 3 (ash fall, no bombs). It's taken from Act 2 and rejoins at level 7, so it happens before the eruption.
-- **New:** **drifting fire boats.** Trajineras float on a canal current. Set one alight and it drifts down the canal, setting the chinampas and other boats alight as it goes. Plus **chinampa ground**: soft islands the kaiju sinks into ankle-deep and wades across slowly.
+### Secret: Xochimilco (5 / district / 3-3 / tier 5, `secret:true`, `after:'Ciudad Universitaria'`)
+
+**The idea: fire on water.** Every other level in the city is built to burn. This one is mostly canals, and fire doesn't spread across water, so Tlézcatl's main tool stops working the usual way until you find the trajineras. The boats are how fire gets around. Like Coney Island, it's a short playground level built round a set piece, not a military push.
+
+- **Getting there:** grow to Stage 3 at Chapultepec Castle, wade the lake (wading depth only at Stage 3) to the south exit, and take the Tren Ligero south. The real line starts at Tasqueña, not Chapultepec; that's game licence. The Tren Ligero brings you back north to rejoin at Ciudad Universitaria, so the main route skips nothing.
+- **Route:**
+  - **The embarcadero** (the dock), crowded with trajineras (the colourful flat boats with painted arches), food boats and mariachi boats. Crowds flee down the dock.
+  - **The canals,** as water bands at Stage 3 wading depth. One long canal runs the length of the level so the fire-boat set piece has room to travel.
+  - **The chinampas,** the narrow farmed "floating garden" islands between the canals, lined with tall thin ahuejote trees.
+  - **The island of the dolls** (named generically): old dolls hanging from the trees. Pure atmosphere: quiet, the dolls swaying, no score and no target.
+  - **Axolotls** scatter as you wade, reusing the fleeing-animal logic (the Pier 39 sea lions, the zoos). They're native to these canals.
+- **Volcano:** state 3 (ash fall, no bombs). It's taken from Act 2 and rejoins at level 7, so it happens before the eruption. Grey ash floats on the canal water.
+- **Acid:** none. The level is about fire and water, and it comes before Act 3, where the acid takes over.
+- **Military:** tier 5 but light and spread out, as at Coney: the Guardia on boats (reusing police and coastguard boats), a few helicopters, an emplacement on the dock. It should feel like a break before the run to the stadium.
+- **Reuses:** water bands, wading, police and coastguard boats, the flee logic, fire, the Tren Ligero trains.
+- **New:**
+  - **Canal current.** An opt-in current on a water band (`current:[band, speed]`, signed for direction). Anything floating on that band drifts with it: trajineras, and wrecks and debris thrown in, which float off instead of sinking at once. Police and coastguard boats still move under their own power.
+  - **Trajineras and fire boats.** Trajineras are floating vehicles (a new vehicle kind) that you can grab, throw and smash, and they carry crowds. Set one alight and it keeps burning as it drifts, setting alight the chinampas it brushes and any boat it bumps. Line boats up, or push a burning one into the current upstream of a jam, and the fire travels down the canal by itself. It's the tarp-run and papel-picado idea taken one step further: fire needs a carrier to cross, and here the carrier moves. **Check the fire code first:** wrecks can catch fire, but a vehicle that stays alight while it moves and spreads fire on contact may be new, and that decides the card's size.
+  - **Chinampa ground.** Soft wet farmland: the kaiju sinks in ankle-deep and moves at wading speed. The city's lake-bed theme at its softest, where the old lake still exists.
+- **Tests:** current moves floating things on its band only; a burning trajinera keeps burning, drifts and spreads fire to chinampas and boats; chinampa ground slows the kaiju; none of it appears in any other level.
 
 ## Engineering notes for the scaffold
 
@@ -168,7 +184,7 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 5. **Belial boss kit:** `BELIAL_BOSS` in `src/config.ts` and a `belial` branch in `src/rival.ts`, his player moves (Acid Vomit, Acid Pounce, Acid Deluge) turned on the kaiju and picked by range, the way `TLEZCATL_BOSS` did it. Tests in `tests/belial-boss.test.ts`. Can run in parallel with cards 2 to 4.
 6. **Act 3 levels 7–8:** Ciudad Universitaria and Calzada de Tlalpan (`seepsAuto`, volcanic ground, `sinkholes`, the eruption at the end of level 8). Needs card 2 (the volcano) and card 3 (`ACID`).
 7. **Estadio Azteca boss level:** the bowl arena, the approach, `finale.flood` as a rising acid water band, lava crust platforms, the rim walkway fallback, Belial's retreat down the drain, bombs in the boss fight. Needs cards 5 and 6.
-8. **Xochimilco secret level:** canals with current, trajineras, fire boats, chinampa ground.
+8. **Xochimilco secret level (5 screens):** canal current, trajineras and fire boats, chinampa ground, the axolotls and the doll island. Check the fire code for burning, moving vehicles before sizing it.
 
 ## Open questions
 
