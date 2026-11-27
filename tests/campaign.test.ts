@@ -3,19 +3,19 @@ import {CITIES,LEVELS,levelWidth,cityIndexOf} from '../src/levels.ts';
 import {emptyPermanent,newRun,checkpointOf,resumeRun,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,readSaves,savePermanent,saveCheckpoint,discardLegacySaves,PERMANENT_KEY,CHECKPOINT_KEY,LEGACY_KEYS,SAVE_VERSION,CAMPAIGN,campaignCity,campaignCityIndex,routeLevels,kaijuFor} from '../src/campaign.ts';
 import {createCombat,setGrowth,liftCap,collectCrystal,receiveHit,capHP} from '../src/combat.ts';import {COMBAT as B} from '../src/config.ts';
 const memory=()=>{const data=new Map<string,string>();return {data,getItem:(k:string)=>data.get(k)||null,setItem:(k:string,v:string)=>{data.set(k,v);},removeItem:(k:string)=>{data.delete(k);}};};
-const ORIGINAL=['nyc-classic','mex','par','hkg','tyo'];
+const ORIGINAL=['nyc-classic','mex','par','hkg','tyo','syd'];
 // Play a run's current city to its final level: every route level latches and advances, the last is conquered.
 function playCity(p:any,r:any,score=100){restartCity(r);const route=routeLevels(campaignCityIndex(r.city));let levels=1;
  for(const i of route.slice(0,-1)){assert.equal(r.block,i);assert.ok(latchBlock(r));assert.ok(nextBlock(r,score*levels));levels++;}
  assert.ok(conquerCity(p,r,score*10,campaignCity(r.city).boss));return levels;}
-test('the five original cities keep their 25 fixed bounded layouts: 4/6/8/8/4 widths and correct objectives',()=>{const original=ORIGINAL.map(id=>LEVELS[cityIndexOf(id)]);assert.equal(original.flat().length,25);const hashes=new Set();for(const city of LEVELS)for(const b of city){assert.ok(b.buildings.length>=8);hashes.add(b.buildings.map(x=>`${x.x}:${x.w}`).join('|'));for(const x of b.buildings){assert.ok(x.x>=200&&x.x+x.w<levelWidth(b)-70,`${b.name} bounds`);assert.ok(x.hp>0&&x.value>0);}for(const x of [...b.street,...b.cars])assert.ok(x>=0&&x<levelWidth(b));}
+test('the original cities (and placeholder Sydney) keep their 30 fixed bounded layouts: 4/6/8/8/4 widths and correct objectives',()=>{const original=ORIGINAL.map(id=>LEVELS[cityIndexOf(id)]);assert.equal(original.flat().length,30);const hashes=new Set();for(const city of LEVELS)for(const b of city){assert.ok(b.buildings.length>=8);hashes.add(b.buildings.map(x=>`${x.x}:${x.w}`).join('|'));for(const x of b.buildings){assert.ok(x.x>=200&&x.x+x.w<levelWidth(b)-70,`${b.name} bounds`);assert.ok(x.hp>0&&x.value>0);}for(const x of [...b.street,...b.cars])assert.ok(x>=0&&x<levelWidth(b));}
  for(const city of original){assert.deepEqual(city.map(b=>b.screens),[4,6,8,8,4]);assert.deepEqual(city.map(b=>b.kind),['district','district','stronghold','district','boss']);assert.ok(city.every(b=>b.startStage===undefined&&b.cap===undefined&&!b.secret),'original cities keep today’s growth');}
  assert.equal(hashes.size,LEVELS.flat().length,'every layout is distinct');assert.equal(CITIES[cityIndexOf('nyc')].name,'New York');assert.equal(CITIES[cityIndexOf('nyc')].boss,'Tlézcatl');});
 test('campaign route: San Francisco (Mogurodon, boss Kaiban) then the original five; cities are separate from kaiju',()=>{
  assert.deepEqual(CAMPAIGN,['sfo','nyc','mex','par','hkg','tyo']);assert.deepEqual(CAMPAIGN.map(id=>CITIES[cityIndexOf(id)].name),['San Francisco','New York','Mexico City','Paris','Hong Kong','Tokyo']);
  const sf=campaignCity(0);assert.equal(sf.code,'SFO');assert.equal(sf.kaiju,'Mogurodon');assert.equal(sf.boss,'Kaiban');assert.equal(CITIES[0],sf,'SF is city 1');
  for(const id of ORIGINAL)assert.equal(CITIES[cityIndexOf(id)].kaiju,undefined,'original cities have no kaiju of their own');
- assert.deepEqual(ORIGINAL.map(id=>CITIES[cityIndexOf(id)].difficulty),[0,1,2,3,4],'military/rival scaling unchanged by SF going first');assert.equal(sf.difficulty,0);
+ assert.deepEqual(ORIGINAL.map(id=>CITIES[cityIndexOf(id)].difficulty),[0,1,2,3,4,2.5],'military/rival scaling unchanged by SF going first (Sydney slots between Paris and Hong Kong)');assert.equal(sf.difficulty,0);
  const r=newRun('ABC','Kaiban');assert.equal(kaijuFor(r),'Mogurodon','SF plays Mogurodon');r.city=1;assert.equal(kaijuFor(r),'Kaiban','the run’s kaiju carries on through the original cities');
  assert.equal(cityIndexOf('nope'),-1);});
 test('San Francisco: 9 route levels plus a secret Alcatraz slot; goals, growth and military tiers per level',()=>{

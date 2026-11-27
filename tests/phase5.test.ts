@@ -4,7 +4,7 @@ import {setTerrain,groundAt,bedAt,addMound,moundAt} from '../src/terrain.ts';
 import {CONFIG as C,TWISTS as TW,RIVER} from '../src/config.ts';
 import {emptyPermanent,PERMANENT_KEY,CAMPAIGN} from '../src/campaign.ts';import {cityIndexOf} from '../src/levels.ts';
 // The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
-const ORIGINAL=['nyc-classic','mex','par','hkg','tyo'];
+const ORIGINAL=['nyc-classic','mex','par','hkg','tyo','syd'];
 
 test('rubble mounds raise the ground (not the street under them) with sloped sides',()=>{
  setTerrain(null);addMound(100,200,30,.3);assert.equal(moundAt(150),30);assert.equal(groundAt(150),C.ground-30);assert.equal(bedAt(150),C.ground,'the street is still under it');

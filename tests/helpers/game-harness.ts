@@ -18,11 +18,11 @@ export async function bootGame(seed=.75,saved=new Map<string,string>()){
 }
 // Boot into a campaign city from a v2 checkpoint (Continue, then Begin City): `city` is a campaign city id, or the fixture city
 // 'nyc-classic' (the default: the old five New York blocks, where the original single-kaiju tests play with the run's own kaiju;
-// it is entered through kaijuTest.gotoCity from a New York checkpoint). `kaiju` the run's kaiju. The profile has every kaiju unlocked unless one is given.
+// it is entered through kaijuTest.gotoCity from a New York checkpoint; so is any other off-route city, e.g. 'syd' before route card 3). `kaiju` the run's kaiju. The profile has every kaiju unlocked unless one is given.
 export async function bootCampaign(seed=.75,o:{city?:string,kaiju?:string,permanent?:any,saved?:Map<string,string>}={}){
  const {CAMPAIGN,CHECKPOINT_KEY,PERMANENT_KEY,emptyPermanent,KAIJU}=await import('../../src/campaign.ts');
  const p=o.permanent??{...emptyPermanent(),unlocked:[...KAIJU]},saved=o.saved??new Map<string,string>();
- const id=o.city??'nyc-classic',fixture=id==='nyc-classic',city=CAMPAIGN.indexOf(fixture?'nyc':id);if(city<0)throw Error(`Unknown campaign city ${o.city}`);
+ const id=o.city??'nyc-classic',fixture=!CAMPAIGN.includes(id),city=CAMPAIGN.indexOf(fixture?'nyc':id);if(city<0)throw Error(`Unknown campaign city ${o.city}`);
  saved.set(PERMANENT_KEY,JSON.stringify(p));saved.set(CHECKPOINT_KEY,JSON.stringify({version:2,id:'harness',initials:'TST',kaiju:o.kaiju??'Mogurodon',city,banked:0}));
- const h=await bootGame(seed,saved);h.click('#continue');h.click('#begin-city');if(fixture)h.test().gotoCity('nyc-classic',0);return h;
+ const h=await bootGame(seed,saved);h.click('#continue');h.click('#begin-city');if(fixture)h.test().gotoCity(id,0);return h;
 }
