@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,LEAN,FLAG,TARP} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,MEX2,LEAN,FLAG,TARP,ANGEL,STONE} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -94,7 +94,7 @@ export const CITIES:City[]=[
 // street damage, destructible only by deliberate force; the street round it is cleared into a plaza). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
 // without making the level a there-and-back with a west exit): The Battery starts in the harbour, over a `bands` water span with a seabed `ground` profile.
 export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],wind?:1|-1,
- target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal'|'palace',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
+ target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal'|'palace'|'campo',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
  guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
  units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
@@ -125,7 +125,13 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // New York secret level (NYC rework card 7), all opt-in. See the notes below.
  wheel?:number,coaster?:[number,number],
  // Mexico City Act 1 (MEX rework card 3), all opt-in. See the notes below.
- pole?:number,seeps?:number[],pit?:{x0:number,x1:number,floor:number,slabX:number,slabH:number,ramp:number,short:number}};
+ pole?:number,seeps?:number[],pit?:{x0:number,x1:number,floor:number,slabX:number,slabH:number,ramp:number,short:number},
+ // Mexico City Act 2 (MEX rework card 4), all opt-in. See the notes below.
+ banners?:[number,number,number][],domeSeep?:number,angel?:number,stone?:number,catrinas?:boolean,lakeGreen?:[number,number][]};
+// Mexico City Act 2 (MEX rework card 4), opt-in. `banners` [x0,x1,height]: papel picado strung across the street between two buildings (src/config.ts PICADO): fire touching a string burns it,
+// and the building at its far end catches. `domeSeep`: the index in `seeps` of the seep beside Bellas Artes whose first burst drops the dome (src/config.ts MEX2.dome). `angel`: x of El Ángel's
+// column (ANGEL). `stone`: x of the Sun Stone, vehicle kind `stone` (STONE). `catrinas`: the street crowds are drawn in catrina makeup. `lakeGreen`: x ranges of the lake drawn green by the storm drains (art only).
+// Target art `campo` is Campo Marte (MEX2.campo). A building's deco `mfloat` is a Día de Muertos parade float (a BARRIER reskinned); `fountain` and `museo` are Alameda's and Chapultepec's art.
 // Mexico City Act 1 (MEX rework card 3), opt-in. A building's `lean` (degrees, signed, + leans east; src/config.ts LEAN) draws it tilted about its base corner and
 // sets the side it topples to when it is destroyed; on a `sinking` level each sink step adds lean and a building past LEAN.topple gives way. Templo Mayor starts in
 // a pit (an authored `ground` dip with a steep west wall and, at its east end, a stone platform with a rubble ramp up to its foot: climb its face or hop from the ramp, src/config.ts MEX1). `pole` x of the Zócalo's flagpole (src/config.ts FLAG): a
@@ -1008,6 +1014,98 @@ function mexMerced():BlockDef{
  return {...b,subway:[[portalGap(b,sc(1350)),portalGap(b,sc(5300))]],crystal:sc(CRYSTAL),seeps,volcano:1,guard:true,police:true,air:[sc(3000)],swat:[sc(2900),sc(4400)],
   units:[['patrol',sc(1800)],['police',sc(3300)],['soldier',sc(5200)]]};
 }
+
+// ---- Mexico City Act 2 (MEX rework card 4): Alameda and Bellas Artes, Paseo de la Reforma, Chapultepec ----
+// Consecutive solid, ordinary buildings (no landmark, role or deco) with `min`..`max` px of street between them, between x `lo` and `hi`: the gaps a banner is strung across and a float stands in.
+function gapPairs(b:BlockDef,min:number,max:number,lo:number,hi:number):[BuildingSpec,BuildingSpec][]{
+ const e=b.buildings.filter(x=>x.kind!=='tiny'&&!x.landmark&&!x.role&&!x.deco).sort((p,q)=>p.x-q.x),out:[BuildingSpec,BuildingSpec][]=[];
+ for(let i=1;i<e.length;i++){const g=e[i].x-(e[i-1].x+e[i-1].w);if(g>=min&&g<=max&&e[i-1].x+e[i-1].w>lo&&e[i].x<hi)out.push([e[i-1],e[i]]);}return out;}
+const spread=<T>(xs:T[],n:number):T[]=>{const k=Math.min(n,xs.length);return Array.from({length:k},(_,i)=>xs[Math.floor(i*xs.length/k)]);};
+// Park trees along [x0,x1] (authored x) except the `skip` ranges and any spot on a slope, in water or on a ramp (when the level has terrain).
+function parkTrees(x0:number,x1:number,skip:[number,number][],seed0:number,ground?:[number,number][]):BuildingSpec[]{
+ let seed=seed0;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;},out:BuildingSpec[]=[];
+ for(let x=x0;x<x1;x+=13+Math.floor(rnd()*20)){const sx=sc(x);
+  const h=64+Math.floor(rnd()*44),col=['#4f7d4a','#5c8a4e','#436f43'][Math.floor(rnd()*3)];
+  if(skip.some(([a,z])=>x+30>a&&x<z))continue;
+  if(ground&&(Math.abs(profileY(ground,sx)-profileY(ground,sx+sc(30)))>1||Math.abs(profileY(ground,sx)-profileY(ground,sx-sc(30)))>1||profileY(ground,sx)>CONFIG.ground+4))continue;
+  out.push(scaled({x,w:27,h,hp:10,value:15,kind:'tiny' as const,label:'',color:col,prop:'tree'}));}
+ return out;}
+const fountain=(x:number)=>scaled({x,w:96,h:34,hp:60,value:60,kind:'tiny' as const,label:'',color:'#9aa69a',deco:'fountain'});
+// Level 4. Alameda and Bellas Artes: colonial rows under papel picado (strings across the cross streets: the one place fire jumps the street), Bellas Artes (a dome the lake bed
+// has already swallowed to its shoulders) with an acid seep beside it, the Alameda's trees and green-running fountains, the Torre Latinoamericana (a tall climbable landmark) and the
+// Guardia's soldiers and APCs in the avenues.
+function mexAlameda():BlockDef{
+ const BELLAS=2000,TORRE=4180,FOUNT=[2880,3540],theme=cityById('mex');
+ let b=cityLevel('mex','Alameda and Bellas Artes',7,'district',`>400,r,m,s,_,h,r,_,m,s,r,_,>${BELLAS},L,_,>4560,m,s,_,h,r,_,s,m,r,_,m,h,s,_,r,m`,['PALACIO DE BELLAS ARTES|dome'],{startStage:2,cap:2,tier:2});
+ const ts=scaled({...BUILDING_PRESETS.L,x:TORRE,h:640,label:'TORRE LATINOAMERICANA',color:'#a9a9a0',landmark:true,shape:'tower'}),torre={...ts,parts:shapeParts('tower',theme.style,ts.w,ts.h)};
+ const dome=b.buildings.find(x=>x.landmark&&x.shape==='dome')!;
+ const trees=parkTrees(2450,4120,[[FOUNT[0]-20,FOUNT[0]+110],[FOUNT[1]-20,FOUNT[1]+110],[TORRE-20,TORRE+210]],11);
+ b={...b,buildings:[...b.buildings,torre,...FOUNT.map(fountain),...trees]};
+ b=clearClutter(b,[[TORRE-40,TORRE+240]]);
+ // The strings: across the cross streets between two ordinary buildings, well wider than the ordinary fire reach, so only the paper carries the flame.
+ const banners=spread(gapPairs(b,sc(200),sc(460),sc(500),levelWidth(b)-sc(400)),6).map(([l,r])=>[l.x+l.w,r.x,Math.max(sc(70),Math.min(sc(150),Math.round(Math.min(l.h,r.h)*.6)))] as [number,number,number]);
+ // Seeps in the storm drains along the street (beside the foot of a building, so the acid pools against its base); the first is the one by Bellas Artes (its burst drops the dome).
+ const edges=b.buildings.filter(x=>x.kind!=='tiny'&&!x.deco).sort((p,q)=>p.x-q.x),cand:number[]=[];
+ for(let i=1;i<edges.length;i++){const a=edges[i-1].x+edges[i-1].w,g=edges[i].x-a;if(g>=sc(70)&&a>sc(500)&&a<levelWidth(b)-sc(500)&&!edges[i-1].landmark&&Math.abs(a-(dome.x+dome.w))>sc(300))cand.push(g<sc(160)?Math.round(a+g/2):a+sc(30));}
+ const seeps=[dome.x+dome.w+sc(36),...spread(cand,4)];
+ b=clearProps(b,seeps,sc(40));
+ return {...b,banners,seeps,domeSeep:0,volcano:2,guard:true,police:true,air:[sc(2400),sc(4800)],
+  units:[['soldier',sc(1400)],['patrol',sc(2300)],['apc',sc(3300)],['soldier',sc(3900)],['soldier',sc(5000)],['apc',sc(5600)],['soldier',sc(6100)]]};
+}
+// Level 5. Paseo de la Reforma: glass towers down a long straight avenue under the Día de Muertos parade (floats stand where the barricades would, the army's tanks sheltering
+// behind them, an acid seep under each), El Ángel on its column mid-avenue (break it and it falls along the avenue, on the convoy parked in its lane) and Campo Marte at the end.
+// The level reads west to east like every level, so the parade heads towards the screen's west and Campo Marte is the east end.
+function mexReforma():BlockDef{
+ const T=6000,ANGEL_X=3250,theme=cityById('mex');
+ let b=cityLevel('mex','Paseo de la Reforma',8,'stronghold',
+  `>400,u,x,_,h,l,_,L,_,x,n,u,_,m,h,_,>3560,u,h,_,L,_,x,l,_,n,x,h,_,u,l,_,h,x,u,_,m,l,h,_,n,x,u,l`,['TORRE MAYOR|tower','TORRE REFORMA|tower'],{startStage:2,cap:2,tier:3},{target:T,ring:[-840,-640,-440,-190,180,460]});
+ // The floats: every barricade is a parade float (its own colour set), and more stand in the avenue's cross streets where there is room for a float and a tank behind it.
+ const P=MEX2.parade;let f=0;
+ const skin=(x:BuildingSpec):BuildingSpec=>({...x,label:'',deco:'mfloat',color:P.colors[f++%P.colors.length],w:P.w,h:P.h});
+ b={...b,buildings:b.buildings.map(x=>x.label==='BARRIER'?skin(x):x)};
+ // Spots in the street (between any two solid buildings, landmarks included) with room for a float and a tank behind it, outside the target's ring, the column's fall and the first screen.
+ const solid=b.buildings.filter(x=>x.kind!=='tiny').sort((p,q)=>p.x-q.x),spots:number[]=[],room=P.w+sc(115);
+ for(let i=1;i<solid.length;i++){let x=solid[i-1].x+solid[i-1].w+sc(10);while(x+room<=solid[i].x-sc(10)){if(x>sc(900)&&x<sc(T-900)&&Math.abs(x-sc(ANGEL_X))>ANGEL.length+sc(100))spots.push(x);x+=room+sc(150);}}
+ const extra=spread(spots,9).map(x=>skin({...BUILDING_PRESETS.b,x,label:'BARRIER',color:'#fff'}));
+ // El Ángel: the Independence Column, an `angel`-shaped landmark ANGEL.length tall: it falls through the ordinary topple, the way it was hit, crushing a span as long as it is tall.
+ const ang={...BUILDING_PRESETS.L,x:sc(ANGEL_X),w:ANGEL.w,h:ANGEL.length,hp:520,value:900,label:'EL ÁNGEL',color:'#d8cfb4',landmark:true,shape:'angel'};
+ b={...b,buildings:[...b.buildings,...extra,{...ang,parts:shapeParts('angel',theme.style,ang.w,ang.h)}]};
+ b=clearClutter(b,[[ANGEL_X-60,ANGEL_X+110]]);
+ // A tank behind each float and an acid seep under it, in the glorietas.
+ const floats=b.buildings.filter(x=>x.deco==='mfloat').sort((p,q)=>p.x-q.x),solids=b.buildings.filter(x=>x.kind!=='tiny'&&x.deco!=='mfloat'),armour:number[]=[];
+ for(const fl of floats){const x=fl.x+fl.w+sc(50);if(Math.abs(x-sc(T))>sc(900)&&Math.abs(x-sc(ANGEL_X))>sc(700)&&!solids.some(o=>x+sc(60)>o.x&&x-sc(60)<o.x+o.w)&&!floats.some(o=>o!==fl&&x+sc(60)>o.x&&x-sc(60)<o.x+o.w))armour.push(x);}
+ const tanks=spread(armour,6),seeps=tanks.slice();
+ b=clearProps(b,seeps,sc(40));
+ // The convoy parked in El Ángel's lane (the fall's span): armour and cars the column crushes.
+ const lane=[3000,3110,3390,3500].map(sc);
+ return {...b,seeps,angel:sc(ANGEL_X),catrinas:true,volcano:2,
+  target:{x:sc(T),label:'CAMPO MARTE',art:'campo'},guard:true,police:true,
+  units:[...tanks.map(x=>['tank',x] as ['tank',number]),['soldier',sc(1200)],['apc',sc(1700)],['soldier',sc(2300)],['soldier',sc(2650)],['apc',lane[0]],['tank',lane[1]],['apc',lane[2]],['soldier',lane[3]],['soldier',sc(4300)],['apc',sc(4700)],['soldier',sc(6700)],['tank',sc(7000)]],
+  garrison:[['tank',-560],['tank',-400],['soldier',-300],['soldier',-240],['emplacement',-170],['soldier',250],['tank',330],['soldier',390],['apc',470],['artillery',600],['emplacement',700]],air:[sc(2600),sc(4400)]};
+}
+// Level 6. Chapultepec: there and back from the park gates in mid-map. East of the gates the zoo's pens, the Museo Nacional de Antropología and the castle's hill (a rock outcrop you climb,
+// the crystal on its top, the Guardia dug in on the slopes) with the Sun Stone standing beside the crystal; then the lake (over a Stage 2 kaiju's head, wading depth at Stage 3, the
+// Reservoir's rule) and the east exit to Xochimilco beyond it; the west exit leads on to Ciudad Universitaria. Ash starts to fall once the kaiju is past the castle.
+function mexChapultepec():BlockDef{
+ const START=3840,W=8*960,CASTLE=5530,CRYSTAL=5800,STONE_X=5905,L=MEX2.lake,theme=cityById('mex');
+ let b=cityLevel('mex','Chapultepec',8,'district',`>400,r,m,s,_,h,r,_,m,s,_,r,m,_,>3150,h,m,_`,[],{startStage:2,cap:2,capLift:3,tier:3});
+ const D:[number,number|null][]=[[0,null],[5300,null],[5500,-56],[6000,-56],[6180,null],[L.x0,null],[L.x0+140,L.depth],[L.x1-140,L.depth],[L.x1,null],[W,null]];
+ const ground:[number,number][]=D.map(([x,d])=>[sc(x),d===null?CONFIG.ground:d>0?CONFIG.ground+6+d:CONFIG.ground+Math.round(d*CONFIG.cityScale)]);
+ const waterLine=CONFIG.ground+6;
+ const pens=[4150,4320,4490].map(x=>hall(x,150,52,'','#7a6a4a','zoopen',140));
+ const museum=scaled({x:4800,w:440,h:150,hp:700,value:400,kind:'large' as const,label:'MUSEO NACIONAL DE ANTROPOLOGÍA',color:'#cbbd98',deco:'museo',parts:hallParts(440,150,40,5)});
+ const cs=scaled({...BUILDING_PRESETS.L,x:CASTLE,h:300,label:'CASTILLO DE CHAPULTEPEC',color:'#c3b48d',landmark:true,shape:'dome'}),castle={...cs,parts:shapeParts('dome',theme.style,cs.w,cs.h)};
+ const solids=[...pens,museum,castle],trees=parkTrees(150,7400,[[CASTLE-40,CASTLE+230],[CRYSTAL-120,STONE_X+160],[START-170,START+170],[3100,3400],...solids.map(o=>[o.x/CONFIG.cityScale-20,(o.x+o.w)/CONFIG.cityScale+20] as [number,number])],7,ground);
+ b=clearClutter(b,[[300,W]]);
+ b={...b,buildings:[...b.buildings.filter(x=>x.role!=='hydrant'),...solids,...trees]};
+ return {...b,ground,start:sc(START),water:[[sc(L.x0),sc(L.x1),waterLine]],bands:true,
+  ramps:[[5500,5300],[6000,6180]].map(([a,z])=>[sc(Math.min(a,z)),sc(Math.max(a,z))] as [number,number]),
+  crystal:sc(CRYSTAL),stone:sc(STONE_X),zoo:[4200,4280,4360,4440,4520,4600].map(sc),lakeGreen:[[sc(L.x0),sc(L.x0+300)],[sc(L.x1-300),sc(L.x1)]],
+  volcano:2,ashLate:sc(CASTLE+200),guard:true,police:true,
+  cars:[],street:[...b.street].sort((p,q)=>p-q),
+  units:[['soldier',sc(1500)],['apc',sc(2200)],['soldier',sc(3000)],['soldier',sc(5330)],['apc',sc(5420)],['soldier',sc(6060)],['tank',sc(6140)],['soldier',sc(4100)],['soldier',sc(6900)],['apc',sc(7300)]],air:[sc(3000),sc(5000)],
+  exits:{west:'Ciudad Universitaria',east:'Xochimilco'}};
+}
 const MEXICO_CITY:BlockDef[]=[
  // 1. Act 1 (Stage 1, cap 1). Templo Mayor: the pit start, leaning colonial blocks and the only level with the sinking twist (MEX rework card 3).
  mexTemplo(),
@@ -1015,15 +1113,13 @@ const MEXICO_CITY:BlockDef[]=[
  mexZocalo(),
  // 3. La Merced and Tepito: the crystal under the market hall lifts the cap to 2, the Guardia Nacional rolls in; tarp runs and acid seeps.
  mexMerced(),
- // 4. Act 2 (Stage 2, cap 2). Alameda and Bellas Artes.
- {...cityLevel('mex','Alameda and Bellas Artes',7,'district',mexRep(MEX_ROW,4),[],{startStage:2,cap:2,tier:2}),guard:true,police:true,air:[sc(2400),sc(4800)]},
- // 5. Paseo de la Reforma: the avenue and Campo Marte at the west end.
- {...cityLevel('mex','Paseo de la Reforma',8,'stronghold',mexRep(MEX_TALL,5),[],{startStage:2,cap:2,tier:3},{target:6000}),
-  target:{x:sc(6000),label:'CAMPO MARTE',art:'command'},guard:true,police:true,air:[sc(2600)]},
- // 6. Chapultepec: there and back from mid-map. The castle's crystal lifts the cap to 3. West exit leads to Ciudad Universitaria (the main
+ // 4. Act 2 (Stage 2, cap 2). Alameda and Bellas Artes: papel picado strings that carry fire across the street, the sunk dome with its seep, the Torre Latinoamericana (MEX rework card 4).
+ mexAlameda(),
+ // 5. Paseo de la Reforma: the Día de Muertos parade, El Ángel's column and Campo Marte at the end.
+ mexReforma(),
+ // 6. Chapultepec: there and back from mid-map. The castle's crystal lifts the cap to 3 and the Sun Stone stands beside it. West exit leads to Ciudad Universitaria (the main
  // route); the east exit, past the lake, leads to the secret Xochimilco.
- {...cityLevel('mex','Chapultepec',8,'district',`${mexRep(MEX_LOW,2)},>2400,=,=,>4200,=,>5400,${mexRep(MEX_LOW,3)}`,[],{startStage:2,cap:2,capLift:3,tier:3}),
-  start:sc(3840),crystal:sc(4400),guard:true,exits:{west:'Ciudad Universitaria',east:'Xochimilco'}},
+ mexChapultepec(),
  // 7. Act 3 (Stage 3, cap 3). Ciudad Universitaria. 8. Calzada de Tlalpan and the field HQ.
  {...cityLevel('mex','Ciudad Universitaria',8,'district',mexRep(MEX_TALL,6),[],{startStage:3,cap:3,tier:4}),guard:true,police:true,air:[sc(2600),sc(4400),sc(6400)]},
  {...cityLevel('mex','Calzada de Tlalpan',8,'stronghold',mexRep(MEX_ROW,5),[],{startStage:3,cap:3,tier:4},{target:5600}),

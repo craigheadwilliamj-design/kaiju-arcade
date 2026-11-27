@@ -771,3 +771,31 @@ export const ACID = {trigger:Math.round(200*CITY_SCALE),ultTrigger:Math.round(48
  damage:6,knockback:140,stun:.6,carWear:7,carHP:20,baseDamage:9,puddleW:Math.round(70*CITY_SCALE),puddleSeconds:7,puddleDamage:4,rearm:14,points:250,heat:4,
  perSecond:8,
  auto:{first:2.5,stagger:1.6,warn:1.2,every:7,damage:1.5,radius:1.3}};
+
+// ---- Mexico City rework, card 4: Act 2 (Alameda and Bellas Artes, Paseo de la Reforma, Chapultepec). docs/MEX_REWORK.md ----
+// Every part is opt-in per level (src/levels.ts BlockDef / BuildingSpec); a level that sets none of it runs none of this. Numbers are read in src/game.ts.
+// MEX2: the Act 2 level tuning.
+//  `dome`: Bellas Artes' one-off. The dome is drawn sunk `sunk` px into the lake bed from the start; the seep beside it (`BlockDef.domeSeep`, an index into `seeps`) drops it `drop`
+//   px further and tilts it `tilt` degrees (towards the plaza, + east) the first time it bursts, once. It is damage and a tilt on that one landmark, not the sinking twist.
+//  `campo`: Campo Marte (target art `campo`): `w` x `h` is the target's box (a long low grandstand); `wake` px is how near the kaiju must come (or any damage to the target) before
+//   the fight starts and the helicopters on the pad lift off (`pads` x offsets from the target, `lift` s of rotor spin-up before they leave the ground).
+//  `parade`: the Día de Muertos floats (a stronghold's BARRIER buildings re-skinned `mfloat`): the flatbed is `w` x `h` (Herald Square's float is 84 x 72) and cycles `colors`.
+//  `lake`: Chapultepec's lake band (authored x of its west and east shore, and the bed depth: over a Stage 2 kaiju's head, wading depth at Stage 3, the Reservoir's rule).
+export const MEX2 = {
+ dome:{sunk:Math.round(54*CITY_SCALE),drop:Math.round(44*CITY_SCALE),tilt:3.4},
+ campo:{w:Math.round(320*CITY_SCALE),h:Math.round(80*CITY_SCALE),wake:780,lift:1.1,pads:[-250,-180] as number[]},
+ parade:{w:Math.round(90*CITY_SCALE),h:Math.round(66*CITY_SCALE),colors:['#e07a1f','#7b3f9e','#d94b8a','#2f9aa6','#e5c23a','#5c8a3c'] as string[]},
+ lake:{x0:6260,x1:7440,depth:90},
+};
+// PICADO (a level's `banners:[x0,x1,height][]`): papel picado strung across the street between two buildings, `height` px above the street at each end. Any fire touching it sets it
+// alight: a burning building at either end, or a fire pool or a flame-scorched wall under the string. It then burns for `burn` s (the paper flame runs along it) and is gone, and the
+// building at its far end (the end the fire did not come from) catches. Each string burns once. `spacing` px between flags, `sag` px of droop at mid-span. `points` for each string burned.
+export const PICADO = {burn:1.6,spacing:26,sag:14,points:120,reach:Math.round(60*CITY_SCALE)};
+// ANGEL (a level's `angel`: x of El Ángel's column): the Independence Column is a landmark (shape `angel`) `length` px tall and `w` wide, so it falls along the avenue through the ordinary topple
+// (the way it was hit, crushing everything in a span as long as it is tall). `safe` px: the clear distance the level keeps between the column's fall and the target.
+export const ANGEL = {length:Math.round(420*CITY_SCALE),w:Math.round(60*CITY_SCALE),safe:Math.round(150*CITY_SCALE)};
+// STONE (a level's `stone`: x of the Sun Stone, the Aztec calendar disc): a heavy round prop of vehicle kind `stone`, `d` across. Only a Stage `minStage` kaiju lifts it (a smaller one
+// bumps against it: TOO HEAVY). Thrown it is a bowling ball like Times Square's: a flat arc (`throwSpeed`, `throwLift`, `throwDamage`) that rolls on landing at `reroll` of its speed (at least
+// `rerollMin`) on `glide` px/s of friction, plowing `plows` buildings. It never breaks. `points` the first time it is lifted. `near`: how close to the castle's crystal the level sets it,
+// so a player who takes the crystal (and grows to Stage 3) is standing beside it whichever exit they head for.
+export const STONE = {d:Math.round(54*CITY_SCALE),mass:7,minStage:3,points:600,throwSpeed:560,throwLift:200,throwDamage:170,reroll:.9,rerollMin:200,glide:60,plows:6,grabSpeed:70,near:480,hint:300};

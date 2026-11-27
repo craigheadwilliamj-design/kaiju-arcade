@@ -44,7 +44,7 @@ test('water drill block: opt-in bands, the deep tunnel and boats; no other block
  assert.ok(b.subway![0][1]<la,'the subway line runs under the open street west of the lake');
  loadDrill();try{for(const x of b.boats!)assert.ok(navigable(x+UNIT_CONFIG.boat.w/2),`boat at ${x} is on water deep enough`);}finally{setTerrain(null);}
  // The SF Act 1 levels opt in to the water/tunnel systems (phase 3), and so do New York's Battery (NYC Act 1: it starts in the harbour) and Hudson Yards (NYC Act 3: the rail yard is a deep tunnel); every other block is unchanged.
- for(const blk of [DRILL_BLOCK,...LEVELS.flat().filter(b=>!SF_ACT1.includes(b.name)&&!['Bay Bridge','Golden Gate','Alcatraz','The Battery','Hudson Yards','Coney Island','Central Park'].includes(b.name))]){assert.ok(!blk.bands&&!blk.tunnel&&!blk.boats,`${blk.name} is unchanged`);}
+ for(const blk of [DRILL_BLOCK,...LEVELS.flat().filter(b=>!SF_ACT1.includes(b.name)&&!['Bay Bridge','Golden Gate','Alcatraz','The Battery','Hudson Yards','Coney Island','Central Park','Chapultepec'].includes(b.name))]){assert.ok(!blk.bands&&!blk.tunnel&&!blk.boats,`${blk.name} is unchanged`);}
  assert.equal(RIVER.deepPitDepth-RIVER.deepTunnelRoof,80,'about 80px inside the deep tunnel');
  assert.ok(RIVER.deepPitDepth-RIVER.deepTunnelRoof>height(1),'a Stage 1 kaiju stands up in it');
  assert.ok(C.jumpVelocity**2/(2*C.gravity)>=RIVER.deepPitDepth,'and can jump back out of a deep pit');

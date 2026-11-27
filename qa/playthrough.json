@@ -352,13 +352,13 @@
       "block": 4,
       "kind": "district",
       "stage": 2,
-      "seconds": 63,
+      "seconds": 65,
       "mode": "results",
       "hp": 91,
-      "damage": 233,
+      "damage": 198,
       "destruction": 100,
-      "score": 7315511,
-      "x": 9341,
+      "score": 7257801,
+      "x": 9339,
       "objectiveHP": null,
       "bossHP": null
     },
@@ -368,12 +368,12 @@
       "block": 5,
       "kind": "stronghold",
       "stage": 2,
-      "seconds": 88,
+      "seconds": 89,
       "mode": "results",
       "hp": 91,
-      "damage": 287,
+      "damage": 389,
       "destruction": 100,
-      "score": 8135657,
+      "score": 7867454,
       "x": 10685,
       "objectiveHP": 0,
       "bossHP": null
@@ -384,12 +384,12 @@
       "block": 6,
       "kind": "district",
       "stage": 3,
-      "seconds": 55,
+      "seconds": 59,
       "mode": "results",
       "hp": 100,
-      "damage": 287,
+      "damage": 439,
       "destruction": 100,
-      "score": 8399680,
+      "score": 8153869,
       "x": 0,
       "objectiveHP": null,
       "bossHP": null
@@ -400,12 +400,12 @@
       "block": 7,
       "kind": "district",
       "stage": 3,
-      "seconds": 53,
+      "seconds": 52,
       "mode": "results",
       "hp": 100,
-      "damage": 296,
+      "damage": 447,
       "destruction": 100,
-      "score": 9413359,
+      "score": 9131843,
       "x": 10618,
       "objectiveHP": null,
       "bossHP": null
@@ -416,13 +416,13 @@
       "block": 8,
       "kind": "stronghold",
       "stage": 3,
-      "seconds": 45,
+      "seconds": 43,
       "mode": "results",
       "hp": 100,
-      "damage": 327,
+      "damage": 447,
       "destruction": 100,
-      "score": 9836925,
-      "x": 10617,
+      "score": 9550366,
+      "x": 10618,
       "objectiveHP": 0,
       "bossHP": null
     },
@@ -434,15 +434,15 @@
       "stage": 3,
       "evolutionSeconds": {
         "stage2": 181,
-        "stage3": 360
+        "stage3": 378
       },
-      "seconds": 21,
+      "seconds": 20,
       "mode": "conquered",
       "hp": 92,
-      "damage": 335,
+      "damage": 455,
       "destruction": 100,
-      "score": 9928468,
-      "x": 6163,
+      "score": 9649775,
+      "x": 6187,
       "objectiveHP": null,
       "bossHP": 0
     },
@@ -457,7 +457,7 @@
       "hp": 100,
       "damage": 0,
       "destruction": 76,
-      "score": 10263176,
+      "score": 9984482,
       "x": 5242,
       "objectiveHP": null,
       "bossHP": null
@@ -473,7 +473,7 @@
       "hp": 100,
       "damage": 0,
       "destruction": 78,
-      "score": 10734084,
+      "score": 10455390,
       "x": 7930,
       "objectiveHP": null,
       "bossHP": null
@@ -489,7 +489,7 @@
       "hp": 100,
       "damage": 0,
       "destruction": 100,
-      "score": 11577931,
+      "score": 11299237,
       "x": 10618,
       "objectiveHP": 0,
       "bossHP": null
@@ -505,7 +505,7 @@
       "hp": 100,
       "damage": 27,
       "destruction": 78,
-      "score": 12231319,
+      "score": 11952625,
       "x": 10616,
       "objectiveHP": null,
       "bossHP": null
@@ -525,7 +525,7 @@
       "hp": 98,
       "damage": 29,
       "destruction": 87,
-      "score": 12317655,
+      "score": 12038961,
       "x": 4515,
       "objectiveHP": null,
       "bossHP": 0
@@ -541,7 +541,7 @@
       "hp": 100,
       "damage": 3,
       "destruction": 77,
-      "score": 12593875,
+      "score": 12315181,
       "x": 5242,
       "objectiveHP": null,
       "bossHP": null
@@ -557,7 +557,7 @@
       "hp": 100,
       "damage": 3,
       "destruction": 76,
-      "score": 12988568,
+      "score": 12709874,
       "x": 7930,
       "objectiveHP": null,
       "bossHP": null
@@ -573,7 +573,7 @@
       "hp": 100,
       "damage": 30,
       "destruction": 100,
-      "score": 13737544,
+      "score": 13458850,
       "x": 10618,
       "objectiveHP": 0,
       "bossHP": null
@@ -589,7 +589,7 @@
       "hp": 100,
       "damage": 48,
       "destruction": 100,
-      "score": 14511053,
+      "score": 14232359,
       "x": 10618,
       "objectiveHP": null,
       "bossHP": null
@@ -609,7 +609,7 @@
       "hp": 100,
       "damage": 48,
       "destruction": 92,
-      "score": 14605261,
+      "score": 14326567,
       "x": 4034,
       "objectiveHP": null,
       "bossHP": 0
@@ -625,7 +625,7 @@
       "hp": 96,
       "damage": 7,
       "destruction": 77,
-      "score": 14879109,
+      "score": 14600415,
       "x": 5242,
       "objectiveHP": null,
       "bossHP": null
@@ -641,7 +641,7 @@
       "hp": 100,
       "damage": 27,
       "destruction": 80,
-      "score": 15263285,
+      "score": 14984591,
       "x": 7930,
       "objectiveHP": null,
       "bossHP": null
@@ -657,7 +657,7 @@
       "hp": 100,
       "damage": 27,
       "destruction": 100,
-      "score": 16001342,
+      "score": 15722648,
       "x": 10618,
       "objectiveHP": 0,
       "bossHP": null
@@ -673,7 +673,7 @@
       "hp": 100,
       "damage": 27,
       "destruction": 100,
-      "score": 16773819,
+      "score": 16495125,
       "x": 10618,
       "objectiveHP": null,
       "bossHP": null
@@ -693,7 +693,7 @@
       "hp": 99,
       "damage": 30,
       "destruction": 92,
-      "score": 16860967,
+      "score": 16582273,
       "x": 4329,
       "objectiveHP": null,
       "bossHP": 0
@@ -709,8 +709,8 @@
       "hp": 100,
       "damage": 4,
       "destruction": 78,
-      "score": 17334503,
-      "x": 5240,
+      "score": 17055829,
+      "x": 5242,
       "objectiveHP": null,
       "bossHP": null
     },
@@ -725,7 +725,7 @@
       "hp": 100,
       "damage": 4,
       "destruction": 79,
-      "score": 18005158,
+      "score": 17726484,
       "x": 7930,
       "objectiveHP": null,
       "bossHP": null
@@ -741,7 +741,7 @@
       "hp": 100,
       "damage": 27,
       "destruction": 100,
-      "score": 18806141,
+      "score": 18527468,
       "x": 10615,
       "objectiveHP": 0,
       "bossHP": null
@@ -757,7 +757,7 @@
       "hp": 100,
       "damage": 27,
       "destruction": 80,
-      "score": 19734314,
+      "score": 19455641,
       "x": 10616,
       "objectiveHP": null,
       "bossHP": null
@@ -777,14 +777,14 @@
       "hp": 100,
       "damage": 27,
       "destruction": 81,
-      "score": 19814824,
+      "score": 19536151,
       "x": 4338,
       "objectiveHP": null,
       "bossHP": 0
     }
   ],
   "peaks": {
-    "units": 22,
+    "units": 24,
     "enemyShots": 31,
     "effects": 12,
     "wrecks": 4,
@@ -809,5 +809,5 @@
     "jetFires": 1,
     "burning": 0
   },
-  "polls": 22547
+  "polls": 22585
 }
