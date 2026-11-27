@@ -51,7 +51,8 @@ export const CITIES:City[]=[
  {id:'nyc',name:'New York',code:'NYC',kaiju:'Kaiban',boss:'Tlézcatl',difficulty:0,sky:'#95b0b2',haze:'#c8cbb5',colors:['#8a4e3e','#b36d57','#62708b','#7a5546','#a0634c'],signs:['DELI','MARKET','ARCADE','BODEGA'],
   mood:{top:'#86aac2',bottom:'#e8d5a9',far:'#9aa9ab',mid:'#7b8d8f',near:'#566a6e',win:'#e9cf86',lights:.15,sun:'#ffe4a6'},style:'nyc',
   material:{debris:['#8a4e3e','#6f3a2e','#b9a58c'],slab:1},taxi:'#f2c230',cars:['#3c4a5c','#8e9aa3','#7d2f2f','#2e3d36','#b7b2a6'],ink:'#2f4740'},
- {id:'mex',name:'Mexico City',code:'MEX',boss:'Tlézcatl',difficulty:1,sky:'#d3a476',haze:'#f0c98a',colors:['#d9846a','#e7c07a','#8fb39a','#c9879c','#e2d6b8'],signs:['MERCADO','CAFE','HOTEL','TIENDA'],
+ // Mexico City (MEX rework): Tlézcatl plays here, the final boss is Belial (the next city's kaiju).
+ {id:'mex',name:'Mexico City',code:'MEX',kaiju:'Tlézcatl',boss:'Belial',difficulty:1,sky:'#d3a476',haze:'#f0c98a',colors:['#d9846a','#e7c07a','#8fb39a','#c9879c','#e2d6b8'],signs:['MERCADO','CAFE','HOTEL','TIENDA'],
   mood:{top:'#b7845e',bottom:'#f4c886',far:'#b48d78',mid:'#94735f',near:'#6f5a4d',win:'#ffd89a',lights:.45,sun:'#ffb35c',smog:true},style:'mex',
   material:{debris:['#e2d6b8','#d9846a','#c9b79c'],slab:.9},taxi:'#e8789f',cars:['#c25b3c','#6d8f5f','#d8c27a','#4f6f8f','#e4dccb'],ink:'#4a2f22'},
  {id:'par',name:'Paris',code:'PAR',boss:'Belial',difficulty:2,sky:'#a5bbca',haze:'#d7d6c0',colors:['#d8ccae','#cfc2a3','#e0d6bd','#c8bc9e'],signs:['CAFE','CINEMA','HOTEL','LIBRAIRIE'],
@@ -73,6 +74,11 @@ export const CITIES:City[]=[
  {id:'syd',name:'Sydney',code:'SYD',boss:'Myrmex',difficulty:2.5,sky:'#7fb6dc',haze:'#d6e6ea',colors:['#d9b98a','#cfa877','#b8cdd6','#c9d8dc','#e2c99c'],signs:['CAFE','PUB','SURF','BOTTLE-O'],
   mood:{top:'#4f97d0',bottom:'#cfe7ef',far:'#8fb3c4',mid:'#6f93a3',near:'#4f6f7c',win:'#fff1c4',lights:.15,sun:'#fffbe6'},style:'syd',
   material:{debris:['#d9b98a','#b8cdd6','#e8dcc0'],slab:1,glass:true},taxi:'#f2c230',cars:['#f3f3ef','#2d5f8a','#b8bcc0','#c0392b','#2e3d36'],ink:'#1f3340'},
+ // The old Mexico City districts, off the route: a test fixture city (tests boot it through kaijuTest.gotoCity). Not in CAMPAIGN, so it
+ // never reaches Free Play, the campaign map, records or progress. Appended after syd so no city index moved.
+ {id:'mex-classic',name:'Mexico City (classic)',code:'MEX',boss:'Tlézcatl',difficulty:1,sky:'#d3a476',haze:'#f0c98a',colors:['#d9846a','#e7c07a','#8fb39a','#c9879c','#e2d6b8'],signs:['MERCADO','CAFE','HOTEL','TIENDA'],
+  mood:{top:'#b7845e',bottom:'#f4c886',far:'#b48d78',mid:'#94735f',near:'#6f5a4d',win:'#ffd89a',lights:.45,sun:'#ffb35c',smog:true},style:'mex',
+  material:{debris:['#e2d6b8','#d9846a','#c9b79c'],slab:.9},taxi:'#e8789f',cars:['#c25b3c','#6d8f5f','#d8c27a','#4f6f8f','#e4dccb'],ink:'#4a2f22'},
 ];
 // `start`: open layouts set a mid-map spawn x; the player can roam both ways and leave by either end once the quota is met.
 // Blocks without it keep the classic west spawn and single eastern exit.
@@ -94,6 +100,9 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
  exits?:{west?:string,east?:string},after?:string,fog?:{from:number,to:number,max:number},sealions?:number[],kaiban?:{x:number,wade:[number,number]},
  buses?:number[],elevatedLook?:'park'|'freeway',ramps?:[number,number][],coastguard?:number[],
+ // Mexico City rework (card 1), opt-in: `sinking` makes the lake-bed ground soft on this level (src/game.ts sinkAround): a heavy landing sinks the
+ // buildings round it and one sunk far enough gives way. Set on Templo Mayor and the five `mex-classic` blocks only.
+ sinking?:true,
  // Phase 5 (SF Act 3), all opt-in. See the notes below.
  cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,approach?:number,deckApproach?:number,
  finale?:{x:number,wake:number,breaks:number[],perches?:{x0:number,x1:number,h:number}[],tower?:number,crack?:number},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
@@ -923,16 +932,51 @@ const SYDNEY:BlockDef[]=[
  terrain(district('syd','Harbour Bridge Assault',8,[[408,'m','cache'],[525,'m','tank'],[644,'l'],[798,'s','tank'],[1108,'L','LUNA PARK|arch'],[1411,'m'],[1774,'h','cache'],[1911,'l'],[2066,'x'],[2182,'h'],[2576,'h'],[2714,'n'],[2786,'s'],[2870,'L','TOWN HALL|tower'],[3141,'m'],[3259,'m'],[3375,'x'],[3491,'m'],[3976,'h'],[4113,'l'],[4270,'h'],[4405,'h'],[4833,'L','ST MARY\'S CATHEDRAL|twin'],[5073,'s','tank'],[5158,'x'],[5473,'m','tank'],[5590,'h'],[5724,'x','radar'],[5838,'l'],[6267,'s'],[6350,'l'],[6505,'l'],[6659,'L','CROWN SYDNEY|needle'],[7005,'x'],[7119,'l'],[7272,'m'],[7392,'h']],[228,988,1698,2388,3078,3818,4508,5248,6018,6688,7448],[598,1308,2018,2738,3428,4138,4908,5608,6308,7088],'district',3840),[[0,0],[388,0],[892,0],[1094,11],[1537,11],[1760,22],[2326,22],[2562,33],[3617,33],[3962,44],[4549,44],[4819,44],[5280,44],[5459,44],[6002,44],[6253,44],[6863,44],[6991,44],[7680,44]]),
  district('syd','Myrmex Arena',4,[[528,'l'],[988,'m'],[1408,'h'],[1848,'t'],[2228,'s'],[2628,'l'],[3088,'m'],[3498,'s']],[358,858,1288,2108,2958,3378],[388,1268,2078,2948],'boss')
 ].map((b,i)=>({...b,wind:([1,-1,1,-1,1] as const)[i]}));
+// ---- Mexico City (MEX rework scaffold, docs/MEX_REWORK.md) ----
+// Nine route levels plus the secret Xochimilco, as placeholders drawn with cityLevel() and the existing presets. Names, screens, kind,
+// growth, exits and the rejoin are final; the layouts and each level's one new mechanic come in the later cards. Tlézcatl plays here.
+const MEX_ROW='s,m,h,_,l,s,m,_,h,r,_,n,s,m,_',MEX_TALL='x,n,l,x,h,_,n,x,l,n,_',MEX_LOW='r,s,r,m,_,r,s,m,s,_';
+const mexRep=(unit:string,n:number)=>Array(n).fill(unit).join(',');
+const MEXICO_CITY:BlockDef[]=[
+ // 1. Act 1 (Stage 1, cap 1). Templo Mayor: the only level with the sinking twist.
+ {...cityLevel('mex','Templo Mayor',7,'district',mexRep(MEX_LOW,6),[],{startStage:1,cap:1,tier:1}),sinking:true,police:true,air:[sc(3600)]},
+ // 2. The Zócalo and the Palacio Nacional.
+ {...cityLevel('mex','Zócalo',7,'stronghold',mexRep(MEX_ROW,4),[],{startStage:1,cap:1,tier:2},{target:4000}),
+  target:{x:sc(4000),label:'PALACIO NACIONAL',art:'command'},police:true,air:[sc(3000)]},
+ // 3. La Merced and Tepito: the crystal under the market hall lifts the cap to 2, the Guardia Nacional rolls in.
+ {...cityLevel('mex','La Merced and Tepito',7,'district',`${MEX_ROW},${mexRep(MEX_LOW,4)}`,[],{startStage:1,cap:1,capLift:2,tier:2}),crystal:sc(3900),guard:true,police:true,air:[sc(3000)]},
+ // 4. Act 2 (Stage 2, cap 2). Alameda and Bellas Artes.
+ {...cityLevel('mex','Alameda and Bellas Artes',7,'district',mexRep(MEX_ROW,4),[],{startStage:2,cap:2,tier:2}),guard:true,police:true,air:[sc(2400),sc(4800)]},
+ // 5. Paseo de la Reforma: the avenue and Campo Marte at the west end.
+ {...cityLevel('mex','Paseo de la Reforma',8,'stronghold',mexRep(MEX_TALL,5),[],{startStage:2,cap:2,tier:3},{target:6000}),
+  target:{x:sc(6000),label:'CAMPO MARTE',art:'command'},guard:true,police:true,air:[sc(2600)]},
+ // 6. Chapultepec: there and back from mid-map. The castle's crystal lifts the cap to 3. West exit leads to Ciudad Universitaria (the main
+ // route); the east exit, past the lake, leads to the secret Xochimilco.
+ {...cityLevel('mex','Chapultepec',8,'district',`${mexRep(MEX_LOW,2)},>2400,=,=,>4200,=,>5400,${mexRep(MEX_LOW,3)}`,[],{startStage:2,cap:2,capLift:3,tier:3}),
+  start:sc(3840),crystal:sc(4400),guard:true,exits:{west:'Ciudad Universitaria',east:'Xochimilco'}},
+ // 7. Act 3 (Stage 3, cap 3). Ciudad Universitaria. 8. Calzada de Tlalpan and the field HQ.
+ {...cityLevel('mex','Ciudad Universitaria',8,'district',mexRep(MEX_TALL,6),[],{startStage:3,cap:3,tier:4}),guard:true,police:true,air:[sc(2600),sc(4400),sc(6400)]},
+ {...cityLevel('mex','Calzada de Tlalpan',8,'stronghold',mexRep(MEX_ROW,5),[],{startStage:3,cap:3,tier:4},{target:5600}),
+  target:{x:sc(5600),label:'FIELD HQ',art:'pyramid'},guard:true,police:true,air:[sc(2600),sc(4000)]},
+ // 9. Estadio Azteca (boss): the approach, then the arena. Belial is the rival (shared moveset until his kit).
+ cityLevel('mex','Estadio Azteca',6,'boss',`r,s,m,h,_,s,m,l,_,m,s`,[],{startStage:3,cap:3,tier:5}),
+ // Secret. Xochimilco, reached from Chapultepec's east exit; rejoins the route at Ciudad Universitaria.
+ {...cityLevel('mex','Xochimilco',5,'district',mexRep(MEX_LOW,4),[],{startStage:3,cap:3,tier:5,secret:true}),
+  after:'Ciudad Universitaria',secretId:'xochimilco',lore:'THE TREN LIGERO RUNS SOUTH TO THE CANALS.',guard:true,police:true},
+];
+// The old five Mexico City blocks, kept verbatim as the off-route fixture city 'mex-classic' (not in CAMPAIGN, never shown in Free Play,
+// the map or the records). Each is soft lake-bed ground (`sinking`), as the whole city was before the rework.
+const MEX_CLASSIC:BlockDef[]=[
+ {...district('mex','Centro Histórico',4,[[400,'l'],[557,'m','tank'],[672,'L','CATEDRAL|twin'],[876,'S'],[1151,'h','cache'],[1287,'m','tank'],[1403,'l'],[1556,'x'],[2128,'L','BELLAS ARTES|dome'],[2350,'x','radar'],[2466,'h','cache'],[2610,'S'],[2850,'h'],[2985,'h'],[3118,'s','tank'],[3206,'L','TORRE LATINO|tower'],[3410,'F'],[3562,'h'],[3697,'n']],[190,640,1260,1780,2320,2940,3500],[380,1220,1740,2300,2930,3490],'district',1920),sinking:true as const},
+ {...district('mex','Reforma Avenue',6,[[400,'x'],[512,'h'],[650,'x'],[765,'L','EL ÁNGEL|needle'],[969,'F'],[1166,'x'],[1278,'n'],[1348,'m','cache'],[1464,'x'],[1586,'S'],[1746,'l'],[1899,'l'],[2052,'s','tank'],[2135,'h'],[2564,'l'],[3059,'m','tank'],[3179,'L','TORRE MAYOR|tower'],[3636,'m','cache'],[3751,'x'],[3864,'h'],[4000,'x','radar'],[4122,'S'],[4311,'h'],[4449,'n'],[4518,'m','tank'],[4636,'n'],[4714,'F'],[4891,'L','MONUMENTO A LA REVOLUCIÓN|arch'],[5130,'n'],[5201,'h'],[5557,'n']],[220,870,1470,2010,2670,3270,3930,4580,5400],[520,1190,1660,2330,3010,3550,4240,4770,5440],'district',2880),sinking:true as const},
+ {...district('mex','Crystal Bastion',8,[[400,'x'],[516,'l'],[672,'l'],[829,'h'],[965,'x'],[1081,'s'],[1169,'m'],[1287,'x'],[1399,'h'],[1534,'n'],[1606,'h'],[1743,'l'],[1896,'m'],[2016,'h'],[2151,'m'],[2266,'h'],[2399,'h'],[2532,'m'],[2649,'h'],[2782,'m'],[2898,'h'],[3260,'b'],[3550,'b'],[3720,'b'],[4020,'b'],[4260,'b'],[4390,'h'],[4526,'x'],[4639,'x'],[4750,'h'],[4884,'s'],[4971,'s'],[5057,'l'],[5211,'h'],[5344,'m'],[5461,'n'],[5531,'m'],[5646,'m'],[5762,'l'],[5920,'l'],[6078,'h'],[6214,'h'],[6351,'x'],[6466,'l'],[6623,'m'],[6739,'n'],[6807,'x'],[6920,'l'],[7078,'x'],[7194,'m'],[7311,'s'],[7399,'h'],[7535,'n']],[500,1410,2300,3090,4510,5390,6200,7060],[560,1440,2250,3110,4480,5350,6160,7050],'stronghold'),sinking:true as const},
+ {...district('mex','Chapultepec Assault',8,[[400,'x'],[514,'h'],[647,'h'],[784,'s','tank'],[1075,'L','CASTILLO DE CHAPULTEPEC|twin'],[1300,'s','tank'],[1386,'m','cache'],[1512,'S'],[1793,'x'],[1909,'h'],[2047,'x'],[2163,'l'],[2327,'F'],[2589,'m'],[2707,'m','cache'],[2827,'L','MUSEO SOUMAYA|dome'],[3254,'n'],[3326,'h'],[3464,'x'],[3577,'m'],[3930,'x','radar'],[4042,'h'],[4175,'m','tank'],[4292,'m','tank'],[4661,'h'],[4794,'L','TORRE REFORMA|tower'],[5043,'h'],[5187,'F'],[5454,'m'],[5574,'m'],[5689,'h'],[5823,'s'],[5917,'S'],[6164,'l'],[6320,'m'],[6440,'l'],[6598,'L','ESTELA DE LUZ|needle'],[6897,'s'],[6982,'n'],[7054,'m'],[7169,'h']],[220,950,1650,2360,3120,4040,4730,5500,6230,6950],[590,1320,2030,2770,3650,4390,5100,5840,6580,7300],'district',3840),sinking:true as const},
+ {...district('mex','Tlézcatl Arena',4,[[510,'h'],[940,'m'],[1360,'l'],[1800,'s'],[2220,'t'],[2600,'m'],[3040,'h'],[3450,'s']],[370,820,1670,2480,3330],[390,1240,2080,2930],'boss'),sinking:true as const},
+];
 export const LEVELS:BlockDef[][]=[
  SAN_FRANCISCO,
  NEW_YORK,
- [
- district('mex','Centro Histórico',4,[[400,'l'],[557,'m','tank'],[672,'L','CATEDRAL|twin'],[876,'S'],[1151,'h','cache'],[1287,'m','tank'],[1403,'l'],[1556,'x'],[2128,'L','BELLAS ARTES|dome'],[2350,'x','radar'],[2466,'h','cache'],[2610,'S'],[2850,'h'],[2985,'h'],[3118,'s','tank'],[3206,'L','TORRE LATINO|tower'],[3410,'F'],[3562,'h'],[3697,'n']],[190,640,1260,1780,2320,2940,3500],[380,1220,1740,2300,2930,3490],'district',1920),
- district('mex','Reforma Avenue',6,[[400,'x'],[512,'h'],[650,'x'],[765,'L','EL ÁNGEL|needle'],[969,'F'],[1166,'x'],[1278,'n'],[1348,'m','cache'],[1464,'x'],[1586,'S'],[1746,'l'],[1899,'l'],[2052,'s','tank'],[2135,'h'],[2564,'l'],[3059,'m','tank'],[3179,'L','TORRE MAYOR|tower'],[3636,'m','cache'],[3751,'x'],[3864,'h'],[4000,'x','radar'],[4122,'S'],[4311,'h'],[4449,'n'],[4518,'m','tank'],[4636,'n'],[4714,'F'],[4891,'L','MONUMENTO A LA REVOLUCIÓN|arch'],[5130,'n'],[5201,'h'],[5557,'n']],[220,870,1470,2010,2670,3270,3930,4580,5400],[520,1190,1660,2330,3010,3550,4240,4770,5440],'district',2880),
- district('mex','Crystal Bastion',8,[[400,'x'],[516,'l'],[672,'l'],[829,'h'],[965,'x'],[1081,'s'],[1169,'m'],[1287,'x'],[1399,'h'],[1534,'n'],[1606,'h'],[1743,'l'],[1896,'m'],[2016,'h'],[2151,'m'],[2266,'h'],[2399,'h'],[2532,'m'],[2649,'h'],[2782,'m'],[2898,'h'],[3260,'b'],[3550,'b'],[3720,'b'],[4020,'b'],[4260,'b'],[4390,'h'],[4526,'x'],[4639,'x'],[4750,'h'],[4884,'s'],[4971,'s'],[5057,'l'],[5211,'h'],[5344,'m'],[5461,'n'],[5531,'m'],[5646,'m'],[5762,'l'],[5920,'l'],[6078,'h'],[6214,'h'],[6351,'x'],[6466,'l'],[6623,'m'],[6739,'n'],[6807,'x'],[6920,'l'],[7078,'x'],[7194,'m'],[7311,'s'],[7399,'h'],[7535,'n']],[500,1410,2300,3090,4510,5390,6200,7060],[560,1440,2250,3110,4480,5350,6160,7050],'stronghold'),
- district('mex','Chapultepec Assault',8,[[400,'x'],[514,'h'],[647,'h'],[784,'s','tank'],[1075,'L','CASTILLO DE CHAPULTEPEC|twin'],[1300,'s','tank'],[1386,'m','cache'],[1512,'S'],[1793,'x'],[1909,'h'],[2047,'x'],[2163,'l'],[2327,'F'],[2589,'m'],[2707,'m','cache'],[2827,'L','MUSEO SOUMAYA|dome'],[3254,'n'],[3326,'h'],[3464,'x'],[3577,'m'],[3930,'x','radar'],[4042,'h'],[4175,'m','tank'],[4292,'m','tank'],[4661,'h'],[4794,'L','TORRE REFORMA|tower'],[5043,'h'],[5187,'F'],[5454,'m'],[5574,'m'],[5689,'h'],[5823,'s'],[5917,'S'],[6164,'l'],[6320,'m'],[6440,'l'],[6598,'L','ESTELA DE LUZ|needle'],[6897,'s'],[6982,'n'],[7054,'m'],[7169,'h']],[220,950,1650,2360,3120,4040,4730,5500,6230,6950],[590,1320,2030,2770,3650,4390,5100,5840,6580,7300],'district',3840),
- district('mex','Tlézcatl Arena',4,[[510,'h'],[940,'m'],[1360,'l'],[1800,'s'],[2220,'t'],[2600,'m'],[3040,'h'],[3450,'s']],[370,820,1670,2480,3330],[390,1240,2080,2930],'boss'),
- ],
+ MEXICO_CITY,
  [
  district('par','Left Bank',4,[[400,'n'],[468,'l'],[625,'L','NOTRE-DAME|twin'],[829,'S'],[1208,'h','cache'],[1344,'m','tank'],[1462,'l'],[1618,'h','cache'],[2085,'s','tank'],[2171,'L','PANTHÉON|dome'],[2423,'l'],[2587,'S'],[2825,'l','radar'],[2980,'m','tank'],[3097,'h'],[3231,'L','TOUR MONTPARNASSE|tower'],[3435,'F'],[3573,'l']],[200,810,1370,2010,2730,3360],[460,1020,1640,2180,3060,3590],'district',1920),
  district('par','Grand Boulevards',6,[[400,'n'],[471,'m','tank'],[588,'n'],[655,'s','tank'],[749,'F'],[939,'L','ARC DE TRIOMPHE|arch'],[1248,'s'],[1336,'m','cache'],[1462,'S'],[1723,'h'],[1861,'l'],[2019,'m','cache'],[2136,'m'],[2525,'h'],[3102,'L','OPÉRA GARNIER|dome'],[3353,'m','tank'],[3695,'m','tank'],[3812,'n'],[3879,'s'],[3965,'h'],[4109,'S'],[4349,'l'],[4502,'h'],[4640,'m'],[4757,'L','GALERIES LAFAYETTE|tower'],[4961,'F'],[5151,'m'],[5269,'s'],[5353,'h'],[5491,'x','radar']],[210,840,1510,2110,2810,3670,4270,4960,5590],[500,1180,1800,2470,3090,3910,4580,5270],'district',2880),
@@ -956,6 +1000,7 @@ export const LEVELS:BlockDef[][]=[
  ],
  NYC_CLASSIC,
  SYDNEY,
+ MEX_CLASSIC,
 ];
 // City systems for every city's open blocks (and Midtown): a west and an east grid and, outside Paris (cables run underground there),
 // a line of power poles down the street. Their substations, fuel stations, radars and rooftop tanks are in the entries above.

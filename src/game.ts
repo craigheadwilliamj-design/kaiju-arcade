@@ -1064,8 +1064,8 @@ function drawMounds(){for(const m of moundList()){const a=m.x0-camera,z=m.x1-cam
  if(pitList().some(p=>p.x0<m.x1&&p.x1>m.x0)){ctx.lineTo(z,groundAt(m.x1));for(let x=m.x1;x>=m.x0;x-=6)ctx.lineTo(x-camera,bedAt(x));}else ctx.lineTo(z,bedAt(m.x1));
  ctx.closePath();ctx.fill();
  for(let x=m.x0+4;x<m.x1-6;x+=11){const t=groundAt(x);rect(x-camera,t+2+((x*7)%9),8,6,(x*13)%3?'#898879':'#55534b');}}}
-// Mexico City: soft lake-bed ground. A heavy impact near buildings sinks them; sunk far enough, they give way.
-function sinkAround(cx:number,ult=false){if(style()!=='mex')return;let any=false;
+// Mexico City: soft lake-bed ground (opt-in per level: BlockDef.sinking). A heavy impact near buildings sinks them; sunk far enough, they give way.
+function sinkAround(cx:number,ult=false){if(!block.sinking)return;let any=false;
  for(const b of buildings){if(b.hpNow<=0||b.kind==='tiny'||b.role)continue;const d=Math.abs(b.x+b.w/2-cx);if(d>TW.sinkRadius)continue;
   b.sink+=TW.sinkStep;b.base+=TW.sinkStep;any=true;for(let x=b.x;x<b.x+b.w;x+=14)burst(x,b.base-b.sink,'#c9b79c',2);
   if(b.sink>=b.h*TW.sinkMax)hit(b,b.hpNow,ult,Math.sign(b.x+b.w/2-cx)||1,{x:b.x+b.w/2,y:b.base-10});else hit(b,TW.sinkDamage,ult,Math.sign(b.x+b.w/2-cx)||1,undefined,true);}

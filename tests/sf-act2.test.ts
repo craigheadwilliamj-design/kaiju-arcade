@@ -40,8 +40,8 @@ test('Act 2 layout: everything inside the world, solid buildings never overlap, 
   if(b.ground)for(const x of b.buildings.filter(x=>!x.prop&&x.role!=='hydrant'))assert.equal(Math.round(profileY(b.ground,x.x+1)),Math.round(profileY(b.ground,x.x+x.w-1)),`${b.name}: ${x.deco||x.label||x.kind} at ${x.x} stands on a flat`);}
  // No other level was touched: the original cities, Act 1 and the later SF slots still have none of the Act 2 fields.
  const fields=['units','garrison','cableLines','tumble','exits','after','fog','sealions','kaiban','buses','elevatedLook','ramps','coastguard','runaway'];
- for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)&&!SAN_FRANCISCO.slice(6,9).includes(x)&&!LEVELS[cityIndexOf('nyc')].includes(x)&&x.name!=='Alcatraz'))for(const k of fields)assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
- for(const city of LEVELS.filter((_,i)=>i!==cityIndexOf('sfo')&&i!==cityIndexOf('nyc')))for(const b of city)assert.equal(b.startStage,undefined);
+ for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)&&!SAN_FRANCISCO.slice(6,9).includes(x)&&!LEVELS[cityIndexOf('nyc')].includes(x)&&!LEVELS[cityIndexOf('mex')].includes(x)&&x.name!=='Alcatraz'))for(const k of fields)assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
+ for(const city of LEVELS.filter((_,i)=>i!==cityIndexOf('sfo')&&i!==cityIndexOf('nyc')&&i!==cityIndexOf('mex')))for(const b of city)assert.equal(b.startStage,undefined);
 });
 
 test('Nob Hill data: a terraced hill with the summit in the middle; stair-stepped Victorian rows; powerhouse, cable lines, Lombard',()=>{

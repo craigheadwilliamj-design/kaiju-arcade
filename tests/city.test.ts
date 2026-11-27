@@ -5,7 +5,7 @@ import {createBuildings} from '../src/rules.ts';
 import {LEVELS,cityIndexOf} from '../src/levels.ts';
 import {CITY as Y,CONFIG as C} from '../src/config.ts';
 // The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
-const ORIGINAL=['nyc-classic','mex','par','hkg','tyo','syd'];
+const ORIGINAL=['nyc-classic','mex-classic','par','hkg','tyo','syd'];
 
 test('rampage: heat climbs through the multiplier levels, holds for the grace period, then drains',()=>{
  const r=createRampage();assert.equal(rampageMult(r),1);
