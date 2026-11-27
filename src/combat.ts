@@ -48,9 +48,11 @@ export function collectCrystal(s:CombatState,value:number){
 export function creditDamage(s:CombatState,actual:number,source:Source='player',fromUltimate=false){
  if(source==='player'&&!fromUltimate&&s.ultimateTime<=0&&actual>0)s.ultimate=Math.min(B.ultimateMax,s.ultimate+actual*B.ultimateGain);
 }
+// Damage the kaiju takes from anything but itself is multiplied by `vulnerability.k`: 1 normally, Belial's corrosion on the kaiju raises it (src/rival.ts, BELIAL_BOSS.corrodeVuln).
+export const vulnerability={k:1};
 export function receiveHit(s:CombatState,raw:number,source:Source,strength=0,direction=1){
  if(s.dead||raw<=0||source==='player'||invulnerable(s))return 0;
- const actual=Math.min(s.hp,raw*B.stageResistance[s.stage-1]*(s.superTime>0?B.superResistance:1));
+ const actual=Math.min(s.hp,raw*vulnerability.k*B.stageResistance[s.stage-1]*(s.superTime>0?B.superResistance:1));
  s.hp=Math.max(0,s.hp-actual);s.damageTaken+=actual;s.penalty+=actual*B.scorePenaltyPerHP;
  if(s.hp===0){s.dead=true;s.superTime=0;s.ultimateTime=0;cancelCharge(s);return actual;}
  if(strength>0&&s.staggerGuard<=0){s.stagger=B.staggerSeconds;s.staggerGuard=B.staggerProtection;s.knockback=strength*direction;cancelCharge(s);}
