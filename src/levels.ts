@@ -103,6 +103,10 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // Mexico City rework (card 1), opt-in: `sinking` makes the lake-bed ground soft on this level (src/game.ts sinkAround): a heavy landing sinks the
  // buildings round it and one sunk far enough gives way. Set on Templo Mayor and the five `mex-classic` blocks only.
  sinking?:true,
+ // Mexico City rework (card 2), opt-in: `volcano` is Popocatépetl's state on this level (1 wisp, 2 plume, 3 ash, 4 erupting; absent = today's skyline, state 0;
+ // src/game.ts, CONFIG VOLCANO). `volcanoOn:'target'` (a level that starts at 3) switches to 4 when its stronghold target dies, once. `ashLate:x` (state 2) starts ash
+ // falling after the kaiju passes x. Only the Mexico City route levels set them; the other cities and `mex-classic` never do.
+ volcano?:1|2|3|4,volcanoOn?:'target',ashLate?:number,
  // Phase 5 (SF Act 3), all opt-in. See the notes below.
  cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,approach?:number,deckApproach?:number,
  finale?:{x:number,wake:number,breaks:number[],perches?:{x0:number,x1:number,h:number}[],tower?:number,crack?:number},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
