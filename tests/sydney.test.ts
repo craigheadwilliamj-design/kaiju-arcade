@@ -8,7 +8,7 @@ import {shapeParts,checkParts} from '../src/hitbox.ts';
 const SYD=cityIndexOf('syd');
 
 test('Sydney is appended after nyc-classic and sits on the route after Paris: in CAMPAIGN, Free Play once conquered, and records',async()=>{
- assert.equal(SYD,CITIES.length-1,'appended last');assert.equal(CITIES[SYD-1].id,'nyc-classic','after the classic fixture');assert.equal(LEVELS.length,CITIES.length);
+ assert.equal(CITIES[SYD+1].id,'mex-classic','mex-classic is appended after Sydney');assert.equal(SYD,CITIES.length-2,'Sydney is second to last');assert.equal(CITIES[SYD-1].id,'nyc-classic','after the classic fixture');assert.equal(LEVELS.length,CITIES.length);
  assert.equal(CAMPAIGN.indexOf('syd'),CAMPAIGN.indexOf('par')+1,'Sydney follows Paris');assert.equal(CAMPAIGN.indexOf('hkg'),CAMPAIGN.indexOf('syd')+1,'Hong Kong follows Sydney');
  const c=CITIES[SYD];assert.equal(c.name,'Sydney');assert.equal(c.code,'SYD');assert.equal(c.boss,'Myrmex');assert.equal(c.difficulty,2.5);assert.equal(c.style,'syd');assert.equal(c.kaiju,undefined);
  assert.ok(c.mood.lights<=.2,'harbour daylight');assert.ok(c.material.glass);
@@ -54,8 +54,10 @@ test('Sydney landmark shapes: the Opera House sails and Sydney Tower have sound 
 // nothing else about either city moved).
 test('every other city is unchanged by Sydney (pinned data hashes); Hong Kong and Tokyo changed only boss and arena name',()=>{
  const hash=(c:unknown,l:unknown)=>createHash('sha256').update(JSON.stringify([c,l])).digest('hex').slice(0,16);
- const pins:Record<string,string>={sfo:'3821996d89f9ea38',nyc:'1cad94c8ae45aeff',mex:'faec75a8f7fe52bc',par:'990f83d9c463c3ec',hkg:'356aa6c01e5bfa81',tyo:'672acd4b9f59803b','nyc-classic':'5f48ba99179897a7'};
+ const pins:Record<string,string>={sfo:'3821996d89f9ea38',nyc:'1cad94c8ae45aeff',mex:'d13077a51257434e',par:'990f83d9c463c3ec',hkg:'356aa6c01e5bfa81',tyo:'672acd4b9f59803b','nyc-classic':'5f48ba99179897a7'};
  for(const [id,pin] of Object.entries(pins)){const i=cityIndexOf(id);assert.equal(hash(CITIES[i],LEVELS[i]),pin,id);}
+ // The fixture city is provably the old Mexico City: put back its id and name, strip the opt-in `sinking`, and the old pin comes back.
+ assert.equal(hash({...CITIES[cityIndexOf('mex-classic')],id:'mex',name:'Mexico City'},LEVELS[cityIndexOf('mex-classic')].map(({sinking,...b})=>b)),'faec75a8f7fe52bc','mex-classic is the old mex');
  const before:Record<string,[string,string,string]>={hkg:['Myrmex','Myrmex Arena','632e028bbec24fc1'],tyo:['Sargathoth','Sargathoth Arena','62f20fc8576f066d']};
  for(const [id,[boss,arena,pin]] of Object.entries(before)){const i=cityIndexOf(id);assert.equal(hash({...CITIES[i],boss},LEVELS[i].map((b,k)=>k===4?{...b,name:arena}:b)),pin,`${id} before card 3`);}
  assert.deepEqual([LEVELS[cityIndexOf('hkg')][4].name,LEVELS[cityIndexOf('tyo')][4].name],['Sargathoth Arena','Atomotitan Arena']);

@@ -1,6 +1,6 @@
 # Mexico City rework plan (campaign redesign, city 3)
 
-**Status: planned, cards cut.** Nothing is built yet. Eight work cards are at the end of this file; card 1 (scaffold) goes first. All the open questions are settled.
+**Status: card 1 (scaffold) done.** Eight work cards are at the end of this file; cards 2, 3, 5 and 8 can go next, in parallel. The city entry, the nine placeholder route levels plus Xochimilco, the `mex-classic` fixture city, the opt-in `sinking` field, the retargeted tests, `tests/mex-scaffold.test.ts`, the QA playthrough (47 levels) and the README are in. All the open questions are settled.
 
 Mexico City gets the treatment San Francisco and New York got: nine route levels plus one secret level in three acts, its own playable kaiju and boss, per-level growth, and one new opt-in mechanic per level (a `BlockDef` field or config block). Everything SF and NYC built is reusable: `cityLevel`, exits, `capLift`, water bands, elevated, subways, fire, the `finale` machinery, the rival framework, the climbing finale, rolling bodies, heavy props.
 
@@ -487,5 +487,12 @@ Each card stands alone: start a session with the card's text. Read this whole fi
 
 ## Done: notes for later cards
 
-(None yet. Card 1 starts this list.)
+- **Card 1 (scaffold).**
+  - `MEXICO_CITY` and `MEX_CLASSIC` are in `src/levels.ts`, just above `LEVELS`. The placeholders are `cityLevel('mex', ...)` over the `MEX_ROW` / `MEX_TALL` / `MEX_LOW` repeat units. Replace each by its card's builder, the way `NEW_YORK` calls `nycBattery()` and the rest. `secretId:'xochimilco'` and a `lore` line are already set on Xochimilco.
+  - `sinking:true` is the opt-in field (`BlockDef`, read by `sinkAround` through `block.sinking`). It is on Templo Mayor and the five `MEX_CLASSIC` blocks, and `tests/mex-scaffold.test.ts` pins that no other level has it.
+  - `mex-classic` is appended after `syd`, so `CITIES[SYD]` is no longer the last entry. `tests/sydney.test.ts` now expects `mex-classic` after it. `bootCampaign(seed,{city:'mex-classic',kaiju:'Tlézcatl'})` boots it, and `tests/phase5.test.ts`'s `free()` helper boots both fixture cities that way.
+  - The placeholder layouts must stay distinct from one another (`tests/campaign.test.ts` hashes every layout). A card that swaps a level in changes `mex`'s pin in `tests/sydney.test.ts`: re-pin it, and leave the `mex-classic` check alone.
+  - Tests that scan "no other level has field X" (`tests/alcatraz.test.ts`, `sf-act1`, `sf-act2`) now exclude Mexico City's route levels or Xochimilco. A new Mexico City field that these scan for needs the same exclusion.
+  - The placeholders carry `police`/`guard`/`air` like the NYC ones did. Act 3's soft floor needed no setting: NYC's placeholders set none either.
+  - Screenshots: `docs/screenshots/mex-1-*.png` (Templo Mayor, Chapultepec, Estadio Azteca with Belial as the rival, and the classic Tlézcatl Arena).
 

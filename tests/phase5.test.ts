@@ -4,7 +4,7 @@ import {setTerrain,groundAt,bedAt,addMound,moundAt} from '../src/terrain.ts';
 import {CONFIG as C,TWISTS as TW,RIVER} from '../src/config.ts';
 import {emptyPermanent,PERMANENT_KEY,CAMPAIGN} from '../src/campaign.ts';import {cityIndexOf} from '../src/levels.ts';
 // The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
-const ORIGINAL=['nyc-classic','mex','par','hkg','tyo','syd'];
+const ORIGINAL=['nyc-classic','mex-classic','par','hkg','tyo','syd'];
 
 test('rubble mounds raise the ground (not the street under them) with sloped sides',()=>{
  setTerrain(null);addMound(100,200,30,.3);assert.equal(moundAt(150),30);assert.equal(groundAt(150),C.ground-30);assert.equal(bedAt(150),C.ground,'the street is still under it');
@@ -13,8 +13,8 @@ test('rubble mounds raise the ground (not the street under them) with sloped sid
 
 // city: one of the original five, in their old order (0 New York .. 4 Tokyo).
 async function free(city:number,block=0){
- // New York (index 0) is the off-route fixture city: not in Free Play, so it boots through the campaign harness.
- if(city===0){const h=await bootCampaign(.75,{kaiju:'Mogurodon'});h.test().goto(block);for(let n=0;n<20;n++)h.step();return h;}
+ // The fixture cities (nyc-classic, mex-classic) are off the route and not in Free Play, so they boot through the campaign harness.
+ if(!CAMPAIGN.includes(ORIGINAL[city])){const h=await bootCampaign(.75,{city:ORIGINAL[city],kaiju:'Mogurodon'});h.test().gotoCity(ORIGINAL[city],block);for(let n=0;n<20;n++)h.step();return h;}
  const p=emptyPermanent();p.conquered=[...CAMPAIGN];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(p)]]));
  h.click('#freeplay');h.node('#free-kaiju').value='Mogurodon';h.node('#free-city').value=String(cityIndexOf(ORIGINAL[city]));h.node('#free-boss').value='Mogurodon';h.node('#free-block').value=String(block);h.click('#free-start');
  for(let n=0;n<20;n++)h.step();return h;}
@@ -61,6 +61,17 @@ test('real loop: Mexico City ground is soft: a slam near buildings sinks them',a
   if(!near.length){const t=s.buildings.filter((b:any)=>b.hp>0&&b.kind!=='tiny').sort((a:any,b:any)=>Math.abs(a.x-c)-Math.abs(b.x-c))[0];const k=t.x>c?'KeyD':'KeyA';for(let n=0;n<600&&Math.abs(t.x+t.w/2-(h.state().x+h.state().width/2))>TW.sinkRadius*.8;n++){h.down(k);h.step(1);}h.up(k);}
   slam(h);assert.ok(h.state().sunk>0,'buildings sank');}
  finally{h.release();h.cleanup();}
+});
+
+test('real loop: only levels that opt in sink: a slam in the Zócalo sinks nothing, one in Templo Mayor does',async()=>{
+ const {LEVELS}=await import('../src/levels.ts');const mex=LEVELS[cityIndexOf('mex')];assert.deepEqual(mex.filter(b=>b.sinking).map(b=>b.name),['Templo Mayor'],'Templo Mayor is the one reworked level with the sinking twist');
+ for(const [name,sinks] of [['Zócalo',false],['Templo Mayor',true]] as const){
+  const p=emptyPermanent();const h=await bootCampaign(.75,{city:'mex',kaiju:'Tlézcatl'});
+  try{assert.ok(h.test().goto(mex.findIndex(b=>b.name===name)));h.step(20);const s=h.state(),c=s.x+s.width/2;
+   const t=s.buildings.filter((b:any)=>b.hp>0&&b.kind!=='tiny').sort((a:any,b:any)=>Math.abs(a.x-c)-Math.abs(b.x-c))[0];const k=t.x>c?'KeyD':'KeyA';
+   for(let n=0;n<600&&Math.abs(t.x+t.w/2-(h.state().x+h.state().width/2))>TW.sinkRadius*.8;n++){h.down(k);h.step(1);}h.up(k);
+   slam(h);assert.equal(h.state().sunk>0,sinks,`${name}: sunk ${h.state().sunk}`);}
+  finally{h.release();h.cleanup();}void p;}
 });
 
 test('real loop: Tokyo towers are quake-proof: small blows are halved and they sway',async()=>{
