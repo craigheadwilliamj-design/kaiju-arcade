@@ -669,6 +669,7 @@ export const TLEZCATL_BOSS = {speed:95,far:430,
 // the flood, every `diveEvery`th attack he SUBMERGES (`diveTelegraph` s ripple, then untargetable for `diveUnder` s) and resurfaces with a
 // splash (`surfaceDamage` inside `surfaceRadius`), beneath the kaiju with chance `surfaceUnder`, else up to `surfaceRange` px from it,
 // `surfaceRecover` s winded; every `crustEvery`th attack he pounces onto a crust within `pounceRange` (and off it again with any leap).
+// `swim` (card 7): over flooded ground he swims, his feet `swim` px under the acid's surface (he fights at the kaiju's height, not down on the bed under it); a crust or dry ground is his floor as before.
 export const BELIAL_BOSS = {hpScale:.8,speed:90,hold:300,kite:200,kiteSpeed:.8,far:380,edge:60,
  pressSeconds:1.6,backTelegraph:.3,backFlight:.45,backHeight:90,backLeap:300,backPool:70,backRecover:.5,backCooldown:6,backAfter:.9,
  vomitTelegraph:.9,vomitSeconds:1.5,vomitSpeed:[230,560] as [number,number],vomitGravity:700,vomitTick:.14,vomitDamage:3,vomitKnock:30,vomitBuilding:6,vomitSplash:34,vomitPuddle:56,vomitRecover:1.5,vomitCooldown:.8,
@@ -676,7 +677,7 @@ export const BELIAL_BOSS = {hpScale:.8,speed:90,hold:300,kite:200,kiteSpeed:.8,f
  delugeBelow:.4,delugeCharge:1.8,delugeBreak:220,delugeStagger:2.6,delugeSpout:2.2,delugeDrops:36,delugeRange:600,delugeFall:420,delugeGravity:1100,delugeDamage:8,delugeKnock:60,delugeSoak:1,delugeSplash:26,delugeRecover:2.4,delugeCooldown:1,
  puddleSeconds:4.5,puddleCell:40,puddleCap:22,puddleDamage:2,puddleTick:.4,
  corrodeMax:3,corrodePerStack:.4,corrodeVuln:.15,corrodeFade:5,burnOff:4,
- diveEvery:4,diveTelegraph:.6,diveUnder:2.2,surfaceUnder:.6,surfaceRange:420,surfaceDamage:10,surfaceRadius:100,surfaceKnock:240,surfaceRecover:.8,crustEvery:3};
+ diveEvery:4,diveTelegraph:.6,diveUnder:2.2,surfaceUnder:.6,surfaceRange:420,surfaceDamage:10,surfaceRadius:100,surfaceKnock:240,surfaceRecover:.8,crustEvery:3,swim:56};
 
 // New York's Empire State finale (NYC rework card 6; `finale.perches` in src/levels.ts, tickClimbFinale in src/game.ts, the `perch` fields in src/rival.ts).
 // The tower is a staircase of setbacks: each ledge is `ledge` px wide (room for the kaiju and Tlézcatl side by side), the tiers rise to `tops`
@@ -861,3 +862,35 @@ export const ROCK = {poolLife:2.6,spread:1.35,color:'#2c2724',edge:'#4a403a'};
 // and walks or climbs out, it never traps him). Troops in it take the pit's fall damage plus `damage`; loose vehicles are thrown in (`launch`); every building whose middle stood on it sinks and collapses
 // where it is (Hudson Yards' yard code, NYC3.yard). Each opens once. `points`/`heat` for the collapse.
 export const SINKHOLE = {depth:Math.round(64*CITY_SCALE),reach:Math.round(90*CITY_SCALE),damage:25,points:700,heat:8,crack:'#1c1a18'};
+
+// ---- Mexico City rework, card 7: Estadio Azteca, the boss level. docs/MEX_REWORK.md ----
+// Opt-in per level (src/levels.ts BlockDef `finale.flood`); a level that does not set it runs none of this. Numbers are read in src/levels.ts (mexAzteca) and src/game.ts.
+// AZTECA: the level's layout (authored x, scaled by CITY_SCALE like every other level; heights are px above the pitch and are NOT scaled, they are measured against the kaiju).
+//  The two screens of concourse (`gate` where it ends) stand at the upper tier's height. Walking east the stands step DOWN into the bowl: a riser `riser` wide, the lower tier,
+//  another riser, then the pitch (`pitch` = [x0,x1]); the east end steps back up the same way, ending in a long upper tier. `lower`/`upper` are the tiers' heights over the pitch.
+//  `rim` is the roof-ring walkway's height over the upper tier (a jump away from it) and `rimX` its [x0,x1] (over the west concourse's lip and the east upper tier).
+//  `wake` is the x the kaiju passes to wake Belial, `crack` the x of the split in the pitch (centre field), `breaks` the health fractions of the three flood steps.
+export const AZTECA = {
+ gate:2050,riser:60,pitch:[2440,4720] as [number,number],lowerTier:[2110,2380] as [number,number],eastLower:[4780,5050] as [number,number],
+ lower:140,upper:280,rim:90,rimX:[1980,5300] as [number,number],
+ wake:1950,crack:3580,breaks:[.75,.5,.25] as number[],
+ emerge:1.5,         // seconds Belial takes to come up out of the split pitch (the Empire State's emerge)
+ wakeShake:14,crackSeconds:.9,
+ units:{approach:[500,2000] as [number,number]},
+};
+// FLOOD (a level's `finale.flood`): the acid water band. It is a water-band span over the bowl (so depth, wading, drowning, troops and wrecks sinking are the water code's); its surface starts below
+// the pitch and, at each health break, rises to the next level in `levels` (px above the pitch: just under the lower tier, just under the upper tier, then over the upper tier so only the
+// rim is dry). The warning comes first: `warn` s of bubbling at the pitch's drains and a banner, then the surface eases up over `rise` s. Anything in it takes ACID.perSecond a second
+// (`tick` s between hits, through receiveHit so corrosion's vulnerability counts). Belial is immune by construction (the flood never hurts a rival); any other rival is immune too and is kept to
+// the dry tiers (`shoreGap` px back from the waterline). `rimFrom` is the single rim-walkway flag: the walkway is open from that break on (3 = the last break, 1 = the first flood, 99 = never).
+// Lava crust: the player's lava landing on flooded ground (Magma Dive pool and globs, the Eruption's globs, `VOLCANO` bombs) cools into a one-way platform on the surface: at least `crustMin`
+// wide and `crustSpread` x the lava's width, `lift` px above the surface so a kaiju on it stays out of the acid, riding the surface as it rises. It lasts `crustLife` s, cracks (visible,
+// wobbling) for its last `crack` s, then sinks over `sink` s. Another bit of lava on a living crust refreshes it. At most `maxCrusts` at once (the oldest sinks first). A crust Belial's
+// vomit has eaten (`dissolved`) melts in `melt` s. `crustPoints` the first time a crust carries the kaiju.
+export const FLOOD = {
+ levels:[132,272,320] as number[],
+ warn:3,rise:3.2,tick:.5,shoreGap:60,rimFrom:3,
+ crustMin:150,crustSpread:1.6,lift:3,crustLife:11,crack:3,sink:1.1,maxCrusts:9,melt:.5,crustPoints:150,
+ retreatDive:1.3,retreatSink:2.4,diveHeight:200,
+ color:{back:'#35520f',front:'#5f8f1c',frontAlpha:.78,sheen:'#b8e63a',bubble:'#e6ff8a',foam:'#d3f26a'},
+};

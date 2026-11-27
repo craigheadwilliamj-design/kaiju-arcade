@@ -269,7 +269,7 @@ test('Golden Gate data: six screens, boss, Stage 3 throughout, two screens of ap
  assert.deepEqual(GG.finale!.breaks,[.66,.33]);
  // The bay under the bridge is chest-deep at Stage 3.
  const bed=profileY(GG.ground!,dx+500),depth=bed-GG.water![0][2];assert.ok(depth/(C.playerHeight*2.8)>.25&&depth/(C.playerHeight*2.8)<.65);
- for(const b of LEVELS.flat().filter(x=>x!==GG&&x.name!=='Empire State'))assert.equal(b.finale,undefined,b.name);
+ for(const b of LEVELS.flat().filter(x=>x!==GG&&x.name!=='Empire State'&&x.name!=='Estadio Azteca'))assert.equal(b.finale,undefined,b.name);
 });
 
 test('real loop: Kaiban waits on the span, dormant and untouchable, until the kaiju passes the wake line',async()=>{

@@ -54,7 +54,7 @@ export function tickRival(r:Rival,dt:number,player:Rect,worldWidth:number,buildi
  if(r.charge||r.flame||r.dive||(r.attack==='stampede'&&r.windup>0)||(r.tlez&&r.attack!=='melee'&&r.windup>0)||r.spew||r.leap||(r.belial&&r.attack!=='melee'&&r.windup>0)){r.turn=0;}
  else if(desired!==r.face){r.turn+=dt;if(r.turn>=P.bossTurnDelay){r.face=desired;r.turn=0;}}else r.turn=0;
  r.cooldown=Math.max(0,r.cooldown-dt);r.stagger=Math.max(0,r.stagger-dt);
- if(r.belial&&r.crust&&!r.leap&&(r.under??0)<=0)r.y=standY(r,env);
+ if(r.belial&&!r.leap&&(r.under??0)<=0)r.y=standY(r,env);
  if(r.stagger<=0){
  if(r.windup>0){r.windup=Math.max(0,r.windup-dt);if(r.windup===0){
  if(r.attack==='melee'){const box={x:r.face===1?r.x+r.w:r.x-P.bossRange,y:r.y,w:P.bossRange,h:r.h};if(overlaps(box,player))hits.push({damage:P.bossMeleeDamage,strength:P.bossKnockback,direction:r.face});}
@@ -64,7 +64,7 @@ export function tickRival(r:Rival,dt:number,player:Rect,worldWidth:number,buildi
  else if(r.attack==='lob')lobGlobs(r,player,worldWidth,buildings);
  else if(r.attack==='dive')r.dive={t:0,x0:r.x,x1:diveLanding(r,worldWidth),y0:r.y,y1:diveFloor(r,diveLanding(r,worldWidth))};
  else if(r.attack==='erupt')eruptBurst(r,worldWidth,buildings);
- else if(r.belial&&r.attack==='vomit')r.spew={t:0,mark:r.mark??player.x+player.w/2,angle:vomitAngle(r,r.mark??player.x+player.w/2),pts:[],land:null,landOn:null,tick:0,hit:false};
+ else if(r.belial&&r.attack==='vomit')r.spew={t:0,mark:r.mark??player.x+player.w/2,angle:vomitAngle(r,r.mark??player.x+player.w/2,env),pts:[],land:null,landOn:null,tick:0,hit:false};
  else if(r.belial&&(r.attack==='pounce'||r.attack==='back'))startLeap(r,player,worldWidth,buildings,env);
  else if(r.belial&&r.attack==='deluge')startDeluge(r);
  else if(r.belial&&r.attack==='submerge')r.under=BB.diveUnder;
@@ -220,9 +220,12 @@ function tickLava(r:Rival,dt:number,player:Rect,worldWidth:number,buildings:Buil
 // The ground under `x` for a body that is standing at `feet`: a live crust there if he is on it (or landing on it), else the street.
 const crustAt=(crusts:Crust[]|undefined,cx:number)=>crusts?.find(c=>!c.dissolved&&cx>=c.x&&cx<=c.x+c.w)??null;
 // His standing height: on his crust (it rides the flood's surface) until it dissolves, sinks or he walks off it; the street otherwise.
-function standY(r:Rival,env:RivalEnv){const cx=r.x+r.w/2,c=r.crust;if(c&&!c.dissolved&&env.flood?.crusts.includes(c)&&cx>=c.x&&cx<=c.x+c.w)return c.y-r.h;r.crust=null;return groundAt(cx)-r.h;}
+// Over flooded ground (a `finale.flood` level) he swims: the acid's surface is the top of the world to him, his feet BB.swim under it, so he fights at the kaiju's height and not down on the bed.
+const topAt=(x:number,env:RivalEnv)=>{const f=env.flood;return f&&groundAt(x)>f.surface?f.surface:groundAt(x);};
+const floorAt=(x:number,env:RivalEnv)=>{const f=env.flood;return f&&groundAt(x)>f.surface?f.surface+BB.swim:groundAt(x);};
+function standY(r:Rival,env:RivalEnv){const cx=r.x+r.w/2,c=r.crust;if(c&&!c.dissolved&&env.flood?.crusts.includes(c)&&cx>=c.x&&cx<=c.x+c.w)return c.y-r.h;r.crust=null;return floorAt(cx,env)-r.h;}
 // Where a leap would land him: on a crust there, else on the street.
-function landing(crusts:Crust[]|undefined,x:number,w:number):{y:number,crust:Crust|null}{const c=crustAt(crusts,x+w/2);return {y:c?c.y:groundAt(x+w/2),crust:c};}
+function landing(env:RivalEnv,x:number,w:number):{y:number,crust:Crust|null}{const c=crustAt(env.flood?.crusts,x+w/2);return {y:c?c.y:floorAt(x+w/2,env),crust:c};}
 // The nearest crust within pounce range that he is not already standing on (the flood's stepping stones).
 function crustTarget(r:Rival,crusts:Crust[]){const cx=r.x+r.w/2;let best:Crust|null=null,d=BB.pounceRange;
  for(const c of crusts)if(!c.dissolved&&c!==r.crust){const k=Math.abs(c.x+c.w/2-cx);if(k<=d){d=k;best=c;}}return best;}
@@ -252,7 +255,7 @@ function addPuddle(r:Rival,x0:number,w:number,y:number){const ps=r.puddles!,cell
   ps.push({x,w:cell,y,life:BB.puddleSeconds,max:BB.puddleSeconds});if(ps.length>BB.puddleCap)ps.splice(ps.indexOf(ps.reduce((m,q)=>q.life<m.life?q:m)),1);}}
 // ---- Acid Vomit: the player's spew, turned on the kaiju. Aimed at the marker with full pressure; as the gland drains the arc sags back toward him.
 const vomitMouth=(r:Rival)=>mouth(r);
-function vomitAngle(r:Rival,mark:number){const m=vomitMouth(r),v=BB.vomitSpeed[1],G=BB.vomitGravity,gy=groundAt(mark);let best=6,err=1e9;
+function vomitAngle(r:Rival,mark:number,env:RivalEnv){const m=vomitMouth(r),v=BB.vomitSpeed[1],G=BB.vomitGravity,gy=crustAt(env.flood?.crusts,mark)?.y??topAt(mark,env);let best=6,err=1e9;
  for(let a=6;a<=55;a+=.25){const sn=v*Math.sin(a*Math.PI/180),t=(sn+Math.sqrt(sn*sn+2*G*Math.max(0,gy-m.y)))/G,x=m.x+r.face*v*Math.cos(a*Math.PI/180)*t,e=Math.abs(x-mark);if(e<err){err=e;best=a;}}return best;}
 // The arc at pressure `k` (0 empty..1 full): points until it meets the kaiju, a building, a crust or the street.
 export function vomitArc(r:Rival,angle:number,k:number,player:Rect,worldWidth:number,buildings:Building[],env:RivalEnv){
@@ -262,7 +265,7 @@ export function vomitArc(r:Rival,angle:number,k:number,player:Rect,worldWidth:nu
   if(overlaps({x:x-4,y:y-4,w:8,h:8},player)){land=[x,y];landOn='kaiju';break;}
   if(t>.06&&buildings.some(b=>solid(b)&&partHit(b,{x:x-3,y:y-3,w:6,h:6},true))){land=[x,y];landOn='wall';break;}
   const c=t>.1?crustAt(env.flood?.crusts,x):null;if(c&&y>=c.y){land=[x,c.y];landOn='crust';break;}
-  if(t>.1&&y>=groundAt(x)){land=[x,groundAt(x)];landOn='street';break;}}
+  if(t>.1&&y>=topAt(x,env)){land=[x,topAt(x,env)];landOn='street';break;}}
  return {pts,land,landOn};}
 function tickSpew(r:Rival,dt:number,player:Rect,worldWidth:number,buildings:Building[],env:RivalEnv,hits:Hit[]){
  const s=r.spew!;s.t+=dt;s.tick-=dt;const k=Math.max(0,1-s.t/BB.vomitSeconds),arc=vomitArc(r,s.angle,k,player,worldWidth,buildings,env);s.pts=arc.pts;s.land=arc.land;s.landOn=arc.landOn;
@@ -284,7 +287,7 @@ function startLeap(r:Rival,player:Rect,worldWidth:number,buildings:Building[],en
  let x1:number,dur:number,height:number;
  if(back){x1=r.x+away*BB.backLeap;dur=BB.backFlight;height=BB.backHeight;addPuddle(r,cx-BB.backPool/2,BB.backPool,feet(r));}
  else{const tc=Math.max(cx-BB.pounceRange,Math.min(cx+BB.pounceRange,r.mark??pcx));x1=tc-r.w/2;dur=BB.pounceFlight;height=BB.pounceHeight;}
- x1=Math.max(0,Math.min(worldWidth-r.w,x1));const l=landing(env.flood?.crusts,x1,r.w);
+ x1=Math.max(0,Math.min(worldWidth-r.w,x1));const l=landing(env,x1,r.w);
  r.leap={kind:back?'back':'pounce',t:0,dur,x0:r.x,x1,y0:r.y,y1:l.y-r.h,height,crust:l.crust};}
 function tickLeap(r:Rival,dt:number,player:Rect,env:RivalEnv,hits:Hit[]){
  const l=r.leap!;l.t+=dt;const k=Math.min(1,l.t/l.dur);r.x=lerp(l.x0,l.x1,k);r.y=lerp(l.y0,l.y1,k)-4*l.height*k*(1-k);if(k<1)return;
@@ -301,7 +304,7 @@ function startDeluge(r:Rival){const cx=r.x+r.w/2,n=BB.delugeDrops,queue:Rain['qu
 function tickUnder(r:Rival,dt:number,player:Rect,worldWidth:number,env:RivalEnv,hits:Hit[]){
  r.under=Math.max(0,(r.under??0)-dt);if(r.under>0)return;
  const pcx=player.x+player.w/2,x=Math.random()<BB.surfaceUnder?pcx:pcx+(Math.random()*2-1)*BB.surfaceRange;
- r.x=Math.max(0,Math.min(worldWidth-r.w,x-r.w/2));const l=landing(env.flood?.crusts,r.x,r.w);r.crust=l.crust;r.y=l.y-r.h;r.face=desiredFace(r,player);
+ r.x=Math.max(0,Math.min(worldWidth-r.w,x-r.w/2));const l=landing(env,r.x,r.w);r.crust=l.crust;r.y=l.y-r.h;r.face=desiredFace(r,player);
  const cx=r.x+r.w/2,fy=feet(r);r.ring={x:cx,y:fy,t:0};
  if(Math.abs(pcx-cx)<=BB.surfaceRadius+player.w/2&&player.y+player.h>fy-60)acidHit(r,hits,BB.surfaceDamage,BB.surfaceKnock,pcx>=cx?1:-1,1);
  r.stagger=BB.surfaceRecover;r.cooldown=BB.surfaceRecover+BB.pounceCooldown;}
@@ -314,8 +317,8 @@ function tickAcid(r:Rival,dt:number,player:Rect,worldWidth:number,buildings:Buil
  for(const d of r.drops!){d.vy+=BB.delugeGravity*dt;const oy=d.y;d.y+=d.vy*dt;
   const box={x:d.x-d.size,y:oy-d.size,w:d.size*2,h:d.y-oy+d.size*2};
   if(overlaps(box,player)){acidHit(r,hits,BB.delugeDamage,BB.delugeKnock,Math.sign(player.x+player.w/2-d.x)||1,BB.delugeSoak);continue;}
-  const f=Math.min(surfaceBelow(buildings,d.x,oy),crustAt(env.flood?.crusts,d.x)?.y??1e9);
-  if(d.y>=f-2){if(f===groundAt(d.x)||crustAt(env.flood?.crusts,d.x)){addPuddle(r,d.x-BB.delugeSplash/2,BB.delugeSplash,f);
+  const fs=env.flood&&groundAt(d.x)>env.flood.surface?env.flood.surface:1e9,f=Math.min(surfaceBelow(buildings,d.x,oy),crustAt(env.flood?.crusts,d.x)?.y??1e9,fs);
+  if(d.y>=f-2){if(f===groundAt(d.x)||f===fs||crustAt(env.flood?.crusts,d.x)){addPuddle(r,d.x-BB.delugeSplash/2,BB.delugeSplash,f);
     if(Math.abs(player.x+player.w/2-d.x)<=BB.delugeSplash+player.w/2&&player.y+player.h>=f-24)acidHit(r,hits,BB.delugeDamage*.5,0,1,BB.delugeSoak);}continue;}
   keep.push(d);}
  r.drops=keep;

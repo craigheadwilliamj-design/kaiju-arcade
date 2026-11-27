@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {createRival,hitRival,tickRival,beginBelial,belialTelegraph} from '../src/rival.ts';import type {Rival,Crust,RivalEnv} from '../src/rival.ts';
+import {createRival,hitRival,tickRival,beginBelial,belialTelegraph,vomitArc} from '../src/rival.ts';import type {Rival,Crust,RivalEnv} from '../src/rival.ts';
 import {createBuildings} from '../src/rules.ts';
 import {createCombat,receiveHit,vulnerability} from '../src/combat.ts';
 import {CONFIG as C,CAMPAIGN as P,BELIAL_BOSS as BB,TLEZCATL_BOSS as TB} from '../src/config.ts';
@@ -18,7 +18,8 @@ const chase=(r:Rival,seconds:number,b:any[]=[],env:RivalEnv={},dt=1/60)=>{const 
 const spec=(x:number,w:number,extra:object={})=>({x,w,h:220,hp:300,value:100,kind:'medium' as const,label:'',color:'#888',...extra});
 const pick=(r:Rival,p:{x:number,y:number,w:number,h:number},env:RivalEnv={})=>{r.cooldown=0;r.windup=0;tickRival(r,.01,p,W,[],env);return r.attack;};
 const near=(a:number,b:number,e=1)=>Math.abs(a-b)<=e;
-const stage=(env:RivalEnv,crusts:Crust[]):RivalEnv=>({...env,flood:{surface:C.ground-300,crusts}});
+// A stub flood whose surface is below the street: the crusts are in play but no ground is flooded (the rival swims only over flooded ground: see the swim test).
+const stage=(env:RivalEnv,crusts:Crust[]):RivalEnv=>({...env,flood:{surface:C.ground+300,crusts}});
 
 test('only a Belial boss gets the Belial moves; Kaiban, Tlézcatl and the rest keep theirs; he has fewer HP than Tlézcatl',()=>{
  const b=createRival(W,0,'Belial');assert.ok(b.belial&&!b.kaiban&&!b.tlez);assert.equal(b.spew,null);assert.equal(b.leap,null);assert.deepEqual(b.puddles,[]);assert.deepEqual(b.drops,[]);assert.equal(b.rain,null);assert.ok(!b.deluged);assert.equal(b.kcorr!.stacks,0);
@@ -201,6 +202,16 @@ test('crusts: he pounces onto one and stands on it as it rides the surface, step
  const keep:Crust={x:2800,w:100,y:C.ground-30},w=bel();tickRival(w,.01,pv,W,[],{});run(w,BB.vomitTelegraph+BB.vomitSeconds,player(3600),[],{});assert.ok(!keep.dissolved,'no flood, no crust to dissolve');
 });
 
+test('swim: over flooded ground he stands with his feet BB.swim under the surface, at the kaiju\'s height rather than down on the bed; on a crust or dry ground nothing changes',()=>{
+ const surface=C.ground-200,env:RivalEnv={flood:{surface,crusts:[]}};
+ const r=bel(),p=player(4200);r.cooldown=9;tickRival(r,.05,p,W,[],env);assert.equal(r.y+r.h,surface+BB.swim,'swimming at the surface');
+ const dry:RivalEnv={flood:{surface:C.ground+300,crusts:[]}},d=bel();d.cooldown=9;tickRival(d,.05,p,W,[],dry);assert.equal(d.y+d.h,C.ground,'dry ground is the street');
+ const crust:Crust={x:2800,w:300,y:surface-3},c=bel();c.cooldown=9;c.crust=crust;c.x=2900;tickRival(c,.05,p,W,[],{flood:{surface,crusts:[crust]}});assert.equal(c.y+c.h,crust.y,'a crust is his floor');
+ // A pounce into the flood lands at the surface; a vomit aimed at the flooded ground lands on the surface and puddles there.
+ const q=bel(),far=player(4300);q.combo=2;tickRival(q,.01,far,W,[],env);assert.equal(q.attack,'pounce');run(q,BB.pounceTelegraph+BB.pounceFlight+.2,far,[],env);assert.equal(q.y+q.h,surface+BB.swim,'landed swimming');
+ const v=bel();const arc=vomitArc(v,30,1,player(5000),W,[],env);assert.equal(arc.landOn,'street');assert.ok(Math.abs(arc.land![1]-surface)<2,'the stream meets the acid\'s surface');
+});
+
 test('a retreat or a KO clears every move, puddle, drop and stack, and he attacks no more',()=>{
  const full=()=>{const r=bel(),p=player(2800);r.retreats=true;tickRival(r,.01,p,W,[]);run(r,BB.vomitTelegraph+.4,p);r.puddles=[{x:2700,w:100,y:C.ground,life:3,max:3}];r.drops=[{x:2800,y:100,vy:100,size:5}];r.rain={t:0,queue:[{t:1,x:2800}],spawned:0};r.kcorr={stacks:3,expo:1.2,touched:true};r.leap={kind:'pounce',t:0,dur:1,x0:1,x1:2,y0:3,y1:4,height:5,crust:null};return {r,p};};
  const {r,p}=full();assert.ok(r.spew);hitRival(r,1e6,'player',300,1);assert.ok(r.retreating&&!r.dead,'retreats, not KO');assert.equal(r.hp,0);
@@ -253,17 +264,17 @@ test('real loop: a kaiju that crowds him is back-pounced away from; a Deluge hap
 
 test('real loop: Tlézcatl\'s Flame Jet burns the corrosion off faster than waiting it out',async()=>{
  const run1=async(fire:boolean)=>{const h=await bootCampaign(.75,{city:'mex',kaiju:'Tlézcatl'});
-  try{h.test().goto(azteca,0);h.step(2);h.test().growTo(3);h.test().teleport(0);h.test().setKaijuCorrosion(3);h.step(1);if(fire)h.down('KeyL');
+  try{h.test().goto(azteca,0);h.step(2);h.test().growTo(3);h.test().wakeBoss();h.test().teleport(0);h.test().setKaijuCorrosion(3);h.step(1);if(fire)h.down('KeyL');
    let frames=0;for(;frames<60*8&&h.state().rivalState.kcorr>0;frames++){h.test().teleport(0);h.step();}return {frames,after:h.state().rivalState.kcorr};}finally{h.release();h.cleanup();}};
  const slow=await run1(false),fast=await run1(true);assert.equal(slow.after,0);assert.equal(fast.after,0);assert.ok(fast.frames<slow.frames*.7,`fire fades it faster (${fast.frames} vs ${slow.frames} frames)`);
 });
 
-test('real loop: with a flood stub he submerges and resurfaces; the Azteca level itself has no flood (card 7) so he never does by himself',async()=>{
+test('real loop: with a flood stub he submerges and resurfaces; the Azteca level itself has no flood (card 7) so he never does by himself (dry bowl, awake)',async()=>{
  const h=await bootCampaign(.75,{city:'mex',kaiju:'Tlézcatl'});
- try{h.test().goto(azteca,0);h.step(2);h.test().growTo(3);const seen=new Set<string>();fight(h,300,60*30,s=>{const r=s.rivalState;if(r.windup>0)seen.add(r.attack);return false;});assert.ok(!seen.has('submerge'),`no flood, no submerge (${[...seen]})`);
+ try{h.test().goto(azteca,0);h.step(2);h.test().growTo(3);h.test().wakeBoss();const seen=new Set<string>();fight(h,300,60*30,s=>{const r=s.rivalState;if(r.windup>0)seen.add(r.attack);return false;});assert.ok(!seen.has('submerge'),`no flood, no submerge (${[...seen]})`);
  }finally{h.release();h.cleanup();}
  const g=await bootCampaign(.75,{city:'mex',kaiju:'Tlézcatl'});
- try{g.test().goto(azteca,0);g.step(2);g.test().growTo(3);g.test().setFlood({surface:0,crusts:[]});g.test().rivalMove('submerge');let under=false,up=false;
+ try{g.test().goto(azteca,0);g.step(2);g.test().growTo(3);g.test().wakeBoss();g.test().setFlood({surface:C.ground+300,crusts:[]});g.test().rivalMove('submerge');let under=false,up=false;
   for(let n=0;n<60*8;n++){g.test().teleport(Math.max(0,g.state().rivalState.x-300));g.step();const r=g.state().rivalState;if(r.under>0)under=true;if(under&&r.under===0){up=true;break;}}
   assert.ok(under&&up,'under, then back up');
  }finally{g.release();g.cleanup();}

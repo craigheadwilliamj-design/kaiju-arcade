@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,MEX2,MEX3,LEAN,FLAG,TARP,ANGEL,STONE} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,MEX2,MEX3,LEAN,FLAG,TARP,ANGEL,STONE,AZTECA} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -109,7 +109,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  volcano?:1|2|3|4,volcanoOn?:'target',ashLate?:number,
  // Phase 5 (SF Act 3), all opt-in. See the notes below.
  cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,approach?:number,deckApproach?:number,
- finale?:{x:number,wake:number,breaks:number[],perches?:{x0:number,x1:number,h:number}[],tower?:number,crack?:number},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
+ finale?:{x:number,wake:number,breaks:number[],perches?:{x0:number,x1:number,h:number}[],tower?:number,crack?:number,flood?:true},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
  // Phase 6 (Alcatraz), all opt-in. `exitAt`: the destruction a district needs before its exits open (default CONFIG.exitThreshold).
  // `secretId`: clearing this secret level in the campaign unlocks it in Free Play and adds its gallery entry (src/campaign.ts).
  // `lore`: one results-screen line. `hazmat`: this level's soldiers are drawn in hazmat suits (a reskin, nothing else changes).
@@ -1164,6 +1164,22 @@ function mexTlalpan():BlockDef{
    ['soldier',sc(T-1100)],['tank',sc(T-950)],['emplacement',sc(T-900)],['soldier',sc(T+720)],['apc',sc(T+1000)],['soldier',sc(T+1280)],['helicopter',sc(2400),620]],
   garrison:[['tank',-420],['emplacement',-230],['soldier',250],['tank',330],['apc',470],['artillery',600]],air:[sc(2000),sc(4200)]};
 }
+// Level 9. Estadio Azteca: two screens of the stadium's concourse (the last military push, standing at the upper tier's height), then the bowl: the stands step DOWN through the lower tier to the
+// pitch and back up the other side to a long upper tier. Passing `finale.wake` splits the pitch at centre field and Belial comes up out of the drain. `finale.flood` (src/config.ts FLOOD): at each
+// health break acid floods the bowl, one tier higher each time (a water band over the whole bowl; the surface starts below the pitch); the rim walkway is a platform one jump over the upper tier.
+// The tiers are plain ground profile (terrain never blocks walking); the flood, crusts and rim are runtime state in src/game.ts.
+function mexAzteca():BlockDef{
+ const A=AZTECA,P=CONFIG.ground,Y2=P-A.upper,Y1=P-A.lower;
+ let b=cityLevel('mex','Estadio Azteca',6,'boss',`r,s,m,h,_,s,m,l,_,m,s,h,_,s,m,l,_,r,s,m,_,h,s,m,_`,[],{startStage:3,cap:3,tier:5});
+ const W=levelWidth(b),gate=sc(A.gate)-sc(120);
+ // Only the concourse has buildings, street spots and parked cars: the bowl is stands and pitch.
+ b={...b,buildings:b.buildings.filter(x=>x.x+x.w<=gate),street:b.street.filter(x=>x<gate),cars:b.cars.filter(x=>x<gate-sc(420))};
+ const g=A.gate,ground:[number,number][]=[[0,Y2],[sc(g),Y2],[sc(A.lowerTier[0]),Y1],[sc(A.lowerTier[1]),Y1],[sc(A.pitch[0]),P],[sc(A.pitch[1]),P],[sc(A.eastLower[0]),Y1],[sc(A.eastLower[1]),Y1],[sc(A.eastLower[1]+A.riser),Y2],[W,Y2]];
+ return {...b,ground,bands:true,water:[[sc(g),W,P+400]],volcano:4,police:true,guard:true,
+  finale:{x:sc(A.crack),wake:sc(A.wake),breaks:A.breaks,crack:sc(A.crack),flood:true},
+  // The last military push on the concourse, ahead of the wake: armour, artillery, infantry, air cover.
+  units:[['soldier',sc(500)],['apc',sc(800)],['tank',sc(1000)],['soldier',sc(1200)],['tank',sc(1500)],['artillery',sc(1700)],['emplacement',sc(1600)],['soldier',sc(1850)],['helicopter',sc(1400),520]],air:[sc(1300)]};
+}
 const MEXICO_CITY:BlockDef[]=[
  // 1. Act 1 (Stage 1, cap 1). Templo Mayor: the pit start, leaning colonial blocks and the only level with the sinking twist (MEX rework card 3).
  mexTemplo(),
@@ -1182,8 +1198,8 @@ const MEXICO_CITY:BlockDef[]=[
  mexCU(),
  // 8. Calzada de Tlalpan: the Tren Ligero, sinkholes and the field HQ whose fall erupts Popocatépetl.
  mexTlalpan(),
- // 9. Estadio Azteca (boss): the approach, then the arena. Belial is the rival (shared moveset until his kit).
- cityLevel('mex','Estadio Azteca',6,'boss',`r,s,m,h,_,s,m,l,_,m,s`,[],{startStage:3,cap:3,tier:5}),
+ // 9. Estadio Azteca (boss): two screens of concourse, then the bowl. Belial comes up through the pitch and the acid floods the stands (MEX rework card 7).
+ mexAzteca(),
  // Secret. Xochimilco, reached from Chapultepec's east exit; rejoins the route at Ciudad Universitaria.
  {...cityLevel('mex','Xochimilco',5,'district',mexRep(MEX_LOW,4),[],{startStage:3,cap:3,tier:5,secret:true}),
   after:'Ciudad Universitaria',secretId:'xochimilco',lore:'THE TREN LIGERO RUNS SOUTH TO THE CANALS.',guard:true,police:true},
