@@ -1,18 +1,21 @@
 import {CITIES,LEVELS,cityIndexOf} from './levels.ts';
 export const KAIJU=['Mogurodon','Tlézcatl','Belial','Kaiban','Myrmex','Sargathoth','Atomotitan'];
 // The campaign route: city ids in order. Each city's final boss is (in the redesign) the next city's kaiju.
-export const CAMPAIGN=['sfo','nyc','mex','par','hkg','tyo'];
-// v2 (campaign redesign): cities are ids and San Francisco leads the route. v1 saves are not migrated; they are ignored and the
-// first v2 write replaces them.
-export const SAVE_VERSION=2;
-export const PERMANENT_KEY='kaiju-arcade:permanent:v2',CHECKPOINT_KEY='kaiju-arcade:campaign:v2';
-export const LEGACY_KEYS=['kaiju-arcade:permanent:v1','kaiju-arcade:campaign:v1'];
+export const CAMPAIGN=['sfo','nyc','mex','par','syd','hkg','tyo'];
+// v3 (route shuffle): Sydney joins the route after Paris, so every checkpoint position from 4 up moves. v2 saves are migrated at boot
+// (migrateV2Saves); v1 saves are not migrated (they are ignored and removed).
+export const SAVE_VERSION=3;
+export const PERMANENT_KEY='kaiju-arcade:permanent:v3',CHECKPOINT_KEY='kaiju-arcade:campaign:v3';
+export const V2_PERMANENT_KEY='kaiju-arcade:permanent:v2',V2_CHECKPOINT_KEY='kaiju-arcade:campaign:v2';
+// The v2 route, kept only to map a v2 checkpoint's position to its city id (and from there to the v3 position).
+export const OLD_V2_ROUTE=['sfo','nyc','mex','par','hkg','tyo'];
+export const LEGACY_KEYS=['kaiju-arcade:permanent:v1','kaiju-arcade:campaign:v1',V2_PERMANENT_KEY,V2_CHECKPOINT_KEY];
 // city: the run's position on CAMPAIGN (0 = the first city).
-export type Checkpoint={version:2,id:string,initials:string,kaiju:string,city:number,banked:number};
+export type Checkpoint={version:3,id:string,initials:string,kaiju:string,city:number,banked:number};
 export type RecordScore={id:string,initials:string,kaiju:string,score:number,cities:number,completed:boolean};
 // conquered: city ids.
 // secrets: ids of secret levels cleared in the campaign (a level's `secretId`); each is offered in Free Play and has a gallery entry.
-export type Permanent={version:2,unlocked:string[],conquered:string[],gallery:string[],secrets:string[],scores:RecordScore[]};
+export type Permanent={version:3,unlocked:string[],conquered:string[],gallery:string[],secrets:string[],scores:RecordScore[]};
 export type Run=Checkpoint&{block:number,phase:'boundary'|'playing'|'results'|'conquered'|'over',blockStart:number};
 export type StorageLike={getItem:(key:string)=>string|null,setItem:(key:string,value:string)=>void,removeItem:(key:string)=>void};
 // The city a campaign position stands for, its index in CITIES / LEVELS, and the levels on its route (secret levels are off it).
@@ -28,7 +31,7 @@ export function freePlayLevels(p:Permanent,cityIndex:number){return [...routeLev
 // The kaiju a campaign plays in a city: the city's own, or the run's chosen kaiju where the city has none.
 export function kaijuFor(run:{kaiju:string,city:number}){return campaignCity(run.city)?.kaiju??run.kaiju;}
 const finalLevel=(run:Run)=>{const r=routeLevels(campaignCityIndex(run.city));return r[r.length-1];};
-export function emptyPermanent():Permanent{return {version:2,unlocked:['Mogurodon'],conquered:[],gallery:[],secrets:[],scores:[]};}
+export function emptyPermanent():Permanent{return {version:3,unlocked:['Mogurodon'],conquered:[],gallery:[],secrets:[],scores:[]};}
 export function initialsValid(value:string){return /^[A-Z]{3}$/.test(value);}
 const finite=(n:unknown):n is number=>typeof n==='number'&&Number.isFinite(n)&&Math.abs(n)<1e12;
 function validCheckpoint(c:any):c is Checkpoint{return c?.version===SAVE_VERSION&&typeof c.id==='string'&&c.id.length<100&&initialsValid(c.initials)&&KAIJU.includes(c.kaiju)&&Number.isInteger(c.city)&&c.city>=0&&c.city<CAMPAIGN.length&&finite(c.banked);}
@@ -45,15 +48,27 @@ export function readSaves(storage:StorageLike|undefined){
  try{const c=JSON.parse(storage?.getItem(CHECKPOINT_KEY)||'null');if(validCheckpoint(c))checkpoint=c;}catch{available=false;}
  if(!storage)available=false;return {permanent,checkpoint,available};
 }
+// v2 -> v3, once at boot before readSaves (and before discardLegacySaves removes the v2 keys). A v2 checkpoint keeps its city: its
+// position p becomes CAMPAIGN.indexOf(OLD_V2_ROUTE[p]) (hkg 4 -> 5, tyo 5 -> 6). A v2 permanent save copies across as is (conquered
+// is city ids, unlocks are names, record city counts stay valid). Anything unreadable is left for readSaves to ignore; an existing
+// v3 save is never overwritten.
+export function migrateV2Saves(storage:StorageLike|undefined){
+ if(!storage)return;
+ try{if(storage.getItem(PERMANENT_KEY)===null){const p=JSON.parse(storage.getItem(V2_PERMANENT_KEY)||'null');
+  if(p&&typeof p==='object'&&!Array.isArray(p)&&p.version===2)storage.setItem(PERMANENT_KEY,JSON.stringify({...p,version:SAVE_VERSION}));}}catch{}
+ try{if(storage.getItem(CHECKPOINT_KEY)===null){const c=JSON.parse(storage.getItem(V2_CHECKPOINT_KEY)||'null');
+  const city=c&&typeof c==='object'&&c.version===2&&Number.isInteger(c.city)&&c.city>=0&&c.city<OLD_V2_ROUTE.length?CAMPAIGN.indexOf(OLD_V2_ROUTE[c.city]):-1;
+  if(city>=0){const m={...c,version:SAVE_VERSION,city};if(validCheckpoint(m))storage.setItem(CHECKPOINT_KEY,JSON.stringify(m));}}}catch{}
+}
 // Old-version saves are discarded, not migrated (they would put a run in the wrong city). Called once at boot.
 export function discardLegacySaves(storage:StorageLike|undefined){try{for(const k of LEGACY_KEYS)storage?.removeItem(k);}catch{}}
 export function savePermanent(storage:StorageLike|undefined,p:Permanent){try{if(!storage)return false;storage.setItem(PERMANENT_KEY,JSON.stringify(p));return true;}catch{return false;}}
 export function saveCheckpoint(storage:StorageLike|undefined,c:Checkpoint|null){try{if(!storage)return false;if(c)storage.setItem(CHECKPOINT_KEY,JSON.stringify(c));else storage.removeItem(CHECKPOINT_KEY);return true;}catch{return false;}}
 export function newRun(initials:string,kaiju='Mogurodon',id=globalThis.crypto?.randomUUID?.()||`${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`):Run{
  if(!initialsValid(initials)||!KAIJU.includes(kaiju))throw Error('Three uppercase letters and a known kaiju are required.');
- return {version:2,id,initials,kaiju,city:0,banked:0,block:0,blockStart:0,phase:'boundary'};
+ return {version:3,id,initials,kaiju,city:0,banked:0,block:0,blockStart:0,phase:'boundary'};
 }
-export function checkpointOf(run:Run):Checkpoint{if(run.phase!=='boundary')throw Error('Checkpoint writes are restricted to city boundaries.');return {version:2,id:run.id,initials:run.initials,kaiju:run.kaiju,city:run.city,banked:run.banked};}
+export function checkpointOf(run:Run):Checkpoint{if(run.phase!=='boundary')throw Error('Checkpoint writes are restricted to city boundaries.');return {version:3,id:run.id,initials:run.initials,kaiju:run.kaiju,city:run.city,banked:run.banked};}
 export function resumeRun(c:Checkpoint):Run{if(!validCheckpoint(c))throw Error('Invalid checkpoint');return {...c,block:0,blockStart:0,phase:'boundary'};}
 export function restartCity(run:Run){if(run.phase==='over')return false;run.block=routeLevels(campaignCityIndex(run.city))[0]??0;run.blockStart=0;run.phase='playing';return true;}
 // A level's result latches once; the city's final (boss) level ends through conquerCity instead.

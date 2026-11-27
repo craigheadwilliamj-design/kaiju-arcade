@@ -4,19 +4,21 @@ import {CITIES,LEVELS,cityIndexOf} from '../src/levels.ts';
 import {CAMPAIGN,PERMANENT_KEY,emptyPermanent,newRun,restartCity,conquerCity,KAIJU} from '../src/campaign.ts';
 import {FIRE as FI,TWISTS as TW} from '../src/config.ts';
 import {shapeParts,checkParts} from '../src/hitbox.ts';
-// Route shuffle card 2: Sydney is a complete placeholder city (Hong Kong's five districts mirrored), off the route until card 3.
+// Route shuffle card 2: Sydney is a complete placeholder city (Hong Kong's five districts mirrored). Card 3 put it on the route after Paris.
 const SYD=cityIndexOf('syd');
 
-test('Sydney is appended after nyc-classic and stays off the route: not in CAMPAIGN, Free Play or records',async()=>{
+test('Sydney is appended after nyc-classic and sits on the route after Paris: in CAMPAIGN, Free Play once conquered, and records',async()=>{
  assert.equal(SYD,CITIES.length-1,'appended last');assert.equal(CITIES[SYD-1].id,'nyc-classic','after the classic fixture');assert.equal(LEVELS.length,CITIES.length);
- assert.ok(!CAMPAIGN.includes('syd'),'not on the route yet');
+ assert.equal(CAMPAIGN.indexOf('syd'),CAMPAIGN.indexOf('par')+1,'Sydney follows Paris');assert.equal(CAMPAIGN.indexOf('hkg'),CAMPAIGN.indexOf('syd')+1,'Hong Kong follows Sydney');
  const c=CITIES[SYD];assert.equal(c.name,'Sydney');assert.equal(c.code,'SYD');assert.equal(c.boss,'Myrmex');assert.equal(c.difficulty,2.5);assert.equal(c.style,'syd');assert.equal(c.kaiju,undefined);
  assert.ok(c.mood.lights<=.2,'harbour daylight');assert.ok(c.material.glass);
- // A full run's record counts route cities only: Sydney never shows up in it.
- const p=emptyPermanent(),r=newRun('ABC','Mogurodon','r');restartCity(r);r.block=8;assert.ok(conquerCity(p,r,10,'Kaiban'));assert.ok(!p.conquered.includes('syd'));
- // Free Play lists conquered route cities only, even when a save claims Sydney.
- const q=emptyPermanent();q.conquered=[...CAMPAIGN,'syd'];q.unlocked=[...KAIJU];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(q)]]));
- try{h.click('#freeplay');const html=h.node('#overlay').innerHTML;assert.ok(html.includes('Hong Kong'),'the city list rendered');assert.ok(!html.includes('Sydney'),'no Sydney in Free Play');}finally{h.release();h.cleanup();}
+ // Conquering Sydney records it by id and unlocks Myrmex.
+ const p=emptyPermanent(),r=newRun('ABC','Mogurodon','r');r.city=CAMPAIGN.indexOf('syd');restartCity(r);r.block=4;assert.ok(conquerCity(p,r,10,'Myrmex'));assert.deepEqual(p.conquered,['syd']);assert.ok(p.unlocked.includes('Myrmex'));
+ // Free Play lists Sydney once conquered, and not before.
+ const q=emptyPermanent();q.conquered=[...CAMPAIGN];q.unlocked=[...KAIJU];const h=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(q)]]));
+ try{h.click('#freeplay');const html=h.node('#overlay').innerHTML;assert.ok(html.includes('Hong Kong'),'the city list rendered');assert.ok(html.includes('Sydney'),'Sydney in Free Play once conquered');}finally{h.release();h.cleanup();}
+ const u=emptyPermanent();u.conquered=CAMPAIGN.filter(id=>id!=='syd');u.unlocked=[...KAIJU];const g=await bootGame(.75,new Map([[PERMANENT_KEY,JSON.stringify(u)]]));
+ try{g.click('#freeplay');const html=g.node('#overlay').innerHTML;assert.ok(html.includes('Hong Kong'));assert.ok(!html.includes('Sydney'),'no Sydney in Free Play before it is conquered');}finally{g.release();g.cleanup();}
 });
 
 test('Sydney mirrors Hong Kong: five districts at 4/6/8/8/4, the same kinds and slots, its own landmarks, junk and power',()=>{
@@ -47,10 +49,16 @@ test('Sydney landmark shapes: the Opera House sails and Sydney Tower have sound 
  const opera=LEVELS[SYD][0].buildings.find(x=>x.label==='SYDNEY OPERA HOUSE')!;assert.equal(opera.parts!.length,4);assert.ok(opera.parts!.every(p=>p.x>=0&&p.x+p.w<=opera.w));
 });
 
-// Sydney and every other city still produce the data they did before card 2 (card 3 moves HK's and Tokyo's bosses: update the pins then).
-test('every other city is unchanged by Sydney (pinned data hashes)',()=>{
- const pins:Record<string,string>={sfo:'3821996d89f9ea38',nyc:'1cad94c8ae45aeff',mex:'faec75a8f7fe52bc',par:'990f83d9c463c3ec',hkg:'632e028bbec24fc1',tyo:'62f20fc8576f066d','nyc-classic':'5f48ba99179897a7'};
- for(const [id,pin] of Object.entries(pins)){const i=cityIndexOf(id);assert.equal(createHash('sha256').update(JSON.stringify([CITIES[i],LEVELS[i]])).digest('hex').slice(0,16),pin,id);}
+// Every other city still produces the data it did before Sydney arrived. Route card 3 moved Hong Kong's and Tokyo's bosses and renamed
+// their arenas: their pins are the new data, and putting the old boss and arena name back reproduces the card-2 pins exactly (so
+// nothing else about either city moved).
+test('every other city is unchanged by Sydney (pinned data hashes); Hong Kong and Tokyo changed only boss and arena name',()=>{
+ const hash=(c:unknown,l:unknown)=>createHash('sha256').update(JSON.stringify([c,l])).digest('hex').slice(0,16);
+ const pins:Record<string,string>={sfo:'3821996d89f9ea38',nyc:'1cad94c8ae45aeff',mex:'faec75a8f7fe52bc',par:'990f83d9c463c3ec',hkg:'356aa6c01e5bfa81',tyo:'672acd4b9f59803b','nyc-classic':'5f48ba99179897a7'};
+ for(const [id,pin] of Object.entries(pins)){const i=cityIndexOf(id);assert.equal(hash(CITIES[i],LEVELS[i]),pin,id);}
+ const before:Record<string,[string,string,string]>={hkg:['Myrmex','Myrmex Arena','632e028bbec24fc1'],tyo:['Sargathoth','Sargathoth Arena','62f20fc8576f066d']};
+ for(const [id,[boss,arena,pin]] of Object.entries(before)){const i=cityIndexOf(id);assert.equal(hash({...CITIES[i],boss},LEVELS[i].map((b,k)=>k===4?{...b,name:arena}:b)),pin,`${id} before card 3`);}
+ assert.deepEqual([LEVELS[cityIndexOf('hkg')][4].name,LEVELS[cityIndexOf('tyo')][4].name],['Sargathoth Arena','Atomotitan Arena']);
 });
 
 // Two neighbours of a building, one on each side, both within the ordinary fire reach.
