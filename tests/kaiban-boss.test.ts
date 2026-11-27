@@ -12,8 +12,8 @@ type Hit={damage:number,strength:number,direction:number};
 const run=(r:Rival,seconds:number,p:{x:number,y:number,w:number,h:number},b:any[]=[],dt=1/60)=>{const hits:Hit[]=[];for(let t=0;t<seconds;t+=dt)hits.push(...tickRival(r,dt,p,W,b));return hits;};
 const spec=(x:number,w:number,extra:object={})=>({x,w,h:220,hp:300,value:100,kind:'medium' as const,label:'',color:'#888',...extra});
 
-test('only a Kaiban boss gets the Kaiban moves; every other boss keeps the shared moveset',()=>{
- const o=createRival(W,0,'Belial'),d=createRival(W,0);assert.ok(!o.kaiban&&!d.kaiban&&!o.rocks&&!o.charge);
+test('only a Kaiban boss gets the Kaiban moves; every boss without a kit keeps the shared moveset (Belial has his own, tests/belial-boss.test.ts)',()=>{
+ const o=createRival(W,0,'Myrmex'),d=createRival(W,0),b=createRival(W,0,'Belial');assert.ok(!o.kaiban&&!d.kaiban&&!b.kaiban&&!o.rocks&&!o.charge&&!b.rocks&&!b.charge);
  const k=createRival(W,0,'Kaiban');assert.ok(k.kaiban);assert.deepEqual(k.rocks,[]);assert.equal(k.charge,null);
  o.x=2500;o.cooldown=0;const seen=new Set<string>();for(let n=0;n<40;n++){tickRival(o,.05,player(2900),W,[]);seen.add(o.attack);o.windup=0;o.cooldown=0;}
  assert.ok([...seen].every(a=>a==='melee'||a==='ranged'),`shared moves only (${[...seen]})`);

@@ -640,6 +640,44 @@ export const TLEZCATL_BOSS = {speed:95,far:430,
  eruptBelow:.25,eruptCharge:1.8,eruptBreak:220,eruptStagger:2.6,eruptGlobs:14,eruptRange:640,eruptFlight:[.9,1.5] as [number,number],eruptGravity:1900,eruptGlobDamage:11,eruptPool:60,eruptPoolSeconds:3.5,eruptRecover:2.6,eruptCooldown:1,
  poolCap:24,meleeCooldown:2};
 
+// Belial as a boss (src/rival.ts, any boss level whose rival is Belial: Estadio Azteca, Free Play, Paris's arena): the player's own kit
+// turned on the kaiju, played as a KITER with fewer HP than Tlézcatl (`hpScale` x the shared boss health). He walks at `speed`, stops
+// closing on the kaiju inside `hold` px and walks away at `kiteSpeed` x speed inside `kite` px (when there is room behind him).
+// Up close he claws (the shared melee). If the kaiju stays within claw range for `pressSeconds` or lands a hit on him, he BACK-POUNCES:
+// a `backTelegraph` s crouch, then a quick leap (`backFlight` s, `backHeight` px up) `backLeap` px directly away that leaves an acid
+// puddle `backPool` px wide where he stood, `backRecover` s winded; `backCooldown` s before the next, and only with `backEdge` px of room
+// behind him (cornered, he fights). At mid range (up to `far`) he spews ACID VOMIT: `vomitTelegraph` s (the gland swells, facing locked, a
+// landing marker on the street where the kaiju stood), then a stream for `vomitSeconds` s. The stream is the player's spew: a ballistic
+// arc under `vomitGravity`, launched at `vomitSpeed[1]` (full pressure) and sagging to `vomitSpeed[0]` as the gland drains, so it lands on
+// the marker first and falls back towards him. It stops on the first building (`vomitBuilding` damage per tick), crust or the street; it
+// burns the kaiju it passes through for `vomitDamage` every `vomitTick` s (corroding it for as long as it touches), splashes `vomitSplash` px
+// where it lands and leaves puddles `vomitPuddle` px wide. A crust it lands on is dissolved. Then `vomitRecover` s winded. From `far` away
+// (and every `pounceEvery`th mid-range attack under `pounceBelow` of his health) he ACID POUNCES: `pounceTelegraph` s crouch with a
+// landing ring on the kaiju's spot, a leap of up to `pounceRange` px (`pounceFlight` s, `pounceHeight` px up) that cannot be staggered,
+// and a splash (`pounceDamage` inside `pounceRadius`, soaking the kaiju to `pounceStacks` of corrosion, acid puddles `pouncePool` px wide),
+// then `pounceRecover` s winded. Once per fight, below `delugeBelow` of his health, the ACID DELUGE: planted for `delugeCharge` s of
+// swelling, then a geyser for `delugeSpout` s raining `delugeDrops` drops on alternating sides out to `delugeRange` px each way (they
+// fall at `delugeFall` px/s under `delugeGravity`; a drop that hits the kaiju does `delugeDamage` and soaks `delugeSoak` stacks, one
+// that lands splashes `delugeSplash` px and leaves a puddle). A hit of `delugeBreak` strength (a Heavy or an Ultimate) in the charge breaks
+// it up (spent, he is staggered `delugeStagger` s); either way he is winded `delugeRecover` s after the burst.
+// Puddles (all of his): last `puddleSeconds` s, `puddleCell` px cells, at most `puddleCap`, burning the kaiju `puddleDamage` every
+// `puddleTick` s and corroding it. CORROSION is on the kaiju: contact adds a stack per `corrodePerStack` s of exposure (the first contact
+// gives one; a Pounce or drop soaks to a number outright), up to `corrodeMax`; each stack raises the damage the kaiju takes by
+// `corrodeVuln` (src/combat.ts); out of the acid it fades over `corrodeFade` s from full, `burnOff` x faster while Tlezcatl breathes the
+// Flame Jet or stands in his own lava pool / fire. Pools, drops, stacks and every move clear on a retreat or a KO.
+// FLOOD hooks (only when the level has `finale.flood`; card 7 builds the flood and hands tickRival its surface and crusts): he is immune to
+// the flood, every `diveEvery`th attack he SUBMERGES (`diveTelegraph` s ripple, then untargetable for `diveUnder` s) and resurfaces with a
+// splash (`surfaceDamage` inside `surfaceRadius`), beneath the kaiju with chance `surfaceUnder`, else up to `surfaceRange` px from it,
+// `surfaceRecover` s winded; every `crustEvery`th attack he pounces onto a crust within `pounceRange` (and off it again with any leap).
+export const BELIAL_BOSS = {hpScale:.8,speed:90,hold:300,kite:200,kiteSpeed:.8,far:380,edge:60,
+ pressSeconds:1.6,backTelegraph:.3,backFlight:.45,backHeight:90,backLeap:300,backPool:70,backRecover:.5,backCooldown:6,backAfter:.9,
+ vomitTelegraph:.9,vomitSeconds:1.5,vomitSpeed:[230,560] as [number,number],vomitGravity:700,vomitTick:.14,vomitDamage:3,vomitKnock:30,vomitBuilding:6,vomitSplash:34,vomitPuddle:56,vomitRecover:1.5,vomitCooldown:.8,
+ pounceTelegraph:1,pounceFlight:.7,pounceHeight:230,pounceRange:560,pounceDamage:14,pounceRadius:120,pounceKnock:300,pounceStacks:2,pouncePool:150,pounceRecover:1.8,pounceCooldown:.9,pounceBelow:.5,pounceEvery:3,
+ delugeBelow:.4,delugeCharge:1.8,delugeBreak:220,delugeStagger:2.6,delugeSpout:2.2,delugeDrops:36,delugeRange:600,delugeFall:420,delugeGravity:1100,delugeDamage:8,delugeKnock:60,delugeSoak:1,delugeSplash:26,delugeRecover:2.4,delugeCooldown:1,
+ puddleSeconds:4.5,puddleCell:40,puddleCap:22,puddleDamage:2,puddleTick:.4,
+ corrodeMax:3,corrodePerStack:.4,corrodeVuln:.15,corrodeFade:5,burnOff:4,
+ diveEvery:4,diveTelegraph:.6,diveUnder:2.2,surfaceUnder:.6,surfaceRange:420,surfaceDamage:10,surfaceRadius:100,surfaceKnock:240,surfaceRecover:.8,crustEvery:3};
+
 // New York's Empire State finale (NYC rework card 6; `finale.perches` in src/levels.ts, tickClimbFinale in src/game.ts, the `perch` fields in src/rival.ts).
 // The tower is a staircase of setbacks: each ledge is `ledge` px wide (room for the kaiju and Tlézcatl side by side), the tiers rise to `tops`
 // (px above the street), the mast stands on the summit. Tlézcatl climbs ahead of the kaiju and fights from the ledges (the perches). He stays put
