@@ -21,11 +21,14 @@ Mexico City gets the treatment San Francisco and New York got: nine route levels
 
 ## Story thread
 
-1. **Arrival.** Tlézcatl dove off the Empire State mast into the magma, heading south. He erupts out of the Templo Mayor excavation in the Centro Histórico. The Aztec temple is the right door for a fire god's namesake.
-2. **Foreshadowing.** Something is eating the city from underneath. Green acid seeps up through storm drains in Act 1 (La Merced): puddles that corrode cars and burn troops. It gets worse through Act 2. By Act 3 the drains burst on their own. That's Belial, living in the Drenaje Profundo, the city's giant deep-drainage tunnels.
-3. **The sinking.** The city is already sinking into the old lake bed (the existing twist). Belial's acid speeds it up: the ground gives way more, and buildings tilt.
-4. **The fight.** At Estadio Azteca, Belial bursts up through the pitch from the drainage below.
-5. **Retreat.** At 0 health Belial isn't KO'd. He dives into the stadium's storm drain, into the Drenaje Profundo, and away towards the sewers of Paris. (Paris's catacombs twist is a good landing for that.)
+Mexico City has two threads that build towards each other, one for each kaiju. **Below: the acid**, which is Belial coming up through the drains. **Above: the volcano**, which is Tlézcatl waking Popocatépetl. NYC's city foreshadowed its boss; this one foreshadows both kaiju, and the final fight is fire coming down against acid coming up.
+
+1. **Arrival.** Tlézcatl dove off the Empire State mast into the magma, heading south. He erupts out of the Templo Mayor excavation in the Centro Histórico. The Aztec temple is the right door for a fire god's namesake. On the skyline, Popocatépetl puffs once in answer.
+2. **The acid (Belial).** Something is eating the city from underneath. Green acid seeps up through storm drains in Act 1 (La Merced): puddles that corrode cars and burn troops. It gets worse through Act 2. By Act 3 the drains burst on their own. That's Belial, living in the Drenaje Profundo, the city's giant deep-drainage tunnels.
+3. **The volcano (Tlézcatl).** Popocatépetl, the real active volcano about 70 km south-east of the city, stands in the far skyline of every level. It wakes up as Tlézcatl crosses the city, on a **fixed schedule** (scripted, not driven by how much the player burns): a wisp in Act 1, a growing plume and tremors in Act 2, ash fall in Act 3. When the Calzada de Tlalpan stronghold falls, it erupts. Each use of Tlézcatl's Ultimate (Eruption) makes it flare on the skyline, so the player feels responsible, but the timing never depends on it.
+4. **The sinking.** The city is already sinking into the old lake bed (the existing twist). Belial's acid speeds it up: the ground gives way more, and buildings tilt.
+5. **The fight.** At Estadio Azteca, under the eruption's red-black sky, Belial bursts up through the pitch from the drainage below.
+6. **Retreat.** At 0 health Belial isn't KO'd. Driven off by the fire coming down, he dives into the stadium's storm drain, into the Drenaje Profundo, and away towards the sewers of Paris. (Paris's catacombs twist is a good landing for that.)
 
 ## Tlézcatl's kit vs Mexico City
 
@@ -34,6 +37,25 @@ Tlézcatl's ratings are 4/3/3/3. His moves are the **Flame Jet** (a held fire co
 - **Wide boulevards** (Reforma, Insurgentes, Calzada de Tlalpan) carry convoys that a downward jet washes along.
 - **Soft lake-bed ground** turns Magma Dives into sinkholes. The dive is the sinking twist's best trigger.
 - **Volcanic rock** (the Pedregal in Act 3) is where his lava pools last longest.
+- **Eruption answers the volcano.** After Popocatépetl erupts (the end of level 8), his Ultimate also calls volcanic bombs down from the sky. It's his signature move made bigger for the city's climax.
+
+## Popocatépetl (the volcano schedule)
+
+One opt-in level field, `volcano:0|1|2|3|4`, sets the volcano's state for that level. Other cities never set it, so nothing else changes.
+
+| State | Levels | Skyline | In play |
+|---|---|---|---|
+| 0 | none (default) | no volcano drawn | nothing |
+| 1 `wisp` | Act 1 (1–3) | a thin smoke wisp | Templo Mayor's arrival triggers one puff |
+| 2 `plume` | Act 2 (4–6) | the plume grows level by level | Eruption (Ultimate) makes it flare, with a light tremor. Grey ash starts drifting late in Chapultepec |
+| 3 `ash` | 7, 8 until the target falls, Xochimilco | a heavy column | steady ash fall: the `smog` mood with grey flakes and a dimmer sun |
+| 4 `erupting` | 8 after the target falls, 9 | an eruption column, the sky red and black | Eruption calls volcanic bombs. Ash fall continues |
+
+- **The trigger is scripted.** Level 8 switches from state 3 to 4 when its stronghold target is destroyed: the column goes up, the sky changes, a big shake, a banner (`POPOCATÉPETL ERUPTS`). Level 9 starts at 4.
+- **Volcanic bombs** (config block `VOLCANO`) come only from Tlézcatl's Eruption at state 4: a spread of molten rocks falls from off-screen above over the Ultimate's area. Each one hits like a lava glob and leaves a small lava pool where it lands (the Magma Dive's glob code). They hurt troops, aircraft, vehicles, buildings and the rival, never the player.
+- **No random bombs.** Act 3 already has ash, auto-bursting acid drains and the full military. Ambient bombs would decide the boss fight at random, so they stay on the Ultimate only.
+- **Realism.** The ash really does reach the city. Bombs landing in the south of the city is game licence.
+- **Art cost.** The skyline states are drawing only (the far skyline for `style()==='mex'`). The ash mood reuses `smog`. The only new gameplay system is the bombs.
 
 ## Levels
 
@@ -43,6 +65,7 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 
 **1. Templo Mayor** (7 / district / 1-1 / tier 1)
 - **Route:** start at the bottom of the Templo Mayor excavation: stone stairs, the twin shrines' footings, the serpent heads. Climb out (the first lesson is climbing). Then east along Calle Moneda and Seminario. Colonial blocks lean on their foundations. Police and patrol cars arrive, and the first helicopter.
+- **Volcano:** state 1. When he climbs out of the pit, Popocatépetl puffs once on the skyline.
 - **Reuses:** climbing, `police`, `air`, the sinking twist, a `spawn` start.
 - **New:** **start in a pit.** The kaiju spawns below street level in an excavation (the Union Square garage / concourse pit drawn as stone ruins). Plus **leaning colonial buildings**: an opt-in per-building `lean` that draws the building tilted. Sinking adds lean, and a building past a lean threshold topples the way it leans.
 
@@ -64,18 +87,22 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 
 **4. Alameda and Bellas Artes** (7 / district / 2-2 / tier 2)
 - **Route:** the Alameda Central's trees and fountains, the Palacio de Bellas Artes (a `|dome` that has sunk metres into the lake bed), and the Torre Latinoamericana (climbable). The Día de Muertos procession is out: marigolds, candles, papel picado strung across the street. It's dusk going to night, using the mood ramp from NYC fix 4.
-- **Reuses:** `night` / the mood ramp, park trees from Central Park, climbing, the sinking twist.
+- **Acid:** a few seeps along the procession route, glowing green against the marigold orange. One sits by Bellas Artes: burst it and the dome drops another step into the ground and tilts, the acid and the sinking hitting one landmark together. The Alameda's fountains run green (art only).
+- **Volcano:** state 2. From the top of the Torre Latino the plume is clearly bigger than in Act 1.
+- **Reuses:** `night` / the mood ramp, park trees from Central Park, climbing, the sinking twist, `ACID`/`seeps`.
 - **New:** **papel picado lines.** Strings of paper banners across the street, burnable at a touch, that carry fire across the gap from building to building. It's the one level where fire jumps the street.
 
 **5. Paseo de la Reforma** (8 / stronghold / 2-2 / tier 3)
 - **Route:** the long straight boulevard of glass towers (Torre Mayor, Torre Reforma) with the glorietas. El Ángel de la Independencia stands on its column in the middle. The army holds the avenue with tanks, and the target is the Monumento a la Revolución at the far end: the domed arch, with the field HQ dug in under it.
-- **Reuses:** stronghold, tanks, flank toppling, the elevated system where it fits, the existing `|needle` / `|arch` landmark shapes.
+- **Acid:** more seeps, placed in the glorietas where the armour stands. Bursting one under a tank eats it.
+- **Reuses:** stronghold, tanks, flank toppling, the elevated system where it fits, the existing `|needle` / `|arch` landmark shapes, `ACID`/`seeps`.
 - **New:** **El Ángel falls.** Break the column's base and it topples along the avenue, a long falling body that crushes everything in its lane, convoys included. Plus target art for the monument (`art:'monument'`).
 
 **6. Chapultepec** (8 / open, two exits / 2-2(3) / tier 3)
 - **Route:** there-and-back like Central Park. Start mid-map on Reforma at the park gates. Landmarks along the way: the Chapultepec lake (water band), the zoo (animals flee, reusing the sea-lion list), the Museo Nacional de Antropología, and Chapultepec Castle on its hill (terrain; the crystal is in the castle, cap lift to 3). The Guardia is dug in on the hill.
 - **Water:** the lake is over a Stage 2 kaiju's head and wading depth at Stage 3, so the crystal opens it. It's the Wharf/Reservoir rule.
 - **Exits:** west exit → Ciudad Universitaria (the main route, by Periférico south). South exit, past the lake → the Tren Ligero to Xochimilco (secret).
+- **Acid and volcano:** the lake goes green by the storm drains (art). Grey ash starts drifting late in the level, the first sign the volcano is close to going.
 - **Reuses:** `exits`, `capLift`, water bands, terrain, the zoo, park ground from Central Park.
 - **New:** **the Sun Stone.** The museum's huge carved stone disc is a heavy prop (grab, throw), and on landing it rolls (`src/rolling.ts`). It's a thrown boulder that keeps going. Tlézcatl grabs it at Stage 3 only.
 
@@ -84,25 +111,29 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 **7. Ciudad Universitaria** (8 / district / 3-3 / tier 4)
 - **Route:** Insurgentes Sur with the Metrobús lane, the Periférico's double-deck freeway (the elevated system's `freeway` look), then UNAM: the Central Library's mosaic tower and the Estadio Olímpico. It's all built on the Pedregal, the lava field the volcano Xitle left.
 - **Acid:** the seeps at full strength. Drains burst on their own, with no slam needed (`seepsAuto`, the counterpart of `ventsAuto`). Belial is close.
+- **Volcano:** state 3, steady ash fall. Standing on old lava from Xitle under Popocatépetl's ash column, it's where the city's volcanic past and present meet.
 - **Reuses:** elevated, buses, `ACID`, terrain.
 - **New:** **volcanic ground.** An opt-in ground type where Tlézcatl's lava pools last `x` longer and spread a little, and the sinking twist is off (rock doesn't sink). The level's ground is a mix, so the player feels where the lake bed ends and the lava field starts.
 
 **8. Calzada de Tlalpan** (8 / stronghold / 3-3 / tier 4)
 - **Route:** south down the Calzada towards the stadium. The Tren Ligero runs on its own track beside the road. Then the stadium approach and its car parks, where the army has built its last line around the field HQ (the target). Estadio Azteca looms at the east end in the far skyline.
 - **Military:** the full military. The Calzada is a long straight lane for a downward Flame Jet wash.
+- **Volcano: he sets it off.** The level starts at state 3. When the field HQ goes down, Popocatépetl erupts (state 4): the column goes up, the sky turns red and black, the ground shakes. The walk to the exit is the first chance to use the volcanic-bomb Eruption.
 - **Reuses:** trains (the Tren Ligero on a surface track), `garrison`, fire, flank toppling.
 - **New:** **sinkholes.** The acid has hollowed the ground: marked stretches of street collapse under a heavy landing into a pit, with whatever was on them (convoys, emplacements, the target's walls). Belial's acid and the lake bed meet here. Level field `sinkholes:[x0,x1][]`.
 
 **9. Estadio Azteca** (6 / boss / 3-3 / tier 5)
 - **The approach:** two screens of the stadium concourse and the last military push.
+- **Volcano:** state 4 throughout. Red-black sky, ash, and Eruption calls bombs. Fire comes down while acid comes up.
 - **The arena:** the pitch inside the bowl. The stands rise on both sides as terrain tiers. The pitch splits and Belial comes up out of the drainage.
 - **Breaks:** at each health break, acid floods the pitch higher (a rising acid pool), and the fight is pushed up into the stands. It's the inverse of the Empire State: there the fight went up a tower, here the floor comes up after you. Belial is fast and fragile (ratings 4/5/1/4), so the arena is wide and open for him to circle.
-- **Finale:** at 0 health Belial dives into the storm drain at centre field and is gone. `conquerCity` unlocks Belial and Paris.
-- **Reuses:** the `finale` machinery (`wake`, `breaks`, `retreats`), the rival framework, terrain, `ACID` pools.
-- **New:** **Belial's boss kit** (card 4) and **a rising-hazard finale**: an opt-in `finale.flood` that raises an acid level at each break.
+- **Finale:** at 0 health Belial, driven off by the fire, dives into the storm drain at centre field and is gone. `conquerCity` unlocks Belial and Paris.
+- **Reuses:** the `finale` machinery (`wake`, `breaks`, `retreats`), the rival framework, terrain, `ACID` pools, `VOLCANO` bombs.
+- **New:** **Belial's boss kit** (card 5) and **a rising-hazard finale**: an opt-in `finale.flood` that raises an acid level at each break.
 
 ### Secret: Xochimilco (4 / district / 3-3 / tier 5, `secret:true`, `after:'Ciudad Universitaria'`)
 - **Route:** reached from Chapultepec's south exit by the Tren Ligero. The canals (water bands), the chinampas (floating garden islands), the colourful trajinera boats and mariachi boats, and the island of hanging dolls (named generically). It rejoins the route at Ciudad Universitaria.
+- **Volcano:** state 3 (ash fall, no bombs). It's taken from Act 2 and rejoins at level 7, so it happens before the eruption.
 - **New:** **drifting fire boats.** Trajineras float on a canal current. Set one alight and it drifts down the canal, setting the chinampas and other boats alight as it goes. Plus **chinampa ground**: soft islands the kaiju sinks into ankle-deep and wades across slowly.
 
 ## Engineering notes for the scaffold
@@ -120,12 +151,13 @@ Columns: screens / kind / growth `startStage-cap(capLift)` / military `tier`. "R
 ## Work cards (in order, proposed)
 
 1. **Scaffold.** City entry (`kaiju:'Tlézcatl'`, `boss:'Belial'`), nine plus one placeholder levels with growth, exits and `after`, the `mex-classic` fixture and test retargeting, counts, QA and README. *Blocks everything else.*
-2. **Act 1:** Templo Mayor, Zócalo, La Merced (pit start, `lean`, the flagpole, palace art, `ACID`/`seeps`, tarp runs).
-3. **Act 2:** Alameda, Reforma, Chapultepec (papel picado, El Ángel falls, monument art, the Sun Stone, the lake and both exits).
-4. **Belial boss kit:** `BELIAL_BOSS` in `src/config.ts` and a `belial` branch in `src/rival.ts`, his player moves (Acid Vomit, Acid Pounce, Acid Deluge) turned on the kaiju and picked by range, the way `TLEZCATL_BOSS` did it. Tests in `tests/belial-boss.test.ts`. Can run in parallel with cards 2 and 3.
-5. **Act 3 levels 7–8:** Ciudad Universitaria and Calzada de Tlalpan (`seepsAuto`, volcanic ground, `sinkholes`). Needs card 2's `ACID`.
-6. **Estadio Azteca boss level:** the bowl arena, the approach, `finale.flood`, Belial's retreat down the drain. Needs cards 4 and 5.
-7. **Xochimilco secret level:** canals with current, trajineras, fire boats, chinampa ground.
+2. **Popocatépetl:** the `volcano` level field and its skyline states for `style()==='mex'`, the ash mood, the level 8 trigger hook (switch to state 4 when the stronghold target falls), the Eruption flare and tremor, and `VOLCANO` bombs on Tlézcatl's Ultimate at state 4. Tests that no other city draws or fires any of it. Can run in parallel with the act cards; each act card sets its levels' `volcano` value.
+3. **Act 1:** Templo Mayor, Zócalo, La Merced (pit start, `lean`, the flagpole, palace art, `ACID`/`seeps`, tarp runs).
+4. **Act 2:** Alameda, Reforma, Chapultepec (papel picado, El Ángel falls, monument art, the Sun Stone, the lake and both exits, seeps at Alameda and Reforma, the Bellas Artes sink).
+5. **Belial boss kit:** `BELIAL_BOSS` in `src/config.ts` and a `belial` branch in `src/rival.ts`, his player moves (Acid Vomit, Acid Pounce, Acid Deluge) turned on the kaiju and picked by range, the way `TLEZCATL_BOSS` did it. Tests in `tests/belial-boss.test.ts`. Can run in parallel with cards 2 to 4.
+6. **Act 3 levels 7–8:** Ciudad Universitaria and Calzada de Tlalpan (`seepsAuto`, volcanic ground, `sinkholes`, the eruption at the end of level 8). Needs card 2 (the volcano) and card 3 (`ACID`).
+7. **Estadio Azteca boss level:** the bowl arena, the approach, `finale.flood`, Belial's retreat down the drain, bombs in the boss fight. Needs cards 5 and 6.
+8. **Xochimilco secret level:** canals with current, trajineras, fire boats, chinampa ground.
 
 ## Open questions
 
