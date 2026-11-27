@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,MEX2,MEX3,LEAN,FLAG,TARP,ANGEL,STONE,AZTECA} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,MEX2,MEX3,LEAN,FLAG,TARP,ANGEL,STONE,AZTECA,XOCHI} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -129,7 +129,12 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // Mexico City Act 2 (MEX rework card 4), all opt-in. See the notes below.
  banners?:[number,number,number][],domeSeep?:number,angel?:number,stone?:number,catrinas?:boolean,lakeGreen?:[number,number][],
  // Mexico City Act 3 (MEX rework card 6), all opt-in. See the notes below.
- seepsAuto?:boolean,rock?:[number,number][],sinkholes?:[number,number][],tren?:[number,number]};
+ seepsAuto?:boolean,rock?:[number,number][],sinkholes?:[number,number][],tren?:[number,number],
+ // Mexico City secret level (MEX rework card 8, Xochimilco), all opt-in. `current:[band, speed]`: the water span `band` (an index into `water`) carries a current, px/s signed (+ east): anything
+ // floating on that span drifts with it (trajineras, and wrecks and debris that land in it, which float for XOCHI.floatLife s instead of sinking at once); powered boats ignore it, and so does every other span.
+ // `soft`: world-x ranges of chinampa ground (ankle-deep: wading speed, no running). `trajineras`: [x, variant, moored] floating boats (variant art only; moored ones stay at the dock until disturbed).
+ // `axolotls`: x spots on the canal bed that bolt from the kaiju. `dolls`: a world-x range where dolls hang from the ahuejotes (art only). `ashWater`: grey ash floats on the water (art only).
+ current?:[number,number],soft?:[number,number][],trajineras?:[number,'plain'|'food'|'mariachi',0|1][],axolotls?:number[],dolls?:[number,number],ashWater?:boolean};
 // Mexico City Act 3 (MEX rework card 6), opt-in. `seepsAuto`: the level's `seeps` burst on their own every ACID.auto.every s after a warning, no slam needed, one after another in the order of the list (the counterpart
 // of `ventsAuto`). `rock` [x0,x1] ranges of volcanic ground (src/config.ts ROCK): Tlézcatl's lava pools on it last longer and spread wider; drawn as dark broken rock. `sinkholes` [x0,x1] marked
 // stretches of street (drawn cracked) that cave into a pit under a heavy landing and take what stands on them (src/config.ts SINKHOLE); never traps the kaiju. `tren` [x0,x1] the Tren Ligero's surface
@@ -1180,6 +1185,34 @@ function mexAzteca():BlockDef{
   // The last military push on the concourse, ahead of the wake: armour, artillery, infantry, air cover.
   units:[['soldier',sc(500)],['apc',sc(800)],['tank',sc(1000)],['soldier',sc(1200)],['tank',sc(1500)],['artillery',sc(1700)],['emplacement',sc(1600)],['soldier',sc(1850)],['helicopter',sc(1400),520]],air:[sc(1300)]};
 }
+// ---- Mexico City secret level (MEX rework card 8): Xochimilco ----
+// Level S. Xochimilco: fire on water. West to east: the Tren Ligero's stop and the embarcadero (moored trajineras, food and mariachi boats, crowds that flee down the dock), the long canal
+// (wading depth at Stage 3, with a current that drifts the free boats east into a jam against the first chinampa), a chinampa of ahuejotes and huts, a side canal, the island of the dolls
+// (atmosphere only: no score, no target), another side canal, a last chinampa and the Tren's stop to leave by. Fire does not cross water, so a burning trajinera is the carrier: set one
+// alight (Tlézcatl's lava and flame, or a blazing hut beside the canal) and it burns on as it drifts, lighting the boats it bumps and the chinampa it brushes. Ash floats on the water (volcano 3).
+// Light military (the Guardia on boats, a helicopter or two, an emplacement on the dock): a break before the stadium. The canal profile, boats and chinampa soft ground are set here.
+function mexXochimilco():BlockDef{
+ const X=XOCHI,G=CONFIG.ground,SURF=G+6,D1=SURF+60,D2=SURF+50,W=5*960;
+ const CANAL:[number,number][]=[[640,2900],[3380,3660],[4080,4300]],SOFT:[number,number][]=[[2900,3380],[3660,4080],[4300,4560]],ISLE:[number,number]=[3660,4080];
+ const ground:[number,number][]=[[0,G],[640,G],[780,D1],[2760,D1],[2900,G],[3380,G],[3460,D2],[3580,D2],[3660,G],[4080,G],[4140,D2],[4240,D2],[4300,G],[W,G]].map(([x,y])=>[sc(x),y] as [number,number]);
+ let b=district('mex','Xochimilco',5,[],[100,360,480,560,3000,3140,3300,4380,4480],[],'district');
+ // The tree line: tall thin ahuejotes along a chinampa (`tiny` props, but they catch fire, see burnable() in src/game.ts), seeded so the level is the same every build.
+ let seed=7;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+ const trees=(x0:number,x1:number,step:number,value:number)=>{const out:BuildingSpec[]=[];for(let x=x0;x<x1;x+=step+Math.floor(rnd()*14))out.push(scaled({x,w:20,h:78+Math.floor(rnd()*28),hp:60,value,kind:'tiny' as const,label:'',color:['#5f8a4f','#6c9556','#527a45'][Math.floor(rnd()*3)],prop:'ahuejote'}));return out;};
+ const hut=(x:number,label='')=>hall(x,58,44,label,'#b99a6a','choza',90);
+ const dock=[hall(150,180,64,'ESTACIÓN','#d9d6c8','estacion',260),hall(372,44,46,'','#c0392b','mstall',60),hall(432,44,48,'','#d9a441','mstall',60)];
+ const east=hall(4580,180,64,'ESTACIÓN','#d9d6c8','estacion',260);
+ const fixtures=[...trees(2906,3370,46,25),hut(3040),hut(3300),...trees(3668,4070,40,0),hut(3860),...trees(4308,4552,44,25),hut(4400)];
+ b={...b,buildings:[...dock,east,...fixtures],cars:[]};
+ const boat=(x:number,v:'plain'|'food'|'mariachi',m:0|1)=>[sc(x),v,m] as [number,'plain'|'food'|'mariachi',0|1];
+ return {...b,startStage:3,cap:3,tier:5,secret:true,ground,water:CANAL.map(([a,z])=>[sc(a),sc(z),SURF] as [number,number,number]),bands:true,
+  current:[0,X.current],soft:SOFT.map(([a,z])=>[sc(a),sc(z)] as [number,number]),dolls:[sc(ISLE[0]),sc(ISLE[1])],ashWater:true,volcano:3,fireCap:X.fireCap,
+  // The dock's boats are tied up; the rest of the flotilla is adrift, and the last three have already drifted into the jam against the first chinampa.
+  trajineras:[boat(720,'plain',1),boat(880,'food',1),boat(1040,'mariachi',1),boat(1500,'plain',0),boat(1860,'mariachi',0),boat(2170,'food',0),boat(2523,'plain',0),boat(2636,'mariachi',0),boat(2749,'food',0)],
+  axolotls:[820,1150,1480,1800,2150,2480,3520,4190].map(sc),
+  after:'Ciudad Universitaria',secretId:'xochimilco',lore:'THE TREN LIGERO RUNS SOUTH TO THE CANALS.',guard:true,police:true,
+  coastguard:[sc(1300),sc(2250)],units:[['soldier',sc(300)],['emplacement',sc(560)],['soldier',sc(3100)],['soldier',sc(3320)],['apc',sc(4420)],['soldier',sc(4500)],['helicopter',sc(1700),540]],air:[sc(2400)]};
+}
 const MEXICO_CITY:BlockDef[]=[
  // 1. Act 1 (Stage 1, cap 1). Templo Mayor: the pit start, leaning colonial blocks and the only level with the sinking twist (MEX rework card 3).
  mexTemplo(),
@@ -1200,9 +1233,8 @@ const MEXICO_CITY:BlockDef[]=[
  mexTlalpan(),
  // 9. Estadio Azteca (boss): two screens of concourse, then the bowl. Belial comes up through the pitch and the acid floods the stands (MEX rework card 7).
  mexAzteca(),
- // Secret. Xochimilco, reached from Chapultepec's east exit; rejoins the route at Ciudad Universitaria.
- {...cityLevel('mex','Xochimilco',5,'district',mexRep(MEX_LOW,4),[],{startStage:3,cap:3,tier:5,secret:true}),
-  after:'Ciudad Universitaria',secretId:'xochimilco',lore:'THE TREN LIGERO RUNS SOUTH TO THE CANALS.',guard:true,police:true},
+ // Secret. Xochimilco, reached from Chapultepec's east exit; rejoins the route at Ciudad Universitaria (MEX rework card 8).
+ mexXochimilco(),
 ];
 // The old five Mexico City blocks, kept verbatim as the off-route fixture city 'mex-classic' (not in CAMPAIGN, never shown in Free Play,
 // the map or the records). Each is soft lake-bed ground (`sinking`), as the whole city was before the rework.

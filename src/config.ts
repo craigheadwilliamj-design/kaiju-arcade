@@ -894,3 +894,33 @@ export const FLOOD = {
  retreatDive:1.3,retreatSink:2.4,diveHeight:200,
  color:{back:'#35520f',front:'#5f8f1c',frontAlpha:.78,sheen:'#b8e63a',bubble:'#e6ff8a',foam:'#d3f26a'},
 };
+
+// Mexico City secret level (MEX rework card 8): Xochimilco. Fire on water. Every number is opt-in: nothing here is read on a level that sets none of `current`,
+// `trajineras` or `soft`. Distances are final pixels (the boat is the size of the kaiju's reach, not the city scale's).
+export const XOCHI = {
+ // The long canal's drift, px/s (signed in the level's `current:[band, speed]`; this is the authored default and the cap). Floating things on that band drift, powered boats do not.
+ current:30,
+ // A wreck or debris in the current's band floats (instead of sinking at once) for this long, then sinks like any wreck.
+ floatLife:14,
+ // The trajinera: a flat, painted hull. It floats `W.boatFloat` of its height under the surface; w x h in px, mass for throw/impact, points for the first smash.
+ boat:{w:156,h:36,mass:2.4,points:260,riders:[3,5],bob:2.2,bobSpeed:1.7,
+  // Boats alongside a jam bump each other: a drifting boat stops `touch` px off the one ahead and goes on when it is gone.
+  touch:2,
+  // A moored boat (the dock's) stays put until it is hit, grabbed, set alight (its line burns through after `mooring` s) or its neighbour moves it.
+  mooring:1.6},
+ // A burning vehicle (opt-in by kind: trajineras only, src/vehicles.ts BURNS): `seconds` alight, then it burns out to a charred hull that still floats and drifts.
+ // Alight it throws `exposure` per second at every building within `reach` px of its hull (a building catches at 1: the same deterministic exposure the fire code uses), at
+ // every other trajinera within `reach` px (`boatExposure`), and `unitDps` damage to a military boat it touches. A boat beside a blazing building catches from it the same way
+ // (`catch` exposure per second). Fire pools and lava pools under the hull light it at `poolExposure`. `riders` jump at once and scatter.
+ burn:{seconds:26,reach:38,exposure:.7,boatExposure:.8,unitDps:9,catch:.7,poolExposure:1.4,smoke:.35,points:60},
+ // Chinampa ground (`soft:[x0,x1][]`): ankle-deep wet farmland. The kaiju moves at the wading speed, may not run, and leaves mud splashes; `sink` is how far the feet are drawn under.
+ soft:{sink:6},
+ // The axolotls: they sit on the canal bed, bolt away from the kaiju (within `alarm` px) along the bed for `run` px and are gone (splash, `points`).
+ axolotl:{alarm:260,speed:120,run:520,points:70},
+ // Ash on the water (art only): grey flecks drifting on the surface (volcano 3), each `ash` px across, `ashDensity` per 100 px.
+ ash:{size:5,density:7,drift:.55},
+ // The doll island (art only): dolls hang from the ahuejotes in its range, `dolls` per tree, swaying `sway` px.
+ dolls:{per:4,sway:3,color:'#c9b99a'},
+ // Light military: the Guardia on boats (they sail on their own), a few helicopters, an emplacement on the dock. The level sets its own `fireCap` (fire runs a long way here).
+ fireCap:12,
+};
