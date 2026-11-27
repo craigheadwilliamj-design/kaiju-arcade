@@ -422,6 +422,11 @@ export const TWISTS = {
  dominoFalloff:.65,dominoChain:.7,
  // Tokyo: quake-proof towers (quakeHeight and taller) shrug off half of any blow under quakeBreak and sway instead.
  quakeHeight:Math.round(200*CITY_SCALE),quakeBreak:60,quakeKeep:.5,swaySeconds:.8,
+ // Sydney: a southerly buster. The wind blows one fixed way per level (BlockDef `wind`). Fire spread to a downwind neighbour builds
+ // exposure windDown x faster, to an upwind one windUp x (damped); embers carry one gap further downwind: the nearest building
+ // downwind beyond FIRE.reach but within emberReach builds exposure at emberK of the spread rate. Smoke drifts smokeDrift px/s downwind
+ // and flame tongues lean flameLean px with it.
+ windDown:1.8,windUp:.35,emberReach:Math.round(150*CITY_SCALE),emberK:.5,smokeDrift:70,flameLean:6,
 };
 
 // City response (phase 5b): the city escalates as the block's destruction climbs past each threshold. Evacuation: every civilian

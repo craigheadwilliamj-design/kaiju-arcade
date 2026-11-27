@@ -36,7 +36,7 @@ import {profileFrom,profileY} from './terrain.ts';
 // Each city's look (phase 4): `mood` is its sky and light (lights 0 = broad day .. 1 = night: lit windows, neon), `style` picks the
 // facade drawing, `material` how its buildings break, `taxi`/`cars` its street colours, `ink` the HUD text colour over its sky.
 export type Mood={top:string,bottom:string,far:string,mid:string,near:string,win:string,lights:number,sun:string,rain?:boolean,smog?:boolean};
-export type CityStyle='nyc'|'mex'|'par'|'hkg'|'tyo';
+export type CityStyle='nyc'|'mex'|'par'|'hkg'|'tyo'|'syd';
 // A city is a place; a kaiju is optional. `kaiju`: the playable kaiju a campaign plays there (absent = the run's chosen kaiju carries
 // on, today's rule for the five original cities). `boss`: the final boss of its last level. `difficulty`: the military/rival scaling
 // step (src/military.ts, src/rival.ts), kept per city so adding a city never shifts another city's tuning.
@@ -68,6 +68,11 @@ export const CITIES:City[]=[
  {id:'nyc-classic',name:'New York (classic)',code:'NYC',boss:'Kaiban',difficulty:0,sky:'#95b0b2',haze:'#c8cbb5',colors:['#8a4e3e','#b36d57','#62708b','#7a5546','#a0634c'],signs:['DELI','MARKET','ARCADE','BODEGA'],
   mood:{top:'#86aac2',bottom:'#e8d5a9',far:'#9aa9ab',mid:'#7b8d8f',near:'#566a6e',win:'#e9cf86',lights:.15,sun:'#ffe4a6'},style:'nyc',
   material:{debris:['#8a4e3e','#6f3a2e','#b9a58c'],slab:1},taxi:'#f2c230',cars:['#3c4a5c','#8e9aa3','#7d2f2f','#2e3d36','#b7b2a6'],ink:'#2f4740'},
+ // Sydney (route shuffle card 2): OFF-ROUTE until card 3 puts it in CAMPAIGN; reached only through kaijuTest.gotoCity('syd', block).
+ // Placeholder parity with Hong Kong under bright, hard harbour daylight: sandstone low-rise and pale-glass CBD towers; Myrmex is its boss.
+ {id:'syd',name:'Sydney',code:'SYD',boss:'Myrmex',difficulty:2.5,sky:'#7fb6dc',haze:'#d6e6ea',colors:['#d9b98a','#cfa877','#b8cdd6','#c9d8dc','#e2c99c'],signs:['CAFE','PUB','SURF','BOTTLE-O'],
+  mood:{top:'#4f97d0',bottom:'#cfe7ef',far:'#8fb3c4',mid:'#6f93a3',near:'#4f6f7c',win:'#fff1c4',lights:.15,sun:'#fffbe6'},style:'syd',
+  material:{debris:['#d9b98a','#b8cdd6','#e8dcc0'],slab:1,glass:true},taxi:'#f2c230',cars:['#f3f3ef','#2d5f8a','#b8bcc0','#c0392b','#2e3d36'],ink:'#1f3340'},
 ];
 // `start`: open layouts set a mid-map spawn x; the player can roam both ways and leave by either end once the quota is met.
 // Blocks without it keep the classic west spawn and single eastern exit.
@@ -82,7 +87,7 @@ export const CITIES:City[]=[
 // mains). `bull` x of the Charging Bull, a heavy bronze prop (src/config.ts BULL: grabbable by a strong kaiju, thrown short and hard, immune to
 // street damage, destructible only by deliberate force; the street round it is cleared into a plaza). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
 // without making the level a there-and-back with a west exit): The Battery starts in the harbour, over a `bands` water span with a seabed `ground` profile.
-export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
+export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],wind?:1|-1,
  target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
  guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
@@ -164,6 +169,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `approach`: the length of the ramp at each end of an elevated deck (SF: the roof park and the freeway), climbing from the street to the deck
 // and walkable; `deckApproach`: the same for an upper bridge deck, a ramp climbing to it from the west. World units.
 // `elevated`: an elevated railway over [x0, x1] (Tokyo); world units.
+// `wind`: Sydney's southerly buster blows this way along x (+1 east, -1 west) on the level; read only in the 'syd' style (TWISTS).
 // `water`: river spans [from, to, surfaceY]; `bridge`: a deck at street level over [x0, x1] in `spans` breakable spans; `subway`: x ranges
 // with a subway line under the street (slams cave it in). All world units.
 // `ground`: the street profile as world [x, y] points (src/terrain.ts); absent = flat.
@@ -211,8 +217,8 @@ function district(city:string,name:string,screens:number,entries:Entry[],street:
  const solids=built.filter(b=>b.kind!=='tiny'),w=Math.round(10*CONFIG.cityScale),h=Math.round(16*CONFIG.cityScale);
  const hydrants:BuildingSpec[]=kind==='boss'?[]:street.filter((_,k)=>k%MAINS.every===1).map(x=>sc(x+40)).filter(x=>!solids.some(b=>x+w>b.x-6&&x<b.x+b.w+6)).map(x=>({x,w,h,hp:1,value:5,kind:'tiny',label:'',color:'#c0392b',role:'hydrant'}));
  // Street junk: each city's own clutter beside the other street spots (the first kind of the pair where k%3 is 0, the second at 2).
- const JUNK:Record<string,[string,string]>={nyc:['hotdog','trash'],mex:['taco','trash'],par:['morris','cafe'],hkg:['stall','trash'],tyo:['vending','trash']};
- const DIMS:Record<string,[number,number,number]>={hotdog:[26,28,40],trash:[12,18,10],taco:[30,30,40],morris:[16,46,40],cafe:[24,20,20],stall:[34,32,40],vending:[16,36,30]};
+ const JUNK:Record<string,[string,string]>={nyc:['hotdog','trash'],mex:['taco','trash'],par:['morris','cafe'],hkg:['stall','trash'],tyo:['vending','trash'],syd:['shelter','bin']};
+ const DIMS:Record<string,[number,number,number]>={hotdog:[26,28,40],trash:[12,18,10],taco:[30,30,40],morris:[16,46,40],cafe:[24,20,20],stall:[34,32,40],vending:[16,36,30],shelter:[40,34,40],bin:[12,20,10]};
  // Placed in the real gaps between solid buildings: up to three per gap, spaced along it, alternating the city's two kinds.
  const junk:BuildingSpec[]=[];if(kind!=='boss'&&name!=='Combat Drills'){
   const edges=[...solids].sort((p,q)=>p.x-q.x),lo=200,hi=sc(screens*960)-70,keep=[...built.filter(b=>b.kind==='tiny'),...hydrants];let n=0;
@@ -907,6 +913,16 @@ const NYC_CLASSIC:BlockDef[]=[
  riverworks(district('nyc','East River Offensive',8,[[220,'h'],[350,'m'],[462,'s'],[548,'K'],[700,'x'],[808,'L','UN HQ'],[998,'l'],[1260,'t'],[1380,'m'],[1492,'s'],[1572,'h'],[1702,'m','cache'],[2000,'n'],[2064,'l'],[2214,'m'],[2440,'t'],[2560,'h'],[2690,'L','CITICORP'],[2880,'x'],[2988,'s'],[3260,'m'],[3372,'h'],[4140,'s'],[4220,'m'],[4332,'n'],[4396,'h','cache'],[4720,'t'],[4840,'l'],[4990,'x'],[5098,'L','MET LIFE'],[5288,'m'],[6060,'n'],[6290,'t'],[6400,'m'],[6512,'h'],[6642,'L','SEAPORT'],[6832,'s'],[6930,'K'],[7110,'m'],[7222,'h']],[150,640,1230,1330,1940,2380,2500,3200,3560,3720,4000,4080,4700,4780,5500,5700,6250,6360,7040,7520],[170,650,1240,1340,1960,2400,2510,3540,3700,4010,4740,4790,5520,5720,6270,6370,7060,7540],'district',3840),{ground:[[0,0],[5410,0],[5470,-40],[5990,-40],[6050,0],[7680,0]],water:[5420,6040,-10],bridge:[5400,6060,3],subway:[400,3700]}),
  district('nyc','Kaiban Arena',4,[[500,'m'],[890,'l'],[1300,'s'],[1720,'t'],[2130,'h'],[2550,'l'],[2980,'m'],[3370,'s']],[340,780,1210,1650,2400,3190],[350,1150,1580,2350,3200],'boss'),
 ];
+// Sydney (route shuffle card 2, off-route until card 3): Hong Kong's five districts mirrored one for one (4/6/8/8/4, same kinds, same
+// slots), every spot nudged east so no layout repeats. The Rocks and the Milsons Point side climb gentle sandstone terraces (half
+// Hong Kong's rises); George Street, the CBD spine, is flat. `wind`: the southerly buster's direction on each level (TWISTS in src/config.ts).
+const SYDNEY:BlockDef[]=[
+ terrain(district('syd','The Rocks',4,[[408,'s','tank'],[494,'n'],[561,'m','tank'],[676,'L','SYDNEY OPERA HOUSE|sails'],[1034,'h'],[1168,'s'],[1251,'x'],[1366,'m'],[2099,'h','radar'],[2232,'L','CUSTOMS HOUSE|dome'],[2433,'m','tank'],[2784,'m','tank'],[2903,'m','cache'],[3018,'m'],[3134,'L','AMP BUILDING|tower'],[3469,'n'],[3541,'s'],[3626,'s']],[218,838,1508,2008,2688,3308],[538,1138,1718,2318,2998,3628],'district',1920),[[0,0],[388,0],[880,0],[1020,11],[1492,11],[2085,22],[2559,22],[2770,33],[3338,33],[3455,44],[3840,44]]),
+ district('syd','George Street',6,[[408,'m','cache'],[524,'m','tank'],[641,'l'],[797,'L','QUEEN VICTORIA BUILDING|dome'],[1188,'s','tank'],[1271,'m'],[1389,'n'],[1459,'m'],[1867,'m'],[1987,'h','cache'],[2124,'h'],[2258,'h'],[3054,'m','tank'],[3173,'L','GPO SYDNEY|tower'],[3462,'m','tank'],[3893,'m'],[4009,'h'],[4143,'x','radar'],[4256,'s'],[4632,'m'],[4748,'L','SYDNEY TOWER|needle'],[5003,'m'],[5358,'l'],[5511,'x'],[5622,'n']],[218,938,1578,2258,2938,3608,4348,5058,5668],[548,1248,1938,2568,3288,3998,4668,5368],'district',2880),
+ district('syd','Barangaroo Bastion',8,[[408,'m'],[528,'l'],[685,'s'],[773,'n'],[844,'l'],[1000,'h'],[1138,'h'],[1272,'l'],[1427,'s'],[1512,'h'],[1649,'l'],[1805,'m'],[1923,'l'],[2079,'h'],[2214,'m'],[2333,'x'],[2444,'h'],[2577,'s'],[2662,'m'],[2782,'l'],[2936,'m'],[3051,'s'],[3338,'b'],[3598,'b'],[3768,'b'],[4028,'b'],[4318,'b'],[4448,'h'],[4582,'s'],[4668,'l'],[4824,'n'],[4891,'x'],[5006,'m'],[5126,'l'],[5282,'h'],[5415,'h'],[5552,'x'],[5664,'s'],[5749,'s'],[5834,'m'],[5950,'x'],[6065,'s'],[6151,'h'],[6285,'m'],[6405,'s'],[6491,'m'],[6610,'h'],[6744,'x'],[6855,'m'],[6975,'l'],[7130,'l'],[7284,'m'],[7400,'m'],[7518,'n']],[208,1088,1958,2788,4558,5408,6278,7158],[648,1508,2388,3188,4538,5388,6248,7108],'stronghold'),
+ terrain(district('syd','Harbour Bridge Assault',8,[[408,'m','cache'],[525,'m','tank'],[644,'l'],[798,'s','tank'],[1108,'L','LUNA PARK|arch'],[1411,'m'],[1774,'h','cache'],[1911,'l'],[2066,'x'],[2182,'h'],[2576,'h'],[2714,'n'],[2786,'s'],[2870,'L','TOWN HALL|tower'],[3141,'m'],[3259,'m'],[3375,'x'],[3491,'m'],[3976,'h'],[4113,'l'],[4270,'h'],[4405,'h'],[4833,'L','ST MARY\'S CATHEDRAL|twin'],[5073,'s','tank'],[5158,'x'],[5473,'m','tank'],[5590,'h'],[5724,'x','radar'],[5838,'l'],[6267,'s'],[6350,'l'],[6505,'l'],[6659,'L','CROWN SYDNEY|needle'],[7005,'x'],[7119,'l'],[7272,'m'],[7392,'h']],[228,988,1698,2388,3078,3818,4508,5248,6018,6688,7448],[598,1308,2018,2738,3428,4138,4908,5608,6308,7088],'district',3840),[[0,0],[388,0],[892,0],[1094,11],[1537,11],[1760,22],[2326,22],[2562,33],[3617,33],[3962,44],[4549,44],[4819,44],[5280,44],[5459,44],[6002,44],[6253,44],[6863,44],[6991,44],[7680,44]]),
+ district('syd','Myrmex Arena',4,[[528,'l'],[988,'m'],[1408,'h'],[1848,'t'],[2228,'s'],[2628,'l'],[3088,'m'],[3498,'s']],[358,858,1288,2108,2958,3378],[388,1268,2078,2948],'boss')
+].map((b,i)=>({...b,wind:([1,-1,1,-1,1] as const)[i]}));
 export const LEVELS:BlockDef[][]=[
  SAN_FRANCISCO,
  NEW_YORK,
@@ -939,6 +955,7 @@ export const LEVELS:BlockDef[][]=[
  district('tyo','Sargathoth Arena',4,[[530,'h'],[980,'l'],[1440,'m'],[1850,'s'],[2250,'t'],[2630,'h'],[3070,'l'],[3510,'s']],[360,860,1320,2130,2940,3390],[390,1280,2090,2920],'boss'),
  ],
  NYC_CLASSIC,
+ SYDNEY,
 ];
 // City systems for every city's open blocks (and Midtown): a west and an east grid and, outside Paris (cables run underground there),
 // a line of power poles down the street. Their substations, fuel stations, radars and rooftop tanks are in the entries above.
@@ -955,5 +972,8 @@ for(const [n,grids,poles] of [
  ['Victoria Assault',[[0, 3840], [3840, 7680]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 4140, 4420, 4700, 4980, 5260, 5540, 5820, 6100, 6380, 6660, 6940, 7220]],
  ['Shinjuku District',[[0, 1920], [1920, 3840]],[220, 500, 780, 1060, 1340, 1620, 2180, 2460, 2740, 3020, 3300, 3580]],
  ['Chuo Corridor',[[0, 2880], [2880, 5760]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 3860, 4140, 4420, 4700, 4980, 5260, 5540]],
+ ['The Rocks',[[0, 1920], [1920, 3840]],[220, 500, 780, 1060, 1340, 1620, 2180, 2460, 2740, 3020, 3300, 3580]],
+ ['George Street',[[0, 2880], [2880, 5760]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 3860, 4140, 4420, 4700, 4980, 5260, 5540]],
+ ['Harbour Bridge Assault',[[0, 3840], [3840, 7680]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 4140, 4420, 4700, 4980, 5260, 5540, 5820, 6100, 6380, 6660, 6940, 7220]],
  ['Tokyo Final Offensive',[[0, 3840], [3840, 7680]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 4140, 4420, 4700, 4980, 5260, 5540, 5820, 6100, 6380, 6660, 6940, 7220]]] as [string,[number,number][],number[]][])for(const city of LEVELS){const i=city.findIndex(b=>b.name===n);if(i>=0)city[i]=powered(city[i],grids,poles);}
 export function levelWidth(block:BlockDef){return sc(block.screens*CONFIG.width);}
