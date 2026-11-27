@@ -1,11 +1,11 @@
 import {groundAt,streetAt,waterAt} from './terrain.ts';
-import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F,BULL,PARADE,CONEY,NYC2} from './config.ts';
+import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F,BULL,PARADE,CONEY,NYC2,FLAG} from './config.ts';
 
 // Civilian vehicles: parked cars, passing traffic, and anything the kaiju punts, carries or throws.
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
 // Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
-export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer'|'bull'|'ball'|'carriage'|'tether'|'wheel'|'coaster';
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer'|'bull'|'ball'|'carriage'|'tether'|'wheel'|'coaster'|'pole';
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat'|'rolling'|'cable';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
@@ -49,6 +49,8 @@ export const VEHICLE_SPECS={
  // New York secret level (Coney Island): the Ferris wheel (a huge round body) and the roller coaster's train. See src/config.ts CONEY.
  wheel:{w:CONEY.wheel.d,h:CONEY.wheel.d,mass:CONEY.wheel.mass,points:CONEY.wheel.points},
  coaster:{w:CONEY.coaster.trainW,h:CONEY.coaster.trainH,mass:CONEY.coaster.mass,points:CONEY.coaster.points},
+ // Mexico City Act 1: the Zócalo's flagpole (src/config.ts FLAG). Stands upright (thick x len) on its plinth; once lifted it is laid flat like a lamppost. Not loose: see loose().
+ pole:{w:FLAG.thick,h:FLAG.len,mass:FLAG.mass,points:0},
 } as const;
 // Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
 // Road vehicles: what explodes when thrown and wrecks with a bang.
@@ -65,8 +67,8 @@ export function vehicleBox(v:Vehicle){return {x:v.x,y:v.y,w:v.w,h:v.h};}
 export function mass(v:Vehicle){return v.mass??VEHICLE_SPECS[v.kind].mass;}
 export function grounded(v:Vehicle){return v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='flat'||v.state==='rolling'||v.state==='cable';}
 // Can be stomped, punted or picked up.
-// The Charging Bull, a balloon's tether, the Ferris wheel and Times Square's ball are never loose, and neither is a coaster train on its track: nothing on the street stomps, punts or wrecks it; only a kaiju strong enough carries it (tryGrab).
-export function loose(v:Vehicle){return v.kind!=='bull'&&v.kind!=='ball'&&v.kind!=='tether'&&v.kind!=='wheel'&&!(v.kind==='coaster'&&v.state==='cable')&&(v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='rolling'||v.state==='cable');}
+// The Charging Bull, the Zócalo's flagpole, a balloon's tether, the Ferris wheel and Times Square's ball are never loose, and neither is a coaster train on its track: nothing on the street stomps, punts or wrecks it; only a kaiju strong enough carries it (tryGrab).
+export function loose(v:Vehicle){return v.kind!=='bull'&&v.kind!=='pole'&&v.kind!=='ball'&&v.kind!=='tether'&&v.kind!=='wheel'&&!(v.kind==='coaster'&&v.state==='cable')&&(v.state==='parked'||v.state==='driving'||v.state==='wreck'||v.state==='rolling'||v.state==='cable');}
 
 function make(id:number,kind:VehicleKind,x:number,lane:0|1,color:string):Vehicle{
  const s=VEHICLE_SPECS[kind];
@@ -91,7 +93,7 @@ export function createParked(xs:number[]):Vehicle[]{
 export function createLamps(worldWidth:number,firstId:number):Vehicle[]{const out:Vehicle[]=[];for(let x=V.lampSpacing,i=0;x<worldWidth-40;x+=V.lampSpacing,i++)out.push(make(firstId+i,'lamp',x-2,0,'#44575a'));return out;}
 // Power poles: taller lamp-kind props on a grid, strung with wires between neighbours.
 export function createPoles(xs:number[],grids:number[],height:number,firstId:number):Vehicle[]{return xs.map((x,i)=>{const v=make(firstId+i,'lamp',x-4,0,'#5b4a3a');v.w=8;v.h=height;v.y=groundAt(x)-height;v.pole=grids[i];return v;});}
-export function upright(v:Vehicle){return v.kind==='lamp'&&v.w<v.h;}
+export function upright(v:Vehicle){return (v.kind==='lamp'||v.kind==='pole')&&v.w<v.h;}
 // Pull a lamppost out of the sidewalk: lay it flat about its centre so it can be carried and thrown lengthwise.
 export function uproot(v:Vehicle){if(!upright(v))return;const cx=v.x+v.w/2,cy=v.y+v.h/2;[v.w,v.h]=[v.h,v.w];v.x=cx-v.w/2;v.y=Math.min(groundAt(v.x+v.w/2)-v.h,cy-v.h/2);}
 
@@ -125,7 +127,7 @@ export function launch(v:Vehicle,vx:number,vy:number,damage:number){
 // Ballistic flight with bounces off the street and the world edges; comes to rest as a wreck. Returns true on settling.
 export function tickFlying(v:Vehicle,dt:number,worldWidth:number){
  if(v.state!=='flying')return false;
- v.vy+=V.gravity*dt;v.x+=v.vx*dt;v.y+=v.vy*dt;if(v.kind==='lamp'&&v.damage>1)v.angle=Math.atan2(v.vy,v.vx);else v.angle+=v.spin*dt;
+ v.vy+=V.gravity*dt;v.x+=v.vx*dt;v.y+=v.vy*dt;if((v.kind==='lamp'||v.kind==='pole')&&v.damage>1)v.angle=Math.atan2(v.vy,v.vx);else v.angle+=v.spin*dt;
  if(v.x<0||v.x+v.w>worldWidth){v.x=Math.max(0,Math.min(worldWidth-v.w,v.x));v.vx=-v.vx*V.restitution;}
  const floor=groundAt(v.x+v.w/2)-v.h;
  if(v.y>=floor){v.y=floor;

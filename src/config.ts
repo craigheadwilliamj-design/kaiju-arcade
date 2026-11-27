@@ -733,3 +733,41 @@ export const VOLCANO = {
  bombs:10,bombRange:620,bombDelay:1.4,bombDamage:22,bombSpeed:260,bombSize:9,
  poolWidth:44,poolDamage:6,poolSeconds:3,
 };
+
+// ---- Mexico City rework, card 3: Act 1 (Templo Mayor, Zócalo, La Merced and Tepito). docs/MEX_REWORK.md ----
+// Every part is opt-in per level (src/levels.ts BlockDef / BuildingSpec); a level that sets none of it runs none of this. Numbers are read in src/game.ts.
+// MEX1: the Act 1 level tuning. `pit`: Templo Mayor's excavation (world units at authored scale, x of the pit's west and east edge, depth below the street in px,
+// and the platform and ramp that lead out of it). The pit is dug into the level's ground profile, so the kaiju spawns below street level. It must stay
+// shallower than a Stage 1 jump (CONFIG jumpVelocity^2 / 2 gravity = 112 px), and the ramp's last `short` px must be a jump or a climb.
+export const MEX1 = {
+ pit:{x0:150,x1:800,depth:60,wall:30,slabX:560,slabH:112,ramp:240,short:36,exit:220},   // x0..x1 pit edges; depth px below the street; wall = run of the steep west wall; the stone platform (the Templo Mayor's base) stands from slabX to the east rim, slabH tall above the floor; ramp = length of the rubble ramp up to its foot, which stops `short` px under the platform's top (a hop or a climb finishes it); exit = run of the gentle slope from the east rim back up to the street
+ palaceW:Math.round(330*CITY_SCALE),palaceH:Math.round(95*CITY_SCALE),   // the Palacio Nacional (target art `palace`): a long, low facade
+};
+// LEAN (the opt-in building field `lean`, degrees, + leans east): a building draws tilted about its base corner on the side it leans. A destroyed leaning building
+// topples the way it leans (never the way it was hit). On a level with `sinking` each sink step adds `sinkStep` degrees of lean (toward the slam: the ground gives
+// way under the stomp and the building tips into the hollow), and a building past `topple` degrees gives way and topples the way it leans. Outside a
+// `sinking` level `lean` is only a starting tilt that decides which way a building falls.
+export const LEAN = {topple:7,sinkStep:1.1,max:12,drawMax:14,landmarkTilt:3.2};
+// FLAG (the Zócalo's flagpole, a level's `pole` x): a heavy grabbable prop of vehicle kind `pole`, never reported as loose (nothing on the street punts or
+// wrecks it). Stood on its plinth it is `len` px tall; any stage lifts it (it is the plaza's answer to having no cover). Held it is laid flat and carried
+// like a lamppost: J or K swings it (`reach` px of extra melee reach, `damage` x the blow, one swing per `cooldown` s, `knock` the knockback) and H throws it
+// flat and fast like a spear from chest height (`throwSpeed`, `throwLift`, `throwDamage`), stopping on the first thing it hits. It never explodes. Lifting it pays `points` once.
+export const FLAG = {len:Math.round(300*CITY_SCALE),thick:10,mass:3,points:400,reach:Math.round(120*CITY_SCALE),damage:2.2,cooldown:.55,knock:420,
+ throwSpeed:900,throwLift:90,throwDamage:150,plinthW:Math.round(70*CITY_SCALE),plinthH:Math.round(26*CITY_SCALE),clear:Math.round(150*CITY_SCALE),hintReach:60};
+// TARP (the opt-in building field `tarp`, a run id): the stalls of a market row joined by a canopy. A burning stall passes fire to the next stall in its run
+// (the canopy bridges any gap up to `gap` px) `spread` x faster than the ordinary FIRE spread: the exposure it builds each spread tick is multiplied by `spread`.
+// Stalls in different runs, or standing without a tarp, are unaffected. `hp` is a stall's hit points.
+export const TARP = {spread:4,gap:Math.round(120*CITY_SCALE),hp:70,stallW:Math.round(64*CITY_SCALE),stallH:Math.round(48*CITY_SCALE),sag:10};
+// ACID (a level's `seeps`, x of storm drains): the foreshadowing hazard, built the way STEAM/vents were. A drain leaks a small green puddle that bubbles for `warn` s
+// before it is ready (`first` s after the level loads, `stagger` s a seep). A slam or pound within `trigger` px (an Ultimate within `ultTrigger`) bursts it: an acid spray
+// `height` tall for `seconds` s that, every `tick` s, burns ground troops within `radius` (`damage`, `knockback`, `stun`, and corrodes them), wears loose
+// vehicles within `carRadius` (`carWear` each tick; at `carHP` a car is a wreck), and eats the base of any building within `baseReach` of the seep (`baseDamage`
+// a tick: damage only, no sinking and never fire). It then leaves an acid puddle `puddleW` wide for `puddleSeconds` s that keeps doing the troop and vehicle damage
+// at `puddleDamage` per tick. A spent seep stays quiet for `rearm` s. Acid is not fire: it never sets anything alight. It never hurts the player.
+// `auto` (card 6's `seepsAuto`): a seep that bursts on its own `auto.every` s after a `auto.warn` s warning, the first at `auto.first`, staggered by `auto.stagger`
+// a seep, `auto.damage` x harder and `auto.radius` x wider. Card 7's flood reads `perSecond`: damage per second to anything standing in the acid band.
+export const ACID = {trigger:Math.round(200*CITY_SCALE),ultTrigger:Math.round(480*CITY_SCALE),first:3,stagger:2.1,warn:1.2,
+ seconds:3.2,height:Math.round(140*CITY_SCALE),radius:Math.round(96*CITY_SCALE),carRadius:Math.round(86*CITY_SCALE),baseReach:Math.round(70*CITY_SCALE),tick:.4,
+ damage:6,knockback:140,stun:.6,carWear:7,carHP:20,baseDamage:9,puddleW:Math.round(70*CITY_SCALE),puddleSeconds:7,puddleDamage:4,rearm:14,points:250,heat:4,
+ perSecond:8,
+ auto:{first:2.5,stagger:1.6,warn:1.2,every:7,damage:1.5,radius:1.3}};
