@@ -2,7 +2,7 @@ import type {Part} from './hitbox.ts';
 // `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 // `role`: a structure with a job in the city (src/city.ts). `roof`: a rooftop fixture on an ordinary building.
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',upperDeck?:boolean,label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant'|'powerhouse',roof?:'radar'|'tank'|'sign'|'crab'|'helipad'|'billboard'|'ball',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean,board?:boolean};
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',upperDeck?:boolean,label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant'|'powerhouse',roof?:'radar'|'tank'|'sign'|'crab'|'helipad'|'billboard'|'ball',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean,board?:boolean,lean?:number,tarp?:number};
 // `parts`: the hitbox silhouette (src/hitbox.ts); omitted means one box, the whole footprint.
 // `prop`: street junk (a walk-through breakable: hot dog cart, trash can, taco stand, advertising column, café table, market stall,
 // vending machine), drawn per kind.
@@ -29,7 +29,7 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,LEAN,FLAG,TARP} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
@@ -94,7 +94,7 @@ export const CITIES:City[]=[
 // street damage, destructible only by deliberate force; the street round it is cleared into a plaza). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
 // without making the level a there-and-back with a west exit): The Battery starts in the harbour, over a `bands` water span with a seabed `ground` profile.
 export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],wind?:1|-1,
- target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
+ target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal'|'palace',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
  guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
  units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
@@ -123,7 +123,17 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  // New York Act 3 (NYC rework card 5), all opt-in. See the notes below.
  ventsAuto?:boolean,yard?:{x0:number,x1:number,spans:number},balloons?:[number,number][],
  // New York secret level (NYC rework card 7), all opt-in. See the notes below.
- wheel?:number,coaster?:[number,number]};
+ wheel?:number,coaster?:[number,number],
+ // Mexico City Act 1 (MEX rework card 3), all opt-in. See the notes below.
+ pole?:number,seeps?:number[],pit?:{x0:number,x1:number,floor:number,slabX:number,slabH:number,ramp:number,short:number}};
+// Mexico City Act 1 (MEX rework card 3), opt-in. A building's `lean` (degrees, signed, + leans east; src/config.ts LEAN) draws it tilted about its base corner and
+// sets the side it topples to when it is destroyed; on a `sinking` level each sink step adds lean and a building past LEAN.topple gives way. Templo Mayor starts in
+// a pit (an authored `ground` dip with a steep west wall and, at its east end, a stone platform with a rubble ramp up to its foot: climb its face or hop from the ramp, src/config.ts MEX1). `pole` x of the Zócalo's flagpole (src/config.ts FLAG): a
+// heavy grabbable prop of vehicle kind `pole`, never loose, swung as a long-reach club and thrown like a spear; its plinth is cleared of street clutter. Target art `palace`
+// is the Palacio Nacional: a long, low arcaded facade with the police command post in its courtyard. A building's `tarp` is a run id: stalls sharing an id are joined by a
+// canopy and fire runs along it TARP.spread x faster (src/config.ts TARP). `seeps` x of storm drains that leak acid (src/config.ts ACID): a slam or pound near one bursts it
+// into a spray that burns troops, wrecks cars and eats a building's base; never fire. `pit` the excavation's x0/x1, floor depth, platform (x of its west face, height) and rubble ramp (world units, for
+// drawing the stone ruins and for the climb-out trigger that makes Popocatépetl puff; the dip itself is in `ground`).
 // New York secret level (NYC rework card 7, Coney Island), opt-in: `wheel` x of the Ferris wheel's centre (src/config.ts CONEY): a huge round body standing on its
 // base, a `deco:'wheelbase'` building; when the base is broken the wheel comes off and rolls (src/rolling.ts), speeding up on any slope, bowling through the buildings it
 // flattens and wrecking against the first it cannot. `coaster` [x0, x1] the roller coaster's run: a raised wooden track of `deco:'track'` buildings (each a stack of
@@ -941,14 +951,70 @@ const SYDNEY:BlockDef[]=[
 // growth, exits and the rejoin are final; the layouts and each level's one new mechanic come in the later cards. Tlézcatl plays here.
 const MEX_ROW='s,m,h,_,l,s,m,_,h,r,_,n,s,m,_',MEX_TALL='x,n,l,x,h,_,n,x,l,n,_',MEX_LOW='r,s,r,m,_,r,s,m,s,_';
 const mexRep=(unit:string,n:number)=>Array(n).fill(unit).join(',');
+
+// ---- Mexico City Act 1 (MEX rework card 3): Templo Mayor, the Zócalo, La Merced and Tepito ----
+// An open hall: a roof beam raised on slim pillars that can be hit but are not solid (the kaiju walks in under the roof), so a pillar never walls off what is inside.
+function hallParts(w:number,h:number,beam:number,pillars:number):Part[]{return [...Array.from({length:pillars},(_,i)=>({x:Math.round(i*(w-14)/(pillars-1)),w:14,top:h-beam,spire:true})),{x:0,w,top:h,base:h-beam}];}
+const COLONIAL='r,m,s,_,h,r,_,m,s,r,_,s,m,r,_';
+// Level 1. Templo Mayor: the kaiju starts at the bottom of the excavation, below street level. A ruined temple gateway stands across the pit: climb its piers and walk
+// the top (the first lesson is climbing) or walk under it and up the rubble ramp at the east end (the fallback, so a player who cannot climb is never stuck). Then east along
+// Calle Moneda and Seminario, colonial blocks leaning on their foundations (some already tilted; the ground gives way under a heavy landing, `sinking`).
+function mexTemplo():BlockDef{
+ const P=MEX1.pit,D=P.depth,START=240;
+ let b=cityLevel('mex','Templo Mayor',7,'district',`>${P.x1+P.exit+80},${mexRep(COLONIAL,6)}`,[],{startStage:1,cap:1,tier:1});
+ // The street dips into the excavation (a steep west wall), runs flat across the floor under the stone platform and climbs back to the street just past the east rim.
+ b=terrain(b,[[0,0],[P.x0,0],[P.x0+P.wall,-D],[P.x1,-D],[P.x1+P.exit,0]]);
+ // The excavation is bare stone: no street junk, parked cars, crowds or hydrants in or just beside it.
+ const lim=sc(P.x1+P.exit+40);
+ b={...b,buildings:b.buildings.filter(x=>!(x.x<lim&&(x.kind==='tiny'||x.role==='hydrant'))),street:b.street.filter(x=>x>lim),cars:b.cars.filter(x=>x>lim)};
+ // The platform: the Templo Mayor's stone base, standing on the pit floor from slabX to the east rim, its roof a good way above the street. A rubble ramp climbs to near its top.
+ const slab=scaled({x:P.slabX,w:P.x1-P.slabX,h:P.slabH,hp:1400,value:250,kind:'large',label:'',color:'#8d8a78',deco:'ruinwall'});
+ // A few colonial blocks start out leaning (the ones tall enough to topple: only those can fall the way they lean).
+ const tilt=[-4,3,-3.5,4.5,-2.5,3.5];let li=0;
+ const buildings=[slab,...b.buildings].map(x=>x.kind==='medium'&&!x.landmark&&!x.deco&&x.h>=sc(200)&&x.x>sc(P.x1+P.exit+120)&&x.x<sc(4200)&&li++%2===0?{...x,lean:tilt[(li>>1)%tilt.length]}:x);
+ return {...b,buildings,spawn:sc(START),pit:{x0:sc(P.x0),x1:sc(P.x1),floor:sc(D),slabX:sc(P.slabX),slabH:sc(P.slabH),ramp:sc(P.ramp),short:P.short},sinking:true,volcano:1,police:true,air:[sc(3600)],
+  units:[['patrol',sc(2300)],['police',sc(3000)],['patrol',sc(4200)]]};
+}
+// Level 2. The Zócalo: a giant open plaza with no cover to speak of (a barricade line, parked buses, the flag's plinth), the Palacio Nacional at its east end with the police
+// command post in its courtyard, and the Metropolitan Cathedral standing at the plaza's west edge, leaning towards the palace: bring it down and it falls across the target. The
+// Bandera Monumental's mast stands at the plaza's west entrance: lift it and it is a long-reach club and a spear.
+function mexZocalo():BlockDef{
+ const T=3660,POLE=2640,CATH_X=2860;
+ let b=cityLevel('mex','Zócalo',7,'stronghold',`${mexRep(MEX_ROW,3)}`,[],{startStage:1,cap:1,tier:2},{target:T,ring:[-520,-300,-60,220,420]});
+ const theme=cityById('mex'),cath=(()=>{const c=scaled({...BUILDING_PRESETS.L,x:CATH_X,label:'CATEDRAL METROPOLITANA',color:'#cdbf9f',landmark:true,shape:'twin'});return {...c,parts:shapeParts('twin',theme.style,c.w,c.h),lean:LEAN.landmarkTilt};})();
+ const pz=sc(POLE),near=(x:number,w=0)=>x+w>pz-FLAG.clear&&x<pz+FLAG.clear;
+ // Parked buses and a stage across the plaza are the only cover; the plinth is bare.
+ const cars=[...b.cars.filter(x=>!near(x,60)),...[3000,3300,3900,4100].map(sc)].sort((p,q)=>p-q);
+ b={...b,cars,street:b.street.filter(x=>!near(x,8)),buildings:[...b.buildings.filter(x=>!near(x.x,x.w)),cath]};
+ return {...b,pole:pz,volcano:1,target:{x:sc(T),label:'PALACIO NACIONAL',art:'palace'},police:true,air:[sc(3000),sc(5200)],
+  units:[['patrol',sc(1500)],['police',sc(2200)],['soldier',sc(4300)],['patrol',sc(5000)]]};
+}
+// Level 3. La Merced and Tepito: colonial blocks, then market rows (stalls joined by tarps: fire runs along a canopy, not across the street), the Metro running underneath, the
+// market hall with the crystal under its roof (the cap lifts to 2) and acid seeps in the storm drains. The Guardia Nacional rolls in at the exit.
+function mexMerced():BlockDef{
+ const HALL=3720,HALL_W=360,HALL_H=150,CRYSTAL=HALL+HALL_W/2;
+ let b=cityLevel('mex','La Merced and Tepito',7,'district',`>400,r,m,s,_,h,r,_,>3040,r,m,_,s,>5420,r,s,m,_,>6180,s,m,r`,[],{startStage:1,cap:1,capLift:2,tier:2});
+ // Market rows: stalls with room between them (wider than the ordinary fire reach, so only the canopy carries the flame), each run its own tarp.
+ const run=(id:number,x0:number,n:number,color:string)=>Array.from({length:n},(_,i)=>({x:sc(x0)+i*(TARP.stallW+Math.round(TARP.gap*.62)),w:TARP.stallW,h:TARP.stallH+(i%2?6:0),hp:TARP.hp,value:50,kind:'medium' as const,label:'',color:i%2?color:'#d9a441',deco:'mstall',tarp:id}));
+ const stalls=[...run(1,1560,5,'#c2402b'),...run(2,2330,4,'#3f7fa6'),...run(3,4400,4,'#c2402b'),...run(4,5030,3,'#5e9a58')];
+ const hall=scaled({x:HALL,w:HALL_W,h:HALL_H,hp:700,value:400,kind:'large',label:'',color:'#9c8466',deco:'mercado',parts:hallParts(HALL_W,HALL_H,40,4)});
+ b={...b,buildings:[...b.buildings,...stalls,hall]};
+ b=clearClutter(b,[[HALL-120,HALL+HALL_W+120]]);
+ // Seeps in the storm drains: beside the foot of a building (acid pools against its base), one by each market row, one by the hall approach.
+ const edges=b.buildings.filter(x=>x.kind!=='tiny'&&x.deco!=='mercado').sort((p,q)=>p.x-q.x),cand:number[]=[];
+ for(let i=1;i<edges.length;i++){const a=edges[i-1].x+edges[i-1].w,g=edges[i].x-a;if(g>=sc(70)&&a>sc(500)&&a<levelWidth(b)-sc(500))cand.push(g<sc(160)?Math.round(a+g/2):a+sc(30));}
+ const far=cand.filter(x=>Math.abs(x-sc(CRYSTAL))>sc(300)),seeps=Array.from({length:Math.min(8,far.length)},(_,i)=>far[Math.floor(i*far.length/Math.min(8,far.length))]);
+ b=clearProps(b,seeps,sc(40));
+ return {...b,subway:[[portalGap(b,sc(1350)),portalGap(b,sc(5300))]],crystal:sc(CRYSTAL),seeps,volcano:1,guard:true,police:true,air:[sc(3000)],swat:[sc(2900),sc(4400)],
+  units:[['patrol',sc(1800)],['police',sc(3300)],['soldier',sc(5200)]]};
+}
 const MEXICO_CITY:BlockDef[]=[
- // 1. Act 1 (Stage 1, cap 1). Templo Mayor: the only level with the sinking twist.
- {...cityLevel('mex','Templo Mayor',7,'district',mexRep(MEX_LOW,6),[],{startStage:1,cap:1,tier:1}),sinking:true,police:true,air:[sc(3600)]},
- // 2. The Zócalo and the Palacio Nacional.
- {...cityLevel('mex','Zócalo',7,'stronghold',mexRep(MEX_ROW,4),[],{startStage:1,cap:1,tier:2},{target:4000}),
-  target:{x:sc(4000),label:'PALACIO NACIONAL',art:'command'},police:true,air:[sc(3000)]},
- // 3. La Merced and Tepito: the crystal under the market hall lifts the cap to 2, the Guardia Nacional rolls in.
- {...cityLevel('mex','La Merced and Tepito',7,'district',`${MEX_ROW},${mexRep(MEX_LOW,4)}`,[],{startStage:1,cap:1,capLift:2,tier:2}),crystal:sc(3900),guard:true,police:true,air:[sc(3000)]},
+ // 1. Act 1 (Stage 1, cap 1). Templo Mayor: the pit start, leaning colonial blocks and the only level with the sinking twist (MEX rework card 3).
+ mexTemplo(),
+ // 2. The Zócalo and the Palacio Nacional: the open plaza, the leaning cathedral and the flagpole.
+ mexZocalo(),
+ // 3. La Merced and Tepito: the crystal under the market hall lifts the cap to 2, the Guardia Nacional rolls in; tarp runs and acid seeps.
+ mexMerced(),
  // 4. Act 2 (Stage 2, cap 2). Alameda and Bellas Artes.
  {...cityLevel('mex','Alameda and Bellas Artes',7,'district',mexRep(MEX_ROW,4),[],{startStage:2,cap:2,tier:2}),guard:true,police:true,air:[sc(2400),sc(4800)]},
  // 5. Paseo de la Reforma: the avenue and Campo Marte at the west end.

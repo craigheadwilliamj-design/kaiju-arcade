@@ -67,8 +67,8 @@ test('Act 1 data: three levels, the right goals and screens, Kaiban at Stage 1, 
 });
 
 test('opt-in: no other level sets the new fields; no other city\'s target art, vents or bull',()=>{
- const mine=[BAT,WALL,SOHO],hudson=LEVELS[NYC].find(x=>x.name==='Hudson Yards')!;// Hudson Yards (Act 3) reuses the steam vents as geysers
- for(const b of LEVELS.flat().filter(x=>!mine.includes(x)&&x!==hudson)){for(const k of ['vents','bull','spawn'])assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);assert.ok(!['fort','exchange'].includes(b.target?.art??''),`${b.name} keeps its own target art`);}
+ const mine=[BAT,WALL,SOHO],hudson=LEVELS[NYC].find(x=>x.name==='Hudson Yards')!,templo=LEVELS[cityIndexOf('mex')][0];// Hudson Yards (Act 3) reuses the steam vents as geysers; Templo Mayor (Mexico City Act 1) starts in a pit with a `spawn`
+ for(const b of LEVELS.flat().filter(x=>!mine.includes(x)&&x!==hudson&&x!==templo)){for(const k of ['vents','bull','spawn'])assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);assert.ok(!['fort','exchange'].includes(b.target?.art??''),`${b.name} keeps its own target art`);}
  assert.deepEqual(mine.map(b=>[b.vents!==undefined,b.bull!==undefined,b.spawn!==undefined]),[[false,false,true],[false,true,false],[true,false,false]]);
  // The Bull is not a loose street object, so nothing that sweeps the street (stomps, waves, blasts, steam) can reach it.
  const bull={kind:'bull',state:'parked'} as any;assert.equal(loose(bull),false);assert.equal(loose({...bull,state:'wreck'}),false);assert.equal(loose({kind:'car',state:'parked'} as any),true);
