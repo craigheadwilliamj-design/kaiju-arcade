@@ -72,6 +72,9 @@ const BL2_LEFT={scale:216/256,anchor:0+128*216/256};
 // Belial Stage 1 strips: the belial-s1 base still, a 145x54 lean juvenile sprite at x=57 in a 256x192 frame (PixelLab Pixen edit of the
 // Stage 2 base, shrunk to 62% and re-drawn younger: slimmer, short nub spines, thin tail, the gland reduced to a drool).
 const BL1_NATIVE={scale:145/256,anchor:57+128*145/256};
+// Sargathoth Stage 1 strips (tools/sargathoth_s1_anim.py): the sargathoth-s1 base still, a 236x91 heap of kelp and maritime debris at x=10
+// in a 256x192 frame, feet on row 191; idle and walk are warps of that base, so every strip lines up on it.
+const SG1_NATIVE={scale:236/256,anchor:10+128*236/256};
 // Myrmex Stage 2 strips: posed by the cutout rig (tools/myrmex_s2_rig.py) from the 146x122 keyed sprite, origin at x=55 in a
 // 256x192 frame, then redrawn clean by PixelLab (tools/pixellab_edit_animation.py).
 const MX2_NATIVE={scale:146/256,anchor:55+128*146/256};
@@ -866,6 +869,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
    hold:[[198,184],[199,184],[200,186],[200,186],[200,186],[200,184],[199,183],[198,183]]},
   throw:{src:'assets/belial-s2-throw.png',frames:7,fps:18,once:true,...BL2_LEFT}},
   stages:{1:BELIAL_S1,3:BELIAL_S3}},
+ // Sargathoth (a heap of kelp and fishing/maritime debris with glowing green eyes; kit design in docs/SARGATHOTH_KIT.md): only idle and walk are
+ // drawn so far, both at Stage 1 (the base form, so later stages play it too). Every other move holds the idle strip until it is animated.
+ Sargathoth:{width:120,anims:{idle:{src:'assets/sargathoth-s1-idle.png',frames:8,fps:8,...SG1_NATIVE},
+  walk:{src:'assets/sargathoth-s1-walk.png',frames:8,fps:11,...SG1_NATIVE}}},
  // Myrmex (red winged scorpion-ant: curled tail with a glowing venom stinger (poison, not fire), orange wasp wings, long neck, two long hind legs, small
  // dangling middle legs, long clawed forelegs): the Stage 2 form is the base form; Stage 1 (MYRMEX_S1) has its own complete set,
  // and Stage 3 (MYRMEX_S3) has its own idle and walk, borrowing the rest from here. Rig origin at x=55 of a 256x192 frame, native scale (MX2_NATIVE).
