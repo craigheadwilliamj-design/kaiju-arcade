@@ -15,7 +15,7 @@ import {NEW_YORK_BLOCK_ONE,DRILL_BLOCK,WATER_DRILL,CITIES,LEVELS,levelWidth,city
 import type {BlockDef,Mood} from './levels.ts';
 import {createBuildings,damageBuilding,destruction,exitUnlocked,perfectBonus,solid,overlaps,canExitBlock,damageObjective,separateHorizontal,canTopple,toppleSpan,crushDamage,liftable} from './rules.ts';
 import {wearFloor,floorAt,floorHeightOf} from './rules.ts';
-import {createCombat,setGrowth,liftCap,canAct,scale,damageMultiplier,collectCrystal,creditDamage,tickCombat,light,beginHeavy,releaseHeavy,ranged,activateUltimate,activateSuper,cancelCharge,receiveHit,vulnerability} from './combat.ts';
+import {createCombat,setGrowth,liftCap,canAct,scale,damageMultiplier,collectCrystal,creditDamage,tickCombat,light,beginHeavy,releaseHeavy,ranged,activateUltimate,activateSuper,cancelCharge,receiveHit,vulnerability,chargeArmor} from './combat.ts';
 import type {Strike} from './combat.ts';
 import {createMilitary,tickMilitary,spawnUnit,hitUnit as hitUnitBase,intercept,segmentHits,captureUnit,callStrike,GRABBABLE_UNITS,UNITS,WEAPONS,roadLane,ROAD_UNITS,smallArmsScale,blast,NAVAL_UNITS,setNavyUnderDecks,cruiseY,setCover,floatY} from './military.ts';
 import type {MilitaryEvent} from './military.ts';
@@ -337,6 +337,8 @@ let shards:{x:number,y:number,vx:number,vy:number,life:number}[]=[],growths:{x:n
 type Wave={x:number,vx:number,life:number,max:number,damage:number,hits:Set<object>,ult:boolean,size:number,knockback:number};
 // A Tremor Slam waiting for its strip's impact frame.
 let tremor:{t:number,dir:number}|null=null;
+// Sargathoth's Undertow: the heavy lands on the crash frame of the slam strip, not at release.
+let undertow:{t:number,strike:Strike}|null=null;
 // Kaiban's Debris Shotgun: the scoop waiting for its fling frame, and the rock chunks in flight (ballistic, stop on first hit).
 let debris:{t:number,dir:number}|null=null;
 type Rock={x:number,y:number,vx:number,vy:number,life:number,damage:number,knockback:number,spin:number,size:number,meteor?:boolean};
@@ -2127,13 +2129,18 @@ function mantle(b:NonNullable<typeof clingTo>,p:HitPart,w:number,h:number){
   // Only a step across a ledge; anything further (under an overhang) just keeps hanging where it is.
   if(next.y<p.y&&Math.abs(nx-player.x)<=w){player.x=nx;clingTo=b;clingPart=next;mantled=false;}return false;}
  player.y=y;player.x=x;player.vy=0;clingTo=null;clingPart=null;mantled=true;return true;}
-function performStrike(strike:Strike|null){
+function performStrike(strike:Strike|null,late=false){
  if(!strike||mode!=='playing')return;
  const {kind,damage}=strike;player.pose=kind==='heavy'?.3:.18;
  // Crouched light on any footing (street or rooftop) is the Pound: it beats down on what is under your feet.
  if(kind==='light'&&player.crouched&&player.grounded&&!clingTo&&!poleExtra){pound(strike);return;}
- attack=kind==='light'?{anim:clingTo?'climbPunch':LIGHT_ANIMS[strike.combo-1],t:0}:kind==='heavy'?{anim:'heavySlam',t:0}:{anim:player.crouched?'rangedCrouch':'rangedStand',t:0};
+ if(!late)attack=kind==='light'?{anim:clingTo?'climbPunch':LIGHT_ANIMS[strike.combo-1],t:0}:kind==='heavy'?{anim:'heavySlam',t:0}:{anim:player.crouched?'rangedCrouch':'rangedStand',t:0};
  const w=bodyWidth(),h=bodyHeight(),y=player.y+h*.45;
+ // Sargathoth on the ground: Undertow. The wave crests, then crashes; the hit and the surge leave on the crash frame.
+ const undertowing=kind==='heavy'&&activeKaiju==='Sargathoth'&&player.grounded&&!clingTo;
+ if(undertowing&&!late){const t=animImpact(activeKaiju,'heavySlam',combat.stage);if(t>0){undertow={t,strike};return;}}
+ if(undertowing){const grow=Math.sqrt(scale(combat)),life=SARG.surgeRange*grow/SARG.surgeSpeed;
+  waves.push({x:player.x+w/2+player.face*w*.6,vx:player.face*SARG.surgeSpeed,life,max:life,damage:damage*SARG.surgeDamage,hits:new Set(),ult:false,size:B.tremorSize*grow,knockback:B.tremorKnockback});}
  // Mogurodon on the ground: Tremor Slam instead of a quill. Airborne or clinging he still flicks a quill (his only anti-air ranged).
  if(kind==='ranged'&&activeKaiju==='Mogurodon'&&player.grounded&&!clingTo){attack={anim:'rangedSlam',t:0};player.pose=.3;combat.rangedCooldown=B.tremorCooldown;
   tremor={t:animImpact(activeKaiju,'rangedSlam',combat.stage),dir:player.face};if(tremor.t<=0)launchTremor();return;}
@@ -2148,7 +2155,7 @@ function performStrike(strike:Strike|null){
  // Myrmex: L starts brewing a Venom Bomb (thrown on release), on the ground, in the air or on a wall.
  if(kind==='ranged'&&isMyrmex()){if(!brew&&!spit){attack=null;brew={t:0};}return;}
  if(kind==='ranged'){if(shots.length<B.rangedMax)shots.push({x:player.x+w/2+player.face*w*.52,y,vx:player.face*C.projectileSpeed,life:1.8,damage,knockback:strike.knockback});return;}
- const lash=kind==='light'&&activeKaiju==='Sargathoth'&&!clingTo,reach=(C.meleeReach+(kind==='heavy'?20:0))*scale(combat)*(lash?SARG.lashReach[strike.combo-1]??1:1)+poleExtra;
+ const lash=kind==='light'&&activeKaiju==='Sargathoth'&&!clingTo,reach=(C.meleeReach+(kind==='heavy'?20:0))*scale(combat)*(lash?SARG.lashReach[strike.combo-1]??1:1)*(undertowing?SARG.undertowReach:1)+poleExtra;
  const box={x:player.face===1?player.x+w-10:player.x-reach+10,y:player.y-8,w:reach,h:h+16};
  if(objective&&!objective.shattered&&overlaps(box,obox()))hitObjective(damage);
  popBalloonsIn(box);
@@ -2363,7 +2370,7 @@ function drainMilitary(){
 }
 // First fissure waits for the roar's crash-down so the waves come out of the slam.
 // Kaiban's Stampede bellows on the same impact frame, then charges (tickStampede) instead of sending fissures.
-function useUltimate(){if(!activateUltimate(combat))return;strikeFault(player.x+bodyWidth()/2,true);strikeVents(player.x+bodyWidth()/2,true);strikeSeeps(player.x+bodyWidth()/2,true);attack=null;tremor=null;debris=null;jet=null;jet=null;jetFuel=1;jetLocked=false;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;
+function useUltimate(){if(!activateUltimate(combat))return;strikeFault(player.x+bodyWidth()/2,true);strikeVents(player.x+bodyWidth()/2,true);strikeSeeps(player.x+bodyWidth()/2,true);attack=null;tremor=null;undertow=null;debris=null;jet=null;jet=null;jetFuel=1;jetLocked=false;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;
  stampede=activeKaiju==='Kaiban'?{dir:player.face,hits:new Set(),turned:false,bellowed:false,charging:false,start:player.x,reach:B.stampedeReach*scale(combat)}:null;
  eruptLandings=[];eruption=activeKaiju==='Tlézcatl'?{blasted:false,spat:0,flash:0,boom:0}:null;
  if(eruption)ultimateTimer+=B.eruptCharge;
@@ -2572,6 +2579,8 @@ function update(dt:number){
  actionTime=Math.max(0,actionTime-dt);shake=Math.max(0,shake-dt*14);player.pose=Math.max(0,player.pose-dt);
  if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim,combat.stage))attack=null;}
  if(tremor){tremor.t-=dt;if(tremor.t<=0)launchTremor();}
+ chargeArmor.on=activeKaiju==='Sargathoth';
+ if(undertow){if(combat.dead||combat.stagger>0)undertow=null;else{undertow.t-=dt;if(undertow.t<=0){const s=undertow.strike;undertow=null;performStrike(s,true);}}}
  if(debris){debris.t-=dt;if(debris.t<=0)launchDebris();}
  // Venom Bomb: brew while L is held; releasing throws it (a hit or anything that stops him acting drops the brew).
  if(brew){if(!canAct(combat)||combat.dead)brew=null;else if(keys.has('KeyL'))brew.t+=dt;

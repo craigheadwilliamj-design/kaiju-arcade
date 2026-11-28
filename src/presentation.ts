@@ -942,7 +942,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   light3:{src:'assets/sargathoth-s1-light3.png',frames:8,fps:20,once:true,...SG1_LEFT},
   // Undertow (heavy): the mound swells into a tall column whose crest curls forward (tools/sargathoth_s1_heavy.py), trembles while held, then topples and crashes flat like a breaking wave, spraying debris.
   heavyRear:{src:'assets/sargathoth-s1-heavy-rear.png',frames:5,fps:20,once:true,...SG1_LEFT},heavyHold:{src:'assets/sargathoth-s1-heavy-hold.png',frames:4,fps:10,...SG1_LEFT},
-  heavySlam:{src:'assets/sargathoth-s1-heavy-slam.png',frames:9,fps:18,once:true,...SG1_LEFT}}},
+  heavySlam:{src:'assets/sargathoth-s1-heavy-slam.png',frames:9,fps:18,once:true,impact:3,...SG1_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}

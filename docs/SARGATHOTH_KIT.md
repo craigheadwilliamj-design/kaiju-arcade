@@ -70,6 +70,8 @@ Kelp anchors with a holdfast, so this is his stance.
 **Crouch light (pound):** a holdfast stomp that **places one Kelp Snare** just in front of him.
 
 ### Heavy — Undertow
+**Implemented so far (Stage 1):** a breaking-wave strip set (`tools/sargathoth_s1_heavy.py`); the hit lands on the slam's crash frame, reaches `SARG.undertowReach` x the normal heavy reach and rolls a surge wave ahead (`SARG.surge*`); charging is super armor (`chargeArmor` in `src/combat.ts`). The snare throw below waits on Kelp Snares.
+
 Hold → rear → slam (`heavy-hold` / `heavy-rear` / `heavy-slam`), the arm swelling as fronds bunch up on it. At
 `undertowSnareCharge` or more of a full charge, the slam throws `undertowSnares` Kelp Snares out across the street ahead.
 
