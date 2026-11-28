@@ -45,6 +45,7 @@ A heap of kelp and old net lying on the street.
 ## Passive — Holdfast
 
 Kelp anchors with a holdfast, so this is his stance.
+- **Crouch strips (Stage 1, done):** `crouch-down` / `crouch` (loop) / `crouch-up` from `tools/sargathoth_s1_crouch.py`, about .6 of his height. Holdfast itself isn't implemented yet and can reuse them.
 - **Entering it:** hold crouch for `holdfastDelay` and he anchors (`holdfast-down` → `holdfast-idle` loop → `holdfast-up`).
 - **While anchored:**
   - He can't be knocked back or staggered.
