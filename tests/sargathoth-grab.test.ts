@@ -6,6 +6,7 @@ test('Grab: the strips are registered (grab 13 frames at 22 fps; carry and carry
 });
 // Hold points are frame pixels; convert to world units from the feet and the body centre (the same maths as holdPoint, which needs loaded art).
 const world=(a:any,p:number[])=>{const k=SPRITES.Sargathoth.width/(256*a.scale);return [(p[0]-a.anchor)*k,-(191-p[1])*k];};
+test('Throw: the strip is registered (8 frames at 18 fps, once)',()=>{assert.equal(animDuration('Sargathoth','throw'),8/18);assert.equal(SPRITES.Sargathoth.anims.throw.once,true);});
 test('Grab: the prop starts at his feet, follows the frond up, and lands where the carry strips hold it',()=>{
  const A=SPRITES.Sargathoth.anims,g=A.grab,c=A.carry,w=A.carryWalk,gh=g.hold as number[][],ch=c.hold as number[][],wh=w.hold as number[][];
  assert.equal(gh.length,g.frames);assert.equal(ch.length,c.frames);assert.equal(wh.length,w.frames);
