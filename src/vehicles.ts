@@ -1,15 +1,17 @@
 import {groundAt,streetAt,waterAt} from './terrain.ts';
-import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F,BULL,PARADE,CONEY,NYC2,FLAG,STONE} from './config.ts';
+import {CONFIG as C,VEHICLES as V,UNIT_CONFIG as U,BUILDING_PRESETS as BP,FEEL as F,BULL,PARADE,CONEY,NYC2,FLAG,STONE,XOCHI} from './config.ts';
 
 // Civilian vehicles: parked cars, passing traffic, and anything the kaiju punts, carries or throws.
 // Positions are world space with y as the top edge (resting on the street means y = ground - h). Lanes only change
 // where a grounded vehicle is drawn (lane 0 behind the kaiju's feet, lane 1 in front); gameplay collision is x/y only.
 // Civilian traffic kinds, plus props the kaiju can lift: captured military vehicles and small structures.
-export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer'|'bull'|'ball'|'carriage'|'tether'|'wheel'|'coaster'|'pole'|'stone';
+export type VehicleKind='car'|'van'|'bus'|'patrol'|'apc'|'tank'|'artillery'|'stand'|'barrier'|'lamp'|'building'|'train'|'boat'|'tram'|'cablecar'|'firetruck'|'gunboat'|'destroyer'|'bull'|'ball'|'carriage'|'tether'|'wheel'|'coaster'|'pole'|'stone'|'trajinera';
 export type VehicleState='parked'|'driving'|'held'|'flying'|'wreck'|'flat'|'rolling'|'cable';
 export type Vehicle={id:number,kind:VehicleKind,x:number,y:number,w:number,h:number,vx:number,vy:number,angle:number,spin:number,
  state:VehicleState,color:string,lane:0|1,dir:number,speed:number,cruise:number,panic:0|1|2,rewarded:boolean,traffic:boolean,
- damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean,line?:[number,number],plows?:number,glide?:number,runaway?:boolean,tossed?:boolean,hp?:number,freed?:boolean,chunk?:{shape:string,H:number,cut:number}};
+ damage:number,hits:Set<object>,label:string,mass?:number,burn?:number,thrown?:boolean,shield?:number,calm?:number,pole?:number,snapped?:boolean,line?:[number,number],plows?:number,glide?:number,runaway?:boolean,tossed?:boolean,hp?:number,freed?:boolean,chunk?:{shape:string,H:number,cut:number},blaze?:number,expo?:number,moored?:boolean,riders?:number,variant?:'plain'|'food'|'mariachi',float?:number,charred?:boolean};
+// blaze: seconds a BURNS kind has left alight (src/config.ts XOCHI.burn; it stays alight while it drifts, flies or is carried); expo: exposure towards catching (1 = alight); moored: tied up at the dock until disturbed;
+// riders: the crowd aboard; variant: art only (a food boat, a mariachi boat); float: seconds a wreck or debris floats on a current before it sinks; charred: burnt out.
 // hp, freed: the Charging Bull's hit points, and whether a kaiju has pried it off its plinth (then slams and pounds hurt it).
 // chunk: a sheared-off top of a shaped landmark: the shape it was cut from, that shape's full height and how far up it was cut.
 // pole: a power pole (lamp-kind prop) on that grid index; snapped once it has been knocked out of upright.
@@ -53,11 +55,15 @@ export const VEHICLE_SPECS={
  pole:{w:FLAG.thick,h:FLAG.len,mass:FLAG.mass,points:0},
  // Mexico City Act 2: Chapultepec's Sun Stone (src/config.ts STONE), a heavy round disc only a Stage 3 kaiju lifts. Not loose: see loose().
  stone:{w:STONE.d,h:STONE.d,mass:STONE.mass,points:0},
+ // Mexico City secret level: a trajinera (src/config.ts XOCHI.boat), a flat painted boat. Floats, drifts with a canal's current, carries a crowd, grabbed, thrown and smashed like a bus; it is the only kind that burns on (BURNS).
+ trajinera:{w:XOCHI.boat.w,h:XOCHI.boat.h,mass:XOCHI.boat.mass,points:XOCHI.boat.points},
 } as const;
 // Impact damage weight; defaults to mass. Lampposts hit harder than their weight because they spear.
 // Road vehicles: what explodes when thrown and wrecks with a bang.
 export const EXPLOSIVE=new Set<VehicleKind>(['car','van','bus','patrol','apc','tank','artillery','train','boat','gunboat','destroyer','tram','cablecar','firetruck','coaster']);
 export const CIVILIAN=new Set<VehicleKind>(['car','van','bus','tram','cablecar','firetruck','carriage']);
+// The kinds that can stay alight (opt-in: a wreck's `burn` is a visual countdown, this is a real, lasting state; see tickXochi in src/game.ts).
+export const BURNS=new Set<VehicleKind>(['trajinera']);
 const IMPACT:Partial<Record<VehicleKind,number>>={lamp:1.6};
 export function impact(v:Vehicle){return IMPACT[v.kind]??mass(v);}
 let COLORS=['#b16d5b','#70958e','#a09b65','#7d84a6','#c1a06a'],TAXI='';

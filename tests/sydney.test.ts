@@ -54,7 +54,7 @@ test('Sydney landmark shapes: the Opera House sails and Sydney Tower have sound 
 // nothing else about either city moved).
 test('every other city is unchanged by Sydney (pinned data hashes); Hong Kong and Tokyo changed only boss and arena name',()=>{
  const hash=(c:unknown,l:unknown)=>createHash('sha256').update(JSON.stringify([c,l])).digest('hex').slice(0,16);
- const pins:Record<string,string>={sfo:'3821996d89f9ea38',nyc:'1cad94c8ae45aeff',mex:'db0f9d2c44ab96f7',par:'990f83d9c463c3ec',hkg:'356aa6c01e5bfa81',tyo:'672acd4b9f59803b','nyc-classic':'5f48ba99179897a7'};
+ const pins:Record<string,string>={sfo:'3821996d89f9ea38',nyc:'1cad94c8ae45aeff',mex:'ffbbefc5d6245652',par:'990f83d9c463c3ec',hkg:'356aa6c01e5bfa81',tyo:'672acd4b9f59803b','nyc-classic':'5f48ba99179897a7'};
  for(const [id,pin] of Object.entries(pins)){const i=cityIndexOf(id);assert.equal(hash(CITIES[i],LEVELS[i]),pin,id);}
  // The fixture city is provably the old Mexico City: put back its id and name, strip the opt-in `sinking`, and the old pin comes back.
  assert.equal(hash({...CITIES[cityIndexOf('mex-classic')],id:'mex',name:'Mexico City'},LEVELS[cityIndexOf('mex-classic')].map(({sinking,...b})=>b)),'faec75a8f7fe52bc','mex-classic is the old mex');
