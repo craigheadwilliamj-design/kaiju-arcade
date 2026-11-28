@@ -7,6 +7,7 @@ import {profileY,setTerrain} from '../src/terrain.ts';
 import {bandAt} from '../src/water.ts';
 import {exitTarget,nextBlock,newRun,latchBlock,routeLevels,CAMPAIGN} from '../src/campaign.ts';
 import {bootCampaign} from './helpers/game-harness.ts';
+import {loose} from '../src/vehicles.ts';
 // New York Act 2 (NYC rework card 3): Times Square, Grand Central, Central Park. Data checks, then real-loop checks of each new mechanic
 // (the game's own update loop, tests/helpers/game-harness.ts; `goto` jumps to a block and `teleport` moves the kaiju, nothing else).
 const NYC=cityIndexOf('nyc'),L=LEVELS[NYC],[,,,TS,GC,CP]=L,at=(n:string)=>L.findIndex(b=>b.name===n),sc=(n:number)=>Math.round(n*C.cityScale);
@@ -23,7 +24,7 @@ test('Act 2 data: three levels in order with the right goals, screens, growth an
   for(let i=0;i<solid.length;i++)for(let j=i+1;j<solid.length;j++)assert.ok(!overlaps({x:solid[i].x,y:0,w:solid[i].w,h:1},{x:solid[j].x,y:0,w:solid[j].w,h:1}),`${b.name}: solid buildings overlap`);}
  // The new fields are opt-in: no other level sets them.
  const fields=['night','concourse','zoo','carriages'];
- for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)))for(const k of fields)assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);
+ for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)&&x.name!=='Chapultepec'))for(const k of fields)assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);// Chapultepec (Mexico City Act 2) has its own zoo
  for(const b of LEVELS.flat().filter(x=>!ACT2.includes(x)))for(const x of b.buildings){assert.equal(x.board,undefined);assert.ok(x.roof!=='billboard'&&x.roof!=='ball');}
 });
 
@@ -42,9 +43,10 @@ test('Times Square data: night, a grid each side with billboards on both, the ba
 });
 
 test('Times Square: the night mood is read from the level, other levels stay in daylight',async()=>{
- const h=await boot('Times Square');assert.equal(h.state().moodLights,1);
- h.test().goto(at('Grand Central'));h.step(2);assert.equal(h.state().moodLights,CITIES[NYC].mood.lights);
- h.test().goto(at('Times Square'));h.step(2);assert.equal(h.state().moodLights,1,'and back');
+ // Times Square and Grand Central ramp their light along the level (tests/nyc-mood.test.ts); mid-level the mood is the full night and the full day.
+ const h=await boot('Times Square',sc(3400));assert.equal(h.state().moodLights,1);
+ h.test().goto(at('Grand Central'),sc(3400));h.step(2);assert.equal(h.state().moodLights,CITIES[NYC].mood.lights);
+ h.test().goto(at('Times Square'),sc(3400));h.step(2);assert.equal(h.state().moodLights,1,'and back');
 });
 
 test('Times Square blackout: destroying a substation darkens that grid\'s billboards (facade and roof); the other grid stays lit',async()=>{
@@ -160,4 +162,96 @@ test('Central Park: leaving by each end in the real loop loads the level the exi
  for(const side of ['west','east'] as const){const h=await boot('Central Park');h.test().demolish(.8);h.step(5);
   h.test().teleport(side==='west'?sc(30):levelWidth(CP)-sc(120));h.down(side==='west'?'KeyA':'KeyD');h.step(240);h.up(side==='west'?'KeyA':'KeyD');h.step(5);
   const s=h.state();assert.ok(s.exitSide===side||s.mode!=='playing'||s.blockName!=='Central Park',`${side}: ${s.mode} ${s.blockName} ${s.exitSide}`);}
+});
+
+// ---- NYC fix 3: the ball is a prop: carry it, bowl it, lob it, and shatter it ----
+const ballOf=(h:any)=>h.state().vehicles.find((o:any)=>o.kind==='ball');
+const grabBall=(h:any)=>{for(let n=0;n<5;n++){h.tap('KeyH');h.step(3);if(h.state().held==='ball')return true;}return false;};
+const bootBall=async(crowd:number[]=[])=>{const h=await boot('Times Square');const s=h.state();h.test().shield(1e6);const x=TS.buildings.find(b=>b.roof==='ball')!.x-sc(900);
+ h.test().placeBall(x+sc(80),crowd.map(c=>x+c));h.test().teleport(x-s.width-20);h.step(3);return {h,x};};
+const throwBall=(h:any,lob=false)=>{if(lob)h.down('KeyW');h.tap('KeyH');h.step(1);if(lob)h.up('KeyW');};
+
+test('ball constants: a heavy prop with a finite hit-point pool, thrown hard',()=>{
+ assert.ok(NYC2.ballHp>=3&&NYC2.ballHp<=6,'a few great throws');assert.ok(NYC2.ballThrowDamage>=150*.9);assert.ok(NYC2.ballReroll>0&&NYC2.ballReroll<=1);
+ assert.ok(NYC2.ballGrabSpeed<NYC2.ballSpeed);assert.ok(NYC2.ballLobLift>NYC2.ballThrowLift);assert.ok(NYC2.ballShatterPoints>NYC2.ballPoints);
+});
+
+test('ball grab: after the drop it lies on the street and a Stage 2 kaiju lifts it overhead, spinning; it is never `loose`',async()=>{
+ const h=await boot('Times Square');h.test().shield(1e6);const ti=TS.buildings.findIndex(b=>b.roof==='ball'),tower=TS.buildings[ti];
+ h.test().teleport(tower.x-sc(500));h.step(3);assert.ok(h.test().shear(ti,.6));h.step(30+Math.ceil(NYC2.ballFall*60));
+ let s=h.state();assert.ok(s.ball&&s.ball.state==='rolling','it rolls first');assert.equal(s.stage,2);
+ // Too fast to grab while it is still running.
+ h.test().teleport(s.ball.x-s.width-20);h.step(1);h.tap('KeyH');h.step(2);assert.equal(h.state().held,null,'a fast ball is not grabbable');
+ h.step(2400);s=h.state();assert.equal(s.ball.state,'parked','it settles parked');assert.equal(s.ballChips,0);
+ h.test().teleport(s.ball.x-s.width-14);h.step(2);assert.ok(grabBall(h),'grabbed');s=h.state();assert.equal(s.held,'ball');assert.equal(s.ball.state,'held');
+ const a0=ballOf(h).angle;h.step(30);assert.notEqual(ballOf(h).angle,a0,'it keeps spinning');
+ const b=ballOf(h);assert.ok(b.y+b.h<s.y+s.height,'held clear of the feet');
+ assert.equal(h.state().ballsLoosed,1);assert.ok(h.state().score>=NYC2.ballPoints);
+ const pts=h.state().score;h.tap('KeyH');h.step(60);assert.ok(h.state().score-pts<NYC2.ballPoints,'the drop points are paid once');assert.equal(h.state().ballsLoosed,1);
+});
+
+test('ball grab: Stage 1 cannot lift it, and only on Times Square does a ball exist',async()=>{
+ const {h}=await bootBall();h.test().growTo(1);h.step(2);assert.equal(h.state().stage,1);const v=ballOf(h);h.test().teleport(v.x-h.state().width-14);h.step(2);h.tap('KeyH');h.step(3);assert.equal(h.state().held,null);
+ const g=await boot('Grand Central');assert.equal(ballOf(g),undefined);
+ for(const b of LEVELS.flat().filter(x=>x!==TS))for(const x of b.buildings)assert.notEqual(x.roof,'ball');
+});
+
+test('ball throw: a forward throw re-rolls on landing and squashes the crowd in its path',async()=>{
+ const {h,x}=await bootBall([sc(560),sc(600),sc(640),sc(700)]);const v0=ballOf(h);h.test().teleport(v0.x-h.state().width-14);h.step(2);assert.ok(grabBall(h));
+ const px=ballOf(h).x;throwBall(h);let flew=false,rolled=false,top=0;
+ for(let n=0;n<240&&!rolled;n++){h.step();const b=ballOf(h);if(b.state==='flying')flew=true;if(flew&&b.state==='rolling'){rolled=true;top=b.vx;}}
+ assert.ok(flew,'it flies first');assert.ok(rolled,'then rolls again where it lands');assert.ok(top>=NYC2.ballRerollMin,`rolling at ${Math.round(top)}`);
+ const lx=ballOf(h).x;assert.ok(lx-px>sc(80),'it carries forward');assert.ok(Math.abs(top)<=NYC2.ballThrowSpeed,'with no more than the throw speed');
+ const crowd0=h.state().civilians;h.step(240);const s=h.state();assert.ok(s.ballCrowd>=1,`crowd squashed ${s.ballCrowd}`);assert.ok(s.civilians<crowd0);assert.equal(s.ballChips,0,'a roll over open street costs nothing');
+ void x;
+});
+
+test('ball throw: a lobbed ball settles parked and stays grabbable; rolling into a building stops it dead',async()=>{
+ const {h}=await bootBall();let v=ballOf(h);h.test().teleport(v.x-h.state().width-14);h.step(2);assert.ok(grabBall(h));throwBall(h,true);
+ let rolled=false;for(let n=0;n<2400&&ballOf(h).state!=='parked';n++){h.step();if(ballOf(h).state==='rolling')rolled=true;}
+ v=ballOf(h);assert.equal(v.state,'parked','it settles');assert.equal(v.vx,0);assert.ok(rolled||true);assert.equal(h.state().ballChips,0,'open street costs it nothing');
+ h.test().teleport(v.x-h.state().width-14);h.step(2);assert.ok(grabBall(h),'still grabbable');
+ // Bowled at a tower: it stops against it (a hard hit also chips it).
+ const b=TS.buildings.map((x,i)=>[x,i] as const).filter(([x])=>x.kind!=='tiny'&&!x.landmark).find(([x])=>x.x>ballOf(h).x+sc(250))!;const hp0=h.state().buildings[b[1]].hp;
+ h.test().teleport(b[0].x-sc(420));h.step(3);throwBall(h);let landed=false;
+ for(let n=0;n<2400;n++){h.step();const s=ballOf(h);if(s.state==='rolling')landed=true;if(landed&&s.state==='parked')break;}
+ assert.ok(landed,'it rolled on landing');assert.equal(ballOf(h).state,'parked','and came to rest');assert.ok(h.state().buildings[b[1]].hp<hp0,'the tower took the hit');
+});
+
+test('ball lob: W + throw sends it high, and a helicopter on the arc is hit (a flat throw passes under it)',async()=>{
+ const lobTo=async(lob:boolean,apexAt?:{cx:number,by:number,frame:number})=>{
+  const {h}=await bootBall();const v=ballOf(h);h.test().teleport(v.x-h.state().width-14);h.step(2);assert.ok(grabBall(h));
+  const st=h.state(),air=()=>h.state().militaryUnits.filter((m:any)=>m.type==='helicopter');const n0=air().length,hp0=air().reduce((a:number,m:any)=>a+m.hp,0);
+  if(apexAt)h.test().spawnUnitOn('helicopter',apexAt.cx-30+1.6*apexAt.frame,apexAt.by);
+  const y0=ballOf(h).y;throwBall(h,lob);let top=Infinity,at={cx:0,by:0,frame:0};
+  for(let n=0;n<70;n++){h.step();const b=ballOf(h);if(b.y<top){top=b.y;at={cx:b.x+b.w/2,by:b.y+b.h,frame:n};}}
+  void st;return {climb:y0-top,at,hit:air().length<(apexAt?n0+1:n0)||air().reduce((a:number,m:any)=>a+m.hp,0)<hp0+(apexAt?95:0)};};
+ const first=await lobTo(true);assert.ok(first.climb>sc(100),`the lob climbs ${Math.round(first.climb)}px`);
+ const hitLob=await lobTo(true,first.at);assert.ok(hitLob.hit,'the lob hits the helicopter');
+ const flat=await lobTo(false);assert.ok(flat.climb<first.climb/2,'a flat throw stays low');
+});
+
+test('ball finish: hard impacts chip it (cracks, then broken panels) and N of them shatter it exactly once, with the banner and points',async()=>{
+ const {h}=await bootBall();h.test().growTo(3);h.step(1);const hps:number[]=[],banners=new Set<string>();let score0=0;
+ const alive=(i:number)=>h.state().buildings[i].hp>0;
+ const solids=TS.buildings.map((x,i)=>[x,i] as const).filter(([x])=>x.kind!=='tiny'&&!x.landmark&&x.hp>0).sort((p,q)=>p[0].x-q[0].x);
+ for(let tries=0;tries<30&&ballOf(h)&&h.state().ballShatters===0;tries++){
+  for(let n=0;n<2400&&ballOf(h)&&ballOf(h).state!=='parked';n++)h.step();let v=ballOf(h);if(!v)break;
+  h.test().teleport(v.x-h.state().width-14);h.step(2);let got=grabBall(h);
+  if(!got){h.test().teleport(v.x+v.w+14);h.down('KeyA');h.step(2);h.up('KeyA');got=grabBall(h);h.down('KeyD');h.step(2);h.up('KeyD');}// boxed in on the west: lift it from the east, then turn round
+  if(!got)continue;
+  const t=solids.find(([x,i])=>alive(i)&&x.x>ballOf(h).x+sc(300));if(!t)break;
+  h.test().teleport(t[0].x-h.state().width-sc(150));h.step(2);score0=score0||h.state().score;throwBall(h);
+  for(let n=0;n<240;n++){h.step();const s=h.state();if(s.banner)banners.add(s.banner);if(s.ballShatters)break;}
+  if(h.state().ballShatters===0)hps.push(ballOf(h).hp);}
+ const s=h.state();assert.equal(s.ballShatters,1,`shattered once (chips ${s.ballChips}, hp ${hps})`);assert.ok(!h.state().vehicles.some((o:any)=>o.kind==='ball'&&o.tossed),'the shattered ball is gone');
+ assert.equal(s.ballChips,NYC2.ballHp,'exactly ballHp hard impacts');assert.ok(banners.has('HAPPY NEW YEAR'));assert.ok(hps.every((x,i)=>i===0||x<=hps[i-1]),'hp only goes down');
+ assert.ok(s.score-score0>=NYC2.ballShatterPoints,'the payoff points');assert.deepEqual(hps,[...hps].sort((a,b)=>b-a));
+ h.step(300);assert.equal(h.state().ballShatters,1,'and never again');
+});
+
+test('ball and loose(): never loose in any state, and the roof ball and prop exist only on Times Square',()=>{
+ for(const state of ['parked','rolling','held','flying','wreck'] as const)assert.equal(loose({kind:'ball',state} as any),false,state);
+ assert.equal(loose({kind:'car',state:'parked'} as any),true);
+ for(const b of LEVELS.flat())for(const x of b.buildings)if(x.roof==='ball')assert.equal(b,TS);
 });

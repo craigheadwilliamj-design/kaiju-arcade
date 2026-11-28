@@ -162,9 +162,9 @@ test('shared behaviour is kept: slower than the default boss, turns before attac
  const h=tlez();hitRival(h,10,'player',200,1);assert.ok(h.stagger>0&&h.hp===h.maxHP-10,'ordinary stagger still works');assert.equal(hitRival(h,10,'military',200,1),0);
 });
 
-const MEX=cityIndexOf('mex'),arena=LEVELS[MEX].findIndex(b=>b.name==='Tlézcatl Arena'),NYC=cityIndexOf('nyc'),empire=LEVELS[NYC].findIndex(b=>b.name==='Empire State');
+const MEX=cityIndexOf('mex-classic'),arena=LEVELS[MEX].findIndex(b=>b.name==='Tlézcatl Arena'),NYC=cityIndexOf('nyc'),empire=LEVELS[NYC].findIndex(b=>b.name==='Empire State');
 test('real loop: a flat boss arena (Mexico City\'s Tlézcatl Arena) fights with the kit: telegraph, flame, lobs, pools, burning kaiju',async()=>{
- const h=await bootCampaign(.75,{city:'mex'});
+ const h=await bootCampaign(.75,{city:'mex-classic',kaiju:'Tlézcatl'});
  try{h.test().goto(arena,0);h.step(2);h.test().growTo(3);assert.ok(h.state().rivalState.tlez,'the rival is Tlézcatl');
   const bossX=()=>h.state().rivalState.x;
   // Phase 1: the kaiju stands at mid range until he has flamed it and the street has caught fire.
@@ -180,11 +180,11 @@ test('real loop: a flat boss arena (Mexico City\'s Tlézcatl Arena) fights with 
 });
 
 test('real loop: below half health and a quarter, the Dive and the Eruption join the pattern; the kaiju can break the Eruption with a Heavy',async()=>{
- const h=await bootCampaign(.75,{city:'mex'});
+ const h=await bootCampaign(.75,{city:'mex-classic',kaiju:'Tlézcatl'});
  try{h.test().goto(arena,0);h.step(2);h.test().growTo(3);const max=h.state().rivalState.maxHP;h.test().hurtRival(max*.55);
   const seen=new Set<string>();for(let n=0;n<60*40&&h.state().modeNow==='playing';n++){h.test().teleport(Math.max(0,h.state().rivalState.x-300));h.step();const r=h.state().rivalState;if(r.windup>0)seen.add(r.attack);if(r.dive)seen.add('leap');if(seen.has('leap'))break;}
   assert.ok(seen.has('dive')&&seen.has('leap'),`a Magma Dive under half (${[...seen]})`);
-  const g=await bootCampaign(.75,{city:'mex'});
+  const g=await bootCampaign(.75,{city:'mex-classic',kaiju:'Tlézcatl'});
   try{g.test().goto(arena,0);g.step(2);g.test().growTo(3);const m=g.state().rivalState.maxHP;g.test().hurtRival(m*.8);let erupted=false,planted:number|null=null;
    for(let n=0;n<60*30&&g.state().modeNow==='playing';n++){g.test().teleport(Math.max(0,g.state().rivalState.x-300));g.step();const r=g.state().rivalState;if(r.attack==='erupt'&&r.windup>0){erupted=true;if(planted===null)planted=r.x;else assert.equal(r.x,planted,'planted');}if(r.erupted&&r.windup===0&&erupted)break;}
    assert.ok(erupted,'an Eruption under a quarter');assert.ok(g.state().rivalState.erupted);}
@@ -193,7 +193,7 @@ test('real loop: below half health and a quarter, the Dive and the Eruption join
 });
 
 test('real loop: a retreating Tlézcatl leaves no lava hanging and does no more damage',async()=>{
- const h=await bootCampaign(.75,{city:'mex'});
+ const h=await bootCampaign(.75,{city:'mex-classic',kaiju:'Tlézcatl'});
  try{h.test().goto(arena,0);h.step(2);h.test().growTo(3);const max=h.state().rivalState.maxHP;
   for(let n=0;n<60*20&&h.state().modeNow==='playing'&&!h.state().rivalState.flame&&h.state().rivalState.globs===0;n++){h.test().teleport(Math.max(0,h.state().rivalState.x-300));h.step();}
   h.test().hurtRival(max*2);h.step(2);const r=h.state().rivalState;assert.ok(r.dead||r.retreating,'the rival is down');assert.equal(r.flame,null);assert.equal(r.globs,0);assert.equal(r.pools,0);assert.equal(r.patches,0);

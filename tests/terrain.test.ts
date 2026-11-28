@@ -20,11 +20,14 @@ test('Midtown has a sunken start plaza and a raised terrace; buildings stay on f
  assert.ok(groundAt(b.start!)>C.ground+20,'the start plaza is sunken');
  const bs=createBuildings(b.buildings);const raised=bs.filter(x=>x.base<C.ground);assert.ok(raised.length>=3,'a cluster stands on the terrace');
  for(const x of bs)if(x.kind!=='tiny')assert.equal(groundAt(x.x),groundAt(x.x+x.w),`${x.x}: footprint is flat`);
- assert.deepEqual(LEVELS.flat().filter(x=>x.ground).map(x=>x.name),['Embarcadero','Nob Hill',"Fisherman's Wharf",'The Fault','Bay Bridge','Golden Gate','Alcatraz','The Battery','Central Park','Coney Island','Kowloon Streets','Nathan Road','Victoria Assault','Midtown Corridor','East River Offensive']);
+ assert.deepEqual(LEVELS.flat().filter(x=>x.ground).map(x=>x.name),['Embarcadero','Nob Hill',"Fisherman's Wharf",'The Fault','Bay Bridge','Golden Gate','Alcatraz','The Battery','Central Park','Coney Island','Templo Mayor','Chapultepec','Estadio Azteca','Xochimilco','Kowloon Streets','Nathan Road','Victoria Assault','Midtown Corridor','East River Offensive','The Rocks','Harbour Bridge Assault']);
  // Hong Kong's open blocks climb a hillside; every building still stands on flat ground.
  // Street junk may sit on a gentle slope.
  for(const hk of LEVELS[cityIndexOf('hkg')].filter(x=>x.ground)){setTerrain(hk.ground!);const bs=createBuildings(hk.buildings);assert.ok(Math.min(...bs.map(x=>x.base))<C.ground-100,`${hk.name} climbs`);
   for(const x of bs.filter(x=>!x.prop))assert.equal(groundAt(x.x+1),groundAt(x.x+x.w-1),`${hk.name} ${x.x}: flat footprint`);}
+ // Sydney's terraces are gentle (half Hong Kong's rises), with every footprint still flat.
+ for(const sy of LEVELS[cityIndexOf('syd')].filter(x=>x.ground)){setTerrain(sy.ground!);const bs=createBuildings(sy.buildings);const top=Math.min(...bs.map(x=>x.base));assert.ok(top<C.ground-40&&top>C.ground-100,`${sy.name} climbs gently`);
+  for(const x of bs.filter(x=>!x.prop))assert.equal(groundAt(x.x+1),groundAt(x.x+x.w-1),`${sy.name} ${x.x}: flat footprint`);}
  setTerrain(b.ground!);assert.ok(!DRILL_BLOCK.ground,'drills stay flat');
  setTerrain(null);
 });

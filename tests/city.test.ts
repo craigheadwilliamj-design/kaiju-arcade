@@ -5,7 +5,7 @@ import {createBuildings} from '../src/rules.ts';
 import {LEVELS,cityIndexOf} from '../src/levels.ts';
 import {CITY as Y,CONFIG as C} from '../src/config.ts';
 // The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
-const ORIGINAL=['nyc-classic','mex','par','hkg','tyo'];
+const ORIGINAL=['nyc-classic','mex-classic','par','hkg','tyo','syd'];
 
 test('rampage: heat climbs through the multiplier levels, holds for the grace period, then drains',()=>{
  const r=createRampage();assert.equal(rampageMult(r),1);
@@ -36,7 +36,7 @@ test('Lower Manhattan is the city-systems pilot: two powered grids, depots, rada
  assert.ok(b.poles!.length>=10);for(const g of [0,1])assert.ok(b.poles!.filter(x=>gridOf(x,b.grids)===g).length>=5,`grid ${g} has a pole line`);
  for(const x of b.buildings.filter(x=>x.roof))assert.ok(x.kind!=='tiny'&&!x.landmark);
  // Every city's open blocks carry the kit too (East River has its own river works instead).
- assert.deepEqual(ORIGINAL.map(id=>LEVELS[cityIndexOf(id)].map(x=>!!x.grids)),Array(5).fill(0).map((_,i)=>i===0?[true,true,false,false,false]:[true,true,false,true,false]));
+ assert.deepEqual(ORIGINAL.map(id=>LEVELS[cityIndexOf(id)].map(x=>!!x.grids)),Array(ORIGINAL.length).fill(0).map((_,i)=>i===0?[true,true,false,false,false]:[true,true,false,true,false]));
  assert.ok(LEVELS[cityIndexOf('par')].every(x=>!x.poles?.length),'Paris has no overhead lines');
 });
 

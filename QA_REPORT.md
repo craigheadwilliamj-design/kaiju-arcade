@@ -2,6 +2,8 @@
 
 8 November 2026 · Build 0.7.0
 
+> **Since this report:** the campaign is now seven cities and 47 route levels (San Francisco 9, New York 9, Mexico City 9, then Paris, Sydney, Hong Kong and Tokyo at 5 each), with Sydney/Myrmex, Hong Kong/Sargathoth and Tokyo/Atomotitan after the route shuffle (`docs/ROUTE_SHUFFLE.md`). `npm run qa` plays all 47 and expects seven permanent unlocks; the latest evidence is `qa/playthrough.json`. Saves are v3 (v2 checkpoints are migrated by city id). The tables below are the original Phase 7 five-city run and are kept as a record.
+
 **Current shared-combat build: QA passed. Full release certification: blocked by the omitted Phase 5 combat and missing final content.**
 
 ## Checks actually run

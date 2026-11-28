@@ -199,6 +199,10 @@ export const BUILDING_PRESETS={
  b:{w:42,h:48,hp:230,value:80,kind:'large'},
  x:{w:108,h:520,hp:780,value:520,kind:'medium'},
  n:{w:64,h:460,hp:540,value:340,kind:'medium'},
+ // NYC fix card 5: chunky towers for the New York route levels in place of the needle presets x (108x520) and n (64x460), which stand over 4.5x as tall as they are wide.
+ // y is the pair `x,n` as one wide tower (176 + the 4px gap = the pair's 180, so the layout's rhythm holds); u replaces a lone x or n. Heights stay put.
+ y:{w:176,h:520,hp:420,value:640,kind:'medium'},
+ u:{w:132,h:440,hp:300,value:380,kind:'medium'},
  L:{w:190,h:500,hp:1200,value:1000,kind:'large'},
  // City systems (src/city.ts): a fenced power substation and a fuel depot. Low yards you walk past like a newsstand (tiny kind,
  // so they never wall off a street) but they do not break on contact; you have to attack them. Not liftable.
@@ -418,6 +422,11 @@ export const TWISTS = {
  dominoFalloff:.65,dominoChain:.7,
  // Tokyo: quake-proof towers (quakeHeight and taller) shrug off half of any blow under quakeBreak and sway instead.
  quakeHeight:Math.round(200*CITY_SCALE),quakeBreak:60,quakeKeep:.5,swaySeconds:.8,
+ // Sydney: a southerly buster. The wind blows one fixed way per level (BlockDef `wind`). Fire spread to a downwind neighbour builds
+ // exposure windDown x faster, to an upwind one windUp x (damped); embers carry one gap further downwind: the nearest building
+ // downwind beyond FIRE.reach but within emberReach builds exposure at emberK of the spread rate. Smoke drifts smokeDrift px/s downwind
+ // and flame tongues lean flameLean px with it.
+ windDown:1.8,windUp:.35,emberReach:Math.round(150*CITY_SCALE),emberK:.5,smokeDrift:70,flameLean:6,
 };
 
 // City response (phase 5b): the city escalates as the block's destruction climbs past each threshold. Evacuation: every civilian
@@ -473,7 +482,17 @@ export const NYC1 = {fortW:176,fortH:70,exchangeW:184,exchangeH:132};
 // alone, and a thrown one is never wrecked or exploded). It is thrown short and hard: `throwSpeed` and `throwLift` replace the usual
 // throw, `throwDamage` is the damage of the flying body, and where it lands it breaks the street (spans, a cave-in)
 // like a thrown building. Lifting it pays `points` once.
-export const BULL = {w:70,h:40,mass:5,points:600,minStrength:4,throwSpeed:420,throwLift:260,throwDamage:150};
+// It is bolted to its plinth until a kaiju lifts it, and it is destructible, but only by deliberate force: `hp` is its hit points and
+// `breakPoints` the score for smashing it (once). Street damage never touches it. What hurts it: its own landing from a throw
+// (`landDamage` at `landRef` px/s of fall speed, scaled by speed: a throw is two or three landings, bounces included), a slam or pound once it has been
+// pried loose (`slam`, `pound`), a Meteor Drop rock (`rock`; a dive from at least `rockFall` px up, not a hop-slam), another thrown heavy prop (`hitByProp` x that prop's damage) and
+// the Bull itself hitting a building or target hard in flight (`crash` x its flight damage). The damage states are a dent below
+// `dentAt` of its hp, cracks below `crackAt`, a horn missing below `hornAt`. When it breaks the horns stay behind as a small grabbable prop
+// (`headPoints` for the first lift). Around its spot the street is cleared of parked cars, lamps, junk and crowds within `clear` px,
+// and `hintReach` is how close the kaiju must stand for the one-time "GRAB" hint.
+export const BULL = {w:70,h:40,mass:5,points:600,minStrength:4,throwSpeed:420,throwLift:260,throwDamage:150,
+ hp:400,breakPoints:900,landDamage:60,landRef:300,slam:60,pound:45,rock:35,hitByProp:.8,crash:.35,dentAt:.7,crackAt:.4,hornAt:.18,
+ headPoints:150,rockFall:200,clear:190,hintReach:60,bump:.7};
 // Steam vents (SoHo and Canal Street, a level's `vents`): the foreshadowing hazard. A manhole puffs harmlessly for `puff` s every
 // `every` s (the first after `first` s, staggered by `stagger` s a vent). A slam or pound within `reach` of it (an Ultimate within
 // `ultReach`) bursts it: a steam jet `height` tall for `seconds` s that, every `tick` s, scalds ground troops within `radius` (`damage`,
@@ -621,6 +640,45 @@ export const TLEZCATL_BOSS = {speed:95,far:430,
  eruptBelow:.25,eruptCharge:1.8,eruptBreak:220,eruptStagger:2.6,eruptGlobs:14,eruptRange:640,eruptFlight:[.9,1.5] as [number,number],eruptGravity:1900,eruptGlobDamage:11,eruptPool:60,eruptPoolSeconds:3.5,eruptRecover:2.6,eruptCooldown:1,
  poolCap:24,meleeCooldown:2};
 
+// Belial as a boss (src/rival.ts, any boss level whose rival is Belial: Estadio Azteca, Free Play, Paris's arena): the player's own kit
+// turned on the kaiju, played as a KITER with fewer HP than Tlézcatl (`hpScale` x the shared boss health). He walks at `speed`, stops
+// closing on the kaiju inside `hold` px and walks away at `kiteSpeed` x speed inside `kite` px (when there is room behind him).
+// Up close he claws (the shared melee). If the kaiju stays within claw range for `pressSeconds` or lands a hit on him, he BACK-POUNCES:
+// a `backTelegraph` s crouch, then a quick leap (`backFlight` s, `backHeight` px up) `backLeap` px directly away that leaves an acid
+// puddle `backPool` px wide where he stood, `backRecover` s winded; `backCooldown` s before the next, and only with `backEdge` px of room
+// behind him (cornered, he fights). At mid range (up to `far`) he spews ACID VOMIT: `vomitTelegraph` s (the gland swells, facing locked, a
+// landing marker on the street where the kaiju stood), then a stream for `vomitSeconds` s. The stream is the player's spew: a ballistic
+// arc under `vomitGravity`, launched at `vomitSpeed[1]` (full pressure) and sagging to `vomitSpeed[0]` as the gland drains, so it lands on
+// the marker first and falls back towards him. It stops on the first building (`vomitBuilding` damage per tick), crust or the street; it
+// burns the kaiju it passes through for `vomitDamage` every `vomitTick` s (corroding it for as long as it touches), splashes `vomitSplash` px
+// where it lands and leaves puddles `vomitPuddle` px wide. A crust it lands on is dissolved. Then `vomitRecover` s winded. From `far` away
+// (and every `pounceEvery`th mid-range attack under `pounceBelow` of his health) he ACID POUNCES: `pounceTelegraph` s crouch with a
+// landing ring on the kaiju's spot, a leap of up to `pounceRange` px (`pounceFlight` s, `pounceHeight` px up) that cannot be staggered,
+// and a splash (`pounceDamage` inside `pounceRadius`, soaking the kaiju to `pounceStacks` of corrosion, acid puddles `pouncePool` px wide),
+// then `pounceRecover` s winded. Once per fight, below `delugeBelow` of his health, the ACID DELUGE: planted for `delugeCharge` s of
+// swelling, then a geyser for `delugeSpout` s raining `delugeDrops` drops on alternating sides out to `delugeRange` px each way (they
+// fall at `delugeFall` px/s under `delugeGravity`; a drop that hits the kaiju does `delugeDamage` and soaks `delugeSoak` stacks, one
+// that lands splashes `delugeSplash` px and leaves a puddle). A hit of `delugeBreak` strength (a Heavy or an Ultimate) in the charge breaks
+// it up (spent, he is staggered `delugeStagger` s); either way he is winded `delugeRecover` s after the burst.
+// Puddles (all of his): last `puddleSeconds` s, `puddleCell` px cells, at most `puddleCap`, burning the kaiju `puddleDamage` every
+// `puddleTick` s and corroding it. CORROSION is on the kaiju: contact adds a stack per `corrodePerStack` s of exposure (the first contact
+// gives one; a Pounce or drop soaks to a number outright), up to `corrodeMax`; each stack raises the damage the kaiju takes by
+// `corrodeVuln` (src/combat.ts); out of the acid it fades over `corrodeFade` s from full, `burnOff` x faster while Tlezcatl breathes the
+// Flame Jet or stands in his own lava pool / fire. Pools, drops, stacks and every move clear on a retreat or a KO.
+// FLOOD hooks (only when the level has `finale.flood`; card 7 builds the flood and hands tickRival its surface and crusts): he is immune to
+// the flood, every `diveEvery`th attack he SUBMERGES (`diveTelegraph` s ripple, then untargetable for `diveUnder` s) and resurfaces with a
+// splash (`surfaceDamage` inside `surfaceRadius`), beneath the kaiju with chance `surfaceUnder`, else up to `surfaceRange` px from it,
+// `surfaceRecover` s winded; every `crustEvery`th attack he pounces onto a crust within `pounceRange` (and off it again with any leap).
+// `swim` (card 7): over flooded ground he swims, his feet `swim` px under the acid's surface (he fights at the kaiju's height, not down on the bed under it); a crust or dry ground is his floor as before.
+export const BELIAL_BOSS = {hpScale:.8,speed:90,hold:300,kite:200,kiteSpeed:.8,far:380,edge:60,
+ pressSeconds:1.6,backTelegraph:.3,backFlight:.45,backHeight:90,backLeap:300,backPool:70,backRecover:.5,backCooldown:6,backAfter:.9,
+ vomitTelegraph:.9,vomitSeconds:1.5,vomitSpeed:[230,560] as [number,number],vomitGravity:700,vomitTick:.14,vomitDamage:3,vomitKnock:30,vomitBuilding:6,vomitSplash:34,vomitPuddle:56,vomitRecover:1.5,vomitCooldown:.8,
+ pounceTelegraph:1,pounceFlight:.7,pounceHeight:230,pounceRange:560,pounceDamage:14,pounceRadius:120,pounceKnock:300,pounceStacks:2,pouncePool:150,pounceRecover:1.8,pounceCooldown:.9,pounceBelow:.5,pounceEvery:3,
+ delugeBelow:.4,delugeCharge:1.8,delugeBreak:220,delugeStagger:2.6,delugeSpout:2.2,delugeDrops:36,delugeRange:600,delugeFall:420,delugeGravity:1100,delugeDamage:8,delugeKnock:60,delugeSoak:1,delugeSplash:26,delugeRecover:2.4,delugeCooldown:1,
+ puddleSeconds:4.5,puddleCell:40,puddleCap:22,puddleDamage:2,puddleTick:.4,
+ corrodeMax:3,corrodePerStack:.4,corrodeVuln:.15,corrodeFade:5,burnOff:4,
+ diveEvery:4,diveTelegraph:.6,diveUnder:2.2,surfaceUnder:.6,surfaceRange:420,surfaceDamage:10,surfaceRadius:100,surfaceKnock:240,surfaceRecover:.8,crustEvery:3,swim:56};
+
 // New York's Empire State finale (NYC rework card 6; `finale.perches` in src/levels.ts, tickClimbFinale in src/game.ts, the `perch` fields in src/rival.ts).
 // The tower is a staircase of setbacks: each ledge is `ledge` px wide (room for the kaiju and Tlézcatl side by side), the tiers rise to `tops`
 // (px above the street), the mast stands on the summit. Tlézcatl climbs ahead of the kaiju and fights from the ledges (the perches). He stays put
@@ -643,10 +701,24 @@ export const NYC2 = {
  // the facade screens (BuildingSpec `board`) and the roof screens (roof fixture `billboard`).
  night:{top:'#070a1d',bottom:'#2b2152',far:'#151b3b',mid:'#10162f',near:'#0b1025',win:'#ffd98a',lights:1,sun:'#dfe6ff'},
  darkWindows:.04,boardPoints:300,
+ // Day-to-night ramp (BlockDef `moodRamp`): the moods between the city's day and `night`. Blended by the camera's world x (src/game.ts `moodNow`).
+ // SoHo sinks into `golden` then `dusk`, Times Square opens at `dusk`, runs to `night` and lifts to `predawn`, Grand Central opens at `dawn` and reaches day.
+ golden:{top:'#6f93b8',bottom:'#f2b872',far:'#a39a8c',mid:'#85807a',near:'#5d5c5e',win:'#f1c776',lights:.28,sun:'#ffc06a'},
+ dusk:{top:'#3d3a6e',bottom:'#e0875a',far:'#62597a',mid:'#4f4a69',near:'#383754',win:'#ffd98a',lights:.5,sun:'#ff9a5c'},
+ predawn:{top:'#0c1230',bottom:'#8a9cc4',far:'#2a3358',mid:'#202848',near:'#161c38',win:'#ffd98a',lights:.7,sun:'#cfd8f5'},
+ dawn:{top:'#6b7fa8',bottom:'#f4b9a0',far:'#8d8a99',mid:'#76748a',near:'#555468',win:'#f0cf90',lights:.35,sun:'#ffcf8a'},
  // One Times Square's ball (roof fixture `ball`): any hit that breaks it (or the tower coming down) knocks it loose. It drops `fall` s to
  // the street, then rolls down Broadway away from the kaiju: a heavy rolling body (src/rolling.ts) starting at `speed` px/s and shedding
  // `glide` px/s of it a second, so it runs a long way. It scatters and crushes the crowd (`crowdPoints` a person) and wrecks what it hits.
  ballSize:Math.round(46*CITY_SCALE),ballMass:6,ballSpeed:330,ballGlide:14,ballFall:.9,ballPoints:1500,crowdPoints:10,
+ // Once it is down the ball is a prop a Stage 2+ kaiju can carry (the Charging Bull's rules): grabbable while parked or rolling slower than `ballGrabSpeed`.
+ // Thrown forward it is a bowling ball: a flat arc (`ballThrowSpeed`, `ballThrowLift`) that rolls again on landing at `ballReroll` of its speed (at least
+ // `ballRerollMin`), plowing the crowd, cars and troops through the usual rolling impacts. W + throw lobs it (`ballLobSpeed`, `ballLobLift`) for anti-air.
+ // `ballThrowDamage` is the flying body's damage. Every hard impact of a thrown ball (a building, the rival or the target, in flight or rolling faster
+ // than `ballChipSpeed`; at most one per `ballChipGap` s) costs it 1 of `ballHp`: cracked panels, then (at half) broken segments, then at 0 it shatters
+ // for `ballShatterPoints` and a HAPPY NEW YEAR banner. The drop itself pays `ballPoints` once; throws earn the normal impact and crowd points.
+ ballGrabSpeed:70,ballThrowSpeed:520,ballThrowLift:190,ballLobSpeed:150,ballLobLift:640,ballThrowDamage:150,ballReroll:.9,ballRerollMin:160,
+ ballHp:4,ballChipSpeed:150,ballChipGap:.3,ballShatterPoints:2500,ballHint:260,
  // Grand Central. The terminal target (`art:'terminal'`) is a wide stone facade with a clock and a statue group. The concourse
  // (BlockDef `concourse`) is the roof over the Main Concourse: a building you stand on; once it is broken the pit opens with
  // `commuters` people and `police` officers in it.
@@ -657,4 +729,198 @@ export const NYC2 = {
  // the carriage runs away at `boltSpeed` px/s, shedding `boltGlide` px/s of it a second, and smashes through what stands in its way.
  zooAlarm:380,zooSpeed:150,zooRun:620,zooPoints:80,
  carriageW:Math.round(92*CITY_SCALE),carriageH:Math.round(34*CITY_SCALE),carriageMass:2,carriagePoints:220,boltRange:420,boltSpeed:340,boltGlide:24,
+};
+
+// NYC fix card 5: density behind and in the street of the New York route levels. Art tunables and the clutter's placement; every field is read only by a level
+// that opts in (cityLevel's `clutter` option, and the NYC districts in src/game.ts), so no other city changes.
+// Back row (drawn behind the playable row, in front of the skyline): `backParallax` of the camera's speed, in cells `backCell` wide.
+// Clutter: `perGap` pieces tried per street gap (`edge` and `lotMax` in authored units: nothing within `edge` of the world's ends or in an open lot wider than `lotMax`,
+// nothing within `targetClear` of a stronghold's target); `dims` is [w, h, value, hp] per walk-through prop kind.
+export const NYC5 = {
+ backParallax:.82,backCell:150,midParallax:.3,farStep:38,
+ edge:200,lotMax:700,targetClear:250,perGap:3,
+ dims:{kiosk:[40,42,25,14],cab:[54,26,35,12],cart:[36,32,30,10],scaffold:[130,44,40,16],news:[32,43,20,20]} as Record<string,[number,number,number,number]>,
+};
+
+// ---- Mexico City rework, card 2: Popocatépetl (the volcano schedule). docs/MEX_REWORK.md ----
+// A level opts in with `volcano:1|2|3|4` (src/levels.ts BlockDef); a level without it is state 0, today's skyline, nothing else. Every number is read in src/game.ts.
+export const VOLCANO = {
+ // Skyline plume per state 1-4 (`puffs` smoke puffs in a loop, `speed` loop rate, `size` radius scale, `rise` how high the column climbs in px,
+ // `drift` sideways px, `alpha` opacity, `color` smoke). State 0 keeps the old six-puff loop untouched.
+ plume:[
+  {puffs:3,speed:.04,size:.7,rise:90,drift:50,alpha:.28,color:'#d9cbbb'},   // 1 wisp: thinner and slower than the old smoke
+  {puffs:7,speed:.09,size:1.25,rise:150,drift:110,alpha:.5,color:'#9a8f82'},   // 2 plume: bigger and darker
+  {puffs:9,speed:.1,size:1.7,rise:200,drift:90,alpha:.62,color:'#5f5851'},    // 3 ash: a heavy column
+  {puffs:11,speed:.14,size:2.1,rise:230,drift:70,alpha:.72,color:'#2e2524'},  // 4 erupting: a dark eruption column with a glowing base
+ ],
+ puffSeconds:4,         // volcanoPuff(): one extra puff rises from the crater for this long (the hook Templo Mayor's arrival calls)
+ flareSeconds:1.6,      // an Eruption flares the crater for this long (state 2 and up)
+ tremor:5,              // the light shake an Eruption's flare adds (px of `shake`, state 2 and up; the Ultimate's own shake is bigger)
+ erupt:{shake:16,banner:'POPOCATÉPETL ERUPTS',bannerSeconds:2.8,flare:3},  // the scripted switch to state 4: big shake, banner, a long flare
+ // Ash fall (states 3-4, and state 2 past a level's `ashLate`): grey flakes drifting down over the whole view.
+ flakes:[70,110],       // flake count at state 3 / 4 (state 2 past ashLate uses the first number)
+ ashFall:[40,90],       // fall speed px/s, slowest and fastest flake
+ ashDrift:22,           // sideways drift px/s
+ // The sky at states 3 and 4: the city's mood mixed toward these colours by `k`, smog on (state 4 is the eruption's red-black).
+ tint:[
+  {k:.32,top:'#7b7167',bottom:'#9c8f7f',far:'#6f675e',mid:'#6a625a',near:'#5a544e',sun:'#8a7f70'},   // 3 ash: a dimmer sun
+  {k:.72,top:'#190808',bottom:'#8a2f1c',far:'#2a1715',mid:'#241311',near:'#1c0f0e',sun:'#b3321c'},   // 4 erupting: red and black
+ ],
+ // Volcanic bombs: only from Tlézcatl's Eruption at state 4. `bombs` molten rocks drop from above the view, each at a random spot within
+ // `bombRange` px of him, staggered over `bombDelay` seconds. Each hits like a lava glob (Ultimate damage, no meter) and leaves a small pool.
+ // They never hit the player; there are no ambient bombs.
+ bombs:10,bombRange:620,bombDelay:1.4,bombDamage:22,bombSpeed:260,bombSize:9,
+ poolWidth:44,poolDamage:6,poolSeconds:3,
+};
+
+// ---- Mexico City rework, card 3: Act 1 (Templo Mayor, Zócalo, La Merced and Tepito). docs/MEX_REWORK.md ----
+// Every part is opt-in per level (src/levels.ts BlockDef / BuildingSpec); a level that sets none of it runs none of this. Numbers are read in src/game.ts.
+// MEX1: the Act 1 level tuning. `pit`: Templo Mayor's excavation (world units at authored scale, x of the pit's west and east edge, depth below the street in px,
+// and the platform and ramp that lead out of it). The pit is dug into the level's ground profile, so the kaiju spawns below street level. It must stay
+// shallower than a Stage 1 jump (CONFIG jumpVelocity^2 / 2 gravity = 112 px), and the ramp's last `short` px must be a jump or a climb.
+export const MEX1 = {
+ pit:{x0:150,x1:800,depth:60,wall:30,slabX:560,slabH:112,ramp:240,short:36,exit:220},   // x0..x1 pit edges; depth px below the street; wall = run of the steep west wall; the stone platform (the Templo Mayor's base) stands from slabX to the east rim, slabH tall above the floor; ramp = length of the rubble ramp up to its foot, which stops `short` px under the platform's top (a hop or a climb finishes it); exit = run of the gentle slope from the east rim back up to the street
+ palaceW:Math.round(330*CITY_SCALE),palaceH:Math.round(95*CITY_SCALE),   // the Palacio Nacional (target art `palace`): a long, low facade
+};
+// LEAN (the opt-in building field `lean`, degrees, + leans east): a building draws tilted about its base corner on the side it leans. A destroyed leaning building
+// topples the way it leans (never the way it was hit). On a level with `sinking` each sink step adds `sinkStep` degrees of lean (toward the slam: the ground gives
+// way under the stomp and the building tips into the hollow), and a building past `topple` degrees gives way and topples the way it leans. Outside a
+// `sinking` level `lean` is only a starting tilt that decides which way a building falls.
+export const LEAN = {topple:7,sinkStep:1.1,max:12,drawMax:14,landmarkTilt:3.2};
+// FLAG (the Zócalo's flagpole, a level's `pole` x): a heavy grabbable prop of vehicle kind `pole`, never reported as loose (nothing on the street punts or
+// wrecks it). Stood on its plinth it is `len` px tall; any stage lifts it (it is the plaza's answer to having no cover). Held it is laid flat and carried
+// like a lamppost: J or K swings it (`reach` px of extra melee reach, `damage` x the blow, one swing per `cooldown` s, `knock` the knockback) and H throws it
+// flat and fast like a spear from chest height (`throwSpeed`, `throwLift`, `throwDamage`), stopping on the first thing it hits. It never explodes. Lifting it pays `points` once.
+export const FLAG = {len:Math.round(300*CITY_SCALE),thick:10,mass:3,points:400,reach:Math.round(120*CITY_SCALE),damage:2.2,cooldown:.55,knock:420,
+ throwSpeed:900,throwLift:90,throwDamage:150,plinthW:Math.round(70*CITY_SCALE),plinthH:Math.round(26*CITY_SCALE),clear:Math.round(150*CITY_SCALE),hintReach:60};
+// TARP (the opt-in building field `tarp`, a run id): the stalls of a market row joined by a canopy. A burning stall passes fire to the next stall in its run
+// (the canopy bridges any gap up to `gap` px) `spread` x faster than the ordinary FIRE spread: the exposure it builds each spread tick is multiplied by `spread`.
+// Stalls in different runs, or standing without a tarp, are unaffected. `hp` is a stall's hit points.
+export const TARP = {spread:4,gap:Math.round(120*CITY_SCALE),hp:70,stallW:Math.round(64*CITY_SCALE),stallH:Math.round(48*CITY_SCALE),sag:10};
+// ACID (a level's `seeps`, x of storm drains): the foreshadowing hazard, built the way STEAM/vents were. A drain leaks a small green puddle that bubbles for `warn` s
+// before it is ready (`first` s after the level loads, `stagger` s a seep). A slam or pound within `trigger` px (an Ultimate within `ultTrigger`) bursts it: an acid spray
+// `height` tall for `seconds` s that, every `tick` s, burns ground troops within `radius` (`damage`, `knockback`, `stun`, and corrodes them), wears loose
+// vehicles within `carRadius` (`carWear` each tick; at `carHP` a car is a wreck), and eats the base of any building within `baseReach` of the seep (`baseDamage`
+// a tick: damage only, no sinking and never fire). It then leaves an acid puddle `puddleW` wide for `puddleSeconds` s that keeps doing the troop and vehicle damage
+// at `puddleDamage` per tick. A spent seep stays quiet for `rearm` s. Acid is not fire: it never sets anything alight. It never hurts the player.
+// `auto` (card 6's `seepsAuto`): a seep that bursts on its own `auto.every` s after a `auto.warn` s warning, the first at `auto.first`, staggered by `auto.stagger`
+// a seep, `auto.damage` x harder and `auto.radius` x wider. Card 7's flood reads `perSecond`: damage per second to anything standing in the acid band.
+export const ACID = {trigger:Math.round(200*CITY_SCALE),ultTrigger:Math.round(480*CITY_SCALE),first:3,stagger:2.1,warn:1.2,
+ seconds:3.2,height:Math.round(140*CITY_SCALE),radius:Math.round(96*CITY_SCALE),carRadius:Math.round(86*CITY_SCALE),baseReach:Math.round(70*CITY_SCALE),tick:.4,
+ damage:6,knockback:140,stun:.6,carWear:7,carHP:20,baseDamage:9,puddleW:Math.round(70*CITY_SCALE),puddleSeconds:7,puddleDamage:4,rearm:14,points:250,heat:4,
+ perSecond:8,
+ auto:{first:2.5,stagger:1.6,warn:1.2,every:7,damage:1.5,radius:1.3}};
+
+// ---- Mexico City rework, card 4: Act 2 (Alameda and Bellas Artes, Paseo de la Reforma, Chapultepec). docs/MEX_REWORK.md ----
+// Every part is opt-in per level (src/levels.ts BlockDef / BuildingSpec); a level that sets none of it runs none of this. Numbers are read in src/game.ts.
+// MEX2: the Act 2 level tuning.
+//  `dome`: Bellas Artes' one-off. The dome is drawn sunk `sunk` px into the lake bed from the start; the seep beside it (`BlockDef.domeSeep`, an index into `seeps`) drops it `drop`
+//   px further and tilts it `tilt` degrees (towards the plaza, + east) the first time it bursts, once. It is damage and a tilt on that one landmark, not the sinking twist.
+//  `campo`: Campo Marte (target art `campo`): `w` x `h` is the target's box (a long low grandstand); `wake` px is how near the kaiju must come (or any damage to the target) before
+//   the fight starts and the helicopters on the pad lift off (`pads` x offsets from the target, `lift` s of rotor spin-up before they leave the ground).
+//  `parade`: the Día de Muertos floats (a stronghold's BARRIER buildings re-skinned `mfloat`): the flatbed is `w` x `h` (Herald Square's float is 84 x 72) and cycles `colors`.
+//  `lake`: Chapultepec's lake band (authored x of its west and east shore, and the bed depth: over a Stage 2 kaiju's head, wading depth at Stage 3, the Reservoir's rule).
+export const MEX2 = {
+ dome:{sunk:Math.round(54*CITY_SCALE),drop:Math.round(44*CITY_SCALE),tilt:3.4},
+ campo:{w:Math.round(320*CITY_SCALE),h:Math.round(80*CITY_SCALE),wake:780,lift:1.1,pads:[-250,-180] as number[]},
+ parade:{w:Math.round(90*CITY_SCALE),h:Math.round(66*CITY_SCALE),colors:['#e07a1f','#7b3f9e','#d94b8a','#2f9aa6','#e5c23a','#5c8a3c'] as string[]},
+ lake:{x0:6260,x1:7440,depth:90},
+};
+// PICADO (a level's `banners:[x0,x1,height][]`): papel picado strung across the street between two buildings, `height` px above the street at each end. Any fire touching it sets it
+// alight: a burning building at either end, or a fire pool or a flame-scorched wall under the string. It then burns for `burn` s (the paper flame runs along it) and is gone, and the
+// building at its far end (the end the fire did not come from) catches. Each string burns once. `spacing` px between flags, `sag` px of droop at mid-span. `points` for each string burned.
+export const PICADO = {burn:1.6,spacing:26,sag:14,points:120,reach:Math.round(60*CITY_SCALE)};
+// ANGEL (a level's `angel`: x of El Ángel's column): the Independence Column is a landmark (shape `angel`) `length` px tall and `w` wide, so it falls along the avenue through the ordinary topple
+// (the way it was hit, crushing everything in a span as long as it is tall). `safe` px: the clear distance the level keeps between the column's fall and the target.
+export const ANGEL = {length:Math.round(420*CITY_SCALE),w:Math.round(60*CITY_SCALE),safe:Math.round(150*CITY_SCALE)};
+// STONE (a level's `stone`: x of the Sun Stone, the Aztec calendar disc): a heavy round prop of vehicle kind `stone`, `d` across. Only a Stage `minStage` kaiju lifts it (a smaller one
+// bumps against it: TOO HEAVY). Thrown it is a bowling ball like Times Square's: a flat arc (`throwSpeed`, `throwLift`, `throwDamage`) that rolls on landing at `reroll` of its speed (at least
+// `rerollMin`) on `glide` px/s of friction, plowing `plows` buildings. It never breaks. `points` the first time it is lifted. `near`: how close to the castle's crystal the level sets it,
+// so a player who takes the crystal (and grows to Stage 3) is standing beside it whichever exit they head for.
+export const STONE = {d:Math.round(54*CITY_SCALE),mass:7,minStage:3,points:600,throwSpeed:560,throwLift:200,throwDamage:170,reroll:.9,rerollMin:200,glide:60,plows:6,grabSpeed:70,near:480,hint:300};
+
+// ---- Mexico City rework, card 6: Act 3 levels 7-8 (Ciudad Universitaria, Calzada de Tlalpan). docs/MEX_REWORK.md ----
+// Every part is opt-in per level (src/levels.ts BlockDef: `seepsAuto`, `rock`, `sinkholes`, `tren`); a level that sets none of it runs none of this. Numbers are read in src/game.ts and src/levels.ts.
+// MEX3: the level tuning (authored x unless noted).
+//  `cu`: Ciudad Universitaria. `freeway` the Periférico's double-deck run and `approach` its ramps' length; `run` the two runs of storm drains (`seepsAuto`) that go off one after another
+//   (`n` seeps from x0 to x1: the first on Insurgentes, the second on the Pedregal under UNAM); `rock` the stretches of volcanic ground; `library`/`stadium` the UNAM landmarks' x.
+//  `tlalpan`: Calzada de Tlalpan. `T` the field HQ's x; `tren` the Tren Ligero's surface line; `holes` the convoy lane's and the car park's sinkholes; `wall` a third one under the target's walls
+//   (x offsets from T: it spans the barricade ring west of the HQ, whichever barricades stand there).
+//  `tren`: the Tren Ligero (vehicle-sized light rail on a surface track beside the road, in the same `trains` list as the subway's): a train every `every` s at `speed` px/s, `h` tall (px),
+//   attacked like the subway trains (R.trainHP, derails into a burning wreck, R.trainPoints) and grabbable at Stage 3 without a pit. After R.trainWrecks derailments the line is closed.
+export const MEX3 = {
+ cu:{freeway:[2350,4050] as [number,number],approach:420,run:[{x0:900,x1:2150,n:7},{x0:4700,x1:6600,n:5}] as {x0:number,x1:number,n:number}[],
+  rock:[[1500,2300],[4500,5750],[6000,7000]] as [number,number][],library:4950,stadium:6150},
+ tlalpan:{T:5500,tren:[1000,3200] as [number,number],holes:[[3450,3900],[4200,4650]] as [number,number][],wall:{x0:-460,x1:-110}},
+ tren:{every:9,speed:520,h:Math.round(40*CITY_SCALE),stationW:Math.round(60*CITY_SCALE)},
+};
+// ROCK (a level's `rock:[x0,x1][]`, authored x): volcanic ground, the Pedregal's lava field. Tlézcatl's lava pools whose middle is on it (the Magma Dive's pool, the globs' pools, the Eruption's rain
+// and card 2's volcanic bombs) last `poolLife` x longer and spread `spread` x wider, so a Magma Dive there leaves a lasting trap. Damage per tick is unchanged. Drawn as dark broken rock.
+export const ROCK = {poolLife:2.6,spread:1.35,color:'#2c2724',edge:'#4a403a'};
+// SINKHOLE (a level's `sinkholes:[x0,x1][]`, authored x): a marked stretch of street (drawn cracked) that the acid has hollowed. A heavy landing within `reach` px of it (a Magma Dive, a thrown building,
+// a toppling tower: anything that calls the cave-in code) opens it: the street over [x0,x1] becomes a pit `depth` px deep (shallow enough to walk out of: a kaiju standing on it drops in about waist-deep
+// and walks or climbs out, it never traps him). Troops in it take the pit's fall damage plus `damage`; loose vehicles are thrown in (`launch`); every building whose middle stood on it sinks and collapses
+// where it is (Hudson Yards' yard code, NYC3.yard). Each opens once. `points`/`heat` for the collapse.
+export const SINKHOLE = {depth:Math.round(64*CITY_SCALE),reach:Math.round(90*CITY_SCALE),damage:25,points:700,heat:8,crack:'#1c1a18'};
+
+// ---- Mexico City rework, card 7: Estadio Azteca, the boss level. docs/MEX_REWORK.md ----
+// Opt-in per level (src/levels.ts BlockDef `finale.flood`); a level that does not set it runs none of this. Numbers are read in src/levels.ts (mexAzteca) and src/game.ts.
+// AZTECA: the level's layout (authored x, scaled by CITY_SCALE like every other level; heights are px above the pitch and are NOT scaled, they are measured against the kaiju).
+//  The two screens of concourse (`gate` where it ends) stand at the upper tier's height. Walking east the stands step DOWN into the bowl: a riser `riser` wide, the lower tier,
+//  another riser, then the pitch (`pitch` = [x0,x1]); the east end steps back up the same way, ending in a long upper tier. `lower`/`upper` are the tiers' heights over the pitch.
+//  `rim` is the roof-ring walkway's height over the upper tier (a jump away from it) and `rimX` its [x0,x1] (over the west concourse's lip and the east upper tier).
+//  `wake` is the x the kaiju passes to wake Belial, `crack` the x of the split in the pitch (centre field), `breaks` the health fractions of the three flood steps.
+export const AZTECA = {
+ gate:2050,riser:60,pitch:[2440,4720] as [number,number],lowerTier:[2110,2380] as [number,number],eastLower:[4780,5050] as [number,number],
+ lower:140,upper:280,rim:90,rimX:[1980,5300] as [number,number],
+ wake:1950,crack:3580,breaks:[.75,.5,.25] as number[],
+ emerge:1.5,         // seconds Belial takes to come up out of the split pitch (the Empire State's emerge)
+ wakeShake:14,crackSeconds:.9,
+ units:{approach:[500,2000] as [number,number]},
+};
+// FLOOD (a level's `finale.flood`): the acid water band. It is a water-band span over the bowl (so depth, wading, drowning, troops and wrecks sinking are the water code's); its surface starts below
+// the pitch and, at each health break, rises to the next level in `levels` (px above the pitch: just under the lower tier, just under the upper tier, then over the upper tier so only the
+// rim is dry). The warning comes first: `warn` s of bubbling at the pitch's drains and a banner, then the surface eases up over `rise` s. Anything in it takes ACID.perSecond a second
+// (`tick` s between hits, through receiveHit so corrosion's vulnerability counts). Belial is immune by construction (the flood never hurts a rival); any other rival is immune too and is kept to
+// the dry tiers (`shoreGap` px back from the waterline). `rimFrom` is the single rim-walkway flag: the walkway is open from that break on (3 = the last break, 1 = the first flood, 99 = never).
+// Lava crust: the player's lava landing on flooded ground (Magma Dive pool and globs, the Eruption's globs, `VOLCANO` bombs) cools into a one-way platform on the surface: at least `crustMin`
+// wide and `crustSpread` x the lava's width, `lift` px above the surface so a kaiju on it stays out of the acid, riding the surface as it rises. It lasts `crustLife` s, cracks (visible,
+// wobbling) for its last `crack` s, then sinks over `sink` s. Another bit of lava on a living crust refreshes it. At most `maxCrusts` at once (the oldest sinks first). A crust Belial's
+// vomit has eaten (`dissolved`) melts in `melt` s. `crustPoints` the first time a crust carries the kaiju.
+export const FLOOD = {
+ levels:[132,272,320] as number[],
+ warn:3,rise:3.2,tick:.5,shoreGap:60,rimFrom:3,
+ crustMin:150,crustSpread:1.6,lift:3,crustLife:11,crack:3,sink:1.1,maxCrusts:9,melt:.5,crustPoints:150,
+ retreatDive:1.3,retreatSink:2.4,diveHeight:200,
+ color:{back:'#35520f',front:'#5f8f1c',frontAlpha:.78,sheen:'#b8e63a',bubble:'#e6ff8a',foam:'#d3f26a'},
+};
+
+// Mexico City secret level (MEX rework card 8): Xochimilco. Fire on water. Every number is opt-in: nothing here is read on a level that sets none of `current`,
+// `trajineras` or `soft`. Distances are final pixels (the boat is the size of the kaiju's reach, not the city scale's).
+export const XOCHI = {
+ // The long canal's drift, px/s (signed in the level's `current:[band, speed]`; this is the authored default and the cap). Floating things on that band drift, powered boats do not.
+ current:30,
+ // A wreck or debris in the current's band floats (instead of sinking at once) for this long, then sinks like any wreck.
+ floatLife:14,
+ // The trajinera: a flat, painted hull. It floats `W.boatFloat` of its height under the surface; w x h in px, mass for throw/impact, points for the first smash.
+ boat:{w:156,h:36,mass:2.4,points:260,riders:[3,5],bob:2.2,bobSpeed:1.7,
+  // Boats alongside a jam bump each other: a drifting boat stops `touch` px off the one ahead and goes on when it is gone.
+  touch:2,
+  // A moored boat (the dock's) stays put until it is hit, grabbed, set alight (its line burns through after `mooring` s) or its neighbour moves it.
+  mooring:1.6},
+ // A burning vehicle (opt-in by kind: trajineras only, src/vehicles.ts BURNS): `seconds` alight, then it burns out to a charred hull that still floats and drifts.
+ // Alight it throws `exposure` per second at every building within `reach` px of its hull (a building catches at 1: the same deterministic exposure the fire code uses), at
+ // every other trajinera within `reach` px (`boatExposure`), and `unitDps` damage to a military boat it touches. A boat beside a blazing building catches from it the same way
+ // (`catch` exposure per second). Fire pools and lava pools under the hull light it at `poolExposure`. `riders` jump at once and scatter.
+ burn:{seconds:26,reach:38,exposure:.7,boatExposure:.8,unitDps:9,catch:.7,poolExposure:1.4,smoke:.35,points:60},
+ // Chinampa ground (`soft:[x0,x1][]`): ankle-deep wet farmland. The kaiju moves at the wading speed, may not run, and leaves mud splashes; `sink` is how far the feet are drawn under.
+ soft:{sink:6},
+ // The axolotls: they sit on the canal bed, bolt away from the kaiju (within `alarm` px) along the bed for `run` px and are gone (splash, `points`).
+ axolotl:{alarm:260,speed:120,run:520,points:70},
+ // Ash on the water (art only): grey flecks drifting on the surface (volcano 3), each `ash` px across, `ashDensity` per 100 px.
+ ash:{size:5,density:7,drift:.55},
+ // The doll island (art only): dolls hang from the ahuejotes in its range, `dolls` per tree, swaying `sway` px.
+ dolls:{per:4,sway:3,color:'#c9b99a'},
+ // Light military: the Guardia on boats (they sail on their own), a few helicopters, an emplacement on the dock. The level sets its own `fireCap` (fire runs a long way here).
+ fireCap:12,
 };

@@ -3,7 +3,7 @@ import {bootGame,bootCampaign} from './helpers/game-harness.ts';
 import {LEVELS,DRILL_BLOCK,levelWidth,cityIndexOf} from '../src/levels.ts';
 import {CONFIG} from '../src/config.ts';
 // The five original cities, in their old order (San Francisco now leads the campaign ahead of them).
-const ORIGINAL=['nyc-classic','mex','par','hkg','tyo'];
+const ORIGINAL=['nyc-classic','mex-classic','par','hkg','tyo','syd'];
 
 test('open districts in every city: mid-map start plaza, named landmarks, hidden caches; drills keep the packed wall',()=>{
  assert.deepEqual(LEVELS[cityIndexOf('nyc-classic')].filter(b=>b.start!==undefined).map(b=>b.name),['Lower Manhattan','Midtown Corridor','East River Offensive']);

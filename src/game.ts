@@ -1,30 +1,30 @@
-import {CONEY,CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,EMPIRE as EMP,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST,NYC2} from './config.ts';
+import {XOCHI,CONEY,CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,BELIAL_BOSS as BB,EMPIRE as EMP,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST,NYC2,NYC5,VOLCANO as VO,MEX1,MEX2,MEX3,ROCK,SINKHOLE,PICADO,STONE,LEAN,FLAG,TARP,ACID,AZTECA,FLOOD} from './config.ts';
 import {groundAt,groundUnder,setTerrain,terrainPoints,hasTerrain,profileFrom,submerged,waterAt,waterSpans,bedAt,addMound,moundList,deckAt,pitAt,pitList,addPit,depthAt,setPlatforms,platformFloor} from './terrain.ts';
 import {bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from './water.ts';
 import type {Band,Drown} from './water.ts';
 import type {Deck} from './terrain.ts';
 import {createRampage,feedRampage,tickRampage,rampageLevel,rampageMult,pointsHeat,gridOf,substations,gridPowered,createRoofProps,roofBox,wireSpan} from './city.ts';
 import type {RoofProp,LiveWire} from './city.ts';
-import {createParked,createLamps,createPoles,setVehicleLook,uproot,upright,impact,makeProp,spawnTraffic,tickDriving,onWater,tickFlying,launch,vehicleBox,mass,loose,grounded,liftedBuilding,VEHICLE_SPECS,EXPLOSIVE,CIVILIAN,createFleet,createGarageCars} from './vehicles.ts';
+import {createParked,createLamps,createPoles,setVehicleLook,uproot,upright,impact,makeProp,spawnTraffic,tickDriving,onWater,tickFlying,launch,vehicleBox,mass,loose,grounded,liftedBuilding,VEHICLE_SPECS,EXPLOSIVE,CIVILIAN,createFleet,createGarageCars,BURNS} from './vehicles.ts';
 import type {Vehicle} from './vehicles.ts';
 import {startRolling,tickRolling,putOnCable,tickCable,releaseCables,rollDamage,downhill,tickTrain,derail,startRunaway} from './rolling.ts';
 import {createShip,sinkShip,tickShip,shipSunk,hullBox,deckY} from './ship.ts';
 import type {Ship} from './ship.ts';
 import {fogAt} from './fog.ts';
 import {NEW_YORK_BLOCK_ONE,DRILL_BLOCK,WATER_DRILL,CITIES,LEVELS,levelWidth,cityIndexOf} from './levels.ts';
-import type {BlockDef} from './levels.ts';
+import type {BlockDef,Mood} from './levels.ts';
 import {createBuildings,damageBuilding,destruction,exitUnlocked,perfectBonus,solid,overlaps,canExitBlock,damageObjective,separateHorizontal,canTopple,toppleSpan,crushDamage,liftable} from './rules.ts';
 import {wearFloor,floorAt,floorHeightOf} from './rules.ts';
-import {createCombat,setGrowth,liftCap,canAct,scale,damageMultiplier,collectCrystal,creditDamage,tickCombat,light,beginHeavy,releaseHeavy,ranged,activateUltimate,activateSuper,cancelCharge,receiveHit} from './combat.ts';
+import {createCombat,setGrowth,liftCap,canAct,scale,damageMultiplier,collectCrystal,creditDamage,tickCombat,light,beginHeavy,releaseHeavy,ranged,activateUltimate,activateSuper,cancelCharge,receiveHit,vulnerability} from './combat.ts';
 import type {Strike} from './combat.ts';
-import {createMilitary,tickMilitary,spawnUnit,hitUnit as hitUnitBase,intercept,segmentHits,captureUnit,callStrike,GRABBABLE_UNITS,UNITS,WEAPONS,roadLane,ROAD_UNITS,smallArmsScale,blast,NAVAL_UNITS,setNavyUnderDecks,cruiseY,setCover} from './military.ts';
+import {createMilitary,tickMilitary,spawnUnit,hitUnit as hitUnitBase,intercept,segmentHits,captureUnit,callStrike,GRABBABLE_UNITS,UNITS,WEAPONS,roadLane,ROAD_UNITS,smallArmsScale,blast,NAVAL_UNITS,setNavyUnderDecks,cruiseY,setCover,floatY} from './military.ts';
 import type {MilitaryEvent} from './military.ts';
 import type {Rect,Unit} from './military.ts';
 import {createPopulation,releaseOccupants,tickPopulation,civilianBox} from './population.ts';
 import type {Permanent} from './campaign.ts';
-import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,initialsValid,KAIJU,CAMPAIGN,campaignCityIndex,routeLevels,freePlayLevels,unlockSecret,secretLevelOf,secretIds,exitTarget,kaijuFor,discardLegacySaves} from './campaign.ts';
+import {readSaves,savePermanent,saveCheckpoint,newRun,resumeRun,checkpointOf,restartCity,latchBlock,nextBlock,conquerCity,advanceCity,loseRun,initialsValid,KAIJU,CAMPAIGN,campaignCityIndex,routeLevels,freePlayLevels,unlockSecret,secretLevelOf,secretIds,exitTarget,kaijuFor,discardLegacySaves,migrateV2Saves} from './campaign.ts';
 import type {Run,Checkpoint,StorageLike} from './campaign.ts';
-import {createRival,hitRival,tickRival,surfaceBelow,lavaPool} from './rival.ts';
+import {createRival,hitRival,tickRival,surfaceBelow,lavaPool,beginBelial,belialTelegraph} from './rival.ts';import type {Crust,RivalEnv} from './rival.ts';
 import type {Rival} from './rival.ts';
 import {hitParts,solidParts,partHit,hitsBox,partAt,circleHits,topAt,roofUnder,nearestPart,clipParts,shapeParts,resetParts} from './hitbox.ts';
 import type {HitPart} from './hitbox.ts';
@@ -44,7 +44,7 @@ type Mode='title'|'playing'|'paused'|'confirm'|'results'|'gameover'|'setup'|'pro
 let mode:Mode='title',buildings=createBuildings(NEW_YORK_BLOCK_ONE),score=0,camera=0,cameraY=0,zoom=C.zoom,time=0,shake=0,cleared=false,action='',actionTime=0;
 const keys=new Set<string>();
 let storage:StorageLike|undefined;try{storage=window.localStorage;}catch{}
-discardLegacySaves(storage);let {permanent,checkpoint,available:storageOK}=readSaves(storage);
+migrateV2Saves(storage);discardLegacySaves(storage);let {permanent,checkpoint,available:storageOK}=readSaves(storage);
 let run:Run|null=null,session:'campaign'|'drill'|'freeplay'='drill',citySettled=false;
 let activeKaiju='Mogurodon',selectedKaiju='Mogurodon',pendingInitials='AAA',freeBlockStart=0;
 let freeChoice:FreePlayChoice={kaiju:'Mogurodon',city:0,boss:'Mogurodon'};
@@ -61,13 +61,53 @@ function applyDisplay(){const frame=document.querySelector<HTMLElement>('#frame'
 function saveDisplay(){try{storage?.setItem(DISPLAY_KEY,JSON.stringify({version:1,...display}));}catch{}applyDisplay();}
 let cityIndex=0,blockIndex=0,block=LEVELS[0][0],worldWidth=levelWidth(block);
 // The mood the level is drawn in: the city's own, or the night mood on a level that sets `night` (Times Square). Read wherever the mood is.
-function moodNow(){return block.night?NYC2.night:CITIES[cityIndex].mood;}
+// A level with `moodRamp` blends its mood stops at the camera's centre (colours and `lights` lerp, `rain`/`smog` come from the nearer stop); cached per camera spot.
+const hexOk=(c:string)=>/^#[0-9a-f]{6}$/i.test(c);
+let moodKey='',moodCache:Mood|null=null;
+function rampStop(n:Mood|string):Mood{return typeof n!=='string'?n:n==='day'?CITIES[cityIndex].mood:n==='night'?NYC2.night:NYC2[n as 'dusk'|'dawn'|'golden'|'predawn'];}
+function blendMood(stops:[number,Mood|string][],x:number):Mood{
+ const i=stops.findIndex(([sx])=>sx>x);if(i<0)return rampStop(stops[stops.length-1][1]);if(i===0)return rampStop(stops[0][1]);
+ const [x0,n0]=stops[i-1],[x1,n1]=stops[i],a=rampStop(n0),b=rampStop(n1),t=(x-x0)/Math.max(1,x1-x0),mix=(p:string,q:string)=>hexOk(p)&&hexOk(q)?mixHex(p,q,t):t<.5?p:q,near=t<.5?a:b;
+ return {top:mix(a.top,b.top),bottom:mix(a.bottom,b.bottom),far:mix(a.far,b.far),mid:mix(a.mid,b.mid),near:mix(a.near,b.near),win:mix(a.win,b.win),lights:a.lights+(b.lights-a.lights)*t,sun:mix(a.sun,b.sun),rain:near.rain,smog:near.smog};}
+function baseMood():Mood{
+ if(!block.moodRamp)return block.night?NYC2.night:CITIES[cityIndex].mood;
+ const x=camera+viewW()/2,key=`${cityIndex}:${blockIndex}:${x}`;if(key!==moodKey||!moodCache){moodKey=key;moodCache=blendMood(block.moodRamp,x);}return moodCache;}
+// ---- Mexico City: Popocatépetl's schedule (card 2; docs/MEX_REWORK.md). State 0 (no `volcano` on the level) is today's skyline and changes nothing. ----
+// `volcano` 1 wisp, 2 plume, 3 ash, 4 erupting. The schedule is scripted per level (BlockDef.volcano), never driven by how much the player burns: the only
+// inputs are the level's state, its `volcanoOn:'target'` trigger and Tlézcatl's Eruption (a flare at 2+, bombs at 4).
+let volcano=0,volcanoOn=false,volcanoAshLate:number|undefined,volcanoFlare=0,volcanoFlares=0,volcanoPuffs:number[]=[],volcanoQueue:{t:number,x:number}[]=[],volcanoBlown=0,volcanoDropped=0,volcanoMoodKey:Mood|null=null,volcanoMoodState=0,volcanoMoodOut:Mood|null=null;
+function resetVolcano(){volcano=block.volcano??0;volcanoOn=block.volcanoOn==='target';volcanoAshLate=block.ashLate;volcanoFlare=0;volcanoFlares=0;volcanoPuffs=[];volcanoQueue=[];volcanoBlown=0;volcanoDropped=0;}
+function setVolcano(state:number,o:{on?:boolean,ashLate?:number}={}){volcano=Math.max(0,Math.min(4,Math.round(state)));volcanoOn=!!o.on;volcanoAshLate=o.ashLate;volcanoQueue=[];}
+// One extra puff rises from the crater (a level's arrival calls this: card 3 wires Templo Mayor's). Does nothing at state 0.
+function volcanoPuff(){if(volcano>0)volcanoPuffs.push(time);}
+// Ash is falling: states 3 and 4, and state 2 once the kaiju is past the level's `ashLate`.
+function ashActive(){return volcano>=3||(volcano===2&&volcanoAshLate!==undefined&&player.x>volcanoAshLate);}
+// An Eruption (the blast): the crater flares and the ground shakes lightly at state 2 and up; at state 4 it also calls volcanic bombs down.
+function volcanoErupted(){if(volcano<2)return;volcanoFlare=VO.flareSeconds;volcanoFlares++;shake=Math.max(shake,VO.tremor);
+ if(volcano===4)for(let i=0;i<VO.bombs;i++)volcanoQueue.push({t:Math.random()*VO.bombDelay,x:player.x+bodyWidth()/2+(Math.random()*2-1)*VO.bombRange});}
+function tickVolcano(dt:number){if(!volcano)return;
+ volcanoFlare=Math.max(0,volcanoFlare-dt);volcanoPuffs=volcanoPuffs.filter(t=>time-t<VO.puffSeconds);
+ // The scripted eruption: a level that starts at 3 with `volcanoOn:'target'` goes to 4 the moment its stronghold target falls (once: it is state 4 afterwards).
+ if(volcanoOn&&volcano===3&&objective?.shattered){volcano=4;volcanoBlown++;volcanoFlare=VO.erupt.flare;volcanoFlares++;shake=Math.max(shake,VO.erupt.shake);banner={label:VO.erupt.banner,side:0,life:VO.erupt.bannerSeconds};action=VO.erupt.banner;actionTime=VO.erupt.bannerSeconds;}
+ // Bombs fall in from above the view, ballistic like the Eruption's own globs: they hit what they fall on (never the player) and leave a small lava pool.
+ const top=C.ground-(C.ground+cameraY)/zoom-60;
+ for(const q of volcanoQueue)q.t-=dt;
+ for(const q of volcanoQueue.filter(q=>q.t<=0)){const x=Math.max(4,Math.min(worldWidth-4,q.x));volcanoDropped++;
+  globs.push({x,y:top,vx:(Math.random()*2-1)*40,vy:VO.bombSpeed,grav:B.eruptGravity,life:6,damage:VO.bombDamage*damageMultiplier(combat),size:VO.bombSize*Math.sqrt(scale(combat))*(.8+Math.random()*.4),ult:true,bomb:true});}
+ volcanoQueue=volcanoQueue.filter(q=>q.t>0);}
+// The mood the level is drawn in, darkened by the volcano at states 3 and 4 (smog on, a dimmer sun; red and black when erupting). Cached per source mood and state.
+function moodNow():Mood{const m=baseMood();if(volcano<3)return m;
+ if(volcanoMoodKey===m&&volcanoMoodState===volcano&&volcanoMoodOut)return volcanoMoodOut;
+ const t=VO.tint[volcano-3],mx=(a:string,b:string)=>hexOk(a)?mixHex(a,b,t.k):b;volcanoMoodKey=m;volcanoMoodState=volcano;
+ return volcanoMoodOut={...m,top:mx(m.top,t.top),bottom:mx(m.bottom,t.bottom),far:mx(m.far,t.far),mid:mx(m.mid,t.mid),near:mx(m.near,t.near),sun:mx(m.sun,t.sun),smog:true};}
+// A light-driven switch: a hard threshold at `t` normally, a smooth 0..1 ramp `w` wide around it on a level with `moodRamp`.
+function thr(l:number,t:number,w=.2){return block.moodRamp?Math.max(0,Math.min(1,(l-(t-w/2))/w)):l>t?1:0;}
 // The stronghold's target: the central crystal by default; a SF level's `target` makes it a clock tower or a command post (same HP, same hit rules, a taller or wider box).
-let objective:{x:number,hp:number,maxHP:number,shattered:boolean,w:number,h:number,art:'crystal'|'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal',label:string,ship?:Ship}|null=null,rival:Rival|null=null;
+let objective:{x:number,hp:number,maxHP:number,shattered:boolean,w:number,h:number,art:'crystal'|'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal'|'palace'|'campo',label:string,ship?:Ship}|null=null,rival:Rival|null=null;
 // x ranges of the vehicles a level stations in the street (streetcars, cable cars, trolleys, fire trucks): no street lamp stands in or within 70 px of one, so a station can be walked up to and grabbed.
-function stationBoxes():[number,number][]{return ([['tram',block.streetcars],['cablecar',block.cablecars],['bus',block.trolleys],['firetruck',block.firetrucks],['tether',block.balloons?.map(([x])=>x)]] as const).flatMap(([k,xs])=>(xs??[]).map(x=>[x,x+VEHICLE_SPECS[k].w] as [number,number]));}
+function stationBoxes():[number,number][]{return ([['tram',block.streetcars],['cablecar',block.cablecars],['bus',block.trolleys],['firetruck',block.firetrucks],['tether',block.balloons?.map(([x])=>x)],['pole',block.pole===undefined?undefined:[block.pole-FLAG.thick/2]],['stone',block.stone===undefined?undefined:[block.stone-STONE.d/2]]] as const).flatMap(([k,xs])=>(xs??[]).map(x=>[x,x+VEHICLE_SPECS[k].w] as [number,number]));}
 function makeObjective(){const t=block.target,art=t?.art??'crystal',ship=art==='cutter'?createShip(t!.x,t!.scale??1):undefined,
- [w,h]=ship?[ship.w,ship.h+ship.deck]:art==='clock'?[SFC.clockW,SFC.clockH]:art==='command'?[SFC.commandW,SFC.commandH]:art==='pyramid'?[SF2.pyramidW,SF2.pyramidH]:art==='fort'?[NYC1.fortW,NYC1.fortH]:art==='exchange'?[NYC1.exchangeW,NYC1.exchangeH]:art==='arena'?[NYC3.arenaW,NYC3.arenaH]:art==='terminal'?[NYC2.terminalW,NYC2.terminalH]:[60,100];
+ [w,h]=ship?[ship.w,ship.h+ship.deck]:art==='clock'?[SFC.clockW,SFC.clockH]:art==='command'?[SFC.commandW,SFC.commandH]:art==='pyramid'?[SF2.pyramidW,SF2.pyramidH]:art==='fort'?[NYC1.fortW,NYC1.fortH]:art==='exchange'?[NYC1.exchangeW,NYC1.exchangeH]:art==='arena'?[NYC3.arenaW,NYC3.arenaH]:art==='terminal'?[NYC2.terminalW,NYC2.terminalH]:art==='palace'?[MEX1.palaceW,MEX1.palaceH]:art==='campo'?[MEX2.campo.w,MEX2.campo.h]:[60,100];
  return {x:t?t.x:worldWidth/2,hp:P.strongholdHP,maxHP:P.strongholdHP,shattered:false,w,h,art,label:t?.label??'CENTRAL CRYSTAL',...(ship?{ship}:{})};}
 // A floating target (the cutter) rides the waterline and goes down with its hull; everything else stands on the street.
 function obox(){const o=objective!;if(o.ship)return hullBox(o.ship,waterAt(o.x)??C.ground);return {x:o.x-o.w/2,y:groundAt(o.x)-o.h,w:o.w,h:o.h};}
@@ -102,7 +142,7 @@ function setupSF(){
 }
 // ---- San Francisco Act 2 (redesign phase 4) ----
 // Runaway cable cars, the powerhouse, Lombard's tumbling cars, sea lions, Kaiban in the fog and the cutter. All opt-in per level.
-type Lion={x:number,y:number,vx:number,state:'rest'|'flee'|'gone',t:number,zoo?:{sp:number,from:number}};
+type Lion={x:number,y:number,vx:number,state:'rest'|'flee'|'gone',t:number,zoo?:{sp:number,from:number},axo?:{from:number}};
 let pendingRunaways:Vehicle[]=[],pendingTumble:{v:Vehicle,t:number}[]=[],tumbleArmed=false,powerhouseDown=false,loosed=0,lions:Lion[]=[],lionsEscaped=0;
 let kaiban:{roared:boolean,roar:number}|null=null,exitSide:'west'|'east'='east';
 function setupAct2(){
@@ -116,6 +156,8 @@ function setupAct2(){
  lions=(block.sealions??[]).map(x=>({x,y:groundAt(x)-14,vx:0,state:'rest' as const,t:Math.random()*3}));
  // Central Park Zoo (NYC Act 2): the same herd logic, an animal each, bolting away from the kaiju instead of for the water.
  lions.push(...(block.zoo??[]).map((x,i)=>({x,y:groundAt(x)-14,vx:0,state:'rest' as const,t:Math.random()*3,zoo:{sp:i%6,from:x}})));
+ // Xochimilco's axolotls: on the canal bed, they bolt from the kaiju (tickAct2) and are gone.
+ lions.push(...(block.axolotls??[]).map(x=>({x,y:axoY(x),vx:0,state:'rest' as const,t:Math.random()*3,axo:{from:x}})));
  if(block.kaiban)kaiban={roared:false,roar:0};
 }
 // What a rolling car does to what is in its way: a building it destroys is bowled through (it keeps most of its speed), one left
@@ -125,17 +167,17 @@ function crashRolling(v:Vehicle,dir:number,against?:object){
  launch(v,-dir*vx*RN.crashSpeed,-RN.crashLift,R.careenDamage);v.thrown=true;v.spin=-dir*4;if(against)v.hits.add(against);}
 function rollImpacts(v:Vehicle){
  const dir=Math.sign(v.vx)||1,box=vehicleBox(v),cx=v.x+v.w/2,cy=v.y+v.h/2;
- if(v.kind==='ball')for(const c of population.civilians)if(!c.squashed&&!c.escaped&&overlaps(box,civilianBox(c))){c.squashed=true;award(NYC2.crowdPoints);ballCrowd++;}
+ if(v.kind==='ball'||v.kind==='stone')for(const c of population.civilians)if(!c.squashed&&!c.escaped&&overlaps(box,civilianBox(c))){c.squashed=true;award(NYC2.crowdPoints);ballCrowd++;}
  for(const b of buildings){if(!solid(b)||b.hpNow<=0||v.hits.has(b))continue;const p=partHit(b,box);if(!p)continue;
   v.hits.add(b);hit(b,rollDamage(v),false,dir,{x:cx,y:cy});spawnChunks(cx,cy,-dir,v.color,5);shake=Math.max(shake,6);
   if(b.hpNow<=0&&(v.plows??0)>1){v.plows!--;v.vx*=RN.plowKeep;if(!v.rewarded)rewardVehicle(v);continue;}
-  v.x=dir>0?p.x-v.w-1:p.x+p.w+1;if(v.kind==='ball'){v.vx=0;v.state='parked';return;}crashRolling(v,dir,b);return;}
+  v.x=dir>0?p.x-v.w-1:p.x+p.w+1;if(v.kind==='stone'){v.vx=0;v.state='parked';return;}if(v.kind==='ball'){const sp=Math.abs(v.vx);v.vx=0;v.state='parked';if(sp>=NYC2.ballChipSpeed)ballChip(v,-dir);return;}crashRolling(v,dir,b);return;}
  for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&!NAVAL_UNITS.has(u.type)&&!v.hits.has(u)&&overlaps(box,u)){v.hits.add(u);hitUnit(military,u,RN.unitDamage,'player',180*mass(v),dir,false,'thrown');}
  if(rival&&!rival.dead&&!v.hits.has(rival)&&overlaps(box,rival)){v.hits.add(rival);strikeRival(rollDamage(v)*.3,160*mass(v),dir);crashRolling(v,dir,rival);return;}
  if(objective&&!objective.shattered&&!v.hits.has(objective)&&overlaps(box,obox())){v.hits.add(objective);hitObjective(rollDamage(v)*.5);crashRolling(v,dir,objective);return;}
- for(const o of vehicles)if(o!==v&&loose(o)&&o.state!=='rolling'&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),RN.unitDamage);o.hits.add(v);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);if(v.kind!=='ball')v.vx*=1-VC.chainPush*(v.kind==='wheel'?.05:.6);spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
+ for(const o of vehicles)if(o!==v&&loose(o)&&o.state!=='rolling'&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),RN.unitDamage);o.hits.add(v);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);if(v.kind!=='ball'&&v.kind!=='stone')v.vx*=1-VC.chainPush*(v.kind==='wheel'?.05:.6);spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
  // The kaiju is in its way too: it does not hurt a monster, it just wrecks the car.
- if(v.kind!=='ball'&&Math.abs(v.vx)>60&&overlaps(box,{x:player.x,y:player.y,w:bodyWidth(),h:bodyHeight()}))crashRolling(v,dir);
+ if(v.kind!=='ball'&&v.kind!=='stone'&&Math.abs(v.vx)>60&&overlaps(box,{x:player.x,y:player.y,w:bodyWidth(),h:bodyHeight()}))crashRolling(v,dir);
 }
 // ---- New York secret level: Coney Island (NYC rework card 7) ----
 // The Ferris wheel stands on its base (a `wheelbase` building); breaking the base sets it loose, rolling (src/rolling.ts). The roller coaster's train shuttles on a
@@ -158,9 +200,9 @@ function tickConey(dt:number){
 // ---- New York Act 2 (NYC rework card 3) ----
 // One Times Square's ball, Grand Central's concourse cave-in and Central Park's carriage horses (the zoo animals are the sea-lion herd, above).
 // Every part is opt-in per level (src/levels.ts); a level that sets none of it runs none of this.
-let ballFall:{x0:number,x:number,y0:number,t:number,dir:number}|null=null,ballsLoosed=0,ballCrowd=0,concourseOpen=false,concourseRoof:typeof buildings[number]|null=null,commutersDropped=0,carriagesBolted=0;
+let ballFall:{x0:number,x:number,y0:number,t:number,dir:number}|null=null,ballsLoosed=0,ballCrowd=0,ballChips=0,ballShatters=0,ballChipT=-9,ballHinted=false,concourseOpen=false,concourseRoof:typeof buildings[number]|null=null,commutersDropped=0,carriagesBolted=0;
 const bolted=new WeakSet<Vehicle>();
-function setupNyc2(){ballFall=null;ballsLoosed=0;ballCrowd=0;concourseOpen=false;commutersDropped=0;carriagesBolted=0;concourseRoof=block.concourse?buildings.find(b=>b.deco==='concourse')??null:null;}
+function setupNyc2(){ballFall=null;ballsLoosed=0;ballCrowd=0;ballChips=0;ballShatters=0;ballChipT=-9;ballHinted=false;concourseOpen=false;commutersDropped=0;carriagesBolted=0;concourseRoof=block.concourse?buildings.find(b=>b.deco==='concourse')??null:null;}
 // The ball is knocked loose (its roof fixture broke: a blow to the roof, or the tower coming down): it falls to the street and rolls away from
 // the kaiju, down Broadway.
 function dropBall(r:{x:number,y:number,w:number,h:number},b:typeof buildings[number]){const cx=r.x+r.w/2,dir=cx>=player.x+bodyWidth()/2?1:-1;
@@ -175,14 +217,39 @@ function openConcourse(){concourseOpen=true;const [x0,x1]=block.concourse!,floor
 function boltCarriage(v:Vehicle,from:number){bolted.add(v);const dir=v.x+v.w/2<from?-1:1;v.dir=dir;v.glide=NYC2.boltGlide;startRolling(v,NYC2.boltSpeed,dir);carriagesBolted++;
  for(const c of population.civilians)if(Math.abs(c.x-v.x)<480)c.panicked=true;action='THE HORSES BOLT';actionTime=1.2;}
 function tickNyc2(dt:number){
- if(ballFall){ballFall.t+=dt;if(ballFall.t>=NYC2.ballFall){const f=ballFall;ballFall=null;const v=makeProp(nextVehicle++,'ball',f.x-NYC2.ballSize/2,'#e8ecff');v.state='parked';v.glide=NYC2.ballGlide;v.y=groundAt(f.x)-v.h;vehicles.push(v);startRolling(v,NYC2.ballSpeed,f.dir);v.plows=8;
+ if(ballFall){ballFall.t+=dt;if(ballFall.t>=NYC2.ballFall){const f=ballFall;ballFall=null;const v=makeProp(nextVehicle++,'ball',f.x-NYC2.ballSize/2,'#e8ecff');v.state='parked';v.glide=NYC2.ballGlide;v.hp=NYC2.ballHp;v.y=groundAt(f.x)-v.h;vehicles.push(v);startRolling(v,NYC2.ballSpeed,f.dir);v.plows=8;
   burst(f.x,groundAt(f.x)-6,'#dfe6ff',18);shake=Math.max(shake,8);for(const c of population.civilians)if(Math.abs(c.x-f.x)<900)c.panicked=true;}}
- for(const v of vehicles){if(v.kind==='ball'&&v.state==='rolling')v.angle+=v.vx/(v.w/2)*dt;if(v.kind==='carriage'&&v.state==='rolling')v.dir=Math.sign(v.vx)||v.dir;}
+ for(const v of vehicles){if(v.kind==='ball'&&v.state==='rolling')v.angle+=v.vx/(v.w/2)*dt;if(v.kind==='ball'&&v.state==='held')v.angle+=player.face*2.2*dt;if(v.kind==='carriage'&&v.state==='rolling')v.dir=Math.sign(v.vx)||v.dir;}
+ if(!ballHinted&&combat.stage>=2&&!held&&!banner){const b=vehicles.find(o=>o.kind==='ball'&&o.state==='parked');if(b&&Math.abs(b.x+b.w/2-(player.x+bodyWidth()/2))<NYC2.ballHint){ballHinted=true;banner={label:'GRAB · THE BALL',side:0,life:2.4};}}
  if(concourseRoof&&!concourseOpen&&concourseRoof.hpNow<=0)openConcourse();
  if(block.carriages){const cx=player.x+bodyWidth()/2;for(const v of vehicles)if(v.kind==='carriage'&&v.state==='parked'&&!bolted.has(v)&&Math.abs(v.x+v.w/2-cx)<NYC2.boltRange)boltCarriage(v,cx);}}
+// ---- The ball as a prop (NYC rework fix 3): carried, bowled, lobbed, and finally shattered (src/config.ts NYC2) ----
+// A thrown ball lands and rolls again at most `ballReroll` of its speed; a slow one (or one just dropped) settles parked, grabbable.
+function landBall(v:Vehicle,vx0:number){
+ const dir=Math.sign(vx0)||player.face,sp=Math.abs(vx0)*NYC2.ballReroll,cx=v.x+v.w/2;v.y=groundAt(cx)-v.h;v.vy=0;v.spin=0;v.damage=0;v.hits=new Set();
+ if(Math.abs(vx0)>1){shake=Math.max(shake,5);burst(cx,v.y+v.h-4,'#dfe6ff',8);}
+ if(sp<NYC2.ballGrabSpeed){v.state='parked';v.vx=0;return;}
+ startRolling(v,sp,dir);v.vx=dir*Math.max(NYC2.ballRerollMin,sp);v.plows=8;v.glide=NYC2.ballGlide;}
+// A hard impact of a thrown ball costs it 1 hp; the last one shatters it.
+function ballChip(v:Vehicle,dir:number){
+ if(!v.tossed||v.hp===undefined||v.hp<=0||time-ballChipT<NYC2.ballChipGap)return;ballChipT=time;v.hp--;ballChips++;
+ const cx=v.x+v.w/2,cy=v.y+v.h/2;if(v.hp<=0){shatterBall(v,dir);return;}
+ spawnChunks(cx,cy,dir,'#cfd9ff',4,1.2);burst(cx,cy,'#7ae6ff',5);burst(cx,cy,'#ff7ad6',5);shake=Math.max(shake,6);freeze(.05);
+ action=v.hp/NYC2.ballHp<=.5?'PANELS BREAKING':'CRACKED';actionTime=.8;}
+const NYE_COLORS=['#ffd84f','#ffffff','#c9d2ff','#e8506a','#4a7ae0','#7ae6ff','#ff7ad6'];
+function shatterBall(v:Vehicle,dir:number){
+ if(ballShatters>0&&!vehicles.includes(v))return;ballShatters++;if(v===held)held=null;vehicles=vehicles.filter(o=>o!==v);
+ const cx=v.x+v.w/2,cy=v.y+v.h/2;
+ spawnChunks(cx,cy,dir,'#cfd9ff',10,1.8);spawnChunks(cx,cy,-dir,'#7ae6ff',8,1.6);spawnChunks(cx,cy,dir,'#ff7ad6',6,1.4);
+ sparks(cx,cy,dir,14,'#ffffff');sparks(cx,cy,-dir,10,'#7ae6ff');for(const c of NYE_COLORS)burst(cx,cy-v.h*.3,c,7);
+ shake=Math.max(shake,14);freeze(F.hitstopTopple);banner={label:'HAPPY NEW YEAR',side:0,life:2.6};award(NYC2.ballShatterPoints);heatUp(12);}
+// After a thrown ball's flight step: any building, the rival or the target it struck counts as one hard impact.
+function ballImpact(v:Vehicle,n0:number){
+ if(v.kind!=='ball'||v.hits.size<=n0)return;const dir=-(Math.sign(v.vx)||1);
+ for(const o of [...v.hits].slice(n0))if(buildings.includes(o as typeof buildings[number])||o===rival||o===objective){ballChip(v,dir);return;}}
 function drawBallFall(){if(!ballFall)return;const k=Math.min(1,ballFall.t/NYC2.ballFall),gy=groundAt(ballFall.x)-NYC2.ballSize/2,y=ballFall.y0+(gy-ballFall.y0)*k*k;drawBallSphere(ballFall.x0+(ballFall.x-ballFall.x0)*k-camera,y,NYC2.ballSize/2,time);}
 function nycDebug(){return {ballsLoosed,ballFalling:!!ballFall,ballCrowd,concourseOpen,commutersDropped,carriagesBolted,
- ball:(()=>{const v=vehicles.find(o=>o.kind==='ball');return v?{x:v.x,y:v.y,w:v.w,vx:v.vx,state:v.state}:null;})(),
+ ball:(()=>{const v=vehicles.find(o=>o.kind==='ball');return v?{x:v.x,y:v.y,w:v.w,vx:v.vx,state:v.state,hp:v.hp,tossed:!!v.tossed}:null;})(),ballChips,ballShatters,
  carriageList:vehicles.filter(v=>v.kind==='carriage').map(v=>({x:v.x,y:v.y,state:v.state,vx:v.vx})),
  zooList:lions.filter(l=>l.zoo).map(l=>({x:l.x,state:l.state,sp:l.zoo!.sp})),
  roofList:roofs.map(p=>({kind:p.kind,dead:p.dead,grid:p.grid,lit:p.grid<0||power[p.grid]})),gridPower:[...power],
@@ -196,6 +263,9 @@ function tickAct2(dt:number){
  // Sea lions: they flop away from the kaiju toward the nearest water and dive.
  const cx=player.x+bodyWidth()/2;
  for(const l of lions){if(l.state==='gone')continue;l.t+=dt;
+  if(l.axo){const A=XOCHI.axolotl;if(l.state==='rest'&&Math.abs(l.x-cx)<A.alarm){l.state='flee';l.vx=(l.x<cx?-1:1)*A.speed;}
+   if(l.state==='flee'){l.x+=l.vx*dt;if(!submerged(l.x)||Math.abs(l.x-l.axo.from)>A.run||l.x<20||l.x>worldWidth-20){l.state='gone';lionsEscaped++;xStats.axolotls++;award(A.points);splash(l.x,waterAt(l.x)??groundAt(l.x),7);}}
+   l.y=axoY(l.x)+(l.state==='flee'?Math.sin(l.t*16)*2:0);continue;}
   if(l.zoo){if(l.state==='rest'&&Math.abs(l.x-cx)<NYC2.zooAlarm){l.state='flee';l.vx=(l.x<cx?-1:1)*NYC2.zooSpeed;}
    if(l.state==='flee'){l.x+=l.vx*dt;l.y=groundAt(l.x)-(l.zoo.sp===0?30:22)-Math.abs(Math.sin(l.t*8))*6;if(submerged(l.x)||Math.abs(l.x-l.zoo.from)>NYC2.zooRun||l.x<20||l.x>worldWidth-20){l.state='gone';lionsEscaped++;award(NYC2.zooPoints);if(submerged(l.x))splash(l.x,waterAt(l.x)!,8);}}
    else l.y=groundAt(l.x)-(l.zoo.sp===0?30:22);continue;}
@@ -269,14 +339,14 @@ type Wave={x:number,vx:number,life:number,max:number,damage:number,hits:Set<obje
 let tremor:{t:number,dir:number}|null=null;
 // Kaiban's Debris Shotgun: the scoop waiting for its fling frame, and the rock chunks in flight (ballistic, stop on first hit).
 let debris:{t:number,dir:number}|null=null;
-type Rock={x:number,y:number,vx:number,vy:number,life:number,damage:number,knockback:number,spin:number,size:number};
+type Rock={x:number,y:number,vx:number,vy:number,life:number,damage:number,knockback:number,spin:number,size:number,meteor?:boolean};
 let rocks:Rock[]=[];
 // Tlézcatl's Magma Dive: molten globs in flight (ballistic, stop on the first hit, leave a pool where they reach the street) and the
 // burning pools on the street (x = left edge, w wide; `hits` = last burn tick per target).
 // Eruption globs and pools carry `ult`: their hits are Ultimate damage (no meter gain, no hitstop) and an Eruption glob only collides
 // once it is falling.
-type Glob={x:number,y:number,vx:number,vy:number,life:number,damage:number,size:number,ult?:boolean,grav?:number,venom?:number};
-type Pool={x:number,w:number,life:number,max:number,damage:number,hits:Map<object,number>,ult?:boolean,fire?:boolean,acid?:boolean,venom?:boolean,tick?:number,size?:number};
+type Glob={x:number,y:number,vx:number,vy:number,life:number,damage:number,size:number,ult?:boolean,grav?:number,venom?:number,bomb?:boolean};
+type Pool={x:number,w:number,life:number,max:number,damage:number,hits:Map<object,number>,rock?:boolean,ult?:boolean,fire?:boolean,acid?:boolean,venom?:boolean,tick?:number,size?:number};
 let globs:Glob[]=[],pools:Pool[]=[];
 // Myrmex's Venom Bomb: `brew` while L is held (seconds brewed), then `spit` waits for the throw's impact frame. The bomb rides the
 // glob machinery (`venom` = its charge 0-1) and bursts into a poison `cloud`; venom puddles ride the pool machinery. `poison` holds
@@ -401,8 +471,8 @@ function award(points:number){if(!points)return;score+=Math.round(points*rampage
 function heatUp(n:number){const lv=feedRampage(rampage,n);if(lv>=1){rampFlash=1.2;shake=Math.max(shake,2+lv);}}
 // Phase 3: bridge spans (shared with the terrain module as decks), subway trains, troops already hurt by a fall into a pit.
 type Span=Deck&{hp:number,max:number,fall:number};
-type Train={x:number,dir:number,hits:Set<object>,hp:number,crashed:boolean,flash:number};
-let spans:Span[]=[],trains:Train[]=[],trainTimer=0,wrecked=0,pitted=new WeakSet<object>();
+type Train={x:number,dir:number,hits:Set<object>,hp:number,crashed:boolean,flash:number,surface?:boolean};
+let spans:Span[]=[],trains:Train[]=[],trainTimer=0,trenTimer=0,wrecked=0,pitted=new WeakSet<object>();
 // Depth bands and drowning (blocks with `bands`, src/water.ts). `drown` runs the go-under / slide back / respawn / penalty sequence;
 // `safeX` is the last spot the kaiju stood on dry street; `drownY` where it went under. `sinkers` are wrecks going down out of sight.
 let drown:Drown|null=null,safeX=110,drownY=0,sinkers:{v:Vehicle,t:number}[]=[],drillMap:'combat'|'water'='combat';
@@ -411,7 +481,7 @@ function standHeight(){return C.playerHeight*scale(combat);}
 // The band the kaiju's feet are in (dry when out of the water, airborne above it, or in a block without bands).
 function footBand():Band{if(!bands())return 'dry';const x=player.x+bodyWidth()/2,s=waterAt(x);return s!==null&&player.y+bodyHeight()>s?bandAt(x,standHeight()):'dry';}
 // Walking speed in water: the band's in a banded block, the old flat wade elsewhere.
-function wadeFactor(){if(bands())return bandSpeed(footBand());return submerged(player.x+bodyWidth()/2)?R.wadeSlow:1;}
+function wadeFactor(){const f=bands()?bandSpeed(footBand()):submerged(player.x+bodyWidth()/2)?R.wadeSlow:1;return softFeet()?Math.min(f,bandSpeed('wading')):f;}
 function drowningHidden(){return !!drown&&drown.phase==='slide';}
 function drownLocked(){return !!drown&&(drown.phase==='sink'||drown.phase==='slide');}
 // Subway depth: San Francisco's blocks dig the deeper tunnel.
@@ -447,6 +517,7 @@ function dropSpan(s:Span,ult:boolean){if(!s.alive)return;s.alive=false;s.fall=.0
  shake=Math.max(shake,14);if(!ult)freeze(.16);banner={label:block.yard?'DECK SPAN DOWN · THE YARD BELOW':'BRIDGE SPAN DOWN',side:0,life:2.4};action=block.yard?'DECK COLLAPSED INTO THE RAIL YARD':'BRIDGE SPAN COLLAPSED';actionTime=2;}
 // Cave the street in over a subway line at cx (never under a standing building). Returns true if a pit opened.
 function caveIn(cx:number,width:number,ult=false){
+ if(block.sinkholes&&strikeSinkholes(cx,ult))return true;
  const cata=style()==='par'&&block.kind!=='boss',gar=block.garage?.find(([p,q])=>cx>=p&&cx<q);if(!(cata||gar||block.subway?.some(([a,z])=>cx>=a&&cx<z))||pitAt(cx))return false;let a=cx-(gar?Math.max(width,SFC.garageWidth):width)/2,z=cx+(gar?Math.max(width,SFC.garageWidth):width)/2;
  for(const b of buildings)if(b.kind!=='tiny'&&b.hpNow>0){if(b.x+b.w<=cx&&b.x+b.w>a)a=b.x+b.w;if(b.x>=cx&&b.x<z)z=b.x;}
  const [la,lz]=cata?[0,worldWidth]:(block.subway?.find(([p,q])=>cx>=p&&cx<q)??gar)!;a=Math.max(a,la);z=Math.min(z,lz);if(z-a<60||deckAt(cx)||submerged(cx))return false;
@@ -455,6 +526,73 @@ function caveIn(cx:number,width:number,ult=false){
  for(const v of vehicles)if((v.state==='parked'||v.state==='driving'||v.state==='wreck')&&v.pole===undefined&&v.x+v.w/2>=a&&v.x+v.w/2<z){if(!v.rewarded)rewardVehicle(v,ult);launch(v,0,-40,0);}
  for(let x=a;x<z;x+=16)spawnChunks(x,groundAt(x)-pitDepth(),x<cx?-1:1,'#4c5755',2,1.2);burst(cx,C.ground-6,'#cfc6a8',24);
  if(fresh){award(R.pitPoints);heatUp(R.pitHeat);action=cata?'STREET CAVED IN · THE CATACOMBS':gar?'THE GARAGE CAVES IN':'STREET CAVED IN · SUBWAY BELOW';actionTime=1.6;}shake=Math.max(shake,8);return fresh;}
+// ---- Mexico City secret level (MEX rework card 8): Xochimilco ----
+// Fire on water. Opt-in per level: `current`, `trajineras`, `soft`, `axolotls`, `dolls`, `ashWater` on BlockDef (src/levels.ts); numbers in XOCHI (src/config.ts). A trajinera floats at the surface,
+// drifts east on the long canal's current (and stops against the boat ahead: a jam), carries a crowd and is a loose vehicle (grabbed, thrown, smashed). The kinds in BURNS can STAY alight:
+// `blaze` seconds, kept while the vehicle drifts, flies or is carried, throwing exposure at the buildings (ahuejotes and huts) and trajineras beside it, until it burns out to a charred hull.
+let xStats={ignited:0,lit:0,huts:0,drifted:0,jams:0,burnedOut:0,axolotls:0,floated:0,smashed:0,units:0},xTick=0,xJamT=-9;
+const XB=XOCHI.boat,XN=XOCHI.burn;
+const softFeet=()=>!!block.soft&&player.grounded&&block.soft.some(([a,z])=>{const x=player.x+bodyWidth()/2;return x>=a&&x<z;});
+const axoY=(x:number)=>(waterAt(x)??groundAt(x))+Math.min(30,depthAt(x)*.5);
+const canalBand=(x:number)=>!!block.current&&submerged(x)&&waterSpans().findIndex(([a,z])=>x>=a&&x<z)===block.current[0];
+const BOAT_COLORS=['#d94f6a','#e8b030','#3f9fb0','#6ab04c','#c75fb0'],BOAT_NAMES=['ROSA','AZUCENA','MARGARITA','DALIA','JAZMÍN'];
+function newBoat(x:number,variant:'plain'|'food'|'mariachi'='plain',moored=false,i=nextVehicle):Vehicle{
+ const v=createFleet('trajinera',[x],nextVehicle++,BOAT_COLORS[i%BOAT_COLORS.length],BOAT_NAMES[i%BOAT_NAMES.length])[0];
+ v.variant=variant;v.moored=moored;v.riders=XB.riders[0]+(i%(XB.riders[1]-XB.riders[0]+1));v.y=floatY(v.x+v.w/2,v.h);return v;}
+function setupXochi(){xStats={ignited:0,lit:0,huts:0,drifted:0,jams:0,burnedOut:0,axolotls:0,floated:0,smashed:0,units:0};xTick=0;
+ (block.trajineras??[]).forEach(([x,variant,moored],i)=>vehicles.push(newBoat(x,variant,!!moored,i)));}
+// The crowd aboard leaps into the water and scatters.
+function scatterRiders(v:Vehicle){const n=v.riders??0;v.riders=0;const x=v.x+v.w/2,y=v.y;for(let k=0;k<n&&particles.length<C.particleCap;k++)particles.push({x:x+(k-n/2)*14,y:y+4,vx:(k%2?1:-1)*(40+Math.random()*80),vy:-(90+Math.random()*80),life:.8,color:['#e8c660','#d94f6a','#4fa3d9','#f2f2e8'][k%4],size:4});
+ if(waterAt(x)!==null)splash(x,waterAt(x)!,8);}
+// Debris and wrecks that land on the current's band float off (src/config.ts XOCHI.floatLife) instead of sinking at once.
+function floatDebris(v:Vehicle){if(!v.rewarded)rewardVehicle(v);v.state='wreck';v.vx=v.vy=0;v.spin=0;v.angle=0;v.damage=0;v.thrown=false;v.float=XOCHI.floatLife;v.burn=0;v.y=floatY(v.x+v.w/2,v.h);xStats.floated++;}
+// A stomped or knocked trajinera does not flatten into the street: it is a smashed hull that stays on the water (or on the bank).
+function smashBoat(v:Vehicle,playerCaused:boolean,ult:boolean){if(v.state==='wreck'&&!v.riders)return;if(playerCaused&&!v.rewarded)rewardVehicle(v,ult);
+ const mid=v.x+v.w/2,over=waterAt(mid)!==null&&submerged(mid);v.state='wreck';v.angle=0;v.vx=v.vy=0;v.moored=false;v.y=over?floatY(mid,v.h):groundAt(mid)-v.h;
+ scatterRiders(v);spawnChunks(mid,v.y+v.h*.4,player.face,v.color,5,1.2);if(over)splash(mid,waterAt(mid)!,8);xStats.smashed++;shake=Math.max(shake,3);}
+// A boat thrown or punted into the canal lands on the surface (a smashed hull that floats on) instead of falling to the bed.
+function landBoat(v:Vehicle){const mid=v.x+v.w/2;v.state='wreck';v.vx=v.vy=0;v.spin=0;v.angle=0;v.damage=0;v.thrown=false;v.moored=false;v.y=floatY(mid,v.h);scatterRiders(v);splash(mid,waterAt(mid)!,12);shake=Math.max(shake,3);}
+function igniteVehicle(v:Vehicle):boolean{if(!BURNS.has(v.kind)||v.charred||(v.blaze??0)>0)return false;v.blaze=XN.seconds;v.expo=0;xStats.ignited++;scatterRiders(v);award(XN.points);
+ const mid=v.x+v.w/2;fireball(mid,v.y+v.h*.3,40);burst(mid,v.y,'#ff9b3d',8);if(!banner){action='FIRE BOAT';actionTime=1.1;}return true;}
+// Lava landing on or near a boat (the one door every lava pool comes through: addPool) lights it.
+function lightBoatsNear(x0:number,x1:number){for(const v of vehicles)if(BURNS.has(v.kind)&&v.x<x1+XN.reach&&v.x+v.w>x0-XN.reach)igniteVehicle(v);}
+function tickXochi(dt:number){
+ const boats=vehicles.filter(v=>v.kind==='trajinera');
+ if(block.soft&&softFeet()&&walking&&particles.length<C.particleCap&&Math.random()<dt*20){const w=bodyWidth(),fx=player.x+w/2;particles.push({x:fx+(Math.random()-.5)*w*.6,y:groundAt(fx)-2,vx:(Math.random()-.5)*90,vy:-(40+Math.random()*80),life:.5,color:Math.random()<.5?'#4a3a26':'#6b5638',size:3});}
+ if(!boats.length&&!vehicles.some(v=>(v.float??0)>0))return;
+ const spans=waterSpans(),cur=block.current;let sunk=false;
+ for(const v of vehicles){const boat=v.kind==='trajinera',deb=(v.float??0)>0;if(!boat&&!deb)continue;if(v.state==='held'||v.state==='flying')continue;
+  const mid=v.x+v.w/2,si=spans.findIndex(([a,z])=>mid>=a&&mid<z);if(si<0)continue;
+  v.y=floatY(mid,v.h)+Math.sin(time*XB.bobSpeed+v.id*1.7)*(boat?XB.bob:XB.bob*.6);
+  if(deb){v.float!-=dt;if(v.float!<=0){v.float=0;v.burn=0;(v as any).sunk=true;sunk=true;if(sinkers.length<12){v.state='wreck';v.vx=v.vy=0;sinkers.push({v,t:0});}continue;}}
+  // The dock's boats stay tied up until something disturbs them: a hit or a grab (the state changes), or fire burning through the line.
+  if(v.moored&&(v.state!=='parked'||((v.blaze??0)>0&&XN.seconds-v.blaze!>=XB.mooring)))v.moored=false;
+  if(!cur||si!==cur[0]||v.moored)continue;
+  const sp=Math.max(-XOCHI.current,Math.min(XOCHI.current,cur[1])),dir=Math.sign(sp);if(!dir)continue;
+  const [a,z]=spans[si];let nx=Math.max(a+4,Math.min(z-v.w-10,v.x+sp*dt)),jam=false;
+  for(const o of boats)if(o!==v&&o.state!=='held'&&o.state!=='flying'&&(dir>0?o.x>=v.x&&nx+v.w>o.x-XB.touch:o.x<=v.x&&nx<o.x+o.w+XB.touch)&&Math.abs(o.y-v.y)<XB.h){nx=dir>0?Math.max(v.x,o.x-v.w-XB.touch):Math.min(v.x,o.x+o.w+XB.touch);jam=true;}
+  if(jam&&time-xJamT>2){xStats.jams++;xJamT=time;}
+  xStats.drifted+=Math.abs(nx-v.x);v.x=nx;}
+ if(sunk)vehicles=vehicles.filter(v=>!(v as any).sunk);
+ // Burning boats: alight for XN.seconds, throwing exposure at everything beside them.
+ xTick+=dt;const hurt=xTick>=.5;if(hurt)xTick=0;
+ for(const v of boats){if(!((v.blaze??0)>0))continue;
+  v.blaze!-=dt;v.burn=Math.max(v.burn??0,2);const mid=v.x+v.w/2,top=v.y,bot=v.y+v.h;
+  if(particles.length<C.particleCap&&Math.random()<dt*XN.smoke*60)particles.push({x:v.x+v.w*(.2+Math.random()*.6),y:top-10,vx:(Math.random()-.5)*20+(block.current?.[1]??0)*.3,vy:-(40+Math.random()*50),life:1+Math.random()*.7,color:Math.random()<.6?'#5a5552':'#3e3a38',size:3+Math.floor(Math.random()*4)});
+  for(const t of buildings){if(t.hpNow<=0||!burnable(t)||t.role||t.lifted||blazes.has(t)||t.base-t.h>bot||t.base<top)continue;
+   if(Math.max(t.x-(v.x+v.w),v.x-(t.x+t.w))<XN.reach){expose(t,XN.exposure*dt);if(blazes.has(t))xStats.huts++;}}
+  for(const o of boats){if(o===v||o.charred||(o.blaze??0)>0||o.state==='held')continue;
+   if(Math.max(o.x-(v.x+v.w),v.x-(o.x+o.w))<XN.reach&&Math.abs(o.y-v.y)<XB.h){o.expo=(o.expo??0)+XN.boatExposure*dt;if(o.expo>=1&&igniteVehicle(o))xStats.lit++;}}
+  if(hurt)for(const u of military.units)if(u.type==='boat'&&u.hp>0&&Math.max(u.x-(v.x+v.w),v.x-(u.x+u.w))<XN.reach&&Math.abs(u.y-v.y)<XB.h*2){hitUnit(military,u,XN.unitDps*.5,'player',0,Math.sign(u.x-mid)||1,false,'blast');xStats.units++;}
+  if(v.blaze!<=0){v.blaze=0;v.charred=true;v.color='#2e2925';v.burn=0;xStats.burnedOut++;}}
+ // Unlit boats beside a blazing building, a fire pool or lava catch from it; the exposure fades when nothing burns near them.
+ for(const v of boats){if(v.charred||(v.blaze??0)>0||v.state==='held')continue;const top=v.y,bot=v.y+v.h;let fed=false;
+  for(const [o,f] of blazes){const t=o as typeof buildings[number];if(t.base-t.h>bot||t.base<top)continue;if(Math.max(t.x-(v.x+v.w),v.x-(t.x+t.w))<XN.reach){v.expo=(v.expo??0)+XN.catch*f.heat*dt;fed=true;}}
+  for(const p of pools){if(p.life<=0||p.acid||p.venom)continue;if(p.x<v.x+v.w+XN.reach&&p.x+p.w>v.x-XN.reach){v.expo=(v.expo??0)+XN.poolExposure*dt;fed=true;}}
+  if((v.expo??0)>=1)igniteVehicle(v);else if(!fed&&(v.expo??0)>0)v.expo=Math.max(0,v.expo!-dt*.5);}
+}
+function xochiDebug(){const bs=vehicles.filter(v=>v.kind==='trajinera');return {xochi:{boats:bs.map(v=>({id:v.id,x:v.x,y:v.y,w:v.w,h:v.h,state:v.state,moored:!!v.moored,blaze:v.blaze??0,expo:v.expo??0,charred:!!v.charred,riders:v.riders??0,variant:v.variant})),
+ floaters:vehicles.filter(v=>(v.float??0)>0).map(v=>({id:v.id,kind:v.kind,x:v.x,y:v.y,float:v.float})),stats:{...xStats},soft:softFeet(),wade:wadeFactor(),current:block.current??null,axolotls:lions.filter(l=>l.axo).map(l=>({x:l.x,state:l.state}))}};}
 // Rivers, bridges and subways each frame: drowning, sinking, falling spans, troops dropped into pits, trains under the street.
 function tickRiver(dt:number,w:number){
  for(const u of military.units){if(u.hp<=0||UNITS[u.type].air||NAVAL_UNITS.has(u.type))continue;const cx=u.x+u.w/2;
@@ -462,7 +600,7 @@ function tickRiver(dt:number,w:number){
   if(pitAt(cx)&&!pitted.has(u)&&u.y+u.h>=groundAt(cx)-2){pitted.add(u);hitUnit(military,u,R.fallDamage,'player',0,1,false,'blast');}}
  // In banded water a thrown or blasted wreck goes under as soon as it hits the surface, and sinks out of sight.
  const plunge=(v:Vehicle)=>bands()&&v.state==='flying'&&v.vy>0&&v.y+v.h*.6>(waterAt(v.x+v.w/2)??Infinity);
- for(const v of vehicles)if((loose(v)||plunge(v))&&v.pole===undefined&&submerged(v.x+v.w/2)){splash(v.x+v.w/2,waterAt(v.x+v.w/2)!,10);if(!v.rewarded)rewardVehicle(v);(v as any).sunk=true;
+ for(const v of vehicles)if((loose(v)||plunge(v))&&v.pole===undefined&&v.kind!=='trajinera'&&!(v.float!==undefined&&v.float>0)&&submerged(v.x+v.w/2)){splash(v.x+v.w/2,waterAt(v.x+v.w/2)!,10);if(canalBand(v.x+v.w/2)){floatDebris(v);continue;}if(!v.rewarded)rewardVehicle(v);(v as any).sunk=true;
   if(bands()&&sinkers.length<12){v.state='wreck';v.burn=0;v.vx=v.vy=0;sinkers.push({v,t:0});}}
  vehicles=vehicles.filter(v=>!(v as any).sunk);
  for(const k of sinkers){k.t+=dt;k.v.y+=50*dt;k.v.angle+=.35*dt;}sinkers=sinkers.filter(k=>k.t<W.wreckSink);
@@ -476,7 +614,11 @@ function tickRiver(dt:number,w:number){
  if(block.subway&&wrecked<R.trainWrecks){trainTimer-=dt;if(trainTimer<=0){trainTimer=R.trainEvery;const dir=Math.random()<.5?1:-1,[a,z]=block.subway[0];
   trains.push({x:dir>0?a-R.trainLength:z,dir,hits:new Set(),hp:R.trainHP,crashed:false,flash:0});}}
  const inPit=player.y+bodyHeight()>C.ground+10&&!!pitAt(player.x+w/2);
- for(const t of trains){t.flash=Math.max(0,t.flash-dt);if(t.crashed)continue;t.x+=t.dir*R.trainSpeed*dt;const nose=t.dir>0?t.x+R.trainLength:t.x;
+ // The Tren Ligero (a level's `tren`): the same trains on a surface track beside the road, on their own timer and speed (src/config.ts MEX3.tren).
+ if(block.tren&&wrecked<R.trainWrecks){trenTimer-=dt;if(trenTimer<=0){trenTimer=MEX3.tren.every;const dir=Math.random()<.5?1:-1,[a,z]=block.tren;trains.push({x:dir>0?a-R.trainLength:z,dir,hits:new Set(),hp:R.trainHP,crashed:false,flash:0,surface:true});}}
+ for(const t of trains){t.flash=Math.max(0,t.flash-dt);if(t.crashed)continue;
+  if(t.surface){t.x+=t.dir*MEX3.tren.speed*dt;const sn=t.dir>0?t.x+R.trainLength:t.x,sw=trains.find(o=>o!==t&&o.crashed&&o.surface&&sn>=o.x&&sn<=o.x+R.trainLength);if(sw){t.x=t.dir>0?sw.x-R.trainLength:sw.x+R.trainLength;crashTrain(t,false,'PILE-UP ON THE TREN LIGERO');}continue;}
+  t.x+=t.dir*R.trainSpeed*dt;const nose=t.dir>0?t.x+R.trainLength:t.x;
   // Pile-up: a train runs into a wreck already in the tunnel.
   const wreck=trains.find(o=>o!==t&&o.crashed&&nose>=o.x&&nose<=o.x+R.trainLength);if(wreck){t.x=t.dir>0?wreck.x-R.trainLength:wreck.x+R.trainLength;crashTrain(t,false,'PILE-UP IN THE TUNNEL');continue;}
   // The kaiju standing in a pit is in the way: the train smashes into it and derails.
@@ -486,16 +628,17 @@ function tickRiver(dt:number,w:number){
    for(const u of military.units)if(u.hp>0&&!UNITS[u.type].air&&!t.hits.has(u)&&u.x+u.w>Math.max(box.x,p.x0)&&u.x<Math.min(box.x+box.w,p.x1)&&u.y+u.h>p.floor-30){t.hits.add(u);hitUnit(military,u,R.trainDamage,'player',360,t.dir,false,'blast');}
    for(const v of vehicles)if(loose(v)&&!t.hits.has(v)&&v.x+v.w>Math.max(box.x,p.x0)&&v.x<Math.min(box.x+box.w,p.x1)&&v.y+v.h>p.floor-30){t.hits.add(v);puntVehicle(v,30,t.dir,false,1.8);}
    if(Math.random()<dt*30&&particles.length<C.particleCap)particles.push({x:Math.max(p.x0,Math.min(p.x1,t.x+R.trainLength*Math.random())),y:p.floor-10,vx:t.dir*80,vy:-60,life:.3,color:'#fff0c9',size:2});}}
- const line=block.subway?.[0];trains=trains.filter(t=>t.crashed||!!line&&(t.dir>0?t.x<line[1]:t.x+R.trainLength>line[0]));
+ const line=block.subway?.[0],tl=block.tren;trains=trains.filter(t=>t.crashed||(t.surface?!!tl&&(t.dir>0?t.x<tl[1]:t.x+R.trainLength>tl[0]):!!line&&(t.dir>0?t.x<line[1]:t.x+R.trainLength>line[0])));
  while(trains.filter(t=>t.crashed).length>R.trainWrecks)trains.splice(trains.findIndex(t=>t.crashed),1);
 }
 // Trains: the tunnel floor is the pit floor; a train fills the strip above it. Attacks reach a train only where it shows through a pit.
 const tunnelFloor=()=>C.ground+pitDepth();
 // Clipped to its line: past either end the train is out of sight, and out of reach.
-function trainBox(t:Train){const ln=block.subway?.[0]??[-Infinity,Infinity],x0=Math.max(t.x,ln[0]);return {x:x0,y:tunnelFloor()-44,w:Math.max(0,Math.min(t.x+R.trainLength,ln[1])-x0),h:37};}
-function trainsIn(zone:{x:number,y:number,w:number,h:number}){return trains.filter(t=>{const b=trainBox(t);return !t.crashed&&b.w>0&&overlaps(zone,b)&&pitList().some(p=>p.x0<Math.min(zone.x+zone.w,b.x+b.w)&&p.x1>Math.max(zone.x,b.x));});}
+function trainBox(t:Train){if(t.surface){const ln=block.tren??[-Infinity,Infinity],x0=Math.max(t.x,ln[0]);return {x:x0,y:groundAt(t.x+R.trainLength/2)-MEX3.tren.h,w:Math.max(0,Math.min(t.x+R.trainLength,ln[1])-x0),h:MEX3.tren.h-3};}
+ const ln=block.subway?.[0]??[-Infinity,Infinity],x0=Math.max(t.x,ln[0]);return {x:x0,y:tunnelFloor()-44,w:Math.max(0,Math.min(t.x+R.trainLength,ln[1])-x0),h:37};}
+function trainsIn(zone:{x:number,y:number,w:number,h:number}){return trains.filter(t=>{const b=trainBox(t);return !t.crashed&&b.w>0&&overlaps(zone,b)&&(t.surface||pitList().some(p=>p.x0<Math.min(zone.x+zone.w,b.x+b.w)&&p.x1>Math.max(zone.x,b.x)));});}
 function hitTrain(t:Train,damage:number,ult=false){if(t.crashed||damage<=0)return;t.hp-=damage;t.flash=.12;heatUp(damage*Y.gainPerDamage);const b=trainBox(t),x=Math.max(b.x,Math.min(b.x+b.w,player.x+bodyWidth()/2));
- sparks(x,b.y+b.h/2,player.face,6,'#fff0c9');if(t.hp<=0)crashTrain(t,ult,'SUBWAY TRAIN DERAILED');}
+ sparks(x,b.y+b.h/2,player.face,6,'#fff0c9');if(t.hp<=0)crashTrain(t,ult,t.surface?'TREN LIGERO DERAILED':'SUBWAY TRAIN DERAILED');}
 function crashTrain(t:Train,ult:boolean,label:string){t.crashed=true;t.hp=0;wrecked++;const b=trainBox(t);if(wrecked>=R.trainWrecks)label=`${label} · LINE CLOSED`;
  for(let k=0;k<3;k++){const x=b.x+b.w*(k+.5)/3;fireball(x,b.y+b.h/2,26+k*4,true);burst(x,b.y,'#ffcf73',10);}spawnChunks(b.x+b.w/2,b.y,t.dir,'#a9b2b0',10,1.6);
  award(R.trainPoints);heatUp(R.trainHeat);shake=Math.max(shake,12);kick(t.dir*6,-3);if(!ult)freeze(.14);banner={label,side:0,life:2.2};action=label;actionTime=1.8;}
@@ -665,18 +808,166 @@ function drawVents(){for(const v of vents){const x=v.x-camera;if(x<-200||x>viewW
    ctx.globalAlpha=hot?.7:.45;poly([[x-8,base],[x-R_*.28*(hot?1:.4),base-hh*.55],[x-R_*.2,base-hh],[x+R_*.22,base-hh*.97],[x+R_*.3*(hot?1:.4),base-hh*.5],[x+8,base]],'#e6eef0');
    ctx.globalAlpha=hot?.55:.3;poly([[x-4,base],[x-R_*.12,base-hh*.7],[x,base-hh*.95],[x+R_*.12,base-hh*.7],[x+4,base]],'#ffffff');
    for(let n=0;n<4;n++){const t=((time*1.6+n/4+v.x*.013)%1);ctx.globalAlpha=(hot?.5:.3)*(1-t);ctx.fillStyle='#dfe8ea';ctx.beginPath();ctx.arc(x+Math.sin(t*5+n*2)*R_*.2,base-hh*t,(8+t*(hot?26:12))*Math.sqrt(v.rk),0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}}}
+// ---- Mexico City Act 1 (MEX rework card 3): the pit start, the flagpole, tarp runs and acid seeps. docs/MEX_REWORK.md ----
+// Templo Mayor: the kaiju spawns in the excavation (a dip in the level's ground, `block.pit`); climbing or walking out of it (feet back at street level) makes Popocatépetl puff once.
+let pitOut=true,pitPuffs=0;
+function setupMex1(){pitOut=!block.pit;pitPuffs=0;
+ // The rubble ramp up to the platform's foot (a heap on the pit floor: flat top against the platform, `short` px lower than its roof).
+ if(block.pit){const P=block.pit,h=P.slabH-Math.round(P.short*C.cityScale),side=P.ramp,x0=P.slabX-60-side,x1=P.slabX+60+side;addMound(x0,x1,h,side/(x1-x0));}
+poleHinted=false;poleCool=0;poleSwung=0;poleThrown=0;poleStops=0;poleExtra=0;tarpBridges=0;}
+function tickMex1(dt:number){poleCool=Math.max(0,poleCool-dt);
+ if(!pitOut&&block.pit&&player.y+bodyHeight()<=C.ground+block.pit.floor-block.pit.slabH+4){pitOut=true;pitPuffs++;volcanoPuff();action='OUT OF THE PIT';actionTime=1.6;}
+ if(!poleHinted&&!held&&!banner){const v=vehicles.find(o=>o.kind==='pole'&&o.state==='parked');if(v&&Math.abs(v.x+v.w/2-(player.x+bodyWidth()/2))<FLAG.hintReach*3){poleHinted=true;banner={label:'GRAB · THE FLAGPOLE',side:0,life:2.4};}}}
+// The Zócalo's flagpole (src/config.ts FLAG): a heavy grabbable prop of kind `pole`, never loose. Held, J or K swings it (extra reach and damage); H throws it flat like a spear.
+let poleHinted=false,poleCool=0,poleSwung=0,poleThrown=0,poleStops=0,poleExtra=0;
+function swingPole(){if(!held||held.kind!=='pole'||!canAct(combat)||combat.charging||poleCool>0||combat.cooldown>0)return;
+ poleCool=FLAG.cooldown;combat.cooldown=Math.max(combat.cooldown,FLAG.cooldown*.6);poleExtra=FLAG.reach;poleSwung++;
+ performStrike({kind:'light',damage:C.lightDamage*FLAG.damage*damageMultiplier(combat),knockback:FLAG.knock,combo:2,charge:0});poleExtra=0;
+ shake=Math.max(shake,5);action='FLAGPOLE SWING';actionTime=.6;}
+// Tarp runs (src/config.ts TARP): buildings sharing a `tarp` id are one canopy. A burning stall exposes the nearest stall of its run on either side (within TARP.gap)
+// TARP.spread x harder than the ordinary spread. Called from tickFire's spread step.
+let tarpBridges=0;
+function tarpSpread(b:typeof buildings[number],heat:number,rain:boolean){if(b.tarp===undefined)return;
+ for(const t of buildings)if(t!==b&&t.tarp===b.tarp&&t.hpNow>0&&!t.lifted&&!blazes.has(t)){const gap=Math.max(t.x-(b.x+b.w),b.x-(t.x+t.w));if(gap<TARP.gap){expose(t,FI.spreadChance*heat*TARP.spread*(rain?.5:1));tarpBridges++;}}}
+// Acid seeps (src/config.ts ACID, a level's `seeps`): a storm drain with a green puddle. A slam or pound near it bursts it into a spray that burns troops, wears cars into wrecks and
+// eats the base of the buildings beside it; it leaves a puddle that keeps doing the same. Built like the steam vents. Acid is not fire and never hurts the player.
+// `auto` (card 6: a level's `seepsAuto`) makes a seep burst on its own after a warning; every seep is built with auto:false until then.
+type Seep={x:number,state:'idle'|'warn'|'burst'|'spent',t:number,next:number,tick:number,ptick:number,puddle:number,auto:boolean,dk:number,rk:number};
+let seeps:Seep[]=[],seepBurned=0,seepWrecked=0,seepEaten=0,seepBursts=0;const seepWear=new WeakMap<Vehicle,number>();
+function setupSeeps(){const A=ACID.auto,auto=!!block.seepsAuto;seeps=(block.seeps??[]).map((x,i)=>({x,state:'idle' as const,t:0,next:auto?A.first+i*A.stagger:ACID.first+i*ACID.stagger,tick:0,ptick:0,puddle:0,auto,dk:auto?A.damage:1,rk:auto?A.radius:1}));seepBurned=0;seepWrecked=0;seepEaten=0;seepBursts=0;}
+function strikeSeeps(cx:number,ult=false){for(const v of seeps)if((v.state==='idle'||v.state==='warn')&&Math.abs(v.x-cx)<=(ult?ACID.ultTrigger:ACID.trigger))burstSeep(v);}
+function burstSeep(v:Seep,byItself=false){if(block.domeSeep!==undefined&&seeps[block.domeSeep]===v)dropDome();v.state='burst';v.t=ACID.seconds;v.tick=0;v.puddle=ACID.puddleSeconds;seepBursts++;
+ if(!byItself){award(ACID.points);heatUp(ACID.heat);shake=Math.max(shake,5);action='ACID SEEP BURST';actionTime=1.2;}
+ else if(Math.abs(v.x-(player.x+bodyWidth()/2))<viewW()*.7)shake=Math.max(shake,3);}
+// One round of acid on everything within `half` px of x: troops burn and corrode, loose cars wear (a wreck at ACID.carHP), the base of any building within ACID.baseReach is eaten.
+function acidAround(x:number,half:number,k:number){
+ for(const u of military.units){if(u.hp<=0||UNITS[u.type].air||NAVAL_UNITS.has(u.type))continue;const mid=u.x+u.w/2;if(Math.abs(mid-x)>=half)continue;
+  hitUnit(military,u,ACID.damage*k,'player',ACID.knockback,Math.sign(mid-x)||1,true,'blast');u.stun=Math.max(u.stun,ACID.stun);corrode(u,ACID.tick,true);seepBurned++;}
+ for(const o of vehicles){if(!loose(o)||o.state==='flat'||Math.abs(o.x+o.w/2-x)>=Math.max(half,ACID.carRadius*.6))continue;const w=(seepWear.get(o)??0)+ACID.carWear*k;seepWear.set(o,w);
+  if(particles.length<C.particleCap)particles.push({x:o.x+Math.random()*o.w,y:o.y+o.h*.5,vx:(Math.random()-.5)*20,vy:-30,life:.4,color:'#c8f03a',size:2});
+  if(w>=ACID.carHP){o.color='#6f7a3a';flattenVehicle(o,false);seepWrecked++;}}
+ for(const b of buildings){if(b.hpNow<=0||b.kind==='tiny'||b.role||b.topple||b.lifted)continue;if(!(b.x<x+ACID.baseReach&&b.x+b.w>x-ACID.baseReach))continue;
+  hit(b,ACID.baseDamage*k,true,Math.sign(b.x+b.w/2-x)||1,{x:Math.max(b.x+6,Math.min(b.x+b.w-6,x)),y:b.base-8},true);corrode(b,ACID.tick,true);seepEaten++;}}
+function tickSeeps(dt:number){const A=ACID.auto;for(const v of seeps){
+  if(v.state==='idle'){if(v.auto){v.next-=dt;if(v.next<=0){v.state='warn';v.t=A.warn;}}}
+  else if(v.state==='warn'){v.t-=dt;if(v.t<=0)burstSeep(v,true);}
+  else if(v.state==='burst'){v.t-=dt;v.tick-=dt;if(v.tick<=0){v.tick=ACID.tick;acidAround(v.x,ACID.radius*v.rk,v.dk);}if(v.t<=0){if(v.auto){v.state='idle';v.next=A.every;}else{v.state='spent';v.t=ACID.rearm;}}}
+  else{v.t-=dt;if(v.t<=0){v.state='idle';v.next=ACID.stagger;}}
+  if(v.puddle>0){v.puddle-=dt;v.ptick-=dt;if(v.ptick<=0){v.ptick=ACID.tick;if(v.state!=='burst')acidAround(v.x,ACID.puddleW/2,ACID.puddleDamage/ACID.damage);}}
+  if(particles.length<C.particleCap&&Math.abs(v.x-(camera+viewW()/2))<viewW()){
+   if(v.state==='burst')for(let n=0;n<4;n++)particles.push({x:v.x+(Math.random()-.5)*12,y:groundAt(v.x)-6,vx:(Math.random()-.5)*160*v.rk,vy:-(180+Math.random()*260)*(ACID.height*(v.state==='burst'?1:.3)/200),life:.5+Math.random()*.5,color:Math.random()<.5?'#c8f03a':'#7fa61e',size:2+Math.floor(Math.random()*3)});
+   else if(Math.random()<dt*(v.state==='warn'?14:2.5))particles.push({x:v.x+(Math.random()-.5)*24,y:groundAt(v.x)-3,vx:(Math.random()-.5)*8,vy:-(15+Math.random()*25),life:.5,color:'#e6ff8a',size:2});}}}
+// Volcanic ground (a level's `rock`, src/config.ts ROCK): the street over each range is dark broken lava rock, with slabs standing proud of it and cracks between them.
+// ---- Xochimilco art (MEX rework card 8) ----
+// Chinampa ground: dark wet farmland with furrows and young shoots; the front strip is the mud lapping round the kaiju's ankles.
+function drawSoft(){for(const [a,z] of block.soft??[]){const x0=Math.max(a,camera-24),x1=Math.min(z,camera+viewW()+24);if(x1<=x0)continue;
+  ctx.fillStyle='#4a3a26';ctx.beginPath();ctx.moveTo(x0-camera,groundAt(x0)-1);for(let x=Math.ceil(x0/8)*8;x<=x1;x+=8)ctx.lineTo(x-camera,groundAt(x)-3+((x*7)%3));ctx.lineTo(x1-camera,groundAt(x1)+60);ctx.lineTo(x0-camera,groundAt(x0)+60);ctx.closePath();ctx.fill();
+  for(let x=Math.ceil(x0/22)*22;x<x1;x+=22){const y=groundAt(x);rect(x-camera,y+5+((x*5)%9),14,2,'#2b2116');if((x/22|0)%3===0){rect(x-camera+3,y-8,2,8,'#5f8a4f');rect(x-camera+7,y-11,2,11,'#6c9556');}}}}
+function drawSoftFront(){if(!softFeet())return;const w=bodyWidth(),fx=player.x+w/2-camera,y=groundAt(player.x+w/2),k=XOCHI.soft.sink;
+ ctx.globalAlpha=.85;rect(fx-w*.55,y-k,w*1.1,k+4,'#4a3a26');ctx.globalAlpha=1;for(let n=-2;n<=2;n++)rect(fx+n*w*.2+Math.sin(time*3+n)*3,y-k-1,10,2,'#6b5638');}
+// Ash floats on the canals: grey flecks on the surface, drifting with the current.
+function drawAshWater(){if(!block.ashWater)return;const A=XOCHI.ash,drift=(block.current?.[1]??0)*A.drift,step=100/A.density;
+ for(const [a,z,y] of waterSpans()){const len=z-a,n=Math.floor(len/step),off=((time*drift)%len+len)%len;
+  for(let i=0;i<n;i++){const wx=a+((i*step*1.37+off)%len),sx=wx-camera;if(sx<-12||sx>viewW()+12)continue;ctx.globalAlpha=.7;rect(sx,y-1+Math.sin(time*2+i)*.8,A.size*(1+(i%3)*.5),2,i%2?'#9a9d9b':'#7d807f');}ctx.globalAlpha=1;}}
+function drawAxolotls(){for(const l of lions){if(!l.axo||l.state==='gone')continue;const x=l.x-camera;if(x<-30||x>viewW()+30)continue;const flee=l.state==='flee',dir=l.vx<0?-1:l.vx>0?1:(Math.floor(l.x)%2?1:-1),sw=Math.sin(l.t*(flee?18:3))*(flee?2.5:1);
+ ctx.save();ctx.translate(x,l.y);ctx.scale(dir,1);ctx.globalAlpha=.94;ctx.fillStyle='#f0a8b8';ctx.beginPath();ctx.ellipse(0,0,9,3.6,0,0,Math.PI*2);ctx.fill();poly([[-8,0],[-18,sw-2],[-18,sw+3],[-7,3]],'#e890a6');ctx.beginPath();ctx.ellipse(9,-1,4,3.2,0,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='#d95f86';ctx.lineWidth=1.2;for(const g of [-1,0,1]){ctx.beginPath();ctx.moveTo(7,-2);ctx.lineTo(4+g*2,-7-Math.abs(g));ctx.stroke();}rect(11,-2,1,1,'#222');rect(-3,2,3,2,'#e890a6');rect(3,2,3,2,'#e890a6');ctx.restore();}}
+// A trajinera: a flat painted hull, a floral arch over the middle, the crowd aboard; food boats carry a stove and its smoke, mariachi boats the band. Burnt out it is a black hull.
+function drawTrajinera(v:Vehicle,L:number,T:number,w:number,h:number){
+ const ch=!!v.charred,hull=ch?'#2e2925':'#3f6f9a',trim=ch?'#3a332d':v.color;
+ poly([[L-6,T+h*.34],[L+w+8,T+h*.26],[L+w-4,T+h],[L+10,T+h]],ch?'#1f1b18':'#2d4a66');
+ rect(L+4,T+h*.4,w-6,h*.2,hull);rect(L+4,T+h*.4,w-6,2,trim);for(let k=0;k<7;k++)rect(L+10+k*(w-24)/6,T+h*.46,8,6,ch?'#3a332d':['#e8b030','#d94f6a','#f2f2e8'][k%3]);
+ rect(L-2,T+h*.28,6,6,trim);rect(L+w-2,T+h*.2,6,6,trim);
+ if(v.state==='wreck')return;
+ const ax=L+w*.5,ar=w*.34,ay=T+h*.34;ctx.strokeStyle=ch?'#201c19':trim;ctx.lineWidth=6;ctx.beginPath();ctx.arc(ax,ay,ar,Math.PI,0);ctx.stroke();
+ ctx.strokeStyle=ch?'#2a2420':'#fff3c4';ctx.lineWidth=2;ctx.beginPath();ctx.arc(ax,ay,ar-1,Math.PI,0);ctx.stroke();ctx.lineWidth=1;
+ if(!ch)for(let k=0;k<=8;k++){const a=Math.PI+k*Math.PI/8;ctx.fillStyle=['#f2a21e','#d94f6a','#6ab04c','#f2f2e8'][k%4];ctx.beginPath();ctx.arc(ax+Math.cos(a)*ar,ay+Math.sin(a)*ar,3,0,Math.PI*2);ctx.fill();}
+ rect(ax-ar-3,ay,6,h*.1,ch?'#201c19':'#a97b4a');rect(ax+ar-3,ay,6,h*.1,ch?'#201c19':'#a97b4a');
+ const n=v.riders??0;for(let k=0;k<n;k++){const px=L+w*.2+k*(w*.6/Math.max(1,n)),col=['#e8c660','#d94f6a','#4fa3d9','#f2f2e8','#6ab04c'][k%5];rect(px,T+h*.1,5,h*.3,col);ctx.fillStyle='#d8a077';ctx.beginPath();ctx.arc(px+2.5,T+h*.06,3,0,Math.PI*2);ctx.fill();if(v.variant==='mariachi'){rect(px-3,T+h*.02,11,2,'#1c1c1c');rect(px-1,T,7,3,'#1c1c1c');}}
+ if(v.variant==='food'&&!ch){rect(L+w*.12,T+h*.1,w*.18,h*.3,'#555');rect(L+w*.12,T+h*.05,w*.18,3,'#222');for(let k=0;k<3;k++)rect(L+w*.17+Math.sin(time*3+k)*3,T-6-k*8-((time*14+k*5)%8),4,4,'#d8d4cc');rect(L+w*.62,T+h*.12,w*.22,h*.28,'#d9a441');}
+ if(v.variant==='mariachi'&&!ch)rect(L+w*.7,T+h*.1,6,h*.3,'#7a4e2a');}
+function drawRock(){for(const [a,z] of block.rock??[]){const x0=Math.max(a,camera-24),x1=Math.min(z,camera+viewW()+24);if(x1<=x0)continue;
+  ctx.fillStyle=ROCK.color;ctx.beginPath();ctx.moveTo(x0-camera,groundAt(x0)-1);for(let x=Math.ceil(x0/8)*8;x<=x1;x+=8)ctx.lineTo(x-camera,groundAt(x)-4+((x*7)%5)-2);ctx.lineTo(x1-camera,groundAt(x1)+60);ctx.lineTo(x0-camera,groundAt(x0)+60);ctx.closePath();ctx.fill();
+  for(let x=Math.ceil(x0/30)*30;x<x1;x+=30){const h=3+((x*13)%6),y=groundAt(x)-4,w=16+((x*3)%12);poly([[x-camera,y+2],[x-camera+3,y-h],[x-camera+w-4,y-h+1],[x-camera+w,y+2]],ROCK.edge);rect(x-camera+4,y+7+((x*11)%14),12+((x*5)%9),1,'#120f0c');rect(x-camera+((x*3)%20),y+16+((x*7)%12),2,6,'#120f0c');}}}
+// A closed sinkhole: a stain of acid on the road and cracks across it.
+function drawSinkholes(){(block.sinkholes??[]).forEach(([a,z],i)=>{if(sinkOpen.has(i)||z<camera-40||a>camera+viewW()+40)return;const mx=(a+z)/2,y=groundAt(mx)-4;
+  ctx.globalAlpha=.4;ctx.fillStyle='#6f9a1e';ctx.beginPath();ctx.ellipse(mx-camera,y+3,(z-a)/2,3,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.85;ctx.strokeStyle=SINKHOLE.crack;ctx.lineWidth=1.5;
+  for(let k=0;k<10;k++){const sx=a+(z-a)*(k+.5)/10-camera,j=((k*37+i*11)%7)-3;ctx.beginPath();ctx.moveTo(sx,y+1);ctx.lineTo(sx+j*3,y+4);ctx.lineTo(sx-j*2,y+8);ctx.stroke();}
+  ctx.globalAlpha=1;ctx.lineWidth=1;});}
+// The Tren Ligero: a rail strip with sleepers and catenary posts along the line, a station at each end, and the trains (white cars with a teal stripe; a derailed one lies buckled and burning).
+function drawTren(){const L=block.tren;if(!L)return;const T=MEX3.tren,x0=Math.max(L[0],camera-40),x1=Math.min(L[1],camera+viewW()+40);
+ if(x1>x0){const y=groundAt(x0)-3;rect(x0-camera,y,x1-x0,2,'#5a5f60');for(let x=Math.ceil(x0/14)*14;x<x1;x+=14)rect(x-camera,y+2,6,2,'#3a3330');
+  for(let x=Math.ceil(x0/240)*240;x<x1;x+=240){const px=x-camera;rect(px-1,y-T.h-16,2,T.h+16,'#4a5256');rect(px-1,y-T.h-16,24,2,'#4a5256');rect(px+20,y-T.h-14,1,6,'#4a5256');}}
+ for(const [wx,d] of [[L[0],1],[L[1],-1]] as const){if(wx-camera<-120||wx-camera>viewW()+120)continue;const x=wx-camera+d*T.stationW*.5,y=groundAt(wx)-3;
+  rect(x-T.stationW/2,y-4,T.stationW,4,'#8c9490');rect(x-T.stationW/2,y-T.h-8,T.stationW,3,'#2c8a9a');rect(x-T.stationW/2+4,y-T.h-5,3,T.h,'#4a5256');rect(x+T.stationW/2-7,y-T.h-5,3,T.h,'#4a5256');text('TREN LIGERO',x,y-T.h-12,7,'#d9f0ee','center');}
+ const car=R.trainLength/3;
+ for(const t of trains){if(!t.surface)continue;const b=trainBox(t),tx=t.x-camera,y=groundAt(t.x+R.trainLength/2)-T.h;if(tx+R.trainLength<-20||tx>viewW()+20)continue;
+  for(let k=0;k<3;k++){const cx=tx+k*car,ca=Math.max(L[0]-camera,cx+2),cz=Math.min(L[1]-camera,cx+car-2);if(cz<=ca)continue;
+   if(t.crashed){ctx.save();ctx.translate(cx+car/2,y+T.h*.55);ctx.rotate((k-1)*.12*t.dir);rect(-car/2+2,-T.h*.5,car-4,T.h-6,'#5d6462');rect(-car/2+2,-T.h*.2,car-4,3,'#5a2a26');for(let w=-car/2+10;w<car/2-14;w+=22)rect(w,-T.h*.3,12,8,'#2a2e2d');
+    if(Math.sin(time*13+k*2+t.x)>0)poly([[-10,-T.h*.5],[-2,-T.h*.5-12-Math.abs(Math.sin(time*9+k))*8],[6,-T.h*.5]],'#ff8a1f');ctx.restore();continue;}
+   rect(ca,y,cz-ca,T.h-3,t.flash>0?'#fff4dc':'#e6ece8');rect(ca,y+T.h*.5,cz-ca,4,'#2c8a9a');rect(ca,y+T.h-6,cz-ca,3,'#2c3332');
+   for(let w=cx+8;w<cx+car-12;w+=20)if(w>ca&&w+10<cz)rect(w,y+6,10,9,'#2c3a46');}
+  const nose=t.dir>0?tx+R.trainLength:tx;if(!t.crashed&&nose>L[0]-camera&&nose<L[1]-camera)rect(nose-(t.dir>0?4:0),y+T.h-16,4,5,'#fff4c0');void b;}}
+// The Central Library's mosaic: a patchwork of earth-tone tiles over the tower's faces above the name banner.
+function drawMosaic(b:typeof buildings[number],x:number,y:number,h:number){const cols=['#b8532f','#d9a441','#3f7fa6','#5e9a58','#7a3b2e','#e8dcc0'];
+ for(let yy=y+14;yy<y+h-66;yy+=10)for(let xx=x+10;xx<x+b.w-17;xx+=10){const k=Math.abs(((xx-x)*7+(yy-y)*13+((xx-x)*(yy-y)>>3))|0)%cols.length;rect(xx,yy,9,9,cols[k]);}}
+function drawSeeps(){for(const v of seeps){const x=v.x-camera;if(x<-200||x>viewW()+200)continue;const base=groundAt(v.x),hot=v.state==='burst',pud=v.puddle>0?Math.min(1,v.puddle/1.5):0;
+  // The puddle: a green skin on the street, wider while it is fresh; the drain grate at its middle.
+  const pw=ACID.puddleW*(.45+.55*pud)/2*(v.state==='spent'&&!pud?.6:1);ctx.globalAlpha=.78;ctx.fillStyle='#6f9a1e';ctx.beginPath();ctx.ellipse(x,base+1,pw,3.8,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.9;ctx.fillStyle='#b9e23a';ctx.beginPath();ctx.ellipse(x-pw*.15,base,pw*.6,2.4,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+  rect(x-9,base-1,18,3,'#262c2a');for(let k=-3;k<=3;k++)rect(x+k*2.6,base-1,1,3,'#4a524f');
+  if(v.state==='warn'&&Math.sin(time*30)>0){ctx.globalAlpha=.6;rect(x-10,base-4,20,2,'#e6ff8a');ctx.globalAlpha=1;}
+  if(hot){const R_=ACID.radius*v.rk,hh=ACID.height*Math.min(1,v.t/.5+.15)*(.92+.08*Math.sin(time*13));
+   ctx.globalAlpha=.62;poly([[x-8,base],[x-R_*.3,base-hh*.55],[x-R_*.18,base-hh],[x+R_*.2,base-hh*.95],[x+R_*.3,base-hh*.5],[x+8,base]],'#9fcb27');
+   ctx.globalAlpha=.5;poly([[x-4,base],[x-R_*.1,base-hh*.7],[x,base-hh*.95],[x+R_*.1,base-hh*.7],[x+4,base]],'#e6ff8a');ctx.globalAlpha=1;
+   for(let n=0;n<5;n++){const t=((time*1.7+n/5+v.x*.011)%1);ctx.globalAlpha=.55*(1-t);ctx.fillStyle='#b9e23a';ctx.beginPath();ctx.arc(x+Math.sin(t*6+n*2)*R_*.35,base-hh*t,3+t*6,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}}}
+// Tarp canopies: a striped sheet slung from each stall to the next of its run (only while both stand); alight where either end burns.
+function drawTarps(){const runs=new Map<number,typeof buildings>();
+ for(const b of buildings)if(b.tarp!==undefined&&b.hpNow>0&&!b.lifted&&b.topple===0){const l=runs.get(b.tarp);if(l)l.push(b);else runs.set(b.tarp,[b]);}
+ for(const l of runs.values()){l.sort((p,q)=>p.x-q.x);for(let i=1;i<l.length;i++){const a=l[i-1],n=l[i],gap=n.x-(a.x+a.w);if(gap>=TARP.gap)continue;
+  const x0=a.x+a.w-camera-2,x1=n.x-camera+2;if(x1<-30||x0>viewW()+30)continue;const y0=a.base-a.h+2,y1=n.base-n.h+2,burn=blazes.has(a)||blazes.has(n),cols=Math.max(3,Math.round((x1-x0)/14));
+  for(let k=0;k<cols;k++){const t0=k/cols,t1=(k+1)/cols,ya=y0+(y1-y0)*t0+Math.sin(t0*Math.PI)*TARP.sag,yb=y0+(y1-y0)*t1+Math.sin(t1*Math.PI)*TARP.sag;
+   poly([[x0+(x1-x0)*t0,ya-5],[x0+(x1-x0)*t1,yb-5],[x0+(x1-x0)*t1,yb+6],[x0+(x1-x0)*t0,ya+6]],k%2?'#efe6cc':a.color);
+   if(burn&&Math.sin(time*11+k*1.9)>-.2)poly([[x0+(x1-x0)*t0,ya-4],[x0+(x1-x0)*(t0+t1)/2,ya-4-10-7*Math.abs(Math.sin(time*9+k))],[x0+(x1-x0)*t1,yb-4]],k%2?'#ffb13b':'#e8401a');}}}}
+// The flag's plinth on the Zócalo: three stone steps, with the Bandera Monumental's name plate while the mast still stands on it.
+function drawPolePlinth(){const cx=block.pole!,x=cx-camera;if(x<-200||x>viewW()+200)return;const gy=groundAt(cx),pw=FLAG.plinthW,ph=FLAG.plinthH;
+ for(let k=0;k<3;k++)rect(x-pw/2-(2-k)*6,gy-(k+1)*ph/3,pw+(2-k)*12,ph/3,k%2?'#cfc7ad':'#b9b19a');rect(x-pw/2,gy-ph,pw,2,'#e6dfc8');
+ const mast=vehicles.find(o=>o.kind==='pole');if(mast&&mast.state==='parked'&&upright(mast)){rect(x-34,gy-ph-26,68,12,'#1d2a2d');text('BANDERA MONUMENTAL',x,gy-ph-17,7,'#f0dca0','center');}}
+// Templo Mayor's excavation: the stone face behind the pit, steps up the ramp, the serpent heads at the foot of the west wall and the twin shrines' footings.
+function drawPitRuins(){const P=block.pit;if(!P)return;const a=P.x0-camera,z=P.x1-camera;if(z<-60||a>viewW()+60)return;const top=C.ground-3,rampX=P.slabX,floor=C.ground+P.floor;
+ ctx.fillStyle='#8a806b';ctx.beginPath();ctx.moveTo(a,top);ctx.lineTo(z,top);for(let wx=P.x1;wx>=P.x0;wx-=8)ctx.lineTo(wx-camera,bedAt(wx)+1);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#6f6753';for(let wx=P.x0;wx<P.x1;wx+=26){const g=bedAt(wx);for(let yy=top+10;yy<g;yy+=18)rect(wx-camera+((yy/18|0)%2?9:0),yy,24,1,'#5d5646');}
+ // The twin shrines' footings against the back face, and the serpent heads (a stone snake's head, fangs and a turquoise eye) facing each other on the floor.
+ for(const k of [.38,.62]){const fx=P.x0+(rampX-P.x0)*k-camera;rect(fx-26,floor-34,52,34,'#9a9078');rect(fx-20,floor-48,40,14,'#a69c84');rect(fx-14,floor-60,28,12,'#b3a98f');for(let st=0;st<3;st++)rect(fx-26+st*6,floor-12-st*10,52-st*12,2,'#6f6753');}
+ const head=(hx:number,dir:number)=>{const x=hx-camera;poly([[x,floor],[x,floor-26],[x+dir*10,floor-34],[x+dir*30,floor-30],[x+dir*40,floor-18],[x+dir*34,floor-6],[x+dir*30,floor]],'#7d7660');rect(x+dir*22-2,floor-26,5,5,'#3fb7a8');poly([[x+dir*34,floor-8],[x+dir*38,floor-1],[x+dir*31,floor-4]],'#e6dfc8');poly([[x+dir*14,floor],[x+dir*20,floor-8],[x+dir*26,floor]],'#e6dfc8');};
+ head(P.x0+60,1);head(P.x0+175,-1);}
 // ---- NYC Act 3: the rail-yard deck (Hudson Yards) ----
 // The deck is a row of bridge spans at street level over a live rail yard (the level's subway line, a deep tunnel). A span that goes opens a pit down
 // to the yard floor, and every building whose centre stood on it sinks into the yard, leaning toward the hole, then collapses (a topple would
 // carry on across the neighbouring spans and take the whole deck with it, so it comes down where it is). The kaiju standing there lands in the yard.
 type YardFall={dir:number,sunk:number,depth:number,lean:number,wait:number};
 let yardFall=new Map<typeof buildings[number],YardFall>(),yardDrops=0,yardBuildings=0;
-function yardDrop(s:Span){addPit(s.x0,s.x1,tunnelFloor());yardDrops++;award(NYC3.yard.points);
- const cx=(s.x0+s.x1)/2;
- for(const b of buildings){if(b.hpNow<=0||b.lifted||b.topple||b.creak>0||yardFall.has(b)||b.role==='substation'||b.upperDeck)continue;const c=b.x+b.w/2;if(c<s.x0||c>=s.x1)continue;
-  if(b.kind==='tiny'){b.hpNow=0;b.lifted=true;continue;}
-  yardFall.set(b,{dir:Math.sign(cx-c)||1,sunk:0,depth:Math.max(0,tunnelFloor()-b.base),lean:0,wait:NYC3.yard.landDelay});yardBuildings++;}
+function yardDrop(s:Span){addPit(s.x0,s.x1,tunnelFloor());yardDrops++;award(NYC3.yard.points);sinkBuildings(s.x0,s.x1,tunnelFloor());
  for(let x=s.x0;x<s.x1;x+=22)burst(x,C.ground-4,'#b9b4a2',2);}
+// Every building whose middle stands over [x0,x1) sinks towards a pit floor at `floor`, leaning to the hole's middle, and comes down where it stands (tickYard). Also the Calzada's sinkholes.
+function sinkBuildings(x0:number,x1:number,floor:number){const cx=(x0+x1)/2;
+ for(const b of buildings){if(b.hpNow<=0||b.lifted||b.topple||b.creak>0||yardFall.has(b)||b.role==='substation'||b.upperDeck)continue;const c=b.x+b.w/2;if(c<x0||c>=x1)continue;
+  if(b.kind==='tiny'){b.hpNow=0;b.lifted=true;continue;}
+  yardFall.set(b,{dir:Math.sign(cx-c)||1,sunk:0,depth:Math.max(0,floor-b.base),lean:0,wait:NYC3.yard.landDelay});yardBuildings++;}}
+// ---- Mexico City Act 3: sinkholes (a level's `sinkholes`, src/config.ts SINKHOLE) ----
+// A marked stretch of street the acid has hollowed. Any heavy landing within SINKHOLE.reach of it (caveIn is the one door every heavy landing goes through: a Magma Dive, a thrown building,
+// a toppling tower) opens it into a pit SINKHOLE.depth deep: troops in it fall (R.fallDamage and SINKHOLE.damage), loose vehicles are thrown in, every building standing on it sinks and collapses
+// (sinkBuildings). The pit is shallow, so a kaiju standing there drops in waist-deep and simply walks out: terrain never blocks walking. Each opens once.
+let sinkOpen=new Set<number>(),sinkholeDrops=0,sinkholeKaiju=0;
+function sinkholeAt(cx:number,reach:number){const l=block.sinkholes;if(!l)return -1;return l.findIndex(([a,z],i)=>!sinkOpen.has(i)&&cx>=a-reach&&cx<=z+reach);}
+function openSinkhole(i:number,ult=false){const [a,z]=block.sinkholes![i];sinkOpen.add(i);sinkholeDrops++;const cx=(a+z)/2;
+ addPit(a,z,groundAt(cx)+SINKHOLE.depth);
+ if(player.x+bodyWidth()>a&&player.x<z)sinkholeKaiju++;
+ for(const u of military.units){if(u.hp<=0||UNITS[u.type].air||NAVAL_UNITS.has(u.type))continue;const m=u.x+u.w/2;if(m>=a&&m<z){pitted.add(u);hitUnit(military,u,R.fallDamage+SINKHOLE.damage,'player',0,1,ult,'blast');}}
+ for(const v of vehicles)if((v.state==='parked'||v.state==='driving'||v.state==='wreck')&&v.pole===undefined&&v.x+v.w/2>=a&&v.x+v.w/2<z){if(!v.rewarded)rewardVehicle(v,ult);launch(v,0,-40,0);}
+ sinkBuildings(a,z,groundAt(cx)+SINKHOLE.depth);
+ for(let x=a;x<z;x+=16)spawnChunks(x,groundAt(x)-SINKHOLE.depth*.5,x<cx?-1:1,'#5a4a3a',2,1.2);burst(cx,C.ground-6,'#cfc6a8',24);
+ award(SINKHOLE.points);heatUp(SINKHOLE.heat);shake=Math.max(shake,10);banner={label:'SINKHOLE · THE STREET GIVES WAY',side:0,life:2.2};action='THE ACID-EATEN STREET COLLAPSES';actionTime=1.8;}
+function strikeSinkholes(cx:number,ult=false){const i=sinkholeAt(cx,SINKHOLE.reach);if(i<0)return false;openSinkhole(i,ult);return true;}
 function tickYard(dt:number){
  for(const [b,f] of [...yardFall]){
   if(b.hpNow<=0||b.lifted){yardFall.delete(b);continue;}
@@ -856,12 +1147,18 @@ function tickBridge(dt:number){
 // Kaiban waits on the span as a silhouette in the fog (dormant, untouchable) until the kaiju passes `wake`; then the shared rival moves run.
 // On top of them: the fog charge (vanish, roar and silhouette, charge), the deck giving way under both kaiju at each health break, and
 // the retreat at 0 health: it is not KO'd, it walks off into the fog (fading) while the main span comes down; once gone the city is won.
-type Finale={woke:boolean,nextBreak:number,phase:'idle'|'vanish'|'telegraph'|'charge',t:number,cool:number,dir:number,charges:number,started:boolean,hit:boolean,startX:number,queue:{t:number,s:Span}[],breaks:number,climb:Climb|null};
+type Finale={woke:boolean,nextBreak:number,phase:'idle'|'vanish'|'telegraph'|'charge',t:number,cool:number,dir:number,charges:number,started:boolean,hit:boolean,startX:number,queue:{t:number,s:Span}[],breaks:number,climb:Climb|null,flood:Flood|null};
 let finale:Finale|null=null;
-function setupFinale(){finale=null;if(!block.finale||!rival)return;const f=block.finale,r=rival;
+function setupFinale(){finale=null;floodHook=null;if(!block.finale||!rival)return;const f=block.finale,r=rival;
  r.x=f.x-r.w/2;r.y=groundAt(r.x+r.w/2)-r.h;r.face=-1;r.dormant=true;r.retreats=true;r.alpha=.28;
- finale={woke:false,nextBreak:0,phase:'idle',t:0,cool:GT.chargeEvery,dir:1,charges:0,started:false,hit:false,startX:0,queue:[],breaks:0,climb:null};if(f.perches)setupClimb(finale!);}
-const bossFrozen=()=>!!finale&&(!finale.woke||finale.phase!=='idle'||!!rival?.retreating||climbBusy());
+ finale={woke:false,nextBreak:0,phase:'idle',t:0,cool:GT.chargeEvery,dir:1,charges:0,started:false,hit:false,startX:0,queue:[],breaks:0,climb:null,flood:null};if(f.perches)setupClimb(finale!);if(f.flood)setupFlood(finale!);}
+// What the world tells the rival's kit (src/rival.ts RivalEnv): Tlezcatl's fire on the kaiju burns Belial's corrosion off faster, and a `finale.flood` level
+// hands over its acid surface and crusts (card 7 builds the flood and sets `floodHook`; `floodStub` is the tests' stand-in).
+let floodHook:{surface:number,crusts:Crust[]}|null=null,floodStub:{surface:number,crusts:Crust[]}|null=null;
+function rivalEnv(w:number,h:number):RivalEnv{if(!rival?.belial)return {};
+ const box={x:player.x,y:player.y,w,h},fire=activeKaiju==='Tlézcatl'&&((!!jet&&jet.phase==='on')||pools.some(p=>!p.acid&&!p.venom&&p.life>0&&overlaps({x:p.x,y:groundAt(p.x)-26,w:p.w,h:28},box)));
+ return {burnOff:fire,flood:floodStub??((block.finale as {flood?:unknown}|undefined)?.flood?floodHook:null)};}
+const bossFrozen=()=>!!finale&&(!finale.woke||finale.phase!=='idle'||!!rival?.retreating||climbBusy()||floodBusy());
 function spanAt(x:number){return spans.findIndex(sp=>x>=sp.x0&&x<sp.x1);}
 // The deck gives way under both kaiju (and the spans beside them), a beat after the warning.
 function breakDeckUnder(a:number,b:number){const f=finale!,idx=new Set<number>();
@@ -870,7 +1167,7 @@ function breakDeckUnder(a:number,b:number){const f=finale!,idx=new Set<number>()
  // The quake rocks Kaiban too: any move in progress is cancelled and he stays put until the spans have gone, so he goes into the bay with the kaiju.
  if(rival){rival.rocks=[];rival.charge=null;rival.windup=0;rival.stagger=Math.max(rival.stagger,.9+k*.12+.4);rival.cooldown=Math.max(rival.cooldown,1);}
  f.breaks++;shake=Math.max(shake,8);banner={label:'THE DECK IS GIVING WAY',side:0,life:1.6};action='THE DECK IS GIVING WAY';actionTime=1.4;}
-function tickFinale(dt:number,w:number,h:number){const f=finale,r=rival;if(!f||!r||r.dead)return;if(f.climb){tickClimbFinale(dt,w,h);return;}
+function tickFinale(dt:number,w:number,h:number){const f=finale,r=rival;if(!f||!r||r.dead)return;if(f.climb){tickClimbFinale(dt,w,h);return;}if(f.flood){tickFloodFinale(dt,w,h);return;}
  for(const e of f.queue)if(e.t!==Infinity){e.t-=dt;if(e.t<=0){e.t=Infinity;if(e.s.alive)hitSpan(e.s,1e9,true);}}
  const pc=player.x+w/2,rc=()=>r.x+r.w/2,place=(x:number)=>{r.x=Math.max(0,Math.min(worldWidth-r.w,x));r.y=groundAt(r.x+r.w/2)-r.h;};
  if(!f.woke){if(pc>block.finale!.wake){f.woke=true;r.dormant=false;r.alpha=1;shake=Math.max(shake,GT.wakeShake);banner={label:'KAIBAN',side:0,life:2.6};action='KAIBAN EMERGES FROM THE FOG';actionTime=2.4;}else{r.alpha=.28+fogAt(block,pc)*.1;return;}}
@@ -990,39 +1287,128 @@ function tickClimbRetreat(dt:number,w:number,h:number){const f=finale!,c=f.climb
    for(let n=0;n<8;n++)lavaPool(r,c.crackX-90+n*22,44,groundAt(c.crackX),E.sinkTime+2,0);c.crackOpen=1;}return;}
  const k=Math.min(1,m.t/m.dur);r.y=m.y1+r.h*1.1*k;r.alpha=1-k*.6;if(Math.random()<dt*30)burst(c.crackX+(Math.random()-.5)*70,groundAt(c.crackX)-8,'#ff8a1f',2);
  if(k>=1){r.dead=true;r.retreated=true;r.alpha=0;}}
+// ---- Mexico City Act 3: the Estadio Azteca finale (a rising acid flood) ----
+// Opt-in per level through `finale.flood` (src/levels.ts mexAzteca, src/config.ts AZTECA/FLOOD). The level carries a `water` span over the bowl whose surface starts below the pitch; this raises it. Belial is dormant
+// (underground) until the kaiju passes `wake`; the pitch splits at centre field and he comes up. At each health break (`finale.breaks`) the drains bubble (`FLOOD.warn` s), then the surface eases up to the next of
+// `FLOOD.levels` over `FLOOD.rise` s: pitch, lower tiers, upper tiers, rim. It is ordinary water to the water code (depth bands, wading, drowning, troops and wrecks sinking) and burns the kaiju (never a rival). The
+// player's lava landing on it cools into crusts (floodCrust, one-way platforms on the surface), and the rim walkway (a platform over the upper tiers) opens from break `FLOOD.rimFrom`. At 0 health the rival dives
+// down the drain at centre field. `floors` is what the player can stand on: the crusts and the open rim, read by the player's physics like the elevated railway's spans.
+type Floe=Crust&{life:number,max:number,sink:number,paid:boolean};
+type Flood={level:number,broken:number,phase:'idle'|'warn'|'rise',t:number,from:number,to:number,surface:number,crusts:Floe[],floors:{x:number,w:number,y:number}[],rim:{x0:number,x1:number,y:number,open:boolean},
+ crackX:number,crackOpen:number,emerge:number,dmgT:number,retreat:{t:number,dur:number,x0:number,y0:number,x1:number,y1:number,phase:'dive'|'sink'}|null,formed:number,carried:number,dissolved:number,expired:number,burned:number};
+const floodBusy=()=>{const fl=finale?.flood;return !!fl&&(fl.emerge>0||!!fl.retreat);};
+const asc=(n:number)=>Math.round(n*C.cityScale);
+function setupFlood(f:Finale){const r=rival!,fin=block.finale!,A=AZTECA,dry=C.ground+400,cx=fin.crack??fin.x;
+ f.flood={level:0,broken:0,phase:'idle',t:0,from:dry,to:dry,surface:dry,crusts:[],floors:[],rim:{x0:asc(A.rimX[0]),x1:asc(A.rimX[1]),y:C.ground-A.upper-A.rim,open:false},crackX:cx,crackOpen:0,emerge:0,dmgT:0,retreat:null,formed:0,carried:0,dissolved:0,expired:0,burned:0};
+ // Underground until the wake: untouchable and unseen.
+ r.x=cx-r.w/2;r.y=groundAt(cx)+r.h;r.face=-1;r.dormant=true;r.retreats=true;r.alpha=0;}
+const floodWet=()=>{const fl=finale?.flood;return !!fl&&fl.surface<C.ground-4;};
+// The flood's surface y where a falling lava glob would meet it at x: null unless the flood is up and the ground there is under it.
+function floodSurfaceAt(x:number){const fl=finale?.flood;return fl&&finale!.woke&&fl.surface<C.ground-4&&submerged(x)?fl.surface:null;}
+// Lava landing on the flood (a Magma Dive's pool or globs, the Eruption's globs, `VOLCANO` bombs): it cools into a crust on the surface as wide as the lava (at least FLOOD.crustMin), or refreshes the crust it fell on.
+function floodCrust(cx:number,w:number){const fl=finale?.flood,F=FLOOD;if(!fl||floodSurfaceAt(cx)===null)return false;
+ const live=fl.crusts.find(c=>c.sink<=0&&!c.dissolved&&cx>=c.x&&cx<=c.x+c.w);
+ if(live){live.life=F.crustLife;live.max=F.crustLife;burst(cx,live.y-2,'#ffb13b',5);return true;}
+ const cw=Math.max(F.crustMin,w*F.crustSpread);fl.crusts.push({x:cx-cw/2,w:cw,y:fl.surface-F.lift,life:F.crustLife,max:F.crustLife,sink:0,paid:false});fl.formed++;
+ const live2=fl.crusts.filter(c=>c.sink<=0);if(live2.length>F.maxCrusts){live2.sort((p,q)=>p.life-q.life)[0].life=0;}
+ for(let k=0;k<10;k++)particles.push({x:cx+(Math.random()-.5)*cw,y:fl.surface-4,vx:(Math.random()-.5)*120,vy:-(40+Math.random()*120),life:.5+Math.random()*.4,color:k%2?'#ffb13b':'#d9f06a',size:2+Math.floor(Math.random()*3)});
+ splash(cx,fl.surface,8);shake=Math.max(shake,3);return true;}
+// The rival keeps to the dry tiers when it is not Belial: pushed back to the nearest dry ground whenever any part of it would stand in the flood.
+function keepToTiers(r:Rival){if(!finale?.flood||!floodWet())return;const gap=FLOOD.shoreGap,x=nearestDry(r.x-gap,r.w+2*gap,worldWidth)+gap;if(Math.abs(x-r.x)>.5){r.x=Math.max(0,Math.min(worldWidth-r.w,x));r.y=groundAt(r.x+r.w/2)-r.h;}}
+function tickFloodFinale(dt:number,w:number,h:number){const f=finale!,fl=f.flood!,r=rival!,A=AZTECA,F=FLOOD,pcx=player.x+w/2,frac=r.maxHP>0?r.hp/r.maxHP:0,rc=()=>r.x+r.w/2;
+ // The wake: the pitch splits and he comes up out of the drain.
+ if(!f.woke){if(pcx<=block.finale!.wake){floodHook=null;return;}f.woke=true;fl.crackOpen=.001;fl.emerge=A.emerge;r.dormant=false;r.alpha=1;r.cooldown=2;
+  shake=Math.max(shake,A.wakeShake);banner={label:'BELIAL',side:0,life:2.8};action='THE PITCH SPLITS · BELIAL RISES';actionTime=2.6;
+  for(let k=0;k<14;k++)burst(fl.crackX+(k-7)*16,groundAt(fl.crackX)-6,k%2?'#b8e63a':'#5f8f1c',8);}
+ fl.crackOpen=Math.min(1,fl.crackOpen+(fl.crackOpen>0?dt/A.crackSeconds:0));
+ if(fl.emerge>0){fl.emerge=Math.max(0,fl.emerge-dt);r.y=groundAt(rc())-r.h+r.h*1.1*(fl.emerge/A.emerge);shake=Math.max(shake,3);if(fl.emerge===0){r.y=groundAt(rc())-r.h;r.stagger=.4;}}
+ // Health breaks: one more flood step each.
+ while(f.nextBreak<block.finale!.breaks.length&&frac<=block.finale!.breaks[f.nextBreak]&&!r.retreating){f.nextBreak++;fl.broken++;f.breaks++;}
+ if(fl.broken>=F.rimFrom&&!fl.rim.open){fl.rim.open=true;banner={label:'THE ROOF RING IS OPEN',side:0,life:2};action='THE ROOF RING IS OPEN';actionTime=1.8;}
+ if(!r.retreating){
+  if(fl.phase==='idle'&&fl.level<fl.broken&&fl.level<F.levels.length){fl.phase='warn';fl.t=F.warn;banner={label:'THE DRAINS ARE BACKING UP',side:0,life:F.warn};action='THE DRAINS ARE BACKING UP';actionTime=F.warn;}
+  if(fl.phase==='warn'){fl.t-=dt;shake=Math.max(shake,1.5+3*(1-Math.max(0,fl.t)/F.warn));
+   if(fl.t<=0){fl.phase='rise';fl.t=F.rise;fl.from=fl.surface;fl.to=C.ground-F.levels[fl.level];}}
+  else if(fl.phase==='rise'){fl.t-=dt;const k=1-Math.max(0,fl.t)/F.rise,e=k*k*(3-2*k);fl.surface=fl.from+(fl.to-fl.from)*e;shake=Math.max(shake,2);
+   if(fl.t<=0){fl.surface=fl.to;fl.level++;fl.phase='idle';}}}
+ const sp=waterSpans()[0];if(sp)sp[2]=fl.surface;
+ // Crusts ride the surface; anything standing on one is carried with it. They crack, then sink; Belial's vomit eats one at once.
+ const feet=player.y+h;
+ for(const c of fl.crusts){if(c.dissolved&&c.life>0)c.life=0;
+  if(c.life>0)c.life-=dt;else c.sink=Math.min(1,c.sink+dt/(c.dissolved?F.melt:F.sink));
+  const y=fl.surface-F.lift+c.sink*40,dy=y-c.y;
+  if(player.grounded&&!drown&&player.x+w>c.x&&player.x<c.x+c.w&&Math.abs(feet-c.y)<=4){if(dy)player.y+=dy;if(!c.paid){c.paid=true;fl.carried++;award(F.crustPoints);}}
+  c.y=y;if(c.life<=0&&Math.random()<dt*10)particles.push({x:c.x+Math.random()*c.w,y:c.y,vx:0,vy:-30,life:.5,color:'#cfc6a8',size:2});}
+ for(const c of fl.crusts)if(c.sink>=1){if(c.dissolved)fl.dissolved++;else fl.expired++;}
+ fl.crusts=fl.crusts.filter(c=>c.sink<1);
+ fl.floors=[...fl.crusts.filter(c=>c.sink<.6).map(c=>({x:c.x,w:c.w,y:c.y})),...(fl.rim.open?[{x:fl.rim.x0,w:fl.rim.x1-fl.rim.x0,y:fl.rim.y}]:[])];
+ // The rival's view of the flood (Belial's submerge and crust moves read it; a dry bowl is not a flood to him).
+ floodHook=floodWet()&&f.woke&&!r.retreating?{surface:fl.surface,crusts:fl.crusts}:null;
+ // Acid burns whatever of the kaiju is in it (Belial the kaiju is immune); a rival is never hurt by it.
+ if(f.woke&&!combat.dead&&!drown&&!isBelial()&&footBand()!=='dry'){fl.dmgT+=dt;if(fl.dmgT>=F.tick){fl.dmgT=0;const a=receiveHit(combat,ACID.perSecond*F.tick,'environment');
+   if(a>0){fl.burned+=a;for(let k=0;k<4;k++)particles.push({x:player.x+Math.random()*w,y:Math.min(feet,waterAt(pcx)??feet)-2,vx:(Math.random()-.5)*60,vy:-(30+Math.random()*60),life:.5,color:'#b8e63a',size:2+Math.floor(Math.random()*2)});}}}
+ else fl.dmgT=0;
+ if(r.retreating)tickFloodRetreat(dt);}
+// The retreat: at 0 health the rival leaps into the acid at centre field and goes down the drain; once gone the city is won.
+function tickFloodRetreat(dt:number){const f=finale!,fl=f.flood!,r=rival!,F=FLOOD;
+ if(!fl.retreat){cancelMoves(r);r.hidden=false;f.started=true;const gy=groundAt(fl.crackX),x1=fl.crackX-r.w/2,dy=Math.max(0,gy-r.h-r.y);
+  fl.retreat={t:0,dur:Math.max(F.retreatDive,Math.sqrt(2*dy/2200)+.35),x0:r.x,y0:r.y,x1,y1:gy-r.h,phase:'dive'};r.face=x1>=r.x?1:-1;fl.crackOpen=Math.max(fl.crackOpen,.5);
+  shake=Math.max(shake,12);banner={label:'BELIAL DIVES FOR THE DRAIN',side:0,life:3};action='BELIAL RETREATS';actionTime=3;award(P.bossHP);}
+ const m=fl.retreat;m.t+=dt;r.alpha=1;
+ if(m.phase==='dive'){const k=Math.min(1,m.t/m.dur);r.x=m.x0+(m.x1-m.x0)*k;r.y=m.y0+(m.y1-m.y0)*k*k-F.diveHeight*4*k*(1-k);
+  if(k>=1){m.phase='sink';m.t=0;m.dur=F.retreatSink;r.x=m.x1;r.y=m.y1;fl.crackOpen=1;shake=Math.max(shake,14);splash(fl.crackX,Math.min(waterAt(fl.crackX)??m.y1,m.y1),26);
+   for(let n=0;n<14;n++)burst(fl.crackX+(n-7)*14,Math.min(fl.surface,groundAt(fl.crackX))-8,n%2?'#b8e63a':'#5f8f1c',6);}return;}
+ const k=Math.min(1,m.t/m.dur);r.y=m.y1+r.h*1.1*k;r.alpha=1-k*.6;if(Math.random()<dt*30)burst(fl.crackX+(Math.random()-.5)*70,Math.min(fl.surface,groundAt(fl.crackX))-8,'#b8e63a',2);
+ if(k>=1){r.dead=true;r.retreated=true;r.alpha=0;}}
 // ---- Phase 5: fire, rubble, city twists ----
 const style=()=>CITIES[cityIndex].style;
+// Sydney's southerly buster: the wind's direction along x on this level (+1 east, -1 west), 0 in every other city.
+const windDir=():number=>style()==='syd'?(block.wind??1):0;
 // Burning buildings: heat 0..1 climbs while it burns; the next tick of damage / spread is due at `tick` / `spread`.
 let blazes=new Map<object,{heat:number,tick:number,spread:number}>(),mounded=new Set<object>(),exposure=new Map<object,number>();
 // Exposure: fire next to a building builds up; at 1 it catches (deterministic, so fire spreads predictably).
 function expose(b:typeof buildings[number],amount:number){if(blazes.has(b)||b.hpNow<=0)return;const e=(exposure.get(b)??0)+amount;if(e>=1){exposure.delete(b);setAlight(b);}else exposure.set(b,e);}
-function setAlight(b:typeof buildings[number]){if(b.hpNow<=0||b.kind==='tiny'||b.role||blazes.has(b)||blazes.size>=(block.fireCap??FI.cap))return false;blazes.set(b,{heat:FI.start,tick:time+.5,spread:time+FI.spreadEvery});return true;}
+// Xochimilco's ahuejotes are `tiny` props that can still burn (opt-in by prop: no other level has one).
+const burnable=(b:{kind:string,prop?:string})=>b.kind!=='tiny'||b.prop==='ahuejote';
+function setAlight(b:typeof buildings[number]){if(b.hpNow<=0||!burnable(b)||b.role||blazes.has(b)||blazes.size>=(block.fireCap??FI.cap))return false;blazes.set(b,{heat:FI.start,tick:time+.5,spread:time+FI.spreadEvery});return true;}
 function douse(x:number,r:number){for(const b of [...blazes.keys()] as (typeof buildings[number])[])if(Math.abs(b.x+b.w/2-x)<r+b.w/2){blazes.delete(b);for(let n=0;n<6;n++)particles.push({x:b.x+Math.random()*b.w,y:b.base-b.h*Math.random(),vx:0,vy:-60,life:.6,color:'#d9dde0',size:3});}}
-function tickFire(dt:number){const rain=!!moodNow().rain;
+function tickFire(dt:number){const rain=!!moodNow().rain,wd=windDir();
  for(const [o,f] of [...blazes]){const b=o as typeof buildings[number];if(b.hpNow<=0||b.topple||b.lifted){blazes.delete(b);continue;}
   f.heat=Math.min(1,f.heat+FI.grow*(rain?.5:1)*dt);
   if(time>=f.tick){f.tick=time+.5;hit(b,FI.dps*f.heat*.5,true,player.face,undefined,true);}
-  if(time>=f.spread){f.spread=time+FI.spreadEvery;for(const t of buildings)if(t!==b&&t.hpNow>0&&!blazes.has(t)&&t.kind!=='tiny'&&!t.role){const gap=Math.max(t.x-(b.x+b.w),b.x-(t.x+t.w));if(gap<FI.reach)expose(t,FI.spreadChance*f.heat*(rain?.5:1));}}
-  if(particles.length<C.particleCap&&Math.random()<dt*14*f.heat)particles.push({x:b.x+b.w*(.2+Math.random()*.6),y:b.base-b.h,vx:(Math.random()-.5)*20,vy:-(50+Math.random()*60),life:.9+Math.random()*.6,color:Math.random()<.7?'#5a5552':'#3e3a38',size:3+Math.floor(Math.random()*4)});}
+  if(time>=f.spread){f.spread=time+FI.spreadEvery;tarpSpread(b,f.heat,rain);for(const t of buildings)if(t!==b&&t.hpNow>0&&!blazes.has(t)&&burnable(t)&&!t.role){const gap=Math.max(t.x-(b.x+b.w),b.x-(t.x+t.w));if(gap<FI.reach)expose(t,FI.spreadChance*f.heat*(rain?.5:1)*(wd?(Math.sign(t.x-b.x)===wd?TW.windDown:TW.windUp):1));}
+   // Sydney: embers ride the wind over one gap, to the nearest building downwind when it stands beyond the ordinary reach.
+   if(wd){let next:typeof buildings[number]|null=null,ng=Infinity;for(const t of buildings)if(t!==b&&t.hpNow>0&&t.kind!=='tiny'&&!t.role&&Math.sign(t.x-b.x)===wd){const gap=wd>0?t.x-(b.x+b.w):b.x-(t.x+t.w);if(gap<ng){ng=gap;next=t;}}
+    if(next&&ng>=FI.reach&&ng<TW.emberReach)expose(next,FI.spreadChance*f.heat*TW.emberK*(rain?.5:1));}}
+  if(particles.length<C.particleCap&&Math.random()<dt*14*f.heat)particles.push({x:b.x+b.w*(.2+Math.random()*.6),y:b.base-b.h,vx:(Math.random()-.5)*20+wd*TW.smokeDrift,vy:-(50+Math.random()*60),life:.9+Math.random()*.6,color:Math.random()<.7?'#5a5552':'#3e3a38',size:3+Math.floor(Math.random()*4)});}
  // Flame scorching a wall (Tlézcatl's jet) can set the building alight, same odds as a fire on the pavement beside it.
  for(const f of burns)expose(f.b,FI.poolChance*dt/Math.max(1,burns.filter(o=>o.b===f.b).length));
  // Fuel and flame pools against a wall can set it alight.
  for(const p of pools){if(!p.fire)continue;for(const b of buildings)if(b.hpNow>0&&b.kind!=='tiny'&&p.x<b.x+b.w+FI.poolReach&&p.x+p.w>b.x-FI.poolReach){expose(b,FI.poolChance*dt);break;}}}
 // A burning building's flames: tongues in its upper floors, more of it alight as the heat climbs; a glow at night.
 function drawBlaze(b:typeof buildings[number],x:number,h:number){const f=blazes.get(b);if(!f)return;const y=b.base-h,bw=b.w-7,rows=Math.max(1,Math.ceil(f.heat*Math.min(6,h/40)));
- if(moodNow().lights>.6){ctx.globalAlpha=.18*f.heat;rect(x-10,y-20,bw+20,h*.6,'#ff8a1f');ctx.globalAlpha=1;}
+ {const gl=thr(moodNow().lights,.7,.6);if(gl>0){ctx.globalAlpha=.18*f.heat*gl;rect(x-10,y-20,bw+20,h*.6,'#ff8a1f');ctx.globalAlpha=1;}}
  for(let r=0;r<rows;r++){const yy=y+14+r*30;for(let xx=8;xx<bw-8;xx+=22){const hh=10+8*Math.abs(Math.sin(time*10+xx*.3+r*1.7));poly([[x+xx-6,yy+12],[x+xx-1,yy+12-hh],[x+xx+3,yy+12-hh*.6],[x+xx+7,yy+12]],r%2?'#ffb13b':'#e8401a');}}
- for(let k=0;k<3;k++){const cx=x+bw*(.25+k*.25),hh=(14+10*Math.abs(Math.sin(time*8+k)))*f.heat;poly([[cx-8,y+2],[cx,y-hh],[cx+8,y+2]],'#ff8a1f');}}
+ const lean=windDir()*TW.flameLean;for(let k=0;k<3;k++){const cx=x+bw*(.25+k*.25),hh=(14+10*Math.abs(Math.sin(time*8+k)))*f.heat;poly([[cx-8,y+2],[cx+lean*hh/12,y-hh],[cx+8,y+2]],'#ff8a1f');}}
 // Rubble: a collapsed building heaps over its footprint; a toppled tower leaves a ridge where it fell.
 function heapRubble(b:typeof buildings[number],from?:number,to?:number){if(mounded.has(b)||b.kind==='tiny'||b.role||b.lifted||b.upperDeck||b.deco==='concourse')return;mounded.add(b);
  if(from!==undefined)addMound(from,to!,RB.ridge,RB.side);else addMound(b.x-6,b.x+b.w+4,Math.max(RB.min,Math.min(RB.max,b.h*RB.heightK)),RB.side);}
 function drawMounds(){for(const m of moundList()){const a=m.x0-camera,z=m.x1-camera;if(z<-20||a>viewW()+20)continue;ctx.fillStyle='#6d6a5f';ctx.beginPath();ctx.moveTo(a,bedAt(m.x0));
- for(let x=m.x0;x<=m.x1;x+=6)ctx.lineTo(x-camera,groundAt(x));ctx.lineTo(z,bedAt(m.x1));ctx.closePath();ctx.fill();
+ for(let x=m.x0;x<=m.x1;x+=6)ctx.lineTo(x-camera,groundAt(x));
+ // Over a cave-in the heap rests on the pit floor point by point, instead of a straight base line cutting a wedge across the hole.
+ if(pitList().some(p=>p.x0<m.x1&&p.x1>m.x0)){ctx.lineTo(z,groundAt(m.x1));for(let x=m.x1;x>=m.x0;x-=6)ctx.lineTo(x-camera,bedAt(x));}else ctx.lineTo(z,bedAt(m.x1));
+ ctx.closePath();ctx.fill();
  for(let x=m.x0+4;x<m.x1-6;x+=11){const t=groundAt(x);rect(x-camera,t+2+((x*7)%9),8,6,(x*13)%3?'#898879':'#55534b');}}}
-// Mexico City: soft lake-bed ground. A heavy impact near buildings sinks them; sunk far enough, they give way.
-function sinkAround(cx:number,ult=false){if(style()!=='mex')return;let any=false;
+// Mexico City: soft lake-bed ground (opt-in per level: BlockDef.sinking). A heavy impact near buildings sinks them; sunk far enough, they give way.
+// Lean (src/config.ts LEAN, the opt-in building field `lean`, degrees, + leans east): the side it leans is the side it topples to, and the tilt it starts the fall with.
+const leanDir=(b:typeof buildings[number])=>Math.sign(b.lean??0);
+const leanTilt=(b:typeof buildings[number])=>Math.abs(b.lean??0)*Math.PI/180;
+function sinkAround(cx:number,ult=false){if(!block.sinking)return;let any=false;
  for(const b of buildings){if(b.hpNow<=0||b.kind==='tiny'||b.role)continue;const d=Math.abs(b.x+b.w/2-cx);if(d>TW.sinkRadius)continue;
   b.sink+=TW.sinkStep;b.base+=TW.sinkStep;any=true;for(let x=b.x;x<b.x+b.w;x+=14)burst(x,b.base-b.sink,'#c9b79c',2);
+  // The ground giving way tips a tall building: it leans towards the slam (further the way it already leans), and past LEAN.topple it gives way and topples that way.
+  if(canTopple(b)&&!b.landmark){const to=leanDir(b)||Math.sign(cx-(b.x+b.w/2))||1;b.lean=Math.max(-LEAN.max,Math.min(LEAN.max,(b.lean??0)+to*LEAN.sinkStep));
+   if(Math.abs(b.lean)>=LEAN.topple){hit(b,b.hpNow,ult,to,{x:b.x+b.w/2,y:b.base-10});continue;}}
   if(b.sink>=b.h*TW.sinkMax)hit(b,b.hpNow,ult,Math.sign(b.x+b.w/2-cx)||1,{x:b.x+b.w/2,y:b.base-10});else hit(b,TW.sinkDamage,ult,Math.sign(b.x+b.w/2-cx)||1,undefined,true);}
  if(any){action='THE GROUND GIVES WAY';actionTime=1.4;shake=Math.max(shake,6);}}
 function powered(x:number){const g=gridOf(x,block.grids);return g<0||power[g];}
@@ -1150,12 +1536,55 @@ function progressScreen(){if(run)activeKaiju=kaijuFor(run);loadKaijuArt(activeKa
 function scoresScreen(){mode='scores';panel(`<div class="eyebrow">LOCAL CAMPAIGN RECORDS</div><h1>TOP <span>10.</span></h1><div class="score-list">${permanent.scores.length?permanent.scores.map((r,i)=>`<div><span>${String(i+1).padStart(2,'0')} ${r.initials}</span><span>${r.kaiju}</span><b>${r.score.toLocaleString()}</b><span>${r.cities}/5 ${r.completed?'CLEAR':'FALLEN'}</span></div>`).join(''):'<p>No campaign records yet.<br>Failed and completed runs are both eligible.</p>'}</div><button id="back" class="primary">MAIN MENU</button><p class="note">Drill scores are excluded. Stored on this browser only.</p>`);document.querySelector('#back')!.addEventListener('click',title);}
 function drills(){loadKaijuArt('Mogurodon');mode='setup';panel(`<div class="eyebrow">PRACTICE / NO CAMPAIGN SCORE</div><h1>COMBAT<br><span>DRILLS.</span></h1><label class="drill-label" for="tier">REINFORCEMENTS</label><select id="tier"><option value="1">Block 1 — Police patrol</option><option value="2">Drill — National Guard</option><option value="3">Drill — Stronghold forces</option><option value="4">Drill — Full military assault</option><option value="5">Drill — Limited arena support</option></select><label class="drill-label" for="drill-map">MAP</label><select id="drill-map"><option value="combat">Combat drill — New York Block 1</option><option value="water">Water drill — depth bands, boats, deep subway</option></select><button class="primary" id="start">ENTER DRILL →</button><button id="back">MAIN MENU</button><p class="note">The combat drill uses the original New York Block 1 map.<br>No checkpoint, unlock or Top 10 changes.</p>`);const map=document.querySelector<HTMLSelectElement>('#drill-map')!;map.value=drillMap;map.addEventListener('change',()=>drillMap=map.value==='water'?'water':'combat');const select=document.querySelector<HTMLSelectElement>('#tier')!;select.value=String(selectedTier);select.addEventListener('change',()=>selectedTier=Number(select.value));document.querySelector('#start')!.addEventListener('click',()=>{drillMap=map.value==='water'?'water':'combat';start();});document.querySelector('#back')!.addEventListener('click',title);}
 function start(){session='drill';run=null;activeKaiju='Mogurodon';cityIndex=cityIndexOf('nyc');blockIndex=0;citySettled=false;score=0;combat=createCombat();loadBlock(true);}
+// ---- Mexico City Act 2 (MEX rework card 4): papel picado, Bellas Artes' drop, Campo Marte's helicopters and the Sun Stone. docs/MEX_REWORK.md ----
+// Papel picado (src/config.ts PICADO, a level's `banners`): a string of cut-paper flags between two buildings. Fire touching it (a burning building at either end, a fire pool or a flame-scorched
+// wall at an end) sets it alight; it burns for PICADO.burn s, the flame running away from the end it started at, and is gone; then the building at its far end catches. Each string burns once.
+type Picado={x0:number,x1:number,h:number,n:number,state:'strung'|'burning'|'gone',t:number,from:0|1,ends:[typeof buildings[number]|null,typeof buildings[number]|null]};
+let picados:Picado[]=[],picadoBurned=0,picadoCrossed=0,domeDropped=false,campoWoke=false,campoT=0,campoLaunched=0,stoneHinted=false,stoneThrown=0,stoneRolled=0;
+// Bellas Artes' dome: the landmark dome nearest the level's `domeSeep` (drawn sunk into the lake bed from the start; the seep's first burst drops it a step and tilts it, once).
+const domeOf=()=>{const x=block.domeSeep===undefined?undefined:block.seeps?.[block.domeSeep];return x===undefined?null:buildings.filter(b=>b.landmark&&b.shape==='dome').sort((p,q)=>Math.abs(p.x+p.w/2-x)-Math.abs(q.x+q.w/2-x))[0]??null;};
+function setupMex2(){
+ picados=(block.banners??[]).map(([x0,x1,h])=>{const n=Math.max(4,Math.floor((x1-x0)/PICADO.spacing)),near=(f:(b:typeof buildings[number])=>boolean)=>buildings.find(b=>b.kind!=='tiny'&&!b.landmark&&!b.role&&f(b))??null;
+  return {x0,x1,h,n,state:'strung' as const,t:0,from:0 as const,ends:[near(b=>Math.abs(b.x+b.w-x0)<10),near(b=>Math.abs(b.x-x1)<10)] as Picado['ends']};});
+ picadoBurned=0;picadoCrossed=0;domeDropped=false;campoWoke=false;campoT=0;campoLaunched=0;stoneHinted=false;stoneThrown=0;stoneRolled=0;
+ const d=domeOf();if(d){d.sink=MEX2.dome.sunk;d.base+=MEX2.dome.sunk;}}
+function dropDome(){if(domeDropped)return;const d=domeOf();if(!d||d.hpNow<=0)return;domeDropped=true;d.sink+=MEX2.dome.drop;d.base+=MEX2.dome.drop;d.lean=MEX2.dome.tilt;
+ for(let x=d.x;x<d.x+d.w;x+=14)burst(x,groundAt(x),'#c9b79c',3);shake=Math.max(shake,10);banner={label:'BELLAS ARTES SINKS',side:0,life:2.4};}
+function tickMex2(dt:number){
+ for(const s of picados){
+  if(s.state==='strung'){let from=-1;
+   if(s.ends[0]&&(blazes.has(s.ends[0])||burns.some(f=>f.b===s.ends[0])))from=0;else if(s.ends[1]&&(blazes.has(s.ends[1])||burns.some(f=>f.b===s.ends[1])))from=1;
+   else for(const q of pools){if(q.fire&&q.x<s.x1+PICADO.reach&&q.x+q.w>s.x0-PICADO.reach){from=Math.abs(q.x-s.x0)<Math.abs(q.x-s.x1)?0:1;break;}}
+   if(from>=0){s.state='burning';s.t=PICADO.burn;s.from=from as 0|1;picadoBurned++;award(PICADO.points);}
+   else if(s.ends.some(e=>e&&(e.hpNow<=0||e.lifted)))s.state='gone';}// a string whose building is gone has nothing to hang from
+  else if(s.state==='burning'){s.t-=dt;if(s.t<=0){s.state='gone';const far=s.ends[s.from===0?1:0];if(far&&far.hpNow>0&&!far.lifted&&setAlight(far)){picadoCrossed++;action='THE FIRE JUMPS THE STREET';actionTime=1.6;}}}}
+ if(objective&&objective.art==='campo'&&!objective.shattered){const cx=player.x+bodyWidth()/2;
+  if(!campoWoke&&(Math.abs(cx-objective.x)<MEX2.campo.wake||objective.hp<objective.maxHP)){campoWoke=true;campoT=0;banner={label:'ROTORS UP',side:0,life:2.2};}
+  if(campoWoke&&campoLaunched===0){campoT+=dt;if(campoT>=MEX2.campo.lift)for(const off of MEX2.campo.pads){const px=objective.x+off,u=spawnUnit(military,'helicopter',px-UNITS.helicopter.w/2,1);u.y=groundAt(px)-u.h;campoLaunched++;}}}
+ for(const v of vehicles){if(v.kind!=='stone')continue;if(v.state==='rolling')v.angle+=v.vx/(v.w/2)*dt;if(v.state==='held')v.angle+=player.face*1.4*dt;}
+ if(!stoneHinted&&!held&&!banner&&combat.stage>=STONE.minStage){const v=vehicles.find(o=>o.kind==='stone'&&o.state==='parked');if(v&&Math.abs(v.x+v.w/2-(player.x+bodyWidth()/2))<STONE.hint){stoneHinted=true;banner={label:'GRAB · THE SUN STONE',side:0,life:2.4};}}}
+// The Sun Stone landed from a throw: it keeps going (src/rolling.ts), like Times Square's ball, never breaking.
+function landStone(v:Vehicle,vx0:number){
+ const dir=Math.sign(vx0)||player.face,sp=Math.abs(vx0)*STONE.reroll,cx=v.x+v.w/2;v.y=groundAt(cx)-v.h;v.vy=0;v.spin=0;v.damage=0;v.hits=new Set();
+ if(Math.abs(vx0)>1){shake=Math.max(shake,8);burst(cx,v.y+v.h-4,'#d9cfae',10);}
+ if(sp<STONE.grabSpeed){v.state='parked';v.vx=0;return;}
+ startRolling(v,sp,dir);v.vx=dir*Math.max(STONE.rerollMin,sp);v.plows=STONE.plows;v.glide=STONE.glide;stoneRolled++;}
+function floodDebug(){const f=finale,fl=f?.flood;if(!fl)return {flood:null};
+ return {flood:{woke:f!.woke,level:fl.level,broken:fl.broken,phase:fl.phase,t:fl.t,surface:fl.surface,wet:floodWet(),crackOpen:fl.crackOpen,emerge:fl.emerge,rimOpen:fl.rim.open,rim:{...fl.rim},floors:fl.floors.map(q=>({...q})),
+  crusts:fl.crusts.map(c=>({x:c.x,w:c.w,y:c.y,life:c.life,max:c.max,sink:c.sink,dissolved:!!c.dissolved,paid:c.paid})),formed:fl.formed,carried:fl.carried,dissolved:fl.dissolved,expired:fl.expired,burned:fl.burned,
+  retreat:fl.retreat?{phase:fl.retreat.phase,t:fl.retreat.t}:null,surfaceAt:(x:number)=>floodSurfaceAt(x),hook:!!floodHook}};}
+function mex3Debug(){return {mex3:{seepsAuto:!!block.seepsAuto,rock:block.rock??[],onRock:(x:number)=>onRock(x),sinkholes:(block.sinkholes??[]).map(([a,z],i)=>({x0:a,x1:z,open:sinkOpen.has(i)})),sinkholeDrops,sinkholeKaiju,pits:pitList().length,
+  tren:trains.filter(t=>t.surface).map(t=>({x:t.x,dir:t.dir,hp:t.hp,crashed:t.crashed})),trenWrecked:wrecked,yardFalling:yardFall.size,poolRock:pools.filter(p=>p.rock).length,pools:pools.filter(p=>!p.fire&&!p.acid&&!p.venom).map(p=>({x:p.x,w:p.w,life:p.life,max:p.max,rock:!!p.rock}))}};}
+function mex2Debug(){const d=domeOf(),st=vehicles.find(o=>o.kind==='stone');
+ return {picado:{list:picados.map(q=>({x0:q.x0,x1:q.x1,h:q.h,state:q.state,t:q.t,from:q.from,ends:q.ends.map(e=>e?buildings.indexOf(e):-1)})),burned:picadoBurned,crossed:picadoCrossed},
+  dome:{dropped:domeDropped,sink:d?.sink??0,lean:d?.lean??0,base:d?.base??0},campo:{woke:campoWoke,t:campoT,launched:campoLaunched},
+  stone:st?{x:st.x,y:st.y,w:st.w,vx:st.vx,state:st.state,angle:st.angle}:null,stoneStats:{thrown:stoneThrown,rolled:stoneRolled}};}
 function loadBlock(drill=false){
- block=drill?(drillMap==='water'?WATER_DRILL:DRILL_BLOCK):LEVELS[cityIndex][blockIndex];drown=null;sinkers=[];combat.mercy=0;spans=makeSpans(block);carrierDeck=makeCarrierDeck();setTerrain(block.ground??null,block.water??[],carrierDeck?[...spans,carrierDeck]:spans);setNavyUnderDecks(!drill&&!!block.warships);trains=[];wrecked=0;tunnels=new Set();rails=makeRails(block);railTrains=[];railTimer=EL.trainEvery*.4;blazes=new Map();mounded=new Set();exposure=new Map();alert=0;bombQueue=[];bombTimer=0;reinforced=new Set();geysers=[];trainTimer=R.trainEvery*.5;pitted=new WeakSet();worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:block.tier??blockIndex+1,CITIES[cityIndex].difficulty);resetMilitaryFeel();population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];chunks=[];hitstop=0;echo=false;lastFreeze=-9;setVehicleLook(CITIES[cityIndex].cars,CITIES[cityIndex].taxi);vehicles=[...createParked(block.cars),...createLamps(worldWidth,500).filter(l=>!(block.poles??[]).some(x=>Math.abs(x-l.x)<70)&&!stationBoxes().some(([p,q])=>l.x+l.w>p-70&&l.x<q+70))];
+ block=drill?(drillMap==='water'?WATER_DRILL:DRILL_BLOCK):LEVELS[cityIndex][blockIndex];drown=null;sinkers=[];combat.mercy=0;spans=makeSpans(block);carrierDeck=makeCarrierDeck();setTerrain(block.ground??null,(block.water??[]).map(v=>[...v] as [number,number,number]),carrierDeck?[...spans,carrierDeck]:spans);setNavyUnderDecks(!drill&&!!block.warships);trains=[];wrecked=0;tunnels=new Set();rails=makeRails(block);railTrains=[];railTimer=EL.trainEvery*.4;blazes=new Map();mounded=new Set();exposure=new Map();alert=0;bombQueue=[];bombTimer=0;reinforced=new Set();geysers=[];trainTimer=R.trainEvery*.5;pitted=new WeakSet();worldWidth=levelWidth(block);time=0;actionTime=0;military=createMilitary(drill?selectedTier:block.tier??blockIndex+1,CITIES[cityIndex].difficulty);resetMilitaryFeel();population=createPopulation(Math.random,block.street,block.cars);buildings=createBuildings(block.buildings);camera=0;cameraY=0;cleared=false;particles=[];chunks=[];hitstop=0;echo=false;lastFreeze=-9;setVehicleLook(CITIES[cityIndex].cars,CITIES[cityIndex].taxi);vehicles=[...createParked(block.cars),...createLamps(worldWidth,500).filter(l=>!(block.poles??[]).some(x=>Math.abs(x-l.x)<70)&&!stationBoxes().some(([p,q])=>l.x+l.w>p-70&&l.x<q+70))];
   if(!drill)setupPocket();else pocketRoof=null;
   stations=[];garageDrops=[];rampage=createRampage();rampFlash=0;wires=[];splashes=[];fired=new Set();ultKill=new Set();
   subs=substations(buildings,block.grids);power=gridPowered(subs);roofs=createRoofProps(buildings,block.grids);roofOf=new Map(roofs.map(p=>[p.b,p]));gridOfB=new Map(buildings.map(b=>[b,gridOf(b.x+b.w/2,block.grids)]));
-  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);for(const [kind,xs,color,label] of [['tram',block.streetcars,'#b9402f',''],['cablecar',block.cablecars,'#8a2f2a',''],['bus',block.trolleys,'#c9c3a2','TROLLEY'],['firetruck',block.firetrucks,'#c0392b',''],['bus',block.buses,'#3d6f8a','TRANSIT'],['bull',block.bull===undefined?undefined:[block.bull],'#3b2e24',''],['carriage',block.carriages,'#2b2830','']] as const)if(xs&&!drill){vehicles.push(...createFleet(kind,xs,nextVehicle,color,label));nextVehicle+=xs.length;}held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];spit=null;brew=null;clouds=[];poison.clear();swarm=null;wasps=[];hive=null;stings=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
+  poleXs=block.poles??[];poles=createPoles(poleXs,poleXs.map(x=>gridOf(x,block.grids)),Y.poleH,800);vehicles.push(...poles);for(const [kind,xs,color,label] of [['tram',block.streetcars,'#b9402f',''],['cablecar',block.cablecars,'#8a2f2a',''],['bus',block.trolleys,'#c9c3a2','TROLLEY'],['firetruck',block.firetrucks,'#c0392b',''],['bus',block.buses,'#3d6f8a','TRANSIT'],['bull',block.bull===undefined?undefined:[block.bull],'#3b2e24',''],['pole',block.pole===undefined?undefined:[block.pole-FLAG.thick/2],'#d9d6c8',''],['stone',block.stone===undefined?undefined:[block.stone-STONE.d/2],'#b9a37a',''],['carriage',block.carriages,'#2b2830','']] as const)if(xs&&!drill){vehicles.push(...createFleet(kind,xs,nextVehicle,color,label));nextVehicle+=xs.length;}bullBroken=false;bullHinted=false;bullBumpT=0;bullLastX=-1e9;if(block.bull!==undefined&&!drill){const z0=block.bull-BL.clear,z1=block.bull+BL.w+BL.clear;vehicles=vehicles.filter(v=>v.kind==='bull'||v.pole!==undefined||v.x+v.w<z0||v.x>z1);population.civilians=population.civilians.filter(c=>c.x+8<z0||c.x>z1);}if(block.pole!==undefined&&!drill){const z0=block.pole-FLAG.clear,z1=block.pole+FLAG.clear;vehicles=vehicles.filter(v=>v.kind==='pole'||v.pole!==undefined||v.x+v.w<z0||v.x>z1);population.civilians=population.civilians.filter(c=>c.x+8<z0||c.x>z1);}held=null;trafficTimer=0;trafficBudget=!drill&&block.kind!=='boss'?Math.round(worldWidth/C.width*VC.trafficPerScreen):0;shots=[];spit=null;brew=null;clouds=[];poison.clear();swarm=null;wasps=[];hive=null;stings=[];keys.clear();shards=[];growths=[];waves=[];tremor=null;debris=null;jet=null;jetFuel=1;jetLocked=false;burns=[];burnHits=new Map();rocks=[];globs=[];pools=[];corr=new Map();spewState={pts:[],land:null,landOn:null};stampede=null;eruption=null;resetVolcano();deluge=null;rain=[];delugeLandings=[];ambientTimer=0;growthTimer=0;ultimateTimer=0;
  // Campaign levels with their own growth set the stage window; Free Play, drills and the original cities stay fully dynamic.
  if(!drill&&session==='campaign'&&block.startStage)setGrowth(combat,block.startStage,block.cap??3);
  cancelCharge(combat);combat.cooldown=0;combat.rangedCooldown=0;combat.combo=0;combat.comboWindow=0;attack=null;combat.stagger=0;combat.staggerGuard=0;combat.knockback=0;
@@ -1163,13 +1592,13 @@ function loadBlock(drill=false){
  camera=Math.max(0,Math.min(worldWidth-viewW(),player.x+oldWidth/2-viewW()*.34));safeX=player.x;
  for(const x of [...(block.boats??[]),...(block.coastguard??[])])spawnUnit(military,'boat',x,-1);
  objective=!drill&&block.kind==='stronghold'?makeObjective():null;
- rival=!drill&&block.kind==='boss'?createRival(worldWidth,CITIES[cityIndex].difficulty,bossName()):null;if(rival?.tlez)loadBossArt('Tlézcatl',TLEZ_STAGE,TLEZ_ANIMS);setupFinale();
+ rival=!drill&&block.kind==='boss'?createRival(worldWidth,CITIES[cityIndex].difficulty,bossName()):null;if(rival?.tlez)loadBossArt('Tlézcatl',TLEZ_STAGE,TLEZ_ANIMS);if(rival?.belial)loadBossArt('Belial',BEL_STAGE,BEL_ANIMS);vulnerability.k=1;floodStub=null;setupFinale();
  if(objective){const garrison=block.garrison??(block.target?[['police',-460],['patrol',-330],['police',-200],['police',-80],['police',170],['patrol',300]] as const:[['tank',-390],['emplacement',-180],['emplacement',210],['artillery',510],['helicopter',-650]] as const);
   if(block.target)stations.push(...garrison.map(([type,offset])=>({type,x:objective.x+offset,side:1})));else for(const [type,offset] of garrison)spawnUnit(military,type,objective.x+offset);}
  if(!drill){for(const [type,x] of block.warships??[])spawnUnit(military,type,x,-1);for(const [type,x] of block.deckUnits??[])stations.push({type,x,side:1,perch:true});for(const [type,x,alt] of block.units??[])stations.push({type,x,side:1,alt});for(const x of block.air??[])stations.push({type:'helicopter',x,side:1});for(const x of block.swat??[])stations.push({type:'soldier',x,side:1});}
  if(openLayout()&&!drill){action=`${block.buildings.filter(b=>b.landmark).length?`${block.buildings.filter(b=>b.landmark).length} LANDMARKS · `:''}EXITS EAST AND WEST`;actionTime=3.5;}
  setupNyc2();
- yardFall=new Map();yardDrops=0;yardBuildings=0;if(!drill){setupSF();setupAct2();setupConey();setupCracks();setupVents();setupBalloons();setupBridge();setupSlopes();setCover(coverAt);}else{vents=[];balloons=[];slopes=[];setCover(()=>null);cracks=[];bigOne=null;setPlatforms([]);upperPlat=[];jetLaunch=[];pendingRunaways=[];pendingTumble=[];tumbleArmed=false;lions=[];kaiban=null;}
+ yardFall=new Map();yardDrops=0;yardBuildings=0;sinkOpen=new Set();sinkholeDrops=0;sinkholeKaiju=0;trenTimer=MEX3.tren.every*.4;if(!drill){setupSF();setupAct2();setupConey();setupCracks();setupVents();setupSeeps();setupMex1();setupMex2();setupXochi();setupBalloons();setupBridge();setupSlopes();setCover(coverAt);}else{vents=[];seeps=[];picados=[];campoWoke=false;campoLaunched=0;pitOut=true;balloons=[];slopes=[];setCover(()=>null);cracks=[];bigOne=null;setPlatforms([]);upperPlat=[];jetLaunch=[];pendingRunaways=[];pendingTumble=[];tumbleArmed=false;lions=[];kaiban=null;}
  loadKaijuArt(activeKaiju,combat.stage);
  mode='playing';overlay.innerHTML='';focus();
 }
@@ -1212,7 +1641,7 @@ function dropShards(x:number,count:number){
 // dir: direction of the blow (away from the attacker); at: world point struck, for the hole and debris.
 // `quiet`: a rapid damage tick (the Flame Jet), so no hole, hitstop or shake per tick unless it brings the building down.
 function hit(b:typeof buildings[number],damage:number,fromUltimate=false,dir=player.face,at?:{x:number,y:number},quiet=false){
- if(b.prop&&b.hpNow>0&&damage>=b.hpNow){const c=({vending:'#d94f4f',trash:'#6d7a52',hotdog:'#e9b44c',taco:'#2f8f6a',morris:'#2f5a45',cafe:'#b9473b',stall:'#c2312b',workbench:'#7a6a4a'} as Record<string,string>)[b.prop]??'#888';spawnChunks(b.x+b.w/2,b.base-b.h/2,dir,c,8,1.2);burst(b.x+b.w/2,b.base-b.h/2,c,8);}
+ if(b.prop&&b.hpNow>0&&damage>=b.hpNow){const c=({vending:'#d94f4f',trash:'#6d7a52',hotdog:'#e9b44c',taco:'#2f8f6a',morris:'#2f5a45',cafe:'#b9473b',stall:'#c2312b',workbench:'#7a6a4a',kiosk:'#2d5a3f',cab:'#f2c230',cart:'#c2312b',scaffold:'#2f5a45'} as Record<string,string>)[b.prop]??'#888';spawnChunks(b.x+b.w/2,b.base-b.h/2,dir,c,8,1.2);burst(b.x+b.w/2,b.base-b.h/2,c,8);}
  if(style()==='tyo'&&b.h>=TW.quakeHeight&&!quiet&&!fromUltimate&&b.kind!=='tiny'){b.sway=TW.swaySeconds;if(damage<TW.quakeBreak)damage*=TW.quakeKeep;}
  const r=damageBuilding(b,damage*vuln(b));if(!r.damage)return;releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);award(r.points);heatUp(r.damage*Y.gainPerDamage);if(r.destroyed&&fromUltimate)ultKill.add(b);creditDamage(combat,r.damage,'player',fromUltimate);if(r.destroyed)dropShards(b.x+b.w/2,B.buildingShards);if(!quiet||r.destroyed)burst(b.x+b.w/2,groundAt(b.x+b.w/2)-Math.min(b.h,60),'#e8d8ab',r.destroyed?23:7);if(!quiet||r.destroyed)shake=r.destroyed?5:2;if(r.destroyed||!quiet||!fromUltimate){action=r.destroyed?'STRUCTURE COLLAPSED':quiet?(isBelial()?'ACID':'FLAME JET'):`IMPACT −${Math.round(r.damage)}`;actionTime=1.2;}
  // Fully corroded, it gives way well before its HP runs out.
@@ -1261,7 +1690,7 @@ function impactFeel(b:typeof buildings[number],damage:number,destroyed:boolean,f
  if(!fromUltimate)freeze(F.hitstopCollapse);
  // Towers creak first (still solid, shuddering, shedding slabs), then fall (update starts the topple when the creak runs out).
  // Ultimate destruction skips the creak and goes straight over.
- if(canTopple(b)&&!yardFall.has(b)){b.tiltDir=dir;b.collapse=0;b.toppleUlt=fromUltimate;b.toppleGen=crushGen+1;if(fromUltimate){b.topple=1;b.tilt=0;b.tiltV=F.toppleKick;}else b.creak=crushGen>=0?Y.creakChain:Y.creakSeconds;}
+ if(canTopple(b)&&!yardFall.has(b)){b.tiltDir=leanDir(b)||dir;b.collapse=0;b.toppleUlt=fromUltimate;b.toppleGen=crushGen+1;if(fromUltimate){b.topple=1;b.tilt=leanTilt(b);b.tiltV=F.toppleKick;}else b.creak=crushGen>=0?Y.creakChain:Y.creakSeconds;}
  else{spawnDebris(b.x+b.w/2,b.base-b.h*.6,dir,10,1.4);spawnSlabs(b.x+b.w/2,b.base-b.h*.8,dir,b.color,Math.ceil(Y.slabCount*.6),fromUltimate);}
 }
 // A falling building lands: crush every structure, ground unit and car under its span; chains if that topples them too.
@@ -1420,6 +1849,7 @@ function breathe(j:Jet){const s=scale(combat),g=Math.sqrt(s),w=bodyWidth(),h=bod
  for(const gr of growths)if(gr.hp>0&&inCone(gbox(gr)))tick(gr,()=>hitGrowth(gr,dmg));
  for(const u of military.units)if(u.hp>0&&inCone(u))tick(u,()=>hitUnit(military,u,UNITS[u.type].air?dmg*B.jetAirMult:dmg,'player',kb,dir,false,'ranged'));
  for(const p of military.projectiles)if(!p.dead&&WEAPONS[p.weapon].interceptable&&inCone({x:p.x-8,y:p.y-8,w:16,h:16}))intercept(military,p);
+ if(!isBelial())for(const v of vehicles)if(BURNS.has(v.kind)&&inCone(vehicleBox(v)))igniteVehicle(v);
  for(const v of vehicles)if(loose(v)&&!(v.calm>0)&&inCone(vehicleBox(v)))tick(v,()=>puntVehicle(v,dmg*B.jetCarPush,dir));
  // Embers off the flame and a splash where it hits a wall or the street.
  const [tx,ty]=jetPoint(j,j.len,w1*g);
@@ -1510,7 +1940,7 @@ function launchSpit(){if(!spit)return;const {dir,charge}=spit;spit=null;if(comba
 // The bomb bursts into a poison cloud (and, on or near the street, a venom puddle).
 function burstVenom(x:number,y:number,charge:number,dir:number){const g=Math.sqrt(scale(combat)),[r0,r1]=MV.cloudRadius;
  clouds.push({x,y:Math.min(y,groundAt(x)-20),r:(r0+(r1-r0)*charge)*g,life:MV.cloudSeconds,max:MV.cloudSeconds,vx:dir*MV.cloudDrift});if(clouds.length>MV.cloudMax)clouds.shift();
- if(y>=groundAt(x)-30){addPool(x,MV.spitPool*g*(.7+.6*charge),MV.spitPoolDamage*damageMultiplier(combat),false,MV.spitPoolSeconds);pools[pools.length-1].venom=true;}
+ if(y>=groundAt(x)-30){addPool(x,MV.spitPool*g*(.7+.6*charge),MV.spitPoolDamage*damageMultiplier(combat),false,MV.spitPoolSeconds,false);pools[pools.length-1].venom=true;}
  burst(x,y,'#c04bff',14);burst(x,y,'#f0b8ff',6);shake=Math.max(shake,2+charge*2);}
 // Poison clouds drift and swell, and poison every troop (aircraft too) and the rival inside them.
 function tickClouds(dt:number){for(const c of clouds){c.life-=dt;c.x+=c.vx*dt;const r=c.r*(1+MV.cloudGrow*(1-c.life/c.max));
@@ -1571,6 +2001,7 @@ function pound(strike:Strike){
   if(roof)spawnDebris(hx,roof.y,0,3,1.2);}
  for(const u of military.units)if(u.hp>0&&overlaps(wide,u)){hitUnit(military,u,damage,'player',MV.poundKnockback,Math.sign(u.x+u.w/2-cx)||player.face,false,'crush');struck=true;}
  for(const v of vehicles)if(loose(v)&&overlaps(wide,vehicleBox(v)))flattenVehicle(v,true);
+ for(const v of vehicles)if(v.kind==='bull'&&v.freed&&v.state==='parked'&&overlaps(wide,vehicleBox(v))){bullHurt(v,BL.pound*(strike.combo===3?1.6:1),player.face);struck=true;}
  for(const g of growths)if(g.hp>0&&overlaps(wide,gbox(g)))hitGrowth(g,damage);
  for(const p of roofs)if(!p.dead&&overlaps(wide,roofBox(p)))hitRoof(p,damage);
  for(const sp of spans)if(sp.alive&&Math.abs(sp.y-feet)<6&&sp.x0<player.x+w&&sp.x1>player.x){hitSpan(sp,damage,false,cx);struck=true;}
@@ -1579,7 +2010,7 @@ function pound(strike:Strike){
  for(const s of slopes)if(s.alive&&Math.abs(slopeY(s,cx)-feet)<8&&s.x0<cx&&s.x1>cx){hitSlope(s,damage,false,cx);struck=true;}
  if(objective&&!objective.shattered&&overlaps(wide,obox()))hitObjective(damage);
  if(rival&&!rival.dead&&overlaps(wide,rival))strikeRival(damage,MV.poundKnockback,player.face);
- strikeFault(cx);strikeVents(cx);
+ strikeFault(cx);strikeVents(cx);strikeSeeps(cx);
  burst(cx,feet-2,'#c9a77c',strike.combo===3?14:7);shake=Math.max(shake,strike.combo===3?6:3);
  if(struck)freeze(Math.min(F.hitstopMax,F.hitstopBase+damage*F.hitstopPerDamage));
  action=`POUND ${strike.combo} / 3`;actionTime=.5;}
@@ -1596,6 +2027,7 @@ function slamLand(){
   if(under){spawnDebris(cx,under.y,0,6,1.6);if(b.hpNow<=0)broke=true;}}
  const zone={x:cx-radius,y:feet-radius,w:radius*2,h:radius+8};
  for(const u of military.units)if(u.hp>0&&overlaps(zone,u)){struck.push(u);hitUnit(military,u,damage,'player',kb,Math.sign(u.x+u.w/2-cx)||player.face,false,'crush');}
+ for(const v of vehicles)if(v.kind==='bull'&&v.freed&&v.state==='parked'&&overlaps(zone,vehicleBox(v)))bullHurt(v,BL.slam*power,Math.sign(v.x+v.w/2-cx)||player.face);
  for(const v of vehicles)if(loose(v)&&overlaps(zone,vehicleBox(v))){if(Math.abs(v.x+v.w/2-cx)<w*.4)flattenVehicle(v,true);else puntVehicle(v,damage*.5,Math.sign(v.x+v.w/2-cx)||player.face,false,1.8);}
  for(const g of growths)if(g.hp>0&&overlaps(zone,gbox(g)))hitGrowth(g,damage);
  for(const p of roofs)if(!p.dead&&overlaps(zone,roofBox(p)))hitRoof(p,damage);
@@ -1606,7 +2038,7 @@ function slamLand(){
  for(const s of slopes)if(s.alive&&Math.abs(slopeY(s,cx)-feet)<8&&s.x0<cx&&s.x1>cx){hitSlope(s,damage*MV.diveRoofMult,false,cx);broke=broke||!s.alive;}
  if(street&&!deckAt(cx)&&caveIn(cx,Math.max(R.pitMin,w*1.1)))broke=true;
  if(street&&!broke)sinkAround(cx);
- strikeFault(cx);strikeVents(cx);
+ strikeFault(cx);strikeVents(cx);strikeSeeps(cx);
  if(objective&&!objective.shattered&&overlaps(zone,obox()))hitObjective(damage);
  if(rival&&!rival.dead&&overlaps(zone,rival)){struck.push(rival);strikeRival(damage,kb,Math.sign(rival.x+rival.w/2-cx)||player.face);}
  // On the street the impact rolls out as a short shockwave both ways.
@@ -1615,7 +2047,7 @@ function slamLand(){
  // Kaiban's Meteor Drop: the landing hurls a ring of rock chunks out both ways (Debris Shotgun rocks).
  if(activeKaiju==='Kaiban'){const n=MV.meteorRocks,grow=Math.sqrt(s),[a0,a1]=MV.meteorAngle,[v0,v1]=MV.meteorSpeed;
   for(let i=0;i<n;i++){const dir=i%2?1:-1,t=Math.floor(i/2)/Math.max(1,Math.floor(n/2)-1),a=(a0+(a1-a0)*t+(Math.random()-.5)*8)*Math.PI/180,sp=(v1-(v1-v0)*t)*grow*Math.min(1.6,power)*(.9+Math.random()*.2);
-   rocks.push({x:cx+dir*w*.25,y:feet-6*s,vx:dir*Math.cos(a)*sp,vy:-Math.sin(a)*sp,life:B.debrisLife*grow*1.3,damage:MV.meteorDamage*damageMultiplier(combat)*power,knockback:B.debrisKnockback,spin:Math.random()*6,size:(6+Math.random()*5)*grow});}}
+   rocks.push({x:cx+dir*w*.25,y:feet-6*s,vx:dir*Math.cos(a)*sp,vy:-Math.sin(a)*sp,life:B.debrisLife*grow*1.3,damage:MV.meteorDamage*damageMultiplier(combat)*power,knockback:B.debrisKnockback,spin:Math.random()*6,size:(6+Math.random()*5)*grow,meteor:fall>=BL.rockFall});}}
  // Tlézcatl's Magma Dive: the crash splashes molten globs both ways and, on the street, leaves a lava pool under him.
  if(activeKaiju==='Tlézcatl')splashLava(cx,feet,w*.3,power,MV.lavaGlobs,street?w*MV.lavaPoolWidth:0,14);
  // Myrmex's Sting Dive: the stinger stabs in and the impact bursts into a poison cloud, bigger the further he fell (and, on the
@@ -1647,7 +2079,9 @@ function splashLava(x0:number,feet:number,spread:number,power:number,n:number,po
  if(poolW>0)addPool(x0,poolW,MV.lavaPoolDamage*dm*power);
  for(let k=0;k<sparks&&particles.length<C.particleCap;k++)particles.push({x:x0+(Math.random()-.5)*spread*2,y:feet-4,vx:(Math.random()-.5)*260,vy:-(80+Math.random()*220)*grow,life:.3+Math.random()*.4,color:['#ffd34d','#ff8a1f','#e8401a'][k%3],size:2+Math.floor(Math.random()*4)});}
 // At most 12 Magma Dive pools at once; the Eruption's rain keeps its own 24 (oldest cool first). Flame Jet fires are capped separately.
-function addPool(cx:number,w:number,damage:number,ult=false,life=MV.lavaPoolSeconds){pools.push({x:cx-w/2,w,life,max:life,damage,hits:new Map(),ult});
+// On a `rock` stretch (volcanic ground, src/config.ts ROCK) a pool lasts ROCK.poolLife x longer and spreads ROCK.spread x wider.
+const onRock=(x:number)=>!!block.rock?.some(([a,z])=>x>=a&&x<z);
+function addPool(cx:number,w:number,damage:number,ult=false,life=MV.lavaPoolSeconds,lava=true){if(lava)lightBoatsNear(cx-w/2,cx+w/2);if(lava&&floodCrust(cx,w))return;const rock=onRock(cx);if(rock){life*=ROCK.poolLife;w*=ROCK.spread;}pools.push({x:cx-w/2,w,life,max:life,damage,hits:new Map(),ult,rock});
  const mine=pools.filter(p=>!p.fire&&!!p.ult===ult);if(mine.length>(ult?24:12))pools.splice(pools.indexOf(mine[0]),1);}
 // Lava pools burn everything standing in them on the street (troops, cars, newsstands, growths, the rival, the objective).
 function tickPools(dt:number){for(const p of pools){p.life-=dt;const zh=16*(p.size??1),zone={x:p.x,y:groundAt(p.x)-zh,w:p.w,h:zh+2},kb=p.fire||p.acid||p.venom?8:20,every=p.tick??MV.lavaPoolTick;
@@ -1697,7 +2131,7 @@ function performStrike(strike:Strike|null){
  if(!strike||mode!=='playing')return;
  const {kind,damage}=strike;player.pose=kind==='heavy'?.3:.18;
  // Crouched light on any footing (street or rooftop) is the Pound: it beats down on what is under your feet.
- if(kind==='light'&&player.crouched&&player.grounded&&!clingTo){pound(strike);return;}
+ if(kind==='light'&&player.crouched&&player.grounded&&!clingTo&&!poleExtra){pound(strike);return;}
  attack=kind==='light'?{anim:clingTo?'climbPunch':LIGHT_ANIMS[strike.combo-1],t:0}:kind==='heavy'?{anim:'heavySlam',t:0}:{anim:player.crouched?'rangedCrouch':'rangedStand',t:0};
  const w=bodyWidth(),h=bodyHeight(),y=player.y+h*.45;
  // Mogurodon on the ground: Tremor Slam instead of a quill. Airborne or clinging he still flicks a quill (his only anti-air ranged).
@@ -1714,7 +2148,7 @@ function performStrike(strike:Strike|null){
  // Myrmex: L starts brewing a Venom Bomb (thrown on release), on the ground, in the air or on a wall.
  if(kind==='ranged'&&isMyrmex()){if(!brew&&!spit){attack=null;brew={t:0};}return;}
  if(kind==='ranged'){if(shots.length<B.rangedMax)shots.push({x:player.x+w/2+player.face*w*.52,y,vx:player.face*C.projectileSpeed,life:1.8,damage,knockback:strike.knockback});return;}
- const reach=(C.meleeReach+(kind==='heavy'?20:0))*scale(combat);
+ const reach=(C.meleeReach+(kind==='heavy'?20:0))*scale(combat)+poleExtra;
  const box={x:player.face===1?player.x+w-10:player.x-reach+10,y:player.y-8,w:reach,h:h+16};
  if(objective&&!objective.shattered&&overlaps(box,obox()))hitObjective(damage);
  popBalloonsIn(box);
@@ -1740,8 +2174,9 @@ function performStrike(strike:Strike|null){
  if(kind==='heavy'){shake=strike.charge>B.maxCharge*.8?7:3;action=strike.charge>B.maxCharge*.8?'CHARGED HEAVY': 'HEAVY IMPACT';actionTime=.7;}
 }
 // First player-caused wreck of a vehicle pays out once (traffic pays less, so passing cars can't be farmed). No crystals.
-function rewardVehicle(v:Vehicle,fromUltimate=false){if(v.rewarded)return;v.rewarded=true;award(Math.round(VEHICLE_SPECS[v.kind].points*(v.traffic?VC.trafficPoints:1)));creditDamage(combat,M.carHP,'player',fromUltimate);}
-function flattenVehicle(v:Vehicle,playerCaused=true,fromUltimate=false){if(v.kind==='bull'||v.kind==='ball')return;if(v===held)held=null;
+function rewardVehicle(v:Vehicle,fromUltimate=false){if(v.rewarded)return;v.rewarded=true;award(Math.round((v.label==='bull head'?BL.headPoints:VEHICLE_SPECS[v.kind].points)*(v.traffic?VC.trafficPoints:1)));creditDamage(combat,M.carHP,'player',fromUltimate);}
+function flattenVehicle(v:Vehicle,playerCaused=true,fromUltimate=false){if(v.kind==='bull'||v.kind==='ball'||v.kind==='pole'||v.kind==='stone')return;if(v===held)held=null;
+ if(v.kind==='trajinera'){smashBoat(v,playerCaused,fromUltimate);return;}
  if(v.kind==='lamp'){if(upright(v)){uproot(v);v.state='wreck';v.angle=player.face>0?0:Math.PI;v.y=groundAt(v.x+v.w/2)-v.h;spawnChunks(v.x+v.w/2,groundAt(v.x+v.w/2)-8,player.face,'#e9d6a2',3);if(playerCaused)rewardVehicle(v,fromUltimate);}return;}if(playerCaused&&!v.rewarded)wreckFeel(v,player.face,false,fromUltimate);v.state='flat';v.angle=0;v.vx=v.vy=0;v.y=groundAt(v.x+v.w/2)-v.h;
  burst(v.x+v.w/2,groundAt(v.x+v.w/2)-6,playerCaused?'#e6b983':'#b5aa8e',playerCaused?8:4);if(playerCaused)rewardVehicle(v,fromUltimate);}
 // Punt: a hit sends the vehicle tumbling as a projectile that damages whatever it crashes into.
@@ -1793,32 +2228,70 @@ function liftBuilding(b:typeof buildings[number]){const r=damageBuilding(b,b.hpN
 const UNIT_COLORS:Record<string,string>={gunboat:'#7f8b8f',destroyer:'#6f7c82',boat:'#e6eaec',patrol:'#557288',apc:'#7b8c61',tank:'#65795b',artillery:'#65795b'};
 // A tree pulled out of the ground is a lamp-kind prop (laid flat, thrown crown first, spears what it hits) drawn as a tree.
 function uprootedTree(b:typeof buildings[number]){const v=makeProp(nextVehicle++,'lamp',b.x,b.color,'tree');v.w=Math.max(12,Math.round(b.w*.55));v.h=Math.round(b.h*.95);v.y=groundAt(b.x+b.w/2)-v.h;v.mass=1;return v;}
+// The Charging Bull (src/config.ts BULL) is hurt by deliberate force only: its own landing, a slam or pound once it is pried loose, Meteor Drop
+// rocks, another heavy prop thrown into it, or its own flight into a building or target. `bullHurt` is the only place its hp goes down.
+let bullBroken=false,bullBreaks=0,bullHinted=false,bullBumpT=0,bullLastX=0;
+function bullHurt(v:Vehicle,dmg:number,dir:number){
+ if(v.kind!=='bull'||v.hp===undefined||v.hp<=0||v.state==='held'||bullBroken||dmg<1)return;
+ v.hp=Math.max(0,v.hp-dmg);const cx=v.x+v.w/2,cy=v.y+v.h/2,r=v.hp/BL.hp;
+ if(v.hp<=0){breakBull(v,dir);return;}
+ spawnChunks(cx,cy,dir,'#8a6a42',3,1.1);burst(cx,cy,'#d7b36a',5);shake=Math.max(shake,5);freeze(.05);
+ action=r<BL.hornAt?'HORN SNAPPED':r<BL.crackAt?'CRACKING':r<BL.dentAt?'DENTED':'CLANG';actionTime=.8;}
+function breakBull(v:Vehicle,dir:number){
+ bullBroken=true;bullBreaks++;if(v===held)held=null;const cx=v.x+v.w/2,gy=groundAt(cx);vehicles=vehicles.filter(o=>o!==v);
+ spawnChunks(cx,gy-v.h*.5,dir,'#5b4a3a',10,1.7);spawnChunks(cx,gy-v.h*.5,-dir,'#8a6a42',8,1.5);burst(cx,gy-v.h*.5,'#d7b36a',16);burst(cx,gy-6,'#b1ac91',12);
+ shake=Math.max(shake,16);freeze(F.hitstopTopple);banner={label:'THE BULL IS DOWN',side:0,life:2.6};award(BL.breakPoints);heatUp(14);
+ // The horns are all that is left standing: a small lamp-style prop, a payoff throw.
+ const head=makeProp(nextVehicle++,'lamp',cx-18,'#8a6a42','bull head');head.w=36;head.h=12;head.mass=1.2;head.rewarded=false;head.state='wreck';head.y=gy-head.h;head.x=cx-head.w/2;vehicles.push(head);}
+// Per frame: the clang when the kaiju walks into the (still bolted-down) Bull, and the one-time "GRAB" hint when it first comes within reach.
+function tickBull(dt:number){
+ bullBumpT=Math.max(0,bullBumpT-dt);const moved=Math.abs(player.x-bullLastX)>.4;bullLastX=player.x;
+ const v=vehicles.find(o=>o.kind==='bull'&&o.state==='parked');if(!v||!canAct(combat))return;
+ const body={x:player.x+bodyWidth()*.2,y:player.y,w:bodyWidth()*.6,h:bodyHeight()};
+ if(moved&&player.grounded&&bullBumpT<=0&&overlaps(body,vehicleBox(v))){bullBumpT=BL.bump;shake=Math.max(shake,4);burst(v.x+v.w/2,v.y+v.h*.5,'#d7b36a',4);action='CLANG';actionTime=.5;}
+ if(!bullHinted&&bullCarrier()&&!banner&&overlaps({x:grabBox().x-BL.hintReach,y:grabBox().y,w:grabBox().w+BL.hintReach*2,h:grabBox().h},vehicleBox(v))){bullHinted=true;banner={label:'GRAB · THE BULL',side:0,life:2.4};}}
 const bullCarrier=()=>(ROSTER.find(r=>r.name===activeKaiju)?.ratings[0]??0)>=BL.minStrength;
 // H grabs the nearest thing in reach: loose vehicles/wrecks, enemy ground vehicles, or small structures.
 function tryGrab(){if(held||!canAct(combat)||combat.charging||clingTo||combat.ultimateTime>0)return false;
  // Ranked by gap from the body's leading edge, so what is directly in front beats props under a wide Stage 3 body.
- const box=grabBox(),front=player.face>0?player.x+bodyWidth():player.x,dist=(r:{x:number,w:number})=>Math.abs(player.face>0?r.x-front:front-(r.x+r.w)),options:{d:number,take:()=>Vehicle}[]=[];
+ const box=grabBox(),front=player.face>0?player.x+bodyWidth():player.x,dist=(r:{x:number,w:number})=>Math.abs(player.face>0?r.x-front:front-(r.x+r.w)),options:{d:number,take:()=>Vehicle,bull?:boolean}[]=[];// bull: a priority pick (the Bull, the ball)
  for(const v of vehicles)if(loose(v)&&overlaps(box,vehicleBox(v)))options.push({d:dist(v),take:()=>v});
  // The Charging Bull is lifted by a strong kaiju only (src/config.ts BULL); anyone else just bumps into it.
- for(const v of vehicles)if(v.kind==='bull'&&v.state!=='held'&&v.state!=='flying'&&overlaps(box,vehicleBox(v))){if(bullCarrier())options.push({d:dist(v),take:()=>v});else{action='TOO HEAVY';actionTime=.9;}}
+ for(const v of vehicles)if(v.kind==='bull'&&v.state!=='held'&&v.state!=='flying'&&overlaps(box,vehicleBox(v))){if(bullCarrier())options.push({d:dist(v),take:()=>v,bull:true});else{action='TOO HEAVY';actionTime=.9;}}
+ // Times Square's ball, once it is down on the street: parked, or rolling slowly. Any kaiju at Stage 2+ lifts it.
+ for(const v of vehicles)if(v.kind==='ball'&&(v.state==='parked'||(v.state==='rolling'&&Math.abs(v.vx)<NYC2.ballGrabSpeed))&&overlaps(box,vehicleBox(v))){if(combat.stage>=2)options.push({d:dist(v),take:()=>v,bull:true});else{action='TOO HEAVY';actionTime=.9;}}
+ // The Sun Stone (Chapultepec): only a Stage 3 kaiju lifts it, parked or rolling slowly; a smaller one bumps against it.
+ for(const v of vehicles)if(v.kind==='stone'&&(v.state==='parked'||(v.state==='rolling'&&Math.abs(v.vx)<STONE.grabSpeed))&&overlaps(box,vehicleBox(v))){if(combat.stage>=STONE.minStage)options.push({d:dist(v),take:()=>v,bull:true});else{action='TOO HEAVY';actionTime=.9;}}
+ // The Zócalo's flagpole: any stage lifts it (it is the open plaza's answer to having no cover). Standing on its plinth or lying where it was thrown.
+ for(const v of vehicles)if(v.kind==='pole'&&v.state==='parked'&&overlaps(box,vehicleBox(v)))options.push({d:dist(v),take:()=>v,bull:true});
  // A balloon's tether (Herald Square): grabbed, it drags the balloon along overhead.
  for(const v of vehicles)if(v.kind==='tether'&&v.state==='parked'&&overlaps(box,vehicleBox(v)))options.push({d:dist(v),take:()=>v});
  for(const u of military.units)if(u.hp>0&&GRABBABLE_UNITS.has(u.type)&&overlaps(box,u))options.push({d:dist(u),take:()=>{captureUnit(military,u);drainMilitary();const p=makeProp(nextVehicle++,u.type as Vehicle['kind'],u.x,UNIT_COLORS[u.type]);vehicles.push(p);return p;}});
- for(const b of buildings)if(liftable(b,combat.stage)&&hitsBox(b,box))options.push({d:dist(b),take:()=>{liftBuilding(b);const p=b.prop==='palm'||b.prop==='tree'?uprootedTree(b):b.h>F.liftHeight?liftedBuilding(nextVehicle++,b):makeProp(nextVehicle++,b.kind==='tiny'?'stand':'barrier',b.x,b.color,b.label);vehicles.push(p);return p;}});
+ for(const b of buildings)if(liftable(b,combat.stage)&&hitsBox(b,box))options.push({d:dist(b),take:()=>{liftBuilding(b);const p=b.prop==='palm'||b.prop==='tree'||b.prop==='ahuejote'?uprootedTree(b):b.h>F.liftHeight?liftedBuilding(nextVehicle++,b):makeProp(nextVehicle++,b.kind==='tiny'?'stand':'barrier',b.x,b.color,b.label);vehicles.push(p);return p;}});
  // Stage 3 reaches down through an open pit and pulls a whole subway train out of the tunnel (running or wrecked).
  if(combat.stage>=3)for(const t of trains){const r={x:t.x,w:R.trainLength};if(r.x+r.w<box.x||r.x>box.x+box.w)continue;
-  if(!pitList().some(p=>p.x0<Math.min(box.x+box.w,r.x+r.w)&&p.x1>Math.max(box.x,r.x)))continue;
+  if(!t.surface&&!pitList().some(p=>p.x0<Math.min(box.x+box.w,r.x+r.w)&&p.x1>Math.max(box.x,r.x)))continue;
   options.push({d:dist(r),take:()=>{trains.splice(trains.indexOf(t),1);const v=makeProp(nextVehicle++,'train',t.x,'#a9b2b0',t.crashed?'wreck':'');
    if(t.crashed)v.burn=MF.wreckBurn;else{award(R.trainPoints);heatUp(R.trainHeat);}
    for(const p of pitList())if(p.x0<r.x+r.w&&p.x1>r.x)for(let x=Math.max(p.x0,r.x);x<Math.min(p.x1,r.x+r.w);x+=18)spawnChunks(x,C.ground,player.face,'#7d8580',2,1.2);
    shake=Math.max(shake,10);banner={label:'TRAIN SNATCHED',side:0,life:2};vehicles.push(v);return v;}});}
- options.sort((a,b)=>a.d-b.d);if(!options.length)return false;
- const pick=options[0].take();uproot(pick);held=pick;pick.state='held';pick.angle=0;pick.vx=pick.vy=0;pick.panic=0;pick.lane=1;attack=animDuration(activeKaiju,'grab',combat.stage)?{anim:'grab',t:0}:null;action=`GRAB · ${pick.kind.toUpperCase()}`;actionTime=.9;return true;}
+ // The Bull wins a grab whenever it is in reach (a car beside it must not steal the key press).
+ options.sort((a,b)=>(a.bull?0:1)-(b.bull?0:1)||a.d-b.d);if(!options.length)return false;
+ const pick=options[0].take();if(pick.kind==='bull')pick.freed=true;if(pick.kind==='ball')pick.tossed=false;if(pick.kind==='stone'){pick.tossed=false;if(!pick.rewarded){pick.rewarded=true;award(STONE.points);heatUp(8);}}if(pick.kind==='pole'&&!pick.rewarded){pick.rewarded=true;award(FLAG.points);heatUp(8);}uproot(pick);held=pick;pick.state='held';pick.angle=0;pick.vx=pick.vy=0;pick.panic=0;pick.lane=1;attack=animDuration(activeKaiju,'grab',combat.stage)?{anim:'grab',t:0}:null;action=`GRAB · ${pick.kind.toUpperCase()}`;actionTime=.9;return true;}
 // Throw forward, or with W held lob it high (anti-air). Damage scales with the vehicle's mass and the kaiju's stage.
 function throwHeld(){if(!held||!canAct(combat))return;
  // Throw a balloon's tether and the balloon floats off (nothing flies: the tether goes up with it).
  if(held.kind==='tether'){const t=held,b=balloons.find(o=>o.tether===t);held=null;if(b)floatAway(b,player.face);else vehicles=vehicles.filter(o=>o!==t);attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;action='LET GO · THE BALLOON FLOATS OFF';actionTime=1.1;return;}
  const v=held,m=mass(v),up=keys.has('KeyW');held=null;
+ // The flagpole is thrown like a spear: flat and fast, stopping on the first thing it hits (tickVehicles).
+ if(v.kind==='pole'){v.y=Math.max(v.y,groundAt(v.x+v.w/2)-v.h-bodyHeight()*.2);launch(v,player.face*FLAG.throwSpeed,-FLAG.throwLift,FLAG.throwDamage*damageMultiplier(combat));v.lane=1;poleThrown++;
+  attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,4);action='SPEAR';actionTime=.7;return;}
+ // The Sun Stone: a flat bowling arc; it rolls on where it lands (landStone).
+ if(v.kind==='stone'){launch(v,player.face*STONE.throwSpeed,-STONE.throwLift,STONE.throwDamage*damageMultiplier(combat));v.tossed=true;v.lane=1;stoneThrown++;
+  attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,5);action='ROLL IT';actionTime=.7;return;}
+ // The ball: a flat bowling arc, or with W a high lob for anti-air. It is a hard hitter and rolls again where it lands (landBall).
+ if(v.kind==='ball'){launch(v,player.face*(up?NYC2.ballLobSpeed:NYC2.ballThrowSpeed),-(up?NYC2.ballLobLift:NYC2.ballThrowLift),NYC2.ballThrowDamage*damageMultiplier(combat));v.tossed=true;v.lane=1;
+  attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,4);action=up?'LOB · UP':'BOWL';actionTime=.7;return;}
  // The Bull is thrown short and hard: a low flat lob that carries BL.throwDamage.
  const bull=v.kind==='bull';
  launch(v,player.face*(up?VC.upSpeed:bull?BL.throwSpeed:VC.throwSpeed/Math.pow(m,VC.throwMassExp)),-(up?VC.upLift:bull?BL.throwLift:v.kind==='lamp'?VC.lampLift:VC.throwLift)/(up?Math.sqrt(m):1),(bull?BL.throwDamage:VC.throwDamage*impact(v))*damageMultiplier(combat));
@@ -1826,18 +2299,21 @@ function throwHeld(){if(!held||!canAct(combat))return;
 function dropHeld(){if(!held)return;const v=held;held=null;if(v.kind==='tether'){const b=balloons.find(o=>o.tether===v);if(b)floatAway(b,0);else vehicles=vehicles.filter(o=>o!==v);return;}launch(v,0,0,0);v.thrown=false;if(attack?.anim==='grab')attack=null;}
 // Thrown/punted vehicles crash into buildings, troops, the rival, objectives and other vehicles (which get knocked flying too).
 function vehicleImpacts(v:Vehicle){
- if(v.state!=='flying'||v.damage<=1)return;const box=vehicleBox(v),dir=Math.sign(v.vx)||1,cx=v.x+v.w/2,cy=v.y+v.h/2,before=v.hits.size;popBalloonsIn(box);
- for(const b of buildings){const p=solid(b)&&!v.hits.has(b)?partHit(b,box):null;if(!p)continue;v.hits.add(b);hit(b,v.damage,false,dir,{x:cx,y:cy});if((v.burn??0)>0&&Math.random()<FI.wreckChance)setAlight(b);v.vx=-v.vx*VC.restitution;v.x=dir>0?p.x-v.w-1:p.x+p.w+1;v.damage*=VC.impactKeep;spawnChunks(cx,cy,-dir,v.color,4);detonate(v);return;}
+ if(v.state!=='flying'||v.damage<=1)return;const box=vehicleBox(v),dir=Math.sign(v.vx)||1,cx=v.x+v.w/2,cy=v.y+v.h/2,before=v.hits.size,d0=v.damage;popBalloonsIn(box);
+ // A heavy prop thrown into the Bull hurts it (its own flight does not: that is the crash below).
+ if(v.kind!=='bull'&&mass(v)>=2)for(const o of vehicles)if(o.kind==='bull'&&o.state!=='held'&&o.state!=='flying'&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);bullHurt(o,v.damage*BL.hitByProp,dir);v.vx=-v.vx*VC.restitution;v.damage*=VC.impactKeep;}
+ for(const b of buildings){const p=solid(b)&&!v.hits.has(b)?partHit(b,box):null;if(!p)continue;v.hits.add(b);hit(b,v.damage,false,dir,{x:cx,y:cy});if((v.burn??0)>0&&Math.random()<FI.wreckChance)setAlight(b);v.vx=-v.vx*VC.restitution;v.x=dir>0?p.x-v.w-1:p.x+p.w+1;v.damage*=VC.impactKeep;spawnChunks(cx,cy,-dir,v.color,4);if(v.kind==='bull')bullHurt(v,d0*BL.crash,-dir);detonate(v);return;}
  for(const u of military.units)if(u.hp>0&&!v.hits.has(u)&&overlaps(box,u)){v.hits.add(u);hitUnit(military,u,v.damage,'player',180*mass(v),dir,false,'thrown');v.damage*=v.kind==='lamp'?VC.lampPierce:VC.unitKeep;freeze(.04);}
  if(rival&&!rival.dead&&!v.hits.has(rival)&&overlaps(box,rival)){v.hits.add(rival);strikeRival(v.damage,160*mass(v),dir);v.vx=-v.vx*VC.restitution;v.damage*=VC.impactKeep;}
- if(objective&&!objective.shattered&&!v.hits.has(objective)&&overlaps(box,obox())){v.hits.add(objective);hitObjective(v.damage);v.vx=-v.vx*VC.restitution;v.damage*=VC.impactKeep;}
+ if(objective&&!objective.shattered&&!v.hits.has(objective)&&overlaps(box,obox())){v.hits.add(objective);hitObjective(v.damage);if(v.kind==='bull')bullHurt(v,d0*BL.crash,-dir);v.vx=-v.vx*VC.restitution;v.damage*=VC.impactKeep;}
  for(const g of growths)if(g.hp>0&&!v.hits.has(g)&&overlaps(box,gbox(g))){v.hits.add(g);hitGrowth(g,v.damage);}
  for(const p of roofs)if(!p.dead&&!v.hits.has(p)&&overlaps(box,roofBox(p))){v.hits.add(p);hitRoof(p,v.damage);}
- for(const o of vehicles)if(o!==v&&loose(o)&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);o.hits.add(v);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),v.damage*.5);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);if(v.kind!=='ball')v.vx*=1-VC.chainPush*.6;spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
+ for(const o of vehicles)if(o!==v&&loose(o)&&!v.hits.has(o)&&overlaps(box,vehicleBox(o))){v.hits.add(o);o.hits.add(v);uproot(o);const fresh=!o.rewarded;launch(o,v.vx*VC.chainPush,-170/Math.sqrt(mass(o)),v.damage*.5);if(fresh)wreckFeel(o,dir,true);rewardVehicle(o);if(v.kind!=='ball'&&v.kind!=='stone')v.vx*=1-VC.chainPush*.6;spawnChunks(o.x+o.w/2,o.y,dir,o.color,3);}
  if(v.thrown&&(v.hits.size>before||v.y>=groundAt(v.x+v.w/2)-v.h-1))detonate(v);
 }
 function tickVehicles(dt:number){
  if(held&&!canAct(combat))dropHeld();
+ tickBull(dt);
  const cx=player.x+bodyWidth()/2;
  if(trafficBudget>0){trafficTimer+=dt;if(trafficTimer>=VC.trafficInterval&&vehicles.filter(v=>v.state==='driving').length<VC.trafficCap){trafficTimer=0;trafficBudget--;
   const sv=spawnTraffic(nextVehicle++,camera,Math.random()<.5?1:-1,Math.random,viewW());if(!onWater(sv.x)&&!onWater(sv.x+sv.w))vehicles.push(sv);}}
@@ -1851,9 +2327,15 @@ function tickVehicles(dt:number){
   if(v.shield)v.shield=Math.max(0,v.shield-dt);if(v.calm)v.calm=Math.max(0,v.calm-dt);
   if(v.state==='cable'&&v.kind!=='coaster')tickCable(v,dt);else if(v.state==='rolling'){if(tickRolling(v,dt,worldWidth)==='rolling')rollImpacts(v);else v.runaway=false;}
   tickDriving(v,dt,cx);
-  const wasFlying=v.state==='flying',settled=tickFlying(v,dt,worldWidth);if(wasFlying)vehicleImpacts(v);if(settled&&v.runaway){startRunaway(v);spawnChunks(v.x+v.w/2,v.y+v.h,Math.sign(v.vx)||1,v.color,6,1.3);shake=Math.max(shake,8);}else if(settled)detonate(v);
+  const wasFlying=v.state==='flying',vy0=v.vy,vx0=v.vx,n0=v.hits.size,settled=tickFlying(v,dt,worldWidth);if(wasFlying){vehicleImpacts(v);ballImpact(v,n0);}
+  if(v.kind==='trajinera'&&v.state==='flying'&&v.vy>0&&submerged(v.x+v.w/2)&&v.y+v.h*.6>=(waterAt(v.x+v.w/2)??Infinity))landBoat(v);
+  if(wasFlying&&v.kind==='pole'){// It stops on the first building, soldier, rival or target it hits; lampposts and cars in its way are knocked aside, not a stop.
+   if(v.state==='flying'&&v.hits.size>n0&&[...v.hits].slice(n0).some(o=>!vehicles.includes(o as Vehicle))){v.vx=0;v.damage=0;poleStops++;shake=Math.max(shake,4);}if(settled){v.state='parked';v.angle=0;v.spin=0;v.vx=v.vy=0;v.damage=0;v.y=groundAt(v.x+v.w/2)-v.h;}}
+  if(wasFlying&&v.kind==='ball'&&vehicles.includes(v)&&(settled||(v.state==='flying'&&v.vy<0&&vy0>0)))landBall(v,vx0);if(wasFlying&&v.kind==='stone'&&vehicles.includes(v)&&(settled||(v.state==='flying'&&v.vy<0&&vy0>0)))landStone(v,vx0);if(settled&&v.runaway){startRunaway(v);spawnChunks(v.x+v.w/2,v.y+v.h,Math.sign(v.vx)||1,v.color,6,1.3);shake=Math.max(shake,8);}else if(settled)detonate(v);
   // A thrown Bull thuds into the street: it breaks spans and caves the street in like a thrown building, then stands there again (never a wreck).
   if(settled&&v.kind==='bull'){heavyLanding(v);v.state='parked';v.angle=0;v.spin=0;v.y=groundAt(v.x+v.w/2)-v.h;spawnChunks(v.x+v.w/2,groundAt(v.x+v.w/2)-6,Math.sign(v.vx)||player.face,'#5b4a3a',5,1.3);burst(v.x+v.w/2,groundAt(v.x+v.w/2)-6,'#b1ac91',10);shake=Math.max(shake,6);}
+  // Every hard landing (the first touchdown and any bounce) dents it, by how fast it came down.
+  if(wasFlying&&v.kind==='bull'&&(settled||(v.state==='flying'&&v.vy<0&&vy0>0)))bullHurt(v,BL.landDamage*Math.abs(vy0)/BL.landRef,Math.sign(v.vx)||player.face);
   // A thrown building breaks apart where it lands instead of lying around as a wreck.
   if(settled&&v.kind==='building'){heavyLanding(v);v.state='flat';spawnChunks(v.x+v.w/2,groundAt(v.x+v.w/2)-v.h*.4,Math.sign(v.vx)||player.face,v.color,8,1.6);burst(v.x+v.w/2,groundAt(v.x+v.w/2)-8,'#b1ac91',14);shake=Math.max(shake,4);}
  }
@@ -1878,7 +2360,7 @@ function drainMilitary(){
 }
 // First fissure waits for the roar's crash-down so the waves come out of the slam.
 // Kaiban's Stampede bellows on the same impact frame, then charges (tickStampede) instead of sending fissures.
-function useUltimate(){if(!activateUltimate(combat))return;strikeFault(player.x+bodyWidth()/2,true);strikeVents(player.x+bodyWidth()/2,true);attack=null;tremor=null;debris=null;jet=null;jet=null;jetFuel=1;jetLocked=false;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;
+function useUltimate(){if(!activateUltimate(combat))return;strikeFault(player.x+bodyWidth()/2,true);strikeVents(player.x+bodyWidth()/2,true);strikeSeeps(player.x+bodyWidth()/2,true);attack=null;tremor=null;debris=null;jet=null;jet=null;jetFuel=1;jetLocked=false;ultimateTimer=animImpact(activeKaiju,'ultRoar',combat.stage);player.pose=.5;action=ultimateLabel();actionTime=2.4;shake=8;
  stampede=activeKaiju==='Kaiban'?{dir:player.face,hits:new Set(),turned:false,bellowed:false,charging:false,start:player.x,reach:B.stampedeReach*scale(combat)}:null;
  eruptLandings=[];eruption=activeKaiju==='Tlézcatl'?{blasted:false,spat:0,flash:0,boom:0}:null;
  if(eruption)ultimateTimer+=B.eruptCharge;
@@ -1990,7 +2472,7 @@ function tickEruption(dt:number,w:number,h:number){
   for(let n=0;n<2&&particles.length<C.particleCap;n++)if(Math.random()<dt*(10+40*p)){const a=Math.random()*Math.PI*2,r=(50+Math.random()*60)*g,life=.35;
    particles.push({x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r*.7,vx:-Math.cos(a)*r/life,vy:-Math.sin(a)*r*.7/life,life,color:Math.random()<.5?'#ffd34d':'#ff8a1f',size:2+Math.floor(Math.random()*2)});}
   if(ultimateTimer>0)return;
-  e.blasted=true;e.boom=0;e.flash=.4;shake=Math.max(shake,18);freeze(.12);
+  e.blasted=true;e.boom=0;e.flash=.4;shake=Math.max(shake,18);freeze(.12);volcanoErupted();
   const R=B.eruptBlastRange*g,dmg=B.eruptBlastDamage*dm,kb=B.eruptBlastKnockback,side=(x:number)=>Math.sign(x-cx)||player.face,hits=(r:{x:number,y:number,w:number,h:number})=>inCircle(cx,cy,R,r);
   for(const b of buildings){const p=b.hpNow>0?hitParts(b).find(hits):undefined;if(!p)continue;const d=side(b.x+b.w/2),near=d>0?p.x:p.x+p.w;hit(b,dmg,true,d,{x:near+d*6,y:Math.max(p.y+6,Math.min(p.y+p.h-6,cy))});}
   for(const gr of growths)if(gr.hp>0&&hits(gbox(gr)))hitGrowth(gr,dmg);
@@ -2073,7 +2555,7 @@ window.addEventListener('keydown',e=>{
  // Breathing fire: nothing but steering and the Ultimate (which snuffs it).
  if(jet&&['KeyJ','KeyK','KeyL','KeyH'].includes(k))return;
  // While carrying a vehicle H/J/K throw it (L is ignored); otherwise H grabs.
- if(held){if(k==='KeyH'||k==='KeyJ'||k==='KeyK')throwHeld();if(k==='KeyU'){dropHeld();useUltimate();}return;}
+ if(held){if(held.kind==='pole'&&(k==='KeyJ'||k==='KeyK'))swingPole();else if(k==='KeyH'||k==='KeyJ'||k==='KeyK')throwHeld();if(k==='KeyU'){dropHeld();useUltimate();}return;}
  if(k==='KeyH'){tryGrab();return;}
  if(k==='KeyJ')performStrike(light(combat));if(k==='KeyK')beginHeavy(combat);if(k==='KeyL')performStrike(ranged(combat));if(k==='KeyU')useUltimate();if(k==='KeyI')useSuper();
 });window.addEventListener('keyup',e=>{keys.delete(e.code);if(!keys.has('KeyA')&&!keys.has('KeyD'))runLatch=false;if(e.code==='KeyK'&&mode==='playing')performStrike(releaseHeavy(combat));});window.addEventListener('blur',pause);document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
@@ -2110,7 +2592,7 @@ function update(dt:number){
  const steer=(keys.has('KeyD')?1:0)-(keys.has('KeyA')?1:0);dashT=Math.max(0,dashT-dt);bargeT=Math.max(0,bargeT-dt);grabWait=Math.max(0,grabWait-dt);
  // Holding against the roll bursts out early.
  if(roll&&player.grounded&&steer===-roll.dir)endRoll(false);
- running=!roll&&!jet&&!!steer&&canAct(combat)&&!player.crouched&&!clingTo&&!combat.charging&&!dive&&(player.grounded?keys.has('ShiftLeft')||keys.has('ShiftRight')||runLatch:airRun)&&bandRuns(footBand());
+ running=!roll&&!jet&&!!steer&&canAct(combat)&&!player.crouched&&!clingTo&&!combat.charging&&!dive&&(player.grounded?keys.has('ShiftLeft')||keys.has('ShiftRight')||runLatch:airRun)&&bandRuns(footBand())&&!softFeet();
  const gait=dive?MV.diveSteer:running?(dashT>0&&player.grounded?MV.dashSpeed:MV.runSpeed):1;
  let dx=roll?roll.dir*C.moveSpeed*MV.rollSpeed*Math.sqrt(scale(combat))*dt:!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*(jet?(isBelial()?B.vomitSlow:B.jetSlow):1)*(brew?MV.cloudSlow:1)*wadeFactor()*dt;
  if(dx)player.face=dx>0?1:-1;
@@ -2175,6 +2657,8 @@ function update(dt:number){
  if(player.x+w>p.x&&player.x<p.x+p.w&&prevBottom<=roof+1&&player.y+h>=roof){player.y=roof-h-.01;player.vy=0;player.grounded=true;}}}
  // The elevated railway is a walkway: land on a standing span from above.
  if(!climbing&&player.vy>=0)for(const r of rails){if(!r.alive)continue;if(player.x+w>r.x0&&player.x<r.x1&&prevBottom<=r.y+1&&player.y+h>=r.y){player.y=r.y-h-.01;player.vy=0;player.grounded=true;}}
+ // The flood's crusts and the rim walkway are one-way floors: land on one from above.
+ if(!climbing&&player.vy>=0&&finale?.flood)for(const fc of finale.flood.floors){if(player.x+w>fc.x&&player.x<fc.x+fc.w&&prevBottom<=fc.y+1&&player.y+h>=fc.y){player.y=fc.y-h-.01;player.vy=0;player.grounded=true;}}
  // A ramp is walked up and down: feet follow its surface (the step tolerance is the same as for sloping streets).
  let onSlope=false;
  if(!climbing&&player.vy>=0)for(const s of slopes){const cx=player.x+w/2;if(!s.alive||cx<s.x0||cx>s.x1)continue;const sy=slopeY(s,cx),tol=Math.max(10,Math.abs(dx)*1.6+6);
@@ -2195,7 +2679,7 @@ function update(dt:number){
  // Creaking towers shudder and shed slabs off the facade, then go over.
  for(const b of buildings)if(b.creak>0){b.creak=Math.max(0,b.creak-dt);if(rand()<dt*7)spawnSlabs(b.x+b.w*rand(),b.base-b.h*(.5+rand()*.45),b.tiltDir,b.color,1,b.toppleUlt,.6);
   if(rand()<dt*30&&particles.length<C.particleCap)particles.push({x:b.x+rand()*b.w,y:b.base-b.h*rand(),vx:(rand()-.5)*30,vy:20,life:.6,color:'#cfc6a8',size:2});
-  if(b.creak===0){b.topple=1;b.tilt=0;b.tiltV=F.toppleKick;}}
+  if(b.creak===0){b.topple=1;b.tilt=leanTilt(b);b.tiltV=F.toppleKick;}}
  for(const b of buildings)if(b.topple===1){b.tiltV+=F.toppleAccel*Math.sin(b.tilt+.2)*dt;b.tilt+=b.tiltV*dt;if(b.tilt>=Math.PI/2){b.tilt=Math.PI/2;b.topple=2;landTopple(b);}}
  for(const b of buildings){if(b.hpNow<=0&&b.collapse>0&&b.collapse<=dt&&!b.topple&&!b.creak)heapRubble(b);b.sway=Math.max(0,b.sway-dt);b.collapse=Math.max(0,b.collapse-dt);b.jolt=Math.max(0,b.jolt-dt);if(b.kind==='tiny'&&(!b.role||b.role==='hydrant')&&b.hpNow>0&&overlaps({x:player.x,y:player.y,w,h},{x:b.x,y:b.base-b.h,w:b.w,h:b.h})){if(Math.abs(kb)>.01){damageBuilding(b,b.hpNow,'impact');releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);}else hit(b,b.hpNow);}}
  for(const v of vehicles)if(loose(v)&&overlaps({x:player.x+w*.18,y:player.y,w:w*.64,h},vehicleBox(v)))flattenVehicle(v,Math.abs(kb)<.01);
@@ -2207,14 +2691,16 @@ function update(dt:number){
  echo=true;
  for(const r of rocks){const ox=r.x,oy=r.y;r.vy+=B.debrisGravity*dt;r.x+=r.vx*dt;r.y+=r.vy*dt;r.life-=dt;r.spin+=dt*14;
  if(projectileStrike(ox,oy,r.x,r.y,r.damage,r.knockback,Math.sign(r.vx)||1,r.y))r.life=0;
+ if(r.life>0&&r.meteor){const bl=vehicles.find(o=>o.kind==='bull'&&o.state!=='held'&&overlaps({x:r.x-r.size,y:r.y-r.size,w:r.size*2,h:r.size*2},vehicleBox(o)));if(bl){r.life=0;bullHurt(bl,BL.rock,Math.sign(r.vx)||1);}}
  if(r.life>0&&r.y>=groundAt(r.x)-2){r.life=0;burst(r.x,groundAt(r.x)-3,'#c9a77c',3);}}
  rocks=rocks.filter(r=>r.life>0&&r.x>0&&r.x<worldWidth);
  // Magma Dive globs: ballistic like the rocks; a glob that reaches the street splats into a small lava pool.
  for(const g of globs){const ox=g.x,oy=g.y;g.vy+=(g.grav??B.debrisGravity)*dt;g.x+=g.vx*dt;g.y+=g.vy*dt;g.life-=dt;
  if((!g.ult||g.vy>0)&&projectileStrike(ox,oy,g.x,g.y,g.damage,g.ult?90:g.venom?30:40,Math.sign(g.vx)||1,g.y,g.ult,g.ult?{x:g.x,y:g.y}:undefined)){g.life=0;if(g.venom)burstVenom(g.x,g.y,g.venom,Math.sign(g.vx)||1);
-  else burst(g.x,g.y,'#ff8a1f',g.ult?8:4);if(g.ult)eruptLandings.push(g.x);}
- if(g.life>0&&g.y>=groundAt(g.x)-2){g.life=0;const grow=Math.sqrt(scale(combat)),dm=damageMultiplier(combat);
-  if(g.ult){eruptLandings.push(g.x);addPool(g.x,B.eruptPool*grow,B.eruptPoolDamage*dm,true,B.eruptPoolSeconds);burst(g.x,groundAt(g.x)-3,'#ffb13b',8);shake=Math.max(shake,3);}
+  else{burst(g.x,g.y,'#ff8a1f',g.ult?8:4);lightBoatsNear(g.x-6,g.x+6);}if(g.ult&&!g.bomb)eruptLandings.push(g.x);}
+ if(g.life>0&&g.y>=((g.vy>0&&!g.venom?floodSurfaceAt(g.x):null)??groundAt(g.x))-2){g.life=0;const grow=Math.sqrt(scale(combat)),dm=damageMultiplier(combat);
+  if(g.bomb){addPool(g.x,VO.poolWidth*grow,VO.poolDamage*dm,true,VO.poolSeconds);burst(g.x,groundAt(g.x)-3,'#ffb13b',8);shake=Math.max(shake,3);}
+  else if(g.ult){eruptLandings.push(g.x);addPool(g.x,B.eruptPool*grow,B.eruptPoolDamage*dm,true,B.eruptPoolSeconds);burst(g.x,groundAt(g.x)-3,'#ffb13b',8);shake=Math.max(shake,3);}
   else if(g.venom)burstVenom(g.x,groundAt(g.x)-4,g.venom,Math.sign(g.vx)||1);
   else{addPool(g.x,MV.lavaGlobPool*grow,MV.lavaPoolDamage*dm);burst(g.x,groundAt(g.x)-3,'#ff8a1f',4);}}}
  globs=globs.filter(g=>g.life>0&&g.x>0&&g.x<worldWidth);tickRain(dt);tickPools(dt);tickBurns(dt);tickCorrosion(dt);tickPoison(dt);tickClouds(dt);echo=false;
@@ -2240,8 +2726,8 @@ function update(dt:number){
  for(const v of vehicles)if(loose(v)&&!wave.hits.has(v)&&overlaps(box,vehicleBox(v))){wave.hits.add(v);puntVehicle(v,wave.damage*.5,Math.sign(wave.vx)||1,wave.ult,1.6);}
  }
  echo=false;if(rival?.dead){winCity();return;}
- if(rival){tickFinale(dt,w,h);if(!bossFrozen())for(const hit of tickRival(rival,dt,{x:player.x,y:player.y,w,h},worldWidth,buildings))receiveHit(combat,hit.damage,'boss',hit.strength,hit.direction);for(const b of buildings)if(b.hpNow<b.hp)releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);if(endIfDead())return;}
- tickCity(dt,w);tickRiver(dt,w);tickFire(dt);tickSF(dt);tickAct2(dt);tickConey(dt);tickCracks(dt);tickBridge(dt);tickResponse(dt);tickMains(dt);tickVents(dt);tickNyc2(dt);tickYard(dt);tickRails(dt,w,h);tickSlopes(dt);
+ if(rival){tickFinale(dt,w,h);vulnerability.k=rival.belial?1+BB.corrodeVuln*(rival.kcorr?.stacks??0):1;if(!bossFrozen())for(const hit of tickRival(rival,dt,{x:player.x,y:player.y,w,h},worldWidth,buildings,rivalEnv(w,h)))receiveHit(combat,hit.damage,'boss',hit.strength,hit.direction);if(finale?.flood&&!rival.belial&&!rival.dead)keepToTiers(rival);for(const b of buildings)if(b.hpNow<b.hp)releaseOccupants(population,buildings.indexOf(b),b.x+b.w/2);if(endIfDead())return;}
+ tickCity(dt,w);tickVolcano(dt);tickRiver(dt,w);tickXochi(dt);tickFire(dt);tickSF(dt);tickAct2(dt);tickConey(dt);tickCracks(dt);tickBridge(dt);tickResponse(dt);tickMains(dt);tickVents(dt);tickSeeps(dt);tickMex1(dt);tickMex2(dt);tickNyc2(dt);tickYard(dt);tickRails(dt,w,h);tickSlopes(dt);
  tickMilitary(military,dt,camera,worldWidth,{x:player.x,y:player.y,w,h},destruction(buildings),rival||undefined,Math.abs(kb)<.01?'player':'military',viewW(),combat.stage);drainMilitary();tickBalloons(dt);syncBody();if(endIfDead())return;
  waves=waves.filter(w=>w.life>0&&w.x>0&&w.x<worldWidth);
  // Ambient crystals and growths appear ahead of the kaiju (the way it faces), so heading west still finds them.
@@ -2273,23 +2759,29 @@ function text(s:string,x:number,y:number,size=12,color='#e7edde',align:CanvasTex
 function poly(points:number[][],color:string){ctx.fillStyle=color;ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();}
 function background(){
  // W covers the zoomed-out view; layers repeat across it and the street fill runs down past the old 540 floor.
- const W=viewW()+100,top=C.ground-(C.ground+cameraY)/zoom-20,th=CITIES[cityIndex],m=moodNow(),night=m.lights>.6;
+ const W=viewW()+100,top=C.ground-(C.ground+cameraY)/zoom-20,th=CITIES[cityIndex],m=moodNow(),night=m.lights>.6,nightA=thr(m.lights,.6,.4);
  // Sky: a gradient from the city's zenith colour down to its horizon light (flat fill where gradients are unavailable).
  const g=ctx.createLinearGradient?.(0,top,0,C.ground);if(g&&g.addColorStop){g.addColorStop(0,m.top);g.addColorStop(1,m.bottom);ctx.fillStyle=g;ctx.fillRect(0,top,W,540-top);}else rect(0,top,W,540-top,m.bottom);
- if(night)for(let k=0;k<60;k++){const sx=(k*137%997)/997*W,sy=top+((k*71%331)/331)*(260-top);if(sy<300)rect(sx,sy,k%7?1:2,k%7?1:2,(Math.sin(time*2+k)>.6)?'#ffffff':'#c9d4e8');}
+ if(nightA>0){ctx.globalAlpha=nightA;for(let k=0;k<60;k++){const sx=(k*137%997)/997*W,sy=top+((k*71%331)/331)*(260-top);if(sy<300)rect(sx,sy,k%7?1:2,k%7?1:2,(Math.sin(time*2+k)>.6)?'#ffffff':'#c9d4e8');}ctx.globalAlpha=1;}
  // Sun (or moon), low in the sky so it reads behind the skyline.
- {const sx=W*.72-camera*.02,sy=m.lights>.6?150:m.lights>.35?250:170,r=m.lights>.35&&m.lights<.6?46:m.lights>.6?18:30;ctx.globalAlpha=m.lights>.6?.9:.75;
-  ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();if(!night){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+ {if(block.moodRamp){// Continuous: the sun slides down behind the skyline as the light goes, then the moon rises (and the reverse toward dawn).
+  const L=m.lights,sx=W*.72-camera*.02,moon=L>.55,k=moon?Math.min(1,(L-.55)/.45):Math.min(1,Math.max(0,(L-.15)/.4)),sy=moon?330+(150-330)*k:170+(330-170)*k,r=moon?18:30+20*k;
+   ctx.globalAlpha=moon?.9:.75;ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();
+   if(!moon){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}
+  else{const sx=W*.72-camera*.02,sy=m.lights>.6?150:m.lights>.35?250:170,r=m.lights>.35&&m.lights<.6?46:m.lights>.6?18:30;ctx.globalAlpha=m.lights>.6?.9:.75;
+  ctx.fillStyle=m.sun;ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.fill();if(!night){ctx.globalAlpha=.18;ctx.beginPath();ctx.arc(sx,sy,r*1.8,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=1;}}
  if(th.id==='sfo')sfBackdrop(W,m);else{farSkyline(th.style,W,m);
+ if(nycDist())nycMidLayers(W,m);else{
  // Two parallax layers of city in the mood's colours; windows light up as the light goes.
  for(let i=-1,n=W/79+1;i<n;i++){const x=i*79-(camera*.13)%79,h=50+((i+22)*47%115);rect(x,315-h,50,h,m.far);rect(x+18,305-h,10,10,m.far);
-  if(night)for(let yy=322-h;yy<310;yy+=12)for(let xx=6;xx<44;xx+=11)if(((i*31+yy*7+xx)>>1)%4===0)rect(x+xx,yy,3,4,m.win+'99');}
+  if(nightA>0){ctx.globalAlpha=nightA;for(let yy=322-h;yy<310;yy+=12)for(let xx=6;xx<44;xx+=11)if(((i*31+yy*7+xx)>>1)%4===0)rect(x+xx,yy,3,4,m.win+'99');ctx.globalAlpha=1;}}
  for(let i=-1,n=W/102+1;i<n;i++){const x=i*102-(camera*.26)%102,h=80+((i+17)*37%110);rect(x,370-h,65,h,m.mid);rect(x+4,374-h,56,4,m.far);
-  for(let yy=390-h;yy<360;yy+=15)for(let xx=8;xx<59;xx+=15){const on=((i*13+yy*3+xx)>>2)%5<m.lights*4;rect(x+xx,yy,5,7,on?m.win:night?'#1d2536':m.far);}}
- }
+  for(let yy=390-h;yy<360;yy+=15)for(let xx=8;xx<59;xx+=15){const on=((i*13+yy*3+xx)>>2)%5<m.lights*4;rect(x+xx,yy,5,7,on?m.win:nightA>0?(block.moodRamp&&hexOk(m.far)?mixHex(m.far,'#1d2536',nightA):'#1d2536'):m.far);}}
+ }}
  if(m.smog){ctx.globalAlpha=.28;rect(0,250,W,C.ground-250,'#e8b778');ctx.globalAlpha=1;}
  // Dense near-layer towers crowd the street and close in the skyline. Open layouts skip them so plazas read as open ground.
  if(!openLayout()&&th.id==='sfo')sfNearRow(W,m);
+ else if(nycDist())nycBackRow(W,m,nycDist()!);
  else if(!openLayout())for(let i=-1,n=W/88+1;i<n;i++){const x=i*88-(camera*.5)%88,h=170+((i+31)*53%150);rect(x,C.ground-4-h,78,h,m.near);rect(x+78,C.ground-4-h,10,h,m.near);rect(x-2,C.ground-4-h,82,5,m.mid);for(let yy=C.ground-h+4;yy<C.ground-20;yy+=17)for(let xx=7;xx<72;xx+=16)rect(x+xx,yy,7,9,(i+yy)%5<1+m.lights*2?m.win:'#2a3540');}
  if(!hasTerrain()){rect(0,C.ground-4,W,10,'#c9c5ab');rect(0,C.ground+6,W,99,'#4c5755');rect(0,C.ground+8,W,3,'#202e31');
  for(let i=-1,n=W/85+1;i<n;i++)rect(i*85-camera%85,487,37,3,'#b4b294');rect(0,513,W,27+C.ground/zoom,'#34413f');}
@@ -2318,7 +2810,7 @@ function drawBuilding(b:typeof buildings[number]){
  const x=b.x-camera+(b.jolt>0?b.joltDir*F.joltPixels*b.jolt/F.joltSeconds:0);if(x>viewW()+40||x+b.w<-40)return;
  // Creaking: shudder and start to lean the way it will fall.
  if(b.creak>0&&b.topple===0){const lean=.05*(1-Math.min(1,b.creak/Y.creakSeconds)),px=(b.tiltDir>0?b.x+b.w:b.x)-camera,sx=Math.sin(time*70)*2;
-  ctx.save();ctx.translate(px,b.base);ctx.rotate(b.tiltDir*lean);ctx.translate(-px,-b.base);drawStructure(b,x+sx,b.h);ctx.restore();return;}
+  ctx.save();ctx.translate(px,b.base);ctx.rotate(b.tiltDir*(lean+leanTilt(b)));ctx.translate(-px,-b.base);drawStructure(b,x+sx,b.h);ctx.restore();return;}
  if(b.hpNow<=0&&b.collapse<=0&&CITIES[cityIndex].material.frame&&b.kind!=='tiny'&&!b.role){// Steel-framed towers leave their skeleton standing.
   const fh=Math.min(b.h,320)*.45,cols=Math.max(2,Math.round(b.w/40));ctx.globalAlpha=.9;for(let k=0;k<=cols;k++){const fx=x+k*(b.w-6)/cols;rect(fx,b.base-fh*(k%2?.8:1),4,fh*(k%2?.8:1),'#5d6a7a');}
   for(let yy=b.base-fh*.8;yy<b.base;yy+=24)rect(x,yy,b.w-2,3,'#6c7480');ctx.globalAlpha=1;}
@@ -2327,8 +2819,9 @@ function drawBuilding(b:typeof buildings[number]){
  // A tower going down into the rail yard leans over as it sinks (no clip: the deck it stood on is gone).
  {const yf=yardFall.get(b);if(yf&&b.hpNow>0){const px=(yf.dir>0?b.x+b.w:b.x)-camera;ctx.save();ctx.translate(px,b.base);ctx.rotate(yf.dir*yf.lean);ctx.translate(-px,-b.base);drawStructure(b,x,b.h);ctx.restore();return;}}
  const squash=b.hpNow<=0?b.collapse/C.collapseDuration:1,sunk=b.sink>0,sw=b.sway>0?Math.sin(b.sway*18)*.012*b.sway:0;
- if(sunk||sw){ctx.save();if(sunk){ctx.beginPath();ctx.rect(x-20,-4000,b.w+40,4000+b.base-b.sink);ctx.clip();}if(sw){ctx.translate(x+b.w/2,b.base);ctx.rotate(sw);ctx.translate(-(x+b.w/2),-b.base);}}
- drawStructure(b,x,b.h*squash);if(sunk||sw)ctx.restore();if(b.hpNow>0){if(tiered(b)){for(const t of drawnParts(b,x,b.h))if(!t.spire)drawCorrosion(b,t.x,t.h,t.w,t.y);}else drawCorrosion(b,x,b.h);}
+ const tilted=!!b.lean&&b.kind!=='tiny';
+ if(sunk||sw||tilted){ctx.save();if(sunk){ctx.beginPath();ctx.rect(x-LEAN.drawMax*b.h/20-20,-4000,b.w+LEAN.drawMax*b.h/10+40,4000+b.base-b.sink);ctx.clip();}if(tilted){const px=b.lean!>0?x+b.w:x;ctx.translate(px,b.base);ctx.rotate(b.lean!*Math.PI/180);ctx.translate(-px,-b.base);}if(sw){ctx.translate(x+b.w/2,b.base);ctx.rotate(sw);ctx.translate(-(x+b.w/2),-b.base);}}
+ drawStructure(b,x,b.h*squash);if(sunk||sw||tilted)ctx.restore();if(b.hpNow>0){if(tiered(b)){for(const t of drawnParts(b,x,b.h))if(!t.spire)drawCorrosion(b,t.x,t.h,t.w,t.y);}else drawCorrosion(b,x,b.h);}
  if(b.collapse>0){rect(x-5,b.base-14,b.w+10,14,'#b1ac91');}
 }
 // Named NYC landmarks (no drawn `shape`) are drawn tier by tier from their hitbox parts.
@@ -2338,9 +2831,9 @@ function drawnParts(b:typeof buildings[number],x:number,h:number){const k=h/b.h;
  return (b.parts??[]).map(p=>{const top=b.base-p.top*k,bot=b.base-(p.base??0)*k;return {x:x+p.x,y:top,w:p.w,h:bot-top,spire:!!p.spire,grounded:!p.base};});}
 function drawStructure(b:typeof buildings[number],x:number,h:number){
  const y=b.base-h;
- if(b.prop){drawProp(b,x,h);return;}
+ if(b.prop){drawProp(b,x,h);if(b.prop==='ahuejote')drawBlaze(b,x,h);return;}
  if(b.role){drawUtility(b,x,h);return;}
- const g=gridOfB.get(b)??-1,lit=g>=0&&power[g],dark=!!block.night&&g>=0&&!power[g],tiers=tiered(b)?drawnParts(b,x,h):null;
+ const g=gridOfB.get(b)??-1,lit=g>=0&&power[g],dark=!!(block.night||block.moodRamp)&&g>=0&&!power[g],tiers=tiered(b)?drawnParts(b,x,h):null;
  // Damage marks go on the facade: the whole front, or a tiered landmark's biggest solid tier.
  let fx=x,fy=y,fw=b.w,fh=h;
  if(tiers){drawTiers(b,tiers);const f=tiers.filter(t=>!t.spire).reduce((a,t)=>t.w*t.h>a.w*a.h?t:a);fx=f.x;fy=f.y;fw=f.w;fh=f.h;}
@@ -2350,6 +2843,7 @@ function drawStructure(b:typeof buildings[number],x:number,h:number){
  // Landmarks: stepped crown and blinking spire (seen when climbing), gold pilasters, and a street-level name banner.
  if(b.landmark&&!tiers&&(!b.shape||b.shape==='tower')){const cx=x+(b.w-7)/2;for(let px=x+8;px<x+b.w-14;px+=34)rect(px,y+7,3,h-7,'#e4cf8a');rect(x+12,y-14,b.w-31,14,b.color);rect(x+9,y-17,b.w-25,4,'#e4cf8a');rect(x+36,y-34,b.w-79,20,b.color);rect(x+33,y-37,b.w-73,4,'#e4cf8a');
   rect(cx-3,y-80,6,44,'#d9c894');rect(cx-1,y-94,2,14,'#f2e6b8');if(Math.sin(time*4)>0)rect(cx-2,y-97,4,4,'#f58f8f');}
+ if(b.landmark&&b.label==='BIBLIOTECA CENTRAL'&&!tiers&&h>110)drawMosaic(b,x,y,h);
  if(b.landmark&&!tiers&&h>70){const cx=x+(b.w-7)/2;rect(x+6,y+h-58,b.w-19,21,'#3a3524');rect(x+6,y+h-58,b.w-19,2,'#e4cf8a');text(b.label,cx,y+h-43,11,'#f1dc96','center');}
  // Caches look ordinary but one window flashes crystal pink now and then; damage exposes the vein.
  if(b.cache&&b.hpNow>0){if((time*1.3+b.x*.01)%3<.3)rect(x+Math.round(b.w*.45),y+Math.round(h*.45),10,13,'#f6a8d6');if(b.hpNow/b.hp<.68)poly([[x+b.w*.3,y+h*.3],[x+b.w*.45,y+h*.5],[x+b.w*.35,y+h*.7],[x+b.w*.55,y+h*.55],[x+b.w*.42,y+h*.32]],'#f39bd0');}
@@ -2359,7 +2853,7 @@ function drawStructure(b:typeof buildings[number],x:number,h:number){
  for(const o of b.holes as (typeof b.holes[number]&{shape?:number[]})[]){if(o.y>b.h)continue;const cx=x+o.x,cy=b.base-o.y*h/b.h;
   if(!o.shape){o.shape=[];for(let k=0;k<8;k++){const a=k/8*Math.PI*2,j=.62+.38*Math.abs(Math.sin(o.seed*12.9898+k*78.233));o.shape.push(Math.cos(a)*o.r*j,Math.sin(a)*o.r*j);}}
   const q=o.shape,ring=(ox:number,oy:number,kx:number,ky:number,color:string)=>{ctx.fillStyle=color;ctx.beginPath();for(let k=0;k<16;k+=2){const px=cx+ox+q[k]*kx,py=cy+oy+q[k+1]*ky;if(k)ctx.lineTo(px,py);else ctx.moveTo(px,py);}ctx.closePath();ctx.fill();};
-  ring(1,-1,1,.85,'#cfc6a8');const lit=moodNow().lights>.4||o.seed%3===0;ring(0,0,1,.85,lit?'#7a5a32':'#3a3530');ring(0,.25*o.r,.8,.35,lit?'#d9a84e':'#4a4036');rect(cx-o.r*.75,cy+o.r*.12,o.r*1.5,2,'#151515');ring(0,-.2*o.r,.35,.25,'#121c20');}
+  ring(1,-1,1,.85,'#cfc6a8');const lit=block.moodRamp?o.seed%3===0||(o.seed*.618034)%1<thr(moodNow().lights,.45,.4):moodNow().lights>.4||o.seed%3===0;ring(0,0,1,.85,lit?'#7a5a32':'#3a3530');ring(0,.25*o.r,.8,.35,lit?'#d9a84e':'#4a4036');rect(cx-o.r*.75,cy+o.r*.12,o.r*1.5,2,'#151515');ring(0,-.2*o.r,.35,.25,'#121c20');}
  // Floors worn past half show a crack across that storey (two at a quarter).
  if(b.floors?.length){const fh=h/b.floors.length;b.floors.forEach((v,i)=>{if(v>b.floorMax*.5)return;const yy=b.base-(i+1)*fh+fh*.15,deep=v<b.floorMax*.25;
   // On a tiered landmark the crack only runs across the tiers at that height.
@@ -2404,19 +2898,20 @@ function boardLit(b:typeof buildings[number]){return powered(b.x+b.w/2);}
 function drawBoard(b:typeof buildings[number],x:number,y:number,h:number,lit:boolean){const bw=b.w-7,bh=Math.min(h*.3,130),by=y+Math.max(20,h*.14),ad=BOARD_ADS[Math.abs(Math.round(b.x/7))%BOARD_ADS.length],ph=Math.floor(time*.8+b.x*.003)%2===0;
  if(bw<50||h<90)return;rect(x+5,by-4,bw-10,bh+8,'#16181d');
  if(!lit){rect(x+8,by,bw-16,bh,'#090a0d');poly([[x+10,by+2],[x+bw*.5,by+2],[x+10,by+bh*.6]],'#ffffff0d');return;}
- ctx.globalAlpha=.2;rect(x-5,by-9,bw+10,bh+18,ad[0]);ctx.globalAlpha=1;
+ ctx.globalAlpha=block.moodRamp?.2*Math.min(1,moodNow().lights):.2;rect(x-5,by-9,bw+10,bh+18,ad[0]);ctx.globalAlpha=1;
  rect(x+8,by,bw-16,bh,ph?ad[0]:ad[1]);rect(x+8,by+bh*.62,bw-16,bh*.38,ph?ad[1]:ad[0]);
  text(ad[2],x+bw/2,by+bh*.5,Math.max(8,Math.min(15,Math.floor((bw-22)/ad[2].length*1.7))),ph?ad[1]:ad[0],'center');
  for(let k=0;k<5;k++)rect(x+10+((time*60+k*37)%(bw-24)),by+bh*.7+k%2*5,10,3,ph?ad[0]:ad[1]);}
 function facade(b:typeof buildings[number],x:number,y:number,h:number,gridLit:boolean,dark=false){const th=CITIES[cityIndex],m=moodNow(),bw=b.w-7,base=b.base,st=th.style;
- const seed=(n:number)=>((n*2654435761+b.x*97)>>>0)%1000/1000,win=(xx:number,yy:number,off:string)=>(seed(xx*7+yy*13)<(dark?NYC2.darkWindows:m.lights*.55+(gridLit?.2:0)))?m.win:off;
+ const seed=(n:number)=>((n*2654435761+b.x*97)>>>0)%1000/1000,win=(xx:number,yy:number,off:string)=>(seed(xx*7+yy*13)<(dark?(block.moodRamp?m.lights*.55+(NYC2.darkWindows-m.lights*.55)*Math.min(1,m.lights):NYC2.darkWindows):m.lights*.55+(gridLit?.2:0)))?m.win:off;
  rect(x+5,y+8,b.w,h-8,'#222b31');rect(x,y,bw,h,b.color);
  if(st==='nyc'){for(let yy=y+10;yy<base;yy+=6){ctx.globalAlpha=.12;rect(x,yy,bw,1,'#000000');ctx.globalAlpha=1;}
   rect(x-3,y,b.w+4,7,'#cbbfa4');rect(x-2,y+7,b.w+2,3,'#5d4a40');
   for(let yy=22;yy<h-30;yy+=22)for(let xx=10;xx<bw-10;xx+=19){rect(x+xx,y+yy,10,13,win(xx,yy,'#2c3a42'));rect(x+xx-1,y+yy-2,12,2,'#d8cdb4');}
   if(bw>70&&h>120){const fx=x+bw*.52,fw=bw*.42;ctx.strokeStyle='#262626';ctx.lineWidth=1;for(let yy=y+40;yy<base-40;yy+=44){rect(fx,yy+14,fw,2,'#262626');rect(fx,yy+8,fw,1,'#262626');
     ctx.beginPath();ctx.moveTo(fx+fw*.15,yy+16);ctx.lineTo(fx+fw*.85,yy+58);ctx.stroke();}}
-  rect(x+14,base-26,16,26,'#2b2420');rect(x+12,base-29,20,3,'#d8cdb4');}
+  rect(x+14,base-26,16,26,'#2b2420');rect(x+12,base-29,20,3,'#d8cdb4');
+  if(nycDist()&&!b.landmark)nycFacade(b,x,y,h,bw,win,seed);}
  else if(st==='mex'){rect(x-2,y-6,bw+4,8,'#f2ead8');if(seed(1)<.6)rect(x+bw*.62,y-18,14,12,'#1e1e1e');
   for(let yy=26;yy<h-44;yy+=24){rect(x,y+yy-4,bw,2,'#ffffff33');for(let xx=10;xx<bw-12;xx+=20){rect(x+xx,y+yy,10,14,win(xx,yy,'#3b2f2a'));if((yy/24|0)%2===0){rect(x+xx-3,y+yy+14,16,2,'#2b2b2b');rect(x+xx-3,y+yy+10,1,4,'#2b2b2b');rect(x+xx+12,y+yy+10,1,4,'#2b2b2b');}}}
   for(let ax=x+4;ax<x+bw-16;ax+=22){rect(ax,base-26,16,26,'#3a2a22');ctx.fillStyle='#3a2a22';ctx.beginPath();ctx.arc(ax+8,base-26,8,Math.PI,0);ctx.fill();}}
@@ -2430,11 +2925,40 @@ function facade(b:typeof buildings[number],x:number,y:number,h:number,gridLit:bo
   for(let yy=40;yy<h-40;yy+=52){rect(x-9,y+yy,10,1,'#6a6a6a');for(let k=0;k<3;k++)rect(x-8+k*3,y+yy+1,2,5,['#d94f4f','#4fa3d9','#e8d26a'][k]);}
   if(h>160){const sx=x+bw,sy=y+h*.3,sl=Math.min(140,h*.35),on=Math.sin(time*7+b.x)>-.85;rect(sx,sy,13,sl,'#1b1b22');rect(sx+1,sy+1,11,sl-2,on?(seed(3)<.5?'#ff4fa3':'#4fd1ff'):'#4a2a40');for(let k=sy+6;k<sy+sl-8;k+=14)rect(sx+3,k,7,8,'#1b1b22');}
   rect(x+12,base-22,16,22,'#20262e');}
+ else if(st==='syd'){// Sydney: pale-glass CBD towers (the tall presets) over sandstone low-rise with iron-lace verandahs.
+  if(b.h>=Math.round(400*C.cityScale)){rect(x,y,bw,h,seed(2)<.5?'#b8cdd6':'#c9d8dc');for(let yy=y+16;yy<base-30;yy+=16){rect(x,yy,bw,3,'#93abb7');for(let xx=4;xx<bw-4;xx+=12)if(seed(xx*5+yy)<m.lights*.5)rect(x+xx,yy+5,8,7,m.win);}
+   for(let xx=x+12;xx<x+bw-2;xx+=12)rect(xx,y,1,h,'#8fa8b4');ctx.globalAlpha=.14;poly([[x+bw*.15,y],[x+bw*.4,y],[x+bw*.05,base],[x-bw*.2,base]],'#ffffff');ctx.globalAlpha=1;
+   rect(x+bw*.22,y-12,bw*.56,12,'#9aa8ae');rect(x+bw*.26,y-9,bw*.48,2,'#7d8a90');rect(x+8,base-28,bw-16,28,'#2a3a44');rect(x+6,base-31,bw-12,3,'#93abb7');}
+  else{const stone=['#d9b98a','#cfa877','#e2c99c'][Math.floor(seed(4)*3)];rect(x,y,bw,h,stone);for(let yy=y+18;yy<base;yy+=9){ctx.globalAlpha=.1;rect(x,yy,bw,1,'#6a4e2a');ctx.globalAlpha=1;}
+   rect(x-3,y,bw+6,8,'#ead8b2');rect(x-1,y+8,bw+2,2,'#9c7d52');
+   for(let yy=26;yy<h-52;yy+=26)for(let xx=10;xx<bw-12;xx+=19){rect(x+xx,y+yy,9,15,win(xx,yy,'#3a4a52'));rect(x+xx-2,y+yy+15,13,2,'#ead8b2');}
+   // A pub verandah: a corrugated roof on posts, iron lace along its edge.
+   rect(x-5,base-36,bw+10,4,'#6d7d82');for(let k=x-3;k<x+bw+4;k+=4)rect(k,base-32,2,3,'#2f3a3e');for(let k=x-3;k<x+bw+3;k+=Math.max(24,bw/4))rect(k,base-32,2,32,'#2f3a3e');
+   rect(x+14,base-26,16,26,'#3a2a22');}}
  else{ctx.globalAlpha=.09;for(let xx=x+12;xx<x+bw;xx+=12)rect(xx,y,1,h,'#ffffff');for(let yy=y+14;yy<base;yy+=14)rect(x,yy,bw,1,'#ffffff');ctx.globalAlpha=.08;poly([[x+bw*.2,y],[x+bw*.45,y],[x+bw*.1,base],[x-bw*.15,base]],'#ffffff');ctx.globalAlpha=1;
   for(let yy=y+14;yy<base-30;yy+=14)if(seed(yy)<m.lights*.6)rect(x+3,yy+3,bw-6,6,m.win+'99');
   if(h>140){const sx=x-13,sy=y+h*.22,sl=Math.min(150,h*.4),c=['#ff4fa3','#ffd84f','#4fd1ff'][Math.floor(seed(5)*3)];rect(sx,sy,12,sl,'#14141c');rect(sx+1,sy+1,10,sl-2,Math.sin(time*9+b.x*.3)>-.9?c:'#3a2a3a');for(let k=sy+5;k<sy+sl-8;k+=12)rect(sx+3,k,6,7,'#14141c');}
   if(seed(9)<.5&&bw>60){rect(x+6,y-26,bw-12,22,'#14141c');rect(x+8,y-24,bw-16,18,Math.sin(time*2+b.x)>0?'#e04a7a':'#4a7ae0');rect(x+12,y-18,bw-24,2,'#ffffff');rect(x+12,y-12,(bw-24)*.6,2,'#ffffff');}
   rect(x+12,base-24,20,24,'#9fe6ff55');}}
+// NYC fix card 5: a busier facade on the New York route levels' ordinary buildings: window AC units and awnings, hanging store signs and blade signs, a second fire escape,
+// and a rooftop water tank (unless the building already carries a roof fixture). Drawing only: nothing here is a hitbox.
+const NYC_SHOPS=['DELI','PIZZA','BAR','CAFE','NAILS','LIQUOR','BAGELS','LAUNDRY'],NYC_AWN=['#b9473b','#2f6a54','#2f5a8a','#d4a62f'];
+function nycFacade(b:typeof buildings[number],x:number,y:number,h:number,bw:number,win:(xx:number,yy:number,off:string)=>string,seed:(n:number)=>number){
+ const base=b.base,m=moodNow();
+ // Window AC units, and the odd striped window awning.
+ for(let yy=22;yy<h-30;yy+=44)for(let xx=10;xx<bw-10;xx+=38){const s=seed(xx*3+yy*11);
+  if(s<.4){rect(x+xx+1,y+yy+13,8,5,'#9aa0a3');rect(x+xx+1,y+yy+17,8,1,'#5a6064');rect(x+xx+2,y+yy+14,6,1,'#c4c9cc');}
+  else if(s<.55){const c=NYC_AWN[Math.floor(seed(yy)*4)];for(let k=0;k<5;k++)rect(x+xx-1+k*2.4,y+yy-3,2.4,5,k%2?c:'#e8dfc8');}}
+ // A second fire escape on the left of a wide building, platforms and a ladder.
+ if(bw>90&&h>150){const fx=x+bw*.06,fw=bw*.3;ctx.strokeStyle='#262626';ctx.lineWidth=1;ctx.beginPath();for(let yy=y+60,k=0;yy<base-60;yy+=44,k++){rect(fx,yy+14,fw,2,'#262626');ctx.moveTo(fx+(k%2?fw*.85:fw*.15),yy+16);ctx.lineTo(fx+(k%2?fw*.15:fw*.85),yy+58);}ctx.stroke();}
+ // Ground floor: a striped awning over a shop sign, and a blade sign on the corner.
+ if(bw>56){const c=NYC_AWN[Math.floor(seed(3)*4)],ax=x+bw*.38,aw=bw*.5,sh=NYC_SHOPS[Math.floor(seed(4)*NYC_SHOPS.length)];
+  for(let k=0;k*6<aw;k++)rect(ax+k*6,base-34,6,9,k%2?c:'#e8dfc8');rect(ax,base-25,aw,2,'#00000044');
+  rect(ax,base-45,aw,9,'#1b1f22');text(sh,ax+aw/2,base-37.5,7,m.lights>.35?'#ffd98a':'#cbbf9a','center');
+  rect(x-6,base-84,6,30,'#1b1f22');rect(x-5,base-83,4,28,seed(5)<.5?'#d94f4f':'#4fa3d9');}
+ // A rooftop water tank on some of the taller buildings (a building with a roof fixture keeps its own).
+ if(!b.roof&&h>150&&seed(77)<.45)nycWaterTower(x+bw*(.12+.45*seed(78)),y,28,'#4a3d32');
+}
 // Landmark silhouettes: the box is still the hitbox; the drawing is the monument.
 function drawLandmarkShape(b:typeof buildings[number],x:number,y:number,h:number){const st=CITIES[cityIndex].style,bw=b.w-7,base=b.base,cx=x+bw/2,sh=b.shape;
  if(sh==='lattice'){const col=st==='tyo'?'#d9452f':'#6e5a48';ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x,base);ctx.quadraticCurveTo(x+bw*.3,y+h*.45,cx-3,y+18);ctx.moveTo(x+bw,base);ctx.quadraticCurveTo(x+bw*.7,y+h*.45,cx+3,y+18);ctx.stroke();
@@ -2455,13 +2979,32 @@ function drawLandmarkShape(b:typeof buildings[number],x:number,y:number,h:number
   const ax0=x+bw*.1,ay0=base-ry*1.3,ax1=x+bw*.78,ay1=base;ctx.strokeStyle='#b8433a';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(ax0,ay0);ctx.lineTo(ax1,ay1);ctx.stroke();ctx.lineWidth=1;
   const dx=(ax1-ax0),dy=(ay1-ay0),L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;for(let k=0;k<3;k++){const px=ax0+ux*(6+k*9),py=ay0+uy*(6+k*9);poly([[px,py],[px-uy*16-ux*10,py+ux*16-uy*10],[px-ux*8,py-uy*8]],'#f2efe6');poly([[px,py],[px+uy*16-ux*10,py-ux*16-uy*10],[px-ux*8,py-uy*8]],'#d9d4c6');}
   return;}
- if(sh==='arch'){const col=st==='mex'?'#7a6f60':'#d8ccae';rect(x,y+(st==='mex'?h*.3:h*.25),bw,h*(st==='mex'?.7:.75),col);rect(x-3,y+(st==='mex'?h*.3:h*.25),bw+6,10,'#bfb293');
+ if(sh==='arch'){const col=st==='mex'?'#7a6f60':'#d8ccae';if(st==='syd'){// Luna Park: the arch drawn as the grinning face over the gate.
+   const ah=h*.42,aw=bw*.42;rect(x,y+h*.25,bw,h*.75,'#e9d8b0');rect(cx-aw/2,base-ah,aw,ah,'#1e2428');ctx.fillStyle='#1e2428';ctx.beginPath();ctx.arc(cx,base-ah,aw/2,Math.PI,0);ctx.fill();
+   ctx.strokeStyle='#c0392b';ctx.lineWidth=6;ctx.beginPath();ctx.arc(cx,base-ah,aw/2+5,Math.PI,0);ctx.stroke();ctx.lineWidth=1;for(let k=-2;k<=2;k++)rect(cx+k*aw*.18-3,base-ah-aw/2-2,6,8,'#f4f1e6');
+   for(const d of [-1,1]){ctx.fillStyle='#f4f1e6';ctx.beginPath();ctx.ellipse(cx+d*bw*.2,y+h*.36,bw*.1,h*.06,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#2d5f8a';ctx.beginPath();ctx.arc(cx+d*bw*.2,y+h*.37,bw*.04,0,Math.PI*2);ctx.fill();}
+   rect(x-3,y+h*.25,bw+6,8,'#d7b25a');return;}rect(x,y+(st==='mex'?h*.3:h*.25),bw,h*(st==='mex'?.7:.75),col);rect(x-3,y+(st==='mex'?h*.3:h*.25),bw+6,10,'#bfb293');
   const ah=h*.42,aw=bw*.42;rect(cx-aw/2,base-ah,aw,ah,'#1e2428');ctx.fillStyle='#1e2428';ctx.beginPath();ctx.arc(cx,base-ah,aw/2,Math.PI,0);ctx.fill();
   if(st==='mex'){ctx.fillStyle='#4f6a5c';ctx.beginPath();ctx.ellipse(cx,y+h*.3,bw*.3,h*.22,0,Math.PI,0);ctx.fill();rect(cx-3,y+h*.02,6,14,'#4f6a5c');}else{rect(x,y+h*.25,bw,h*.12,'#cfc3a5');for(let k=x+6;k<x+bw-6;k+=14)rect(k,y+h*.28,8,10,'#bfb293');}return;}
- if(sh==='needle'){const col=b.color;if(st==='tyo'){poly([[x+bw*.2,base],[cx-6,y+30],[cx+6,y+30],[x+bw*.8,base]],'#cfd6dc');rect(cx-18,y+h*.3,36,12,'#cfd6dc');rect(cx-14,y+h*.15,28,8,'#cfd6dc');rect(cx-2,y-40,4,72,'#cfd6dc');if(Math.sin(time*3)>0)rect(cx-3,y-44,6,5,'#ff5a5a');
+ if(sh==='angel'){const col=b.color;// El Ángel de la Independencia: a stepped plinth, a tall cream column, the gilded winged Victory on top.
+   const gold='#d9b04a',stone='#d8cfb4',shade='#b3a98c';rect(cx-bw*.42,base-h*.12,bw*.84,h*.12,shade);rect(cx-bw*.3,base-h*.17,bw*.6,h*.05,stone);rect(cx-bw*.2,base-h*.3,bw*.4,h*.13,stone);rect(cx-bw*.13,base-h*.84,bw*.26,h*.54,stone);rect(cx+bw*.03,base-h*.84,bw*.1,h*.54,shade);
+   for(let k=0;k<7;k++)rect(cx-bw*.13,base-h*.32-k*h*.07,bw*.26,2,shade);rect(cx-bw*.2,base-h*.86,bw*.4,h*.03,stone);
+   poly([[cx-bw*.3,base-h*.92],[cx-bw*.08,base-h*.89],[cx-bw*.06,base-h*.99],[cx-bw*.2,base-h*.95]],gold);poly([[cx+bw*.3,base-h*.92],[cx+bw*.08,base-h*.89],[cx+bw*.06,base-h*.99],[cx+bw*.2,base-h*.95]],gold);rect(cx-bw*.05,base-h*.99,bw*.1,h*.1,gold);ctx.fillStyle=gold;ctx.beginPath();ctx.arc(cx,base-h*1.005,bw*.05,0,Math.PI*2);ctx.fill();return;}
+ if(sh==='needle'){const col=b.color;
+  if(st==='syd'){// Sydney Tower: podium, slim shaft held by cables, the golden turret, the mast.
+   const g='#d7b25a',sf='#c9ced2';rect(cx-bw*.14,base-h*.2,bw*.28,h*.2,'#b9c2c8');rect(cx-7,base-h*.74,14,h*.54,sf);ctx.strokeStyle='#8c969e';ctx.lineWidth=1;ctx.beginPath();
+   for(const d of [-1,1]){ctx.moveTo(cx+d*bw*.14,base-h*.2);ctx.lineTo(cx+d*6,base-h*.74);}ctx.stroke();
+   rect(cx-bw*.22,base-h*.86,bw*.44,h*.12,g);for(let k=1;k<4;k++)rect(cx-bw*.22,base-h*.86+k*h*.03,bw*.44,1,'#a8873a');rect(cx-4,base-h,8,h*.14,sf);rect(cx-1,y-46,2,50,'#9aa3a8');if(Math.sin(time*3)>0)rect(cx-2,y-48,4,4,'#ff5a5a');return;}
+  if(st==='tyo'){poly([[x+bw*.2,base],[cx-6,y+30],[cx+6,y+30],[x+bw*.8,base]],'#cfd6dc');rect(cx-18,y+h*.3,36,12,'#cfd6dc');rect(cx-14,y+h*.15,28,8,'#cfd6dc');rect(cx-2,y-40,4,72,'#cfd6dc');if(Math.sin(time*3)>0)rect(cx-3,y-44,6,5,'#ff5a5a');
    ctx.strokeStyle='#8c969e';ctx.beginPath();for(let k=0;k<12;k++){const yy=base-k*(h/12),half=(bw*.3)*(1-k/12)+6;ctx.moveTo(cx-half,yy);ctx.lineTo(cx+half,yy-h/12);}ctx.stroke();return;}
   poly([[x,base],[x,y+h*.3],[cx,y],[x+bw,y+h*.15],[x+bw,base]],col);ctx.strokeStyle='#dfe7ee';ctx.lineWidth=2;ctx.beginPath();for(let k=0;k<5;k++){const yy=base-k*(h*.85/5);ctx.moveTo(x,yy);ctx.lineTo(x+bw,yy-h*.17);ctx.moveTo(x+bw,yy);ctx.lineTo(x,yy-h*.17);}ctx.stroke();ctx.lineWidth=1;
   for(const k of [-1,1])rect(cx+k*bw*.3-1,y-28,2,32,'#dfe7ee');return;}
+ if(sh==='sails'){// The Opera House: a sandstone podium and three white shells (src/hitbox.ts 'sails' columns), ribbed tiles.
+  const pod=h*.22;rect(x,base-pod,bw,pod,'#c9a77a');for(let k=x+6;k<x+bw-6;k+=10)rect(k,base-pod+5,2,pod-7,'#b08f63');rect(x-3,base-pod-3,bw+6,4,'#d8bb8e');
+  for(const [sx,sw,sk] of [[.06,.34,1],[.4,.3,.8],[.7,.26,.58]]){const a=x+bw*sx,w2=bw*sw,top=base-h*sk,foot=base-pod;
+   ctx.fillStyle='#f4f1e6';ctx.beginPath();ctx.moveTo(a,foot);ctx.quadraticCurveTo(a+w2*.2,top+(foot-top)*.1,a+w2*.92,top);ctx.quadraticCurveTo(a+w2*.95,top+(foot-top)*.5,a+w2,foot);ctx.closePath();ctx.fill();
+   ctx.strokeStyle='#d6cfbd';ctx.lineWidth=1;ctx.beginPath();for(let k=1;k<4;k++){ctx.moveTo(a+w2*.92,top);ctx.lineTo(a+w2*k/4,foot);}ctx.stroke();}
+  return;}
  if(sh==='pagoda'){const tiers=5;for(let t=0;t<tiers;t++){const tw=bw*(1-t*.13),th2=h*.8/tiers,tx=cx-tw/2,ty=base-(t+1)*th2;rect(tx+tw*.12,ty+6,tw*.76,th2-6,'#b8432f');poly([[tx-10,ty+10],[tx+6,ty],[tx+tw-6,ty],[tx+tw+10,ty+10]],'#3a2d2a');}
   rect(cx-2,base-h,4,h*.2,'#c9a441');for(let k=0;k<5;k++)rect(cx-5,base-h+6+k*8,10,3,'#c9a441');return;}
  facade(b,x,y,h,false);}
@@ -2473,18 +3016,45 @@ function drawProp(b:typeof buildings[number],x:number,h:number){const y=b.base-h
   case 'trash':{rect(x+1,y+3,w-2,h-3,'#4a5a52');rect(x,y,w,4,'#5f7268');for(let k=x+3;k<x+w-2;k+=3)rect(k,y+6,1,h-8,'#3a4842');if(CITIES[cityIndex].style==='nyc')rect(x+2,y-3,4,3,'#d9d4c6');break;}
   case 'taco':{rect(x,y+h*.4,w,h*.6,'#c25b3c');rect(x+2,y+h*.45,w-4,4,'#e7c07a');poly([[x-3,y+h*.42],[x+w*.5,y],[x+w+3,y+h*.42]],'#2f8f6a');for(let k=0;k<5;k++)rect(x+k*w/5,y+h*.38,w/10,4,'#f2ead8');text('TACOS',x+w/2,y+h*.75,7,'#fff2c9','center');break;}
   case 'morris':{rect(x,y+6,w,h-6,'#2f5a45');rect(x-2,y+h-6,w+4,6,'#2a4a3a');ctx.fillStyle='#2f5a45';ctx.beginPath();ctx.ellipse(x+w/2,y+6,w*.6,6,0,Math.PI,0);ctx.fill();rect(x+2,y+12,w-4,h*.55,'#e8dcc0');rect(x+3,y+16,w-6,3,'#b9473b');rect(x+3,y+24,w-6,2,'#3a4a6b');break;}
+  case 'shelter':{// Sydney: a bus shelter, glass panels under a flat roof, a bench and a lit ad panel.
+   rect(x,y,w,4,'#5d6a70');rect(x+1,y+4,2,h-4,'#5d6a70');rect(x+w-3,y+4,2,h-4,'#5d6a70');ctx.globalAlpha=.35;rect(x+3,y+5,w-6,h-9,'#cfe7ef');ctx.globalAlpha=1;
+   rect(x+w-12,y+6,8,h*.6,'#e8d26a');rect(x+5,base-h*.35,w-20,3,'#7a5a3a');rect(x+7,base-h*.35,2,h*.35,'#5d6a70');break;}
+  case 'bin':{// Sydney: a council wheelie bin, red lid.
+   rect(x+1,y+3,w-2,h-3,'#2f5a45');rect(x,y,w,4,'#c0392b');rect(x+w-3,y+1,3,3,'#2a2a2a');ctx.fillStyle='#1e1e1e';ctx.beginPath();ctx.arc(x+3,base-2,2,0,Math.PI*2);ctx.fill();break;}
   case 'cafe':{rect(x+w*.47,y+4,2,h-4,'#2b2b2b');rect(x,y+3,w,3,'#2b2b2b');rect(x+w*.3,base-2,w*.4,2,'#2b2b2b');poly([[x-4,y+2],[x+w/2,y-10],[x+w+4,y+2]],'#b9473b');rect(x-6,base-10,4,10,'#3b3b3b');rect(x+w+2,base-10,4,10,'#3b3b3b');break;}
   case 'workbench':{// A lab bench: a scarred plank on trestles with a rack of tools and a pink crystal shard under test.
    rect(x,y+h*.35,w,4,'#8a7a58');rect(x+2,y+h*.35+4,3,h*.65-4,'#4a4236');rect(x+w-5,y+h*.35+4,3,h*.65-4,'#4a4236');rect(x+3,y+h*.1,5,h*.25,'#9aa3a8');rect(x+w*.5,y+h*.18,3,h*.17,'#c9a91f');
    poly([[x+w*.68,y+h*.35],[x+w*.74,y+h*.02],[x+w*.84,y+h*.35]],Math.sin(time*3+x)>0?'#f291ca':'#d46fae');break;}
   case 'stall':{rect(x,y+h*.45,w,h*.55,'#7a5a3a');for(let k=0;k<4;k++)rect(x+3+k*(w-6)/4,y+h*.47,(w-6)/4-2,6,['#e8d26a','#d94f4f','#6fb36a','#e89a3a'][k]);poly([[x-4,y+h*.42],[x+2,y],[x+w-2,y],[x+w+4,y+h*.42]],'#c2312b');for(let k=0;k<4;k++)rect(x+4+k*w/4,y+2,w/8,h*.38,'#f2ead8');break;}
+  // NYC fix card 5 street clutter: a subway entrance, a parked cab, a vendor's cart, a sidewalk shed.
+  case 'kiosk':{rect(x,y+h*.34,w,h*.66,'#2d5a3f');rect(x+3,y+h*.46,w-6,h*.54,'#0d1114');for(let k=0;k<4;k++)rect(x+4,y+h*.56+k*h*.1,w-8,1,'#3a4a44');
+   rect(x+w*.1,y+h*.05,2,h*.35,'#2d5a3f');rect(x+w*.9-2,y+h*.05,2,h*.35,'#2d5a3f');ctx.fillStyle=Math.sin(time*3+x)>-.7?'#bfe8c8':'#7fa88a';ctx.beginPath();ctx.arc(x+w*.1+1,y+h*.05,3.5,0,Math.PI*2);ctx.arc(x+w*.9-1,y+h*.05,3.5,0,Math.PI*2);ctx.fill();
+   rect(x+w*.3,y+h*.2,w*.4,h*.14,'#e8f2e8');rect(x+w*.34,y+h*.25,w*.32,2,'#2d5a3f');break;}
+  case 'cab':{rect(x,y+h*.42,w,h*.42,'#f2c230');poly([[x+w*.2,y+h*.42],[x+w*.3,y+h*.08],[x+w*.72,y+h*.08],[x+w*.84,y+h*.42]],'#f2c230');
+   poly([[x+w*.26,y+h*.4],[x+w*.33,y+h*.14],[x+w*.48,y+h*.14],[x+w*.48,y+h*.4]],'#2c3a42');poly([[x+w*.52,y+h*.4],[x+w*.52,y+h*.14],[x+w*.68,y+h*.14],[x+w*.78,y+h*.4]],'#2c3a42');
+   rect(x+w*.4,y,w*.2,h*.1,'#fff3c4');rect(x,y+h*.62,w,2,'#1c1c1c');rect(x+w-3,y+h*.5,3,5,moodNow().lights>.4?'#fff2b0':'#d9d2a0');
+   for(const k of [.24,.76]){ctx.fillStyle='#1c1c1c';ctx.beginPath();ctx.arc(x+w*k,base-3,4,0,Math.PI*2);ctx.fill();}break;}
+  case 'cart':{const cs=['#c2312b','#2f6fb0','#e9b44c'],cc=cs[Math.floor(x/7)%3<0?0:Math.floor(x/7)%3];rect(x+w*.46,y+h*.1,2,h*.5,'#555');poly([[x-3,y+h*.18],[x+w*.5,y-2],[x+w+3,y+h*.18]],cc);
+   rect(x+w*.08,y+h*.5,w*.84,h*.34,'#cfd2d4');rect(x+w*.08,y+h*.5,w*.84,3,shade('#cfd2d4',.3));for(let k=0;k<3;k++)rect(x+w*.14+k*w*.26,y+h*.38,w*.18,h*.12,['#e8b04a','#d94f4f','#6fb36a'][(k+Math.floor(x))%3&3?k:0]);
+   for(const k of [.22,.78]){ctx.fillStyle='#2b2b2b';ctx.beginPath();ctx.arc(x+w*k,base-3,3.5,0,Math.PI*2);ctx.fill();}break;}
+  case 'scaffold':{const lit=moodNow().lights>.4;rect(x,y+h*.14,w,h*.14,'#2f5a45');rect(x,y+h*.28,w,2,'#1f3a2d');
+   for(let k=0;k<=5;k++)rect(x+k*(w-3)/5,y+h*.28,3,h*.72,'#4a4f52');rect(x+2,y+h*.46,w-4,3,lit?'#e8c660':'#8a8460');
+   for(let k=0;k<w-6;k+=12)rect(x+3+k,y+h*.3,1,h*.14,'#243f33');rect(x+w*.4,y+h*.02,w*.2,h*.12,'#f0c53a');break;}
   case 'tree':{// A park tree: a trunk and a round, layered crown.
    rect(x+w*.43,y+h*.42,w*.14,h*.58,'#6b4f33');ctx.fillStyle=b.color||'#4f7d4a';for(const [dx,dy,r] of [[.5,.26,.34],[.28,.4,.24],[.72,.4,.24],[.5,.12,.22]]){ctx.beginPath();ctx.arc(x+w*dx,y+h*dy,w*r+4,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#00000018';ctx.beginPath();ctx.arc(x+w*.6,y+h*.34,w*.3,0,Math.PI*2);ctx.fill();break;}
   case 'palm':{rect(x+w*.44,y+h*.28,w*.12,h*.72,'#7a5a3a');for(let k=0;k<5;k++)rect(x+w*.44,y+h*.34+k*h*.12,w*.12,2,'#5a4028');
    for(const [dx,dy] of [[-1,.1],[1,.1],[-.8,-.08],[.8,-.08],[0,-.16]])poly([[x+w*.5,y+h*.26],[x+w*.5+dx*w*.7,y+h*(.2+dy)],[x+w*.5+dx*w*.5,y+h*(.34+dy)]],'#4f7d4a');break;}
+  case 'ahuejote':{// An ahuejote: a tall slim willow-like tree that anchors a chinampa, its crown drooping in long strands. On the doll island old dolls hang from it (atmosphere only).
+   const cx=x+w*.5;rect(cx-w*.07,y+h*.3,w*.14,h*.7,'#5b4a34');ctx.fillStyle=b.color||'#5f8a4f';
+   for(const [dx,dy,rw,rh] of [[0,.2,.5,.2],[-.3,.3,.3,.26],[.3,.3,.3,.26],[0,.42,.34,.22]]){ctx.beginPath();ctx.ellipse(cx+dx*w*1.4,y+h*dy,w*rw*1.1,h*rh,0,0,Math.PI*2);ctx.fill();}
+   for(let k=-3;k<=3;k++)rect(cx+k*w*.26,y+h*.3,1.5,h*.22+((k*k*7)%5)*3,'#4b7a3f');
+   if(block.dolls&&b.x>=block.dolls[0]&&b.x<block.dolls[1]){const D=XOCHI.dolls;for(let k=0;k<D.per;k++){const hx=cx+(k-(D.per-1)/2)*w*.55,hy=y+h*(.34+((k*5+Math.floor(b.x))%4)*.07),sw=Math.sin(time*1.1+b.x*.05+k*1.7)*D.sway,dx=hx+sw*.4;
+     ctx.strokeStyle='#40382c';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(hx,hy-h*.1);ctx.lineTo(dx,hy);ctx.stroke();ctx.fillStyle=D.color;ctx.beginPath();ctx.arc(dx,hy+2,2.6,0,Math.PI*2);ctx.fill();
+     rect(dx-2,hy+4,4,6,'#8b7d68');rect(dx-1,hy+10,1,4,'#6b5d4a');rect(dx+1,hy+10,1,4,'#6b5d4a');rect(dx-1,hy+1,1,1,'#222');rect(dx+1,hy+1,1,1,'#222');}}
+   break;}
   case 'turntable':{ctx.fillStyle='#5d564a';ctx.beginPath();ctx.ellipse(x+w/2,base-3,w/2,5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8a8272';ctx.beginPath();ctx.ellipse(x+w/2,base-4,w/2-5,3.5,0,0,Math.PI*2);ctx.fill();rect(x+w*.1,base-5,w*.8,2,'#3b3730');rect(x+w/2-1,base-7,2,6,'#3b3730');break;}
   case 'vending':{rect(x,y,w,h,'#d9e2ea');rect(x+2,y+3,w-4,h*.5,'#1c2a3a');for(let r=0;r<3;r++)for(let k=0;k<3;k++)rect(x+3+k*(w-6)/3,y+5+r*h*.15,(w-6)/3-1,h*.1,['#d94f4f','#4fa3d9','#e8d26a'][(r+k)%3]);rect(x+2,y+h*.62,w-4,4,'#2b2b2b');
-   if(moodNow().lights>.6){ctx.globalAlpha=.25;rect(x-6,y-4,w+12,h+4,'#bfe8ff');ctx.globalAlpha=1;}break;}}}
+   {const va=thr(moodNow().lights,.7,.6);if(va>0){ctx.globalAlpha=.25*va;rect(x-6,y-4,w+12,h+4,'#bfe8ff');ctx.globalAlpha=1;}}break;}}}
 // Substation: a fenced yard with a gantry and two transformers on insulators. Fuel depot: two banded tanks with a hazard diamond.
 function drawUtility(b:typeof buildings[number],x:number,h:number){const y=b.base-h,w=b.w,hurt=b.hpNow<b.hp*.55,live=b.hpNow>0&&powered(b.x+b.w/2);
  rect(x-2,b.base-7,w+4,7,'#5d6763');
@@ -2544,19 +3114,24 @@ function drawZooAnimal(l:Lion,x:number,dir:number){const sp=l.zoo!.sp,hop=l.stat
   ctx.fillStyle='#5a4030';ctx.beginPath();ctx.ellipse(0,-10,15,10,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(15,-14,7,0,Math.PI*2);ctx.fill();rect(19,-14,5,4,'#8a6a50');for(const lx of [-10,-3,6,12])leg(lx,10,'#4a3426');}
  ctx.restore();}
 function drawSeaLions(){for(const l of lions){if(l.state==='gone')continue;const x=l.x-camera,dir=l.vx<0?-1:1;if(x<-40||x>viewW()+40)continue;
+ if(l.axo)continue;// drawn under the water (drawAxolotls)
  if(l.zoo){drawZooAnimal(l,x,l.state==='flee'?dir:(l.zoo.sp%2?1:-1));continue;}
  ctx.save();ctx.translate(x,l.y);ctx.scale(dir,1);ctx.fillStyle='#6b5a4c';ctx.beginPath();ctx.ellipse(0,0,15,7,-.15,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(13,-6,6,4,-.4,0,Math.PI*2);ctx.fill();
  poly([[-14,2],[-24,6],[-12,6]],'#4f4034');rect(14,-8,2,2,'#111');rect(1,4,8,3,'#5a493c');ctx.restore();}}
 function climbDebug(){const c=finale?.climb;return c?{i:c.i,perches:c.perches.map(p=>({...p,y:perchY(p)})),move:c.move?{kind:c.move.kind,toI:c.move.toI,tele:c.move.tele,t:c.move.t}:null,pending:c.pending?{...c.pending}:null,falling:!!c.fall,emerge:c.emerge,scars:c.scars.length,moves:{...c.moves},press:c.press,skipped:c.skipped,crackX:c.crackX,crackOpen:c.crackOpen,retreat:c.retreat?{phase:c.retreat.phase,t:c.retreat.t,landed:c.retreat.landed}:null,perch:rival?.perch?{...rival.perch}:null,towerParts:c.tower?.parts?.map(p=>({...p}))??[],towerX:c.tower?.x??0,towerBase:c.tower?.base??0}:null;}
-function act3Debug(){return {climbState:climbDebug(),finaleState:finale?{woke:finale.woke,phase:finale.phase,charges:finale.charges,nextBreak:finale.nextBreak,breaks:finale.breaks,started:finale.started,queued:finale.queue.filter(e=>e.t!==Infinity).length}:null,rivalState:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,maxHP:rival.maxHP,dead:rival.dead,alpha:rival.alpha??1,dormant:!!rival.dormant,hidden:!!rival.hidden,attack:rival.attack,windup:rival.windup,charging:!!rival.charge,rocks:rival.rocks?.length??0,face:rival.face,retreating:!!rival.retreating,retreated:!!rival.retreated,stagger:rival.stagger,cooldown:rival.cooldown,flame:rival.flame?{angle:rival.flame.angle,len:rival.flame.len,t:rival.flame.t,street:rival.flame.street}:null,globs:rival.globs?.length??0,pools:rival.pools?.filter(p=>!p.fire).length??0,poolYs:rival.pools?.filter(p=>!p.fire).map(p=>p.y)??[],patches:rival.pools?.filter(p=>p.fire).length??0,dive:!!rival.dive,mark:rival.mark??null,erupted:!!rival.erupted,tlez:!!rival.tlez}:null,upperDeck:upperPlat[0]?{hp:upperPlat[0].b.hpNow,alive:upperPlat[0].p.alive,y:upperPlat[0].p.y,x0:upperPlat[0].p.x0,x1:upperPlat[0].p.x1,index:buildings.indexOf(upperPlat[0].b)}:null,carrierDeck:carrierDeck?{...carrierDeck}:null,jetsLaunched,jetsUp:carrierJetsUp(),projectileList:military.projectiles.filter(p=>!p.dead).map(p=>({weapon:p.weapon,owner:p.owner})),carrierJetList:[...carrierJets].map(u=>({x:u.x,y:u.y,hp:u.hp})),deckOrder:[...deckOrder],towerIndexes:buildings.map((b,i)=>b.deco==='btower'?i:-1).filter(i=>i>=0),platformFloor:(x:number,feet:number)=>platformFloor(x,feet),playerY:player.y,playerFeet:player.y+bodyHeight(),playerGrounded:player.grounded,modeNow:mode,unitList:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,id:u.id})),cracks:cracks.map(c=>({x:c.x,quaked:c.quaked,open:c.open,big:c.big,ult:c.ult})),quakeCount,bigOne:bigOne?{t:bigOne.t,pending:bigOne.queue.filter(e=>e.t!==Infinity).length}:null,pancaked,fireCap:block.fireCap??FI.cap,fireGeysers:geysers.filter(g=>g.fire).length,
+function act3Debug(){return {climbState:climbDebug(),finaleState:finale?{woke:finale.woke,phase:finale.phase,charges:finale.charges,nextBreak:finale.nextBreak,breaks:finale.breaks,started:finale.started,queued:finale.queue.filter(e=>e.t!==Infinity).length}:null,rivalState:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,maxHP:rival.maxHP,dead:rival.dead,alpha:rival.alpha??1,dormant:!!rival.dormant,hidden:!!rival.hidden,attack:rival.attack,windup:rival.windup,charging:!!rival.charge,rocks:rival.rocks?.length??0,face:rival.face,retreating:!!rival.retreating,retreated:!!rival.retreated,stagger:rival.stagger,cooldown:rival.cooldown,flame:rival.flame?{angle:rival.flame.angle,len:rival.flame.len,t:rival.flame.t,street:rival.flame.street}:null,globs:rival.globs?.length??0,pools:rival.pools?.filter(p=>!p.fire).length??0,poolYs:rival.pools?.filter(p=>!p.fire).map(p=>p.y)??[],patches:rival.pools?.filter(p=>p.fire).length??0,dive:!!rival.dive,mark:rival.mark??null,erupted:!!rival.erupted,tlez:!!rival.tlez,belial:!!rival.belial,spew:rival.spew?{t:rival.spew.t,land:rival.spew.land,landOn:rival.spew.landOn,pts:rival.spew.pts.length}:null,leap:rival.leap?.kind??null,puddles:rival.puddles?.length??0,drops:rival.drops?.length??0,rain:!!rival.rain,deluged:!!rival.deluged,kcorr:rival.kcorr?.stacks??0,kvuln:vulnerability.k,under:rival.under??0,press:rival.press??0,backCool:rival.backCool??0,onCrust:!!rival.crust}:null,upperDeck:upperPlat[0]?{hp:upperPlat[0].b.hpNow,alive:upperPlat[0].p.alive,y:upperPlat[0].p.y,x0:upperPlat[0].p.x0,x1:upperPlat[0].p.x1,index:buildings.indexOf(upperPlat[0].b)}:null,carrierDeck:carrierDeck?{...carrierDeck}:null,jetsLaunched,jetsUp:carrierJetsUp(),projectileList:military.projectiles.filter(p=>!p.dead).map(p=>({weapon:p.weapon,owner:p.owner})),carrierJetList:[...carrierJets].map(u=>({x:u.x,y:u.y,hp:u.hp})),deckOrder:[...deckOrder],towerIndexes:buildings.map((b,i)=>b.deco==='btower'?i:-1).filter(i=>i>=0),platformFloor:(x:number,feet:number)=>platformFloor(x,feet),playerY:player.y,playerFeet:player.y+bodyHeight(),playerGrounded:player.grounded,modeNow:mode,unitList:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,id:u.id})),cracks:cracks.map(c=>({x:c.x,quaked:c.quaked,open:c.open,big:c.big,ult:c.ult})),quakeCount,bigOne:bigOne?{t:bigOne.t,pending:bigOne.queue.filter(e=>e.t!==Infinity).length}:null,pancaked,fireCap:block.fireCap??FI.cap,fireGeysers:geysers.filter(g=>g.fire).length,
  railDecks:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,deck:r.deck??0,alive:r.alive,fellAt:r.fellAt??null}))};}
 function act2Debug(){return {powerhouseDown,loosed,exitSide,tumbleArmed,pendingTumble:pendingTumble.length,pendingRunaways:pendingRunaways.length,seaLions:lions.map(l=>({x:l.x,state:l.state})),lionsEscaped,
  kaibanState:kaiban?{...kaiban}:null,cutter:objective?.ship?{sink:objective.ship.sink,sinking:objective.ship.sinking,list:objective.ship.list,w:objective.ship.w,h:objective.ship.h,box:hullBox(objective.ship,waterAt(objective.x)??C.ground),deck:deckY(objective.ship,waterAt(objective.x)??C.ground)}:null,
  fogLevel:fogAt(block,player.x+bodyWidth()/2),railSpans:rails.map(r=>({x0:r.x0,x1:r.x1,alive:r.alive,hp:r.hp,y:r.y})),cameraRise:cameraY};}
-function drawBallSphere(cx:number,cy:number,r:number,t:number){
+function drawBallSphere(cx:number,cy:number,r:number,t:number,health=1,glow=false){
+ if(glow){const h=ctx.createRadialGradient?.(cx,cy,r*.5,cx,cy,r*1.9);if(h&&h.addColorStop){h.addColorStop(0,'rgba(190,210,255,.55)');h.addColorStop(1,'rgba(190,210,255,0)');ctx.fillStyle=h;ctx.beginPath();ctx.arc(cx,cy,r*1.9,0,Math.PI*2);ctx.fill();}}
  const g=ctx.createRadialGradient?.(cx-r*.3,cy-r*.3,r*.1,cx,cy,r);if(g&&g.addColorStop){g.addColorStop(0,'#ffffff');g.addColorStop(.55,'#cfd9ff');g.addColorStop(1,'#6c7bd6');ctx.fillStyle=g;}else ctx.fillStyle='#cfd9ff';
  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.35;ctx.strokeStyle='#ffffff';ctx.lineWidth=1;for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(cx+k*r*.4,cy-r*Math.sqrt(Math.max(0,1-(k*.4)**2)));ctx.lineTo(cx+k*r*.4,cy+r*Math.sqrt(Math.max(0,1-(k*.4)**2)));ctx.stroke();}ctx.globalAlpha=1;
- for(let k=0;k<5;k++){const a=t*2.4+k*1.26;ctx.globalAlpha=.5+.5*Math.sin(a*3);rect(cx+Math.cos(a)*r*.6-1,cy+Math.sin(a*1.3)*r*.6-1,3,3,k%2?'#ff7ad6':'#7ae6ff');}ctx.globalAlpha=1;}
+ for(let k=0;k<5;k++){const a=t*2.4+k*1.26;ctx.globalAlpha=.5+.5*Math.sin(a*3);rect(cx+Math.cos(a)*r*.6-1,cy+Math.sin(a*1.3)*r*.6-1,3,3,k%2?'#ff7ad6':'#7ae6ff');}ctx.globalAlpha=1;
+ // Damage: cracked panels from the first chip, broken (missing) segments from half health.
+ if(health<1){ctx.strokeStyle='#1c2250';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(cx-r*.1,cy-r*.8);ctx.lineTo(cx+r*.05,cy-r*.35);ctx.lineTo(cx-r*.25,cy+r*.05);ctx.lineTo(cx-r*.1,cy+r*.5);ctx.moveTo(cx+r*.05,cy-r*.35);ctx.lineTo(cx+r*.4,cy-r*.1);ctx.stroke();}
+ if(health<=.5){poly([[cx+r*.15,cy+r*.1],[cx+r*.72,cy-r*.05],[cx+r*.62,cy+r*.55],[cx+r*.2,cy+r*.62]],'#161a3c');poly([[cx-r*.78,cy-r*.15],[cx-r*.35,cy-r*.5],[cx-r*.3,cy+r*.1]],'#161a3c');rect(cx+r*.3,cy+r*.2,3,3,'#ff7ad6');}}
 // Rooftop fixtures, drawn with their building (so they squash and lean with it). x is the building's screen x, h its drawn height.
 function drawRoof(p:RoofProp,x:number,h:number){const r=roofBox(p,h),rx=r.x-p.b.x+x,ry=r.y,w=r.w,hh=r.h;
  if(p.kind==='billboard'){// A rooftop LED screen on a steel frame: lit while its grid is, dead black after the blackout.
@@ -2582,6 +3157,10 @@ function drawRoof(p:RoofProp,x:number,h:number){const r=roofBox(p,h),rx=r.x-p.b.
   const legs=hh*.22,body=hh-legs-4,tw=w*.7,tx=rx+(w-tw)/2;rect(tx+2,ry+hh-legs,tw-4,3,'#4d5356');for(const k of [.15,.82])rect(tx+tw*k,ry+hh-legs,3,legs,'#4d5356');
   rect(tx,ry+4+body*.12,tw,body*.88,'#1e2124');rect(tx+tw*.1,ry+4,tw*.8,body*.14,'#26292c');rect(tx+tw*.38,ry,tw*.24,5,'#1e2124');for(const k of [.35,.7])rect(tx,ry+4+body*k,tw,2,'#2f3438');
   rect(tx+3,ry+4+body*.2,2,body*.7,'#3c4247');if(p.hp<p.max)rect(tx+tw*.5,ry+4+body*.6,3,hh*.2,'#a8d8ee');return;}
+ if(p.kind==='tank'&&style()==='syd'){// a corrugated galvanised-iron rainwater tank on a timber stand
+  const legs=hh*.18,body=hh-legs-6,tw=w*.78,tx=rx+(w-tw)/2;rect(tx+2,ry+hh-legs,tw-4,3,'#6b5a44');for(const k of [.1,.86])rect(tx+tw*k,ry+hh-legs,3,legs,'#6b5a44');
+  rect(tx,ry+6,tw,body,'#b9c0c3');for(let k=ry+9;k<ry+4+body;k+=3)rect(tx,k,tw,1,'#8f979b');poly([[tx-2,ry+7],[tx+tw/2,ry],[tx+tw+2,ry+7]],'#a3abae');
+  if(p.hp<p.max)rect(tx+tw*.5,ry+6+body*.5,3,hh*.2,'#a8d8ee');return;}
  if(p.kind==='tank'&&(style()==='hkg'||style()==='par')){// squat concrete (HK) or zinc (Paris) cistern
   const c=style()==='hkg'?['#a6a39a','#7d7a72','#5f5c56']:['#9aa4a8','#748086','#55616a'],body=hh*.6,top=ry+hh-body;
   rect(rx+w*.06,top,w*.88,body,c[0]);rect(rx+w*.06,top,w*.88,4,c[1]);rect(rx+w*.06,top+body-4,w*.88,4,c[2]);rect(rx+w*.2,top-6,w*.18,6,c[1]);rect(rx+w*.7,top-10,3,10,c[2]);
@@ -2619,6 +3198,114 @@ function drawCityFx(){
   if(k>.6)text('RADAR LOCK',r.x+r.w/2-camera,r.y-10,10,col,'center');}
 }
 // Far skyline: each city's signature silhouettes on the horizon, parallaxing slowly so they stay in view across the block.
+// ---- NYC fix card 5: a city behind the street (art only; no hitbox, no interaction) ----
+// The New York route levels show city where they used to show sky: a taller, busier far skyline (One World Trade from downtown, the Empire State and the Chrysler
+// from Midtown), two hazy mid layers, and a dark back row of buildings just behind the playable one, parallaxing a little slower than the street, so a gap between
+// two towers looks down a cross street lined with buildings. The back row is styled per district and obeys moodNow() (lit windows at night, a blackout where the grid
+// is down). Keyed by level name so Combat Drills, nyc-classic, Coney Island and every other city draw exactly as before.
+type NycDistrict='canyon'|'soho'|'midtown'|'park';
+const NYC_DISTRICT:Record<string,NycDistrict>={'The Battery':'canyon','Wall Street':'canyon','SoHo and Canal Street':'soho','Times Square':'midtown','Grand Central':'midtown','Herald Square':'midtown','Hudson Yards':'midtown','Empire State':'midtown','Central Park':'park'};
+const nycDist=():NycDistrict|undefined=>CITIES[cityIndex].id==='nyc'?NYC_DISTRICT[block.name]:undefined;
+const nh=(n:number)=>((n*2654435761)>>>0)%1000/1000;
+const shade=(c:string,t:number,to='#070b10')=>hexOk(c)&&hexOk(to)?mixHex(c,to,t):c;
+type SkyMood={far:string,mid:string,near:string,win:string,lights:number,bottom:string};
+// A wooden rooftop water tank on stilts, s wide: legs, banded barrel, conical cap.
+function nycWaterTower(x:number,by:number,s:number,c:string){
+ for(const k of [0,.35,.7])rect(x+k*s*.5,by-s*.5,2,s*.5,c);rect(x-2,by-s*.5,s*.5+4,2,c);
+ rect(x,by-s*1.1,s*.5,s*.6,c);poly([[x-3,by-s*1.1],[x+s*.25,by-s*1.45],[x+s*.5+3,by-s*1.1]],c);for(let k=1;k<4;k++)rect(x,by-s*.5-k*s*.15,s*.5,1,shade(c,.4));}
+// The far skyline's landmarks, drawn in the layer colour c with base the skyline's ground line.
+function nycOneWTC(sx:number,base:number,c:string){poly([[sx-21,base],[sx-21,base-210],[sx-5,base-300],[sx+5,base-300],[sx+21,base-210],[sx+21,base]],c);rect(sx-1.5,base-390,3,92,c);
+ if(Math.sin(time*2)>0)rect(sx-2,base-392,4,4,'#ff6a5a');}
+function nycEmpireFar(sx:number,base:number,c:string){rect(sx-46,base-92,92,92,c);rect(sx-35,base-152,70,60,c);rect(sx-25,base-208,50,56,c);rect(sx-16,base-250,32,42,c);rect(sx-10,base-278,20,28,c);rect(sx-5,base-296,10,18,c);rect(sx-1.5,base-352,3,56,c);
+ ctx.globalAlpha=.55;rect(sx-9,base-300,18,3,'#ffd9a0');ctx.globalAlpha=.8;}
+function nycChryslerFar(sx:number,base:number,c:string,win:string,nightA:number){rect(sx-19,base-180,38,180,c);rect(sx-15,base-208,30,30,c);
+ for(let k=0;k<4;k++){const w=15-k*3,y=base-208-k*17;poly([[sx-w,y],[sx,y-26-k*3],[sx+w,y]],c);}rect(sx-1,base-318,2,60,c);
+ if(nightA>0){ctx.globalAlpha=nightA*.7;for(let k=0;k<4;k++){const w=12-k*3,y=base-210-k*17;poly([[sx-w,y],[sx,y-18],[sx+w,y]],win);}ctx.globalAlpha=.8;}}
+// Which landmarks each district's far skyline carries, at fractions of the view width.
+const NYC_FAR:Record<string,[string,number][]>={
+ 'The Battery':[['wtc',.86]],'Wall Street':[['wtc',.86]],'SoHo and Canal Street':[['wtc',.2],['esb',.66]],
+ 'Times Square':[['esb',.32],['chrysler',.58]],'Grand Central':[['esb',.28],['chrysler',.85]],'Herald Square':[['chrysler',.45]],
+ 'Hudson Yards':[['esb',.55],['chrysler',.8]],'Empire State':[['wtc',.12],['chrysler',.7]],'Central Park':[['chrysler',.25],['esb',.58]]};
+// Many towers, tall and close-packed, in the layer colour: the sky above the street is mostly city. Windows light per mood.
+function nycFarSkyline(W:number,m:SkyMood,c:string,base:number){
+ const night=thr(m.lights,.6,.4),step=NYC5.farStep,off=camera*.05;
+ for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){
+  const r=nh(i*3+1),r2=nh(i*7+2),r3=nh(i*11+3),x=i*step-off,w=step-4+(r2*8|0)-2,h=120+r*210;
+  rect(x,base-h,w,h+4,c);
+  if(r3<.25){rect(x+w*.18,base-h-22,w*.64,22,c);rect(x+w*.4,base-h-44,w*.2,22,c);}                       // a stepped crown
+  else if(r3<.45){poly([[x,base-h],[x+w/2,base-h-w*.8],[x+w,base-h]],c);}                                  // a pyramid roof
+  else if(r3<.62){rect(x+w/2-1,base-h-48,2,48,c);}                                                         // an antenna
+  else if(r3<.72){rect(x+w*.2,base-h-14,w*.6,14,c);rect(x+w*.3,base-h-16,5,16,c);}                         // a water tank on the roof
+  if(night>0){ctx.globalAlpha=.5*night;for(let yy=base-h+7;yy<base-4;yy+=9)if(nh(i*37+yy)<.62)rect(x+3,yy,w-6,2,m.win);ctx.globalAlpha=.8;}}
+ for(const [k,f] of NYC_FAR[block.name]??[]){const sx=f*W-off;if(k==='wtc')nycOneWTC(sx,base,c);else if(k==='esb')nycEmpireFar(sx,base,c);else nycChryslerFar(sx,base,c,m.win,night);}}
+// Two hazy layers of the city between the skyline and the back row (taller and denser than the bands other cities draw).
+function nycMidLayers(W:number,m:SkyMood){
+ const night=thr(m.lights,.6,.4),ground=C.ground-4;
+ const lay=(step:number,par:number,w:number,lo:number,span:number,col:string,seed:number)=>{const off=camera*par;
+  for(let i=Math.floor(off/step)-1,n=Math.ceil((off+W)/step)+1;i<n;i++){const r=nh(i*5+seed),bw=w-(nh(i*3+seed)*10|0),h=lo+r*span,x=i*step-off;
+   rect(x,ground-h,bw,h+8,col);if(r>.62)rect(x+bw*.2,ground-h-12,bw*.6,12,col);if(r<.14)rect(x+bw*.45,ground-h-28,2,28,col);
+   if(night>0){ctx.globalAlpha=night*.5;for(let yy=ground-h+9;yy<ground-8;yy+=12)if(nh(i*31+yy+seed)<.66)rect(x+4,yy,bw-8,2,m.win);ctx.globalAlpha=1;}}};
+ lay(56,.13,48,200,190,m.far,1);lay(78,NYC5.midParallax,66,150,170,m.mid,2);}
+// The back row: dark, a little smaller than the playable row, a continuous run of buildings (a narrow slot now and then, where the mid layers show through).
+function nycBackRow(W:number,m:SkyMood,kind:NycDistrict){
+ const cell=NYC5.backCell,off=camera*NYC5.backParallax,base=C.ground-4,night=thr(m.lights,.6,.4),topY=C.ground-(C.ground+cameraY)/zoom-20,dayTint={canyon:'#4b5560',soho:'#5d4437',midtown:'#4a5a68',park:'#6a5f52'}[kind];
+ for(let i=Math.floor(off/cell)-1,n=Math.ceil((off+W)/cell)+1;i<n;i++){
+  const r2=nh(i*13+5),parts=kind==='park'?1:r2<.35?2:1,slot=kind!=='park'&&i%7===3?30:0;
+  for(let j=0;j<parts;j++){const seed=i*2+j,r=nh(seed*7+kind.length),r3=nh(seed*29+11),pw=(cell-slot)/parts-4,px=i*cell-off+slot/2+j*(cell-slot)/parts;
+   if(px>W||px+pw<0)continue;
+   const h=kind==='canyon'?300+r*230:kind==='soho'?140+r*90+(r3>.82?90:0):kind==='midtown'?250+r*250:210+r*70;
+   const body=shade(mixHex(dayTint,hexOk(m.near)?m.near:dayTint,.45),.28),hole=shade(body,.38),dark=!!(block.night||block.moodRamp)&&!powered(camera+px+pw/2);
+   const lights=dark?NYC2.darkWindows:m.lights*.75,glassDay=kind==='midtown'&&seed%3===0,dayWin=glassDay?mixHex(body,'#9fbccb',.3):shade(body,.3,'#9fb0b8'),offWin=nightMix(dayWin,hole,night);
+   nycBackBuilding(px,pw,h,seed,kind,body,hole,offWin,m.win,lights,night,topY,base);}}
+ if(kind==='park'){// the park's tree line in front of the wall
+  ctx.fillStyle=shade('#3f6a3f',.35);for(let x=-((off%22)+22);x<W+22;x+=22){const t=nh(Math.floor((x+off)/22)),y=base-18-t*26;ctx.beginPath();ctx.arc(x,y,16+t*8,0,Math.PI*2);ctx.fill();}rect(0,base-10,W,12,shade('#3f6a3f',.35));}}
+const nightMix=(a:string,b:string,t:number)=>hexOk(a)&&hexOk(b)?mixHex(a,b,Math.max(0,Math.min(1,t))):a;
+function nycBackBuilding(x:number,w:number,h:number,seed:number,kind:NycDistrict,body:string,hole:string,offWin:string,win:string,lights:number,night:number,topY:number,base:number){
+ const y=base-h,lit=(a:number,b:number)=>nh(seed*131+a*7+b*3)<lights;
+ rect(x,y,w,h+6,body);rect(x+w-3,y,3,h+6,shade(body,.25));
+ const sh=kind==='soho'?20:16,sv=kind==='soho'?24:19,ww=kind==='soho'?7:6,wh=kind==='soho'?13:9;
+ // Windows: a grid, lit per mood (a window is lit or its day/night off colour).
+ for(let k=Math.max(0,Math.floor((topY-sv-y-14)/sv));;k++){const yy=y+14+k*sv;if(yy>=base-30)break;rect(x+8,yy,w-18,wh,offWin);for(let xx=8;xx<w-10;xx+=sh)if(lit(xx,yy|0))rect(x+xx,yy,ww,wh,win);}
+ if(kind==='canyon'){// pilasters, a stepped crown, an arcade at the foot
+  ctx.globalAlpha=.16;for(let xx=18;xx<w-6;xx+=24)rect(x+xx,y,1,h,'#000000');ctx.globalAlpha=1;
+  if(seed%3!==0){rect(x+w*.17,y-34,w*.66,34,body);rect(x+w*.34,y-58,w*.32,24,body);if(seed%2)poly([[x+w*.34,y-58],[x+w*.5,y-92],[x+w*.66,y-58]],body);else rect(x+w*.5-1,y-92,2,34,body);}
+  else rect(x-1,y-4,w+2,5,shade(body,.2,'#8a96a0'));
+  for(let xx=6;xx<w-10;xx+=16){rect(x+xx,base-26,9,26,hole);ctx.fillStyle=hole;ctx.beginPath();ctx.arc(x+xx+4.5,base-26,4.5,Math.PI,0);ctx.fill();}}
+ else if(kind==='soho'){// cornice and brackets, cast-iron columns, a fire escape, a water tank, a lit shopfront
+  rect(x-2,y-2,w+4,6,shade(body,.25,'#9a8a7a'));for(let xx=2;xx<w-6;xx+=10)rect(x+xx,y+4,4,5,shade(body,.2,'#9a8a7a'));
+  ctx.globalAlpha=.3;for(let xx=sh+3;xx<w-8;xx+=sh)rect(x+xx,y+10,1,h-40,'#d0c0a8');ctx.globalAlpha=1;
+  const fx=x+w*.58,fw=w*.34;ctx.strokeStyle=shade(body,.55);ctx.lineWidth=1;ctx.beginPath();
+  for(let yy=y+34,k=0;yy<base-34;yy+=sv*2,k++){rect(fx,yy+sv-4,fw,2,shade(body,.55));ctx.moveTo(fx+(k%2?fw:0),yy+sv-3);ctx.lineTo(fx+(k%2?0:fw),yy+sv*2-3);}ctx.stroke();
+  if(seed%2===0)nycWaterTower(x+w*.18,y,26,shade(body,.35));
+  rect(x+4,base-26,w-8,22,nh(seed)<lights+.3?shade('#d9a84e',.2):hole);}
+ else if(kind==='midtown'){const t=seed%3;
+  if(t===0){// glass: mullions, a bright edge, a setback crown and mast
+   ctx.globalAlpha=.22;for(let yy=y+10;yy<base-30;yy+=15)rect(x,yy,w,1,'#cfe6f2');ctx.globalAlpha=.1;rect(x+w*.1,y,w*.22,h,'#ffffff');ctx.globalAlpha=1;
+   rect(x+w*.2,y-26,w*.6,26,body);rect(x+w*.5-1,y-70,2,44,body);}
+  else if(t===1){// masonry with two setbacks
+   rect(x+w*.12,y-36,w*.76,36,body);rect(x+w*.28,y-70,w*.44,34,body);rect(x+w*.5-1,y-96,2,26,body);ctx.globalAlpha=.14;for(let xx=18;xx<w-6;xx+=24)rect(x+xx,y,1,h,'#000000');ctx.globalAlpha=1;}
+  else{// a mid-rise with a rooftop sign and a water tank
+   rect(x+w*.1,y-24,w*.8,24,shade(body,.2));rect(x+w*.12,y-44,w*.4,20,shade(body,.35,'#ff4fa3'));nycWaterTower(x+w*.62,y,24,shade(body,.3));}
+  // neon on the lower floors, strongest at night
+  if(night>0){ctx.globalAlpha=night*.85;const cs=['#ff4fa3','#ffd84f','#4fd1ff'];for(let k=0;k<2;k++)rect(x+6+k*(w/2),base-56-(seed%3)*16,w/2-10,7,cs[(seed+k)%3]);rect(x+w-10,base-120,6,40,cs[seed%3]);ctx.globalAlpha=1;}
+  rect(x+4,base-24,w-8,20,lights>.3?shade('#d9a84e',.25):hole);}
+ else{// Fifth Avenue and Central Park West: pre-war apartment houses with mansard roofs, twin towers now and then, water tanks
+  rect(x-2,y-3,w+4,5,shade(body,.2,'#9a8f7e'));poly([[x-2,y-3],[x+10,y-22],[x+w-10,y-22],[x+w+2,y-3]],shade(body,.15,'#4a6a60'));
+  for(let xx=14;xx<w-14;xx+=24)rect(x+xx,y-17,8,12,hole);
+  if(seed%6===0){for(const dx of [.12,.66]){rect(x+w*dx,y-74,w*.22,56,body);ctx.fillStyle=shade(body,.1,'#4a6a60');ctx.beginPath();ctx.arc(x+w*dx+w*.11,y-74,w*.11,Math.PI,0);ctx.fill();}}
+  else if(seed%2)nycWaterTower(x+w*.6,y-20,24,shade(body,.35));
+  rect(x+4,base-24,w-8,20,lights>.3?shade('#d9a84e',.3):hole);}}
+// Popocatépetl's smoke at states 1-4 (state 0 is the original loop in farSkyline): the plume per state, the one-off puffs, a glowing base when it erupts, and a flare.
+function volcanoPlume(x:number,base:number){const P=VO.plume[volcano-1],cx=x-5,cy=base-196;
+ if(volcano===4){ctx.globalAlpha=.55+.15*Math.sin(time*5);ctx.fillStyle='#ff6a2a';ctx.beginPath();ctx.arc(cx,cy+6,34,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.8;ctx.fillStyle='#ffd34d';ctx.beginPath();ctx.arc(cx,cy+8,14,0,Math.PI*2);ctx.fill();}
+ for(let k=0;k<P.puffs;k++){const t=(time*P.speed+k/P.puffs)%1;ctx.globalAlpha=P.alpha*(1-t*.85);ctx.fillStyle=P.color;ctx.beginPath();ctx.arc(cx+t*P.drift,cy-t*P.rise,(14+t*40)*P.size,0,Math.PI*2);ctx.fill();}
+ for(const at of volcanoPuffs){const t=Math.min(1,(time-at)/VO.puffSeconds);ctx.globalAlpha=.5*(1-t);ctx.fillStyle='#e6dccf';ctx.beginPath();ctx.arc(cx+t*60,cy-t*150,16+t*46,0,Math.PI*2);ctx.fill();}
+ if(volcanoFlare>0){const f=Math.min(1,volcanoFlare/VO.flareSeconds);ctx.globalAlpha=.85*f;ctx.fillStyle='#ff8a1f';ctx.beginPath();ctx.arc(cx,cy,24+30*f,0,Math.PI*2);ctx.fill();ctx.globalAlpha=f;ctx.fillStyle='#fff2c0';ctx.beginPath();ctx.arc(cx,cy,10+12*f,0,Math.PI*2);ctx.fill();}
+ ctx.globalAlpha=.8;}
+// Ash fall over the whole view (screen space): grey flakes drifting down and across, more of them and darker once it is erupting.
+function drawAsh(){if(!ashActive())return;const n=VO.flakes[volcano>=4?1:0],[s0,s1]=VO.ashFall;ctx.globalAlpha=volcano>=4?.7:.55;
+ for(let k=0;k<n;k++){const sp=s0+(s1-s0)*((k*37)%11)/10,x=((k*97.3+time*VO.ashDrift*(.6+(k%5)*.2))%1000+1000)%1000-20,y=((k*53.7+time*sp)%570)-15;rect(x,y,k%4?1:2,k%4?1:2,volcano>=4?'#8c7f76':'#c4beb4');}
+ ctx.globalAlpha=1;}
 function farSkyline(style:string,W:number,m:{far:string,mid:string,win:string,lights:number}){const base=320,c=m.far,night=m.lights>.6,px=(k:number,period=1500)=>((k*period-camera*.05)%(period*2)+period*2)%(period*2)-200;
  ctx.globalAlpha=.8;
  if(style==='nyc'){
@@ -2632,11 +3319,13 @@ function farSkyline(style:string,W:number,m:{far:string,mid:string,win:string,li
   if(block.name==='Herald Square'){const sx=viewW()-170-(worldWidth-viewW()-camera)*.15;
    rect(sx-46,base-92,92,92,c);rect(sx-35,base-152,70,60,c);rect(sx-25,base-208,50,56,c);rect(sx-16,base-250,32,42,c);rect(sx-10,base-278,20,28,c);rect(sx-5,base-296,10,18,c);rect(sx-1.5,base-352,3,56,c);
    ctx.globalAlpha=.55;rect(sx-9,base-300,18,3,'#ffd9a0');ctx.globalAlpha=.8;}
-  for(const k of [0,1]){const x=px(k);rect(x,base-150,26,150,c);rect(x+5,base-172,16,22,c);rect(x+9,base-190,8,18,c);rect(x+12,base-215,2,25,c);
+  if(nycDist())nycFarSkyline(W,m,c,base);
+  else for(const k of [0,1]){const x=px(k);rect(x,base-150,26,150,c);rect(x+5,base-172,16,22,c);rect(x+9,base-190,8,18,c);rect(x+12,base-215,2,25,c);
    const y=px(k,1500)+620;rect(y,base-130,22,130,c);poly([[y,base-130],[y+11,base-175],[y+22,base-130]],c);rect(y+10,base-195,2,20,c);}}
  else if(style==='mex'){// Popocatépetl, smoking, with Iztaccíhuatl beside it, and the Torre Latinoamericana.
   const x=px(0,2000)+200;poly([[x-260,base],[x-40,base-190],[x+30,base-190],[x+250,base]],c);poly([[x-58,base-172],[x-40,base-190],[x+30,base-190],[x+48,base-172],[x+20,base-176],[x-10,base-168],[x-30,base-176]],'#efe6d8');
-  for(let k=0;k<6;k++){const t=(time*.08+k/6)%1;ctx.globalAlpha=.35*(1-t);ctx.fillStyle='#d9cbbb';ctx.beginPath();ctx.arc(x-5+t*90,base-200-t*150,14+t*40,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=.8;
+  if(volcano)volcanoPlume(x,base);else{
+  for(let k=0;k<6;k++){const t=(time*.08+k/6)%1;ctx.globalAlpha=.35*(1-t);ctx.fillStyle='#d9cbbb';ctx.beginPath();ctx.arc(x-5+t*90,base-200-t*150,14+t*40,0,Math.PI*2);ctx.fill();}ctx.globalAlpha=.8;}
   poly([[x+190,base],[x+330,base-90],[x+420,base-96],[x+560,base]],c);const t2=px(1,2000);rect(t2,base-140,24,140,c);rect(t2+6,base-160,12,20,c);rect(t2+11,base-185,2,25,c);}
  else if(style==='par'){// The Eiffel Tower and, on its hill, Sacré-Cœur.
   const x=px(0,1800)+300;poly([[x-60,base],[x-6,base-150],[x-3,base-230],[x+3,base-230],[x+6,base-150],[x+60,base]],c);rect(x-40,base-70,80,6,c);rect(x-20,base-150,40,5,c);ctx.globalAlpha=.5;rect(x-30,base-60,60,60,m.mid);ctx.globalAlpha=.8;
@@ -2645,6 +3334,13 @@ function farSkyline(style:string,W:number,m:{far:string,mid:string,win:string,li
   poly([[-100,base],[W*.2,base-170],[W*.45,base-130],[W*.7,base-200],[W+100,base-120],[W+100,base]],'#151d33');
   const x=px(0,1400);poly([[x,base],[x,base-170],[x+14,base-210],[x+28,base-170],[x+28,base]],c);for(let k=0;k<4;k++){ctx.strokeStyle=m.mid;ctx.beginPath();ctx.moveTo(x,base-k*40);ctx.lineTo(x+28,base-k*40-40);ctx.stroke();}
   const y=px(1,1400);rect(y,base-190,30,190,c);rect(y+5,base-208,20,18,c);if(night)for(let yy=base-180;yy<base;yy+=10)rect(y+6,yy,18,2,m.win+'88');}
+ else if(style==='syd'){// The harbour, the Harbour Bridge's arch over its deck between granite pylons, Sydney Tower's golden turret and the Opera House sails.
+  ctx.globalAlpha=.35;rect(-10,base-6,W+20,6,'#5f9ab8');ctx.globalAlpha=.8;
+  const x=px(0,1100)+150,s=520;rect(x-34,base-96,34,96,c);rect(x+s,base-96,34,96,c);rect(x-30,base-104,26,8,c);rect(x+s+4,base-104,26,8,c);rect(x-40,base-46,s+80,6,c);
+  ctx.strokeStyle=c;ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(x+4,base-40);ctx.quadraticCurveTo(x+s/2,base-270,x+s-4,base-40);ctx.stroke();ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+14,base-46);ctx.quadraticCurveTo(x+s/2,base-228,x+s-14,base-46);ctx.stroke();
+  ctx.lineWidth=1;ctx.beginPath();for(let k=1;k<16;k++){const t=k/16,ax=x+4+(s-8)*t,ay=base-40-2*t*(1-t)*230;ctx.moveTo(ax,ay);ctx.lineTo(ax,base-46);}ctx.stroke();
+  const y=px(1,1100);rect(y-3,base-230,6,230,c);rect(y-14,base-252,28,22,c);rect(y-6,base-264,12,12,c);rect(y-1,base-300,2,40,c);
+  const o=y+380;rect(o-64,base-14,128,14,c);for(const [a,w2,t] of [[-56,46,70],[-12,40,56],[26,34,42]])poly([[o+a,base-14],[o+a+w2*.9,base-14-t],[o+a+w2,base-14]],c);}
  else{// Mount Fuji faint on the horizon, Skytree with its lights, Tokyo Tower in red.
   const x=px(0,2200)+400;ctx.globalAlpha=.45;poly([[x-300,base],[x-50,base-150],[x+50,base-150],[x+300,base]],'#3a4258');poly([[x-62,base-138],[x-50,base-150],[x+50,base-150],[x+62,base-138],[x+20,base-132],[x-20,base-140]],'#c9d2e2');ctx.globalAlpha=.8;
   const y=px(1,2200);poly([[y-12,base],[y-4,base-250],[y+4,base-250],[y+12,base]],c);rect(y-8,base-190,16,8,c);rect(y-1,base-290,2,40,c);if(Math.sin(time*3)>0)rect(y-2,base-292,4,4,'#ff5a5a');
@@ -2710,23 +3406,33 @@ function sfNearRow(W:number,m:{near:string,win:string,lights:number}){const step
 function drawRain2(){if(!moodNow().rain)return;ctx.strokeStyle='#a9c4dd55';ctx.lineWidth=1;ctx.beginPath();
  for(let k=0;k<90;k++){const x=((k*97+time*260)%1000)-20,y=((k*53+time*900)%600)-40;ctx.moveTo(x,y);ctx.lineTo(x-4,y+14);}ctx.stroke();}
 // River: deep water from the surface down to the riverbed (behind everything that wades in it), with a moving sheen.
-function drawRiverBack(){for(const [a,z,y] of waterSpans()){const x0=Math.max(-8,a-camera),x1=Math.min(viewW()+108,z-camera);if(x1<x0)continue;
- const deep=540+C.ground/zoom;rect(x0,y,x1-x0,deep-y,'#2f5d70');for(let x=x0;x<x1;x+=30)rect(x,y+18+((x+camera)*3%23),14,2,'#2a5263');
- for(let x=x0;x<x1;x+=22){const k=(x+camera)*.07+time*2;rect(x,y+3+Math.sin(k)*2,10,2,'#5d93a8');}}}
+function drawRiverBack(){const ac=block.finale?.flood?FLOOD.color:null;for(const [a,z,y] of waterSpans()){if(ac&&y>C.ground+300)continue;const x0=Math.max(-8,a-camera),x1=Math.min(viewW()+108,z-camera);if(x1<x0)continue;
+ const deep=540+C.ground/zoom;rect(x0,y,x1-x0,deep-y,ac?ac.back:'#2f5d70');for(let x=x0;x<x1;x+=30)rect(x,y+18+((x+camera)*3%23),14,2,ac?'#2b4a0d':'#2a5263');
+ for(let x=x0;x<x1;x+=22){const k=(x+camera)*.07+time*2;rect(x,y+3+Math.sin(k)*2,10,2,ac?ac.foam:'#5d93a8');}}}
 // Front water: a translucent layer over everything standing in the river, so it reads as wading.
-function drawRiverFront(){for(const [a,z,y] of waterSpans()){const x0=Math.max(-8,a-camera),x1=Math.min(viewW()+108,z-camera);if(x1<x0)continue;
- ctx.globalAlpha=bands()?W.frontAlpha:.55;ctx.fillStyle='#3d7088';ctx.beginPath();ctx.moveTo(x0,y);for(let x=x0;x<=x1;x+=8)ctx.lineTo(x,Math.max(y,bedAt(x+camera)+6));ctx.lineTo(x1,y);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
- for(let x=x0;x<x1;x+=16){const k=(x+camera)*.05+time*3;rect(x,y-1+Math.sin(k)*1.5,9,2,'#a8d8ee');}}}
-// Subway in cutaway: under the street along the line, a strip shows the tunnel (lights, rails) with the trains running through it.
-function drawSubway(){const line=block.subway?.[0];if(!line)return;const a=Math.max(-8,line[0]-camera),z=Math.min(viewW()+8,line[1]-camera);if(z<a)return;
- // The street slab over the tunnel: road, then a concrete tunnel roof, then the tunnel itself.
- const top=C.ground+tunnelRoof(),f=tunnelFloor();rect(a,top-6,z-a,6,'#7d8580');rect(a,top-6,z-a,1,'#a3aaa4');rect(a,top,z-a,f-top+3,'#1b2325');
- for(let yy=top+6;yy<f-8;yy+=11)rect(a,yy,z-a,1,'#253031');for(let x=a+((-camera)%60+60)%60;x<z;x+=60)rect(x,top+4,10,3,'#e3cb7c');
- rect(a,f-4,z-a,4,'#3a3a36');rect(a,f-7,z-a,2,'#8a8f88');rect(a,f+3,z-a,3,'#2a3536');
- drawTrains(a,z);}
+function drawRiverFront(){const ac=block.finale?.flood?FLOOD.color:null;for(const [a,z,y] of waterSpans()){if(ac&&y>C.ground+300)continue;const x0=Math.max(-8,a-camera),x1=Math.min(viewW()+108,z-camera);if(x1<x0)continue;
+ ctx.globalAlpha=ac?ac.frontAlpha:bands()?W.frontAlpha:.55;ctx.fillStyle=ac?ac.front:'#3d7088';ctx.beginPath();ctx.moveTo(x0,y);for(let x=x0;x<=x1;x+=8)ctx.lineTo(x,Math.max(y,bedAt(x+camera)+6));ctx.lineTo(x1,y);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+ for(let x=x0;x<x1;x+=16){const k=(x+camera)*.05+time*3;rect(x,y-1+Math.sin(k)*1.5,9,2,ac?ac.sheen:'#a8d8ee');}
+ if(ac)for(let x=x0;x<x1;x+=34){const ph=(time*.7+(x+camera)*.013)%1;if(ph<.55)rect(x+((x+camera)*7%13),y+4+ph*26,3,3,ac.bubble);}
+ // Chapultepec's lake runs green by the storm drains (art only).
+ for(const [ga,gz] of block.lakeGreen??[]){const g0=Math.max(x0,ga-camera),g1=Math.min(x1,gz-camera);if(g1<=g0)continue;ctx.globalAlpha=.4;ctx.fillStyle='#78d23c';ctx.beginPath();ctx.moveTo(g0,y);for(let x=g0;x<=g1;x+=8)ctx.lineTo(x,Math.max(y,bedAt(x+camera)+6));ctx.lineTo(g1,y);ctx.closePath();ctx.fill();ctx.globalAlpha=1;}}}
+// Subway: the street over the line is plain street (manhole grates that glow as a train passes under, a kiosk at each portal) until it
+// caves in; the tunnel and the trains only show through a pit (drawSubwayTrains, after drawPits).
+function drawSubway(){const line=block.subway?.[0];if(!line)return;const vis=(x:number)=>x-camera>-60&&x-camera<viewW()+60;
+ const under=(x:number)=>trains.some(t=>{const b=trainBox(t);return !t.crashed&&b.w>0&&x>=b.x&&x<=b.x+b.w;});
+ const first=Math.ceil((line[0]+120)/260)*260;
+ for(let wx=first;wx<line[1]-120;wx+=260){if(!vis(wx)||pitAt(wx))continue;const x=wx-camera,y=groundAt(wx)-4,lit=under(wx)&&Math.sin(time*14)>-.3;
+  rect(x-12,y-1,24,6,'#2a3233');for(let k=0;k<5;k++)rect(x-10+k*5,y,3,4,lit?'#e3cb7c':'#566260');rect(x-12,y-1,24,1,'#6d7873');}
+ // Portals: a stair kiosk with a green globe at each end of the line, standing on the pavement (the ends sit in street gaps).
+ for(const [wx,d] of [[line[0],1],[line[1],-1]] as const){if(!vis(wx)||pitAt(wx)||buildings.some(b=>b.kind!=='tiny'&&b.hpNow>0&&wx+d*14>b.x-14&&wx+d*14<b.x+b.w+14))continue;const x=wx-camera+d*14,y=groundAt(wx)-4;
+  rect(x-9,y-3,18,3,'#6d7873');rect(x-9,y-26,2,24,'#2b3436');rect(x+7,y-26,2,24,'#2b3436');rect(x-9,y-28,18,3,'#2b3436');rect(x-7,y-3,14,3,'#1b2325');
+  ctx.fillStyle='#3fae6a';ctx.beginPath();ctx.arc(x-9,y-31,3.5,0,Math.PI*2);ctx.arc(x+9,y-31,3.5,0,Math.PI*2);ctx.fill();}}
+// The tunnel only shows through a cave-in: trains run clipped to the open pits along the line.
+function drawSubwayTrains(){const line=block.subway?.[0];if(!line)return;
+ for(const p of pitList()){const a=Math.max(-8,p.x0,line[0])-camera,z=Math.min(viewW()+8,p.x1,line[1])-camera;if(z>a)drawTrains(a,z);}}
 // Trains: three silver cars with a red stripe and lit windows; a derailed one lies buckled and burning.
 function drawTrains(a:number,z:number){const f=tunnelFloor(),car=R.trainLength/3;
- for(const t of trains){const x0=t.x-camera;if(x0+R.trainLength<a||x0>z)continue;
+ for(const t of trains){if(t.surface)continue;const x0=t.x-camera;if(x0+R.trainLength<a||x0>z)continue;
   for(let k=0;k<3;k++){const cx=x0+k*car,ca=Math.max(a,cx+2),cz=Math.min(z,cx+car-2);if(cz<=ca)continue;
    if(t.crashed){ctx.save();ctx.beginPath();ctx.rect(a,C.ground+tunnelRoof(),z-a,f-C.ground-tunnelRoof()+4);ctx.clip();ctx.translate(cx+car/2,f-22);ctx.rotate((k-1)*.12*t.dir);
     rect(-car/2+2,-18,car-4,32,'#5d6462');rect(-car/2+2,-12,car-4,3,'#5a2a26');for(let w=-car/2+10;w<car/2-14;w+=22)rect(w,-6,12,9,'#2a2e2d');
@@ -2736,6 +3442,10 @@ function drawTrains(a:number,z:number){const f=tunnelFloor(),car=R.trainLength/3
   const nose=t.dir>0?x0+R.trainLength:x0;if(!t.crashed&&nose>a&&nose<z)rect(nose-(t.dir>0?4:0),f-30,4,6,'#fff4c0');}}
 // Subway cave-ins: a hole through the street onto the tunnel, rails at the bottom, a train when one is passing.
 function drawPits(){const cata=style()==='par'&&!block.subway;for(const p of pitList()){const a=p.x0-camera,z=p.x1-camera;if(z<-20||a>viewW()+20)continue;const top=C.ground-4,f=p.floor;
+ if(block.sinkholes?.some(([sa,sz],i)=>sinkOpen.has(i)&&p.x0>=sa-1&&p.x1<=sz+1)){// A sinkhole: raw earth, broken stone and a skin of acid at the bottom.
+  rect(a,top,z-a,f-top+4,'#2a2018');for(let yy=top+8;yy<f-6;yy+=11)for(let x=a+((yy*5)%13);x<z-6;x+=17)rect(x,yy,9+((x+yy)%6),3,'#3a2d22');
+  rect(a,f-4,z-a,4,'#4a3a2a');for(let x=a;x<z;x+=22)rect(x,f-12-((x*3)%7),10,4+((x*3)%7),'#5a4a3a');ctx.globalAlpha=.7;rect(a,f-3,z-a,3,'#8fb62a');ctx.globalAlpha=1;
+  for(const [ex,d] of [[a,1],[z,-1]] as const)for(let k=0;k<4;k++)rect(ex+d*(k*7)-(d<0?7:0),top-4+((k*5+p.x0)%7),7,6+(k%3)*3,'#5b4a3a');continue;}
  if(cata){// Catacombs: an ossuary wall of stacked bones and skulls.
   rect(a,top,z-a,f-top+4,'#1d1a16');for(let yy=top+8;yy<f-6;yy+=9)for(let x=a+((yy*3)%10);x<z-6;x+=10){rect(x,yy,7,5,'#cbbf9f');if(((x+yy)|0)%3===0){rect(x+1,yy+1,2,2,'#1d1a16');rect(x+4,yy+1,2,2,'#1d1a16');}}
   for(const [ex,d] of [[a,1],[z,-1]] as const)for(let k=0;k<4;k++)rect(ex+d*(k*7)-(d<0?7:0),top-4+((k*5+p.x0)%7),7,6+(k%3)*3,'#8a8170');continue;}
@@ -2791,6 +3501,9 @@ function hud(){const ink=CITIES[cityIndex].ink;
  rect(20,86,260,24,'#213a40');text(session!=='drill'?`${String(blockIndex+1).padStart(2,'0')} ${block.name.toUpperCase()}`:`DRILL / RESPONSE TIER ${military.tier}`,30,102,9,'#e4e7d1');text(`HOSTILES ${military.units.length} / ${M.caps[military.tier-1]}`,30,124,9,ink);
  if(objective||rival){const value=objective?objective.hp/objective.maxHP:rival!.hp/rival!.maxHP;const label=objective?(objective.art==='crystal'?'STRONGHOLD CRYSTAL':objective.label):`${bossName().toUpperCase()} / M4 RIVAL`;text(label,330,94,10,ink);rect(330,101,300,6,'#6b8c83');rect(330,101,300*value,6,'#e9a0c8');text(objective?.shattered?(objective.art==='crystal'?'CRYSTAL SHATTERED':'DESTROYED'):`${Math.ceil(objective?.hp??rival!.hp)} HP`,650,107,10,ink);}
  if(block.kind==='boss'&&rival)text('ARENA LOCKED',935,126,11,ink,'right');
+ // Belial's acid on the kaiju: stacks (each raises the damage it takes), in the panel and over its head.
+ if(rival?.belial&&(rival.kcorr?.stacks??0)>0){const n=rival.kcorr!.stacks,pct=Math.round(BB.corrodeVuln*n*100);rect(20,132,260,20,'#213a40');text('CORRODED',30,146,9,'#c8ed82');for(let k=0;k<BB.corrodeMax;k++)rect(100+k*22,138,18,8,k<n?'#b8e63a':'#334744');text(`+${pct}% DAMAGE TAKEN`,170,146,8,'#ecffc0');
+  {const x=screenX(player.x+bodyWidth()/2),y=Math.max(100,screenY(player.y)-36);for(let k=0;k<BB.corrodeMax;k++)rect(x-30+k*20,y,16,5,k<n?'#b8e63a':'#334744');text(`CORRODED x${n}`,x,y-5,8,'#ecffc0','center');}}
  {const cut=[['1','WEST'],['-1','EAST']].filter(([k])=>military.cutOff[k]>0).map(([k,n])=>`${n} CUT OFF ${Math.ceil(military.cutOff[k])}s`);if(cut.length)text(cut.join(' · '),150,124,9,ink);}
  if(alert>0){const col=['#e0b04a','#ef7d3a','#ff3b5c'][alert-1];rect(20,160,260,18,'#213a40');text(`ALERT · ${RS.labels[alert-1]}`,30,173,9,col);for(let k=0;k<3;k++)rect(200+k*24,166,18,6,k<alert?col:'#334744');}
  // Rampage gauge: heat with the multiplier thresholds marked; the label pops when a new level is reached.
@@ -2832,7 +3545,17 @@ function meters(){
  if(combat.charging){const x=screenX(player.x+bodyWidth()/2),y=Math.max(84,screenY(player.y)-20);rect(x-28,y,56,5,'#293e3c');rect(x-28,y,56*combat.charge/B.maxCharge,5,'#f8a0cc');text(combat.charge>=B.maxCharge?'MAX':'CHARGING',x,y-6,8,'#ffe6f1','center');}
 }
 // Layer 0: grounded vehicles in the far lane (behind the kaiju's feet). Layer 1: near lane, airborne and carried vehicles.
-function drawVehicles(layer:0|1){if(layer===0)for(const k of sinkers){ctx.globalAlpha=Math.max(0,1-k.t/W.wreckSink);drawVehicle(k.v);ctx.globalAlpha=1;}for(const v of vehicles){const front=v.state==='flying'||v.state==='held'||v.lane===1;if(front!==(layer===1))continue;drawVehicle(v);}}
+// The Bull's little plaza: a paved patch round its spot with a chain fence, a plaque and (while it still stands bolted down and the kaiju can lift it) a bobbing gold marker.
+function drawBullPlaza(){
+ const hx=block.bull!,x0=hx-44-camera,x1=hx+BL.w+44-camera;if(x1<-20||x0>viewW()+20)return;
+ const gy=groundAt(hx+BL.w/2),post=(x:number)=>{rect(x-2,gy-17,4,17,'#2a2a2a');rect(x-3,gy-19,6,3,'#c9a24a');};
+ rect(x0,gy-3,x1-x0,3,'#d8d1bb');rect(x0,gy-3,x1-x0,1,'#f0ead6');
+ for(const n of [0,1,2,3,4])post(x0+(x1-x0)*n/4);
+ ctx.strokeStyle='#3a3a3a';ctx.lineWidth=1.5;ctx.beginPath();for(let n=0;n<4;n++){const a=x0+(x1-x0)*n/4,b=x0+(x1-x0)*(n+1)/4;ctx.moveTo(a,gy-14);ctx.quadraticCurveTo((a+b)/2,gy-9,b,gy-14);}ctx.stroke();
+ const bull=vehicles.find(o=>o.kind==='bull');
+ if(bull&&bull.state==='parked'&&Math.abs(bull.x-hx)<8){rect(hx-camera+BL.w/2-40,gy-BL.h-19,80,12,'#1d2a2d');text('CHARGING BULL',hx-camera+BL.w/2,gy-BL.h-9,9,'#f0dca0','center');
+  if(bullCarrier()&&!bull.freed&&Math.abs(player.x-hx)<520){const b=Math.sin(time*5)*3;poly([[hx-camera+BL.w/2-6,gy-BL.h-34+b],[hx-camera+BL.w/2+6,gy-BL.h-34+b],[hx-camera+BL.w/2,gy-BL.h-26+b]],'#f4cc5c');}}}
+function drawVehicles(layer:0|1){if(layer===0&&block.bull!==undefined)drawBullPlaza();if(layer===0&&block.pole!==undefined)drawPolePlinth();if(layer===0)for(const k of sinkers){ctx.globalAlpha=Math.max(0,1-k.t/W.wreckSink);drawVehicle(k.v);ctx.globalAlpha=1;}for(const v of vehicles){const front=v.state==='flying'||v.state==='held'||v.lane===1;if(front!==(layer===1))continue;drawVehicle(v);}}
 function drawVehicle(v:Vehicle){
  if(v.kind==='tether')return;// drawn with its balloon (drawBalloons)
  const x=v.x-camera;if(x<-90||x>viewW()+90)return;const off=v.state==='held'||upright(v)?0:VC.laneOffset[v.lane],w=v.w,h=v.h;
@@ -2842,8 +3565,10 @@ function drawVehicle(v:Vehicle){
  const L=-w/2,T=-h/2,glass='#b7d1c3',tire='#253839';
  if(v.kind==='lamp'&&v.pole!==undefined){const st=style(),wood=st==='tyo'||st==='hkg'?'#8d918e':'#5b4a3a';if(upright(v)){rect(-3,T,6,h,wood);rect(-16,T+6,32,4,wood);rect(-12,T+14,24,3,wood);for(const k of [-13,0,11])rect(k,T+2,3,5,'#d9dccd');
    if(st==='tyo'||st==='hkg'){rect(4,T+22,9,13,'#5c6463');rect(5,T+23,7,2,'#7b8483');rect(-12,T+40,24,2,wood);}// concrete pole with a pole-top transformer
-   if(st==='mex'){rect(-20,T+10,4,3,wood);rect(14,T+18,5,3,wood);ctx.strokeStyle='#222';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-18,T+12);ctx.quadraticCurveTo(-6,T+34,3,T+22);ctx.moveTo(2,T+8);ctx.quadraticCurveTo(10,T+30,16,T+20);ctx.stroke();}}// tangled bootleg taps
+   if(st==='mex'){rect(-20,T+10,4,3,wood);rect(14,T+18,5,3,wood);ctx.strokeStyle='#222';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-18,T+12);ctx.quadraticCurveTo(-6,T+34,3,T+22);ctx.moveTo(2,T+8);ctx.quadraticCurveTo(10,T+30,16,T+20);ctx.stroke();}// tangled bootleg taps
+   if(st==='syd'){rect(3,T+30,16,2,wood);rect(16,T+31,7,4,'#9aa3a8');rect(17,T+35,5,1,'#fff6d0');}}// timber pole with a streetlight bracket
   else{rect(L,-3,w,6,wood);rect(L+w-10,-16,4,32,wood);}}
+ else if(v.kind==='lamp'&&v.label==='bull head'){const br='#8a6a42',dk='#2a1d12';poly([[L,0],[L+w*.45,-h*.5],[L+w*.9,-h*.1],[L+w,h*.5],[L+w*.4,h*.5]],dk);poly([[L+2,0],[L+w*.45,-h*.4],[L+w*.86,-h*.05],[L+w*.94,h*.4],[L+w*.4,h*.42]],br);poly([[L+w*.7,-h*.1],[L+w*.86,-h*.9],[L+w*.96,-h*.5],[L+w*.86,0]],'#d9ad5e');poly([[L+w*.3,-h*.3],[L+w*.18,-h*1.1],[L+w*.4,-h*.6]],'#d9ad5e');}
  else if(v.kind==='lamp'&&v.label==='tree'){const trunk='#7a5a3a',leaf=v.color||'#4f7d4a';
   if(upright(v)){rect(-w*.22,T+h*.28,w*.44,h*.72,trunk);for(const [dx,dy] of [[-1,.1],[1,.1],[-.8,-.08],[.8,-.08],[0,-.16]])poly([[0,T+h*.26],[dx*w*1.4,T+h*(.2+dy)],[dx*w*1,T+h*(.34+dy)]],leaf);}
   else{const r=w*.26;rect(L,-h*.4,w*.72,Math.max(5,h*.8),trunk);for(const [dx,dy] of [[0,-1],[0,1],[1,-.6],[1,.6],[1.2,0]])poly([[L+w*.7,0],[L+w*.7+dx*r+w*.1,dy*r],[L+w*.7+dx*r*.5,dy*r*.4]],leaf);}}
@@ -2852,6 +3577,7 @@ function drawVehicle(v:Vehicle){
  else if(v.kind==='train'){const car=w/3,wreck=v.label==='wreck'||v.state==='wreck';for(let k=0;k<3;k++){const cx=L+k*car;
   rect(cx+2,T,car-4,h,wreck?'#5d6462':v.color);rect(cx+2,T+4,car-4,4,wreck?'#5a2a26':'#7c2f2f');for(let wx=cx+10;wx<cx+car-14;wx+=22)rect(wx,T+11,12,10,wreck?'#2a2e2d':'#f2e6a8');rect(cx+2,T+h-3,car-4,3,'#2c3332');}
   if(wreck&&Math.sin(time*11+v.id)>0)poly([[L+w*.4,T],[L+w*.45,T-12],[L+w*.5,T]],'#ff8a1f');}
+ else if(v.kind==='trajinera'){drawTrajinera(v,L,T,w,h);}
  else if(v.kind==='car'){if(v.label==='TAXI'){rect(L+w*.38,T-5,w*.24,5,'#f4ecd0');rect(L+w*.42,T-4,w*.16,2,'#2b2b2b');}rect(L,T+h*.38,w,h*.5,v.color);rect(L+w*.22,T,w*.55,h*.45,v.color);rect(L+w*.27,T+h*.12,w*.18,h*.3,glass);rect(L+w*.53,T+h*.12,w*.18,h*.3,glass);rect(L+w*.12,T+h*.72,w*.18,h*.3,tire);rect(L+w*.72,T+h*.72,w*.18,h*.3,tire);}
  else if(v.kind==='van'){rect(L,T,w*.76,h*.82,v.color);rect(L+w*.7,T+h*.3,w*.3,h*.52,v.color);rect(L+w*.78,T+h*.36,w*.16,h*.22,glass);rect(L+w*.06,T+h*.2,w*.6,h*.08,'#e8e2c8');rect(L+w*.1,T+h*.74,w*.16,h*.26,tire);rect(L+w*.7,T+h*.74,w*.16,h*.26,tire);}
  else if(v.kind==='patrol'||v.kind==='apc'||v.kind==='tank'||v.kind==='artillery'||v.kind==='boat'||v.kind==='gunboat'||v.kind==='destroyer'){ctx.translate(0,T);drawGroundUnit(v.kind,w,h);ctx.translate(0,-T);}
@@ -2873,19 +3599,36 @@ function drawVehicle(v:Vehicle){
   ctx.fillStyle='#8d8f86';ctx.beginPath();ctx.arc(0,0,11,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e9d6a2';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();}
  else if(v.kind==='coaster'){// The coaster train: three low open cars nose to tail, riders with their arms up.
   const car=w/3;for(let k=0;k<3;k++){const cx=L+k*car;rect(cx+2,T+h*.3,car-4,h*.7,k===0?'#b9402f':'#d9822b');rect(cx+2,T+h*.3,car-4,3,'#f2e6a8');for(const px of [.22,.62]){rect(cx+car*px,T,6,h*.34,'#e6c9a8');rect(cx+car*px-2,T-4,2,6,'#e6c9a8');rect(cx+car*px+6,T-4,2,6,'#e6c9a8');}rect(cx+5,T+h*.88,6,h*.14,tire);rect(cx+car-11,T+h*.88,6,h*.14,tire);}}
- else if(v.kind==='ball'){drawBallSphere(0,0,w/2,time);}
+ else if(v.kind==='stone'){// The Sun Stone: the carved calendar disc, rings of day signs round a central face (it turns as it rolls).
+  const r=w/2;ctx.fillStyle='#3d3226';ctx.beginPath();ctx.arc(0,0,r+1.5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#b49b6e';ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#9a8358';ctx.beginPath();ctx.arc(0,0,r*.84,0,Math.PI*2);ctx.fill();ctx.fillStyle='#c4ad7d';ctx.beginPath();ctx.arc(0,0,r*.7,0,Math.PI*2);ctx.fill();
+  for(let k=0;k<20;k++){const a=k*Math.PI/10;ctx.save();ctx.rotate(a);rect(-2,-r*.82,4,r*.12,'#6e5c3a');ctx.restore();}
+  for(let k=0;k<8;k++){const a=k*Math.PI/4;ctx.save();ctx.rotate(a);poly([[-3,-r*.68],[3,-r*.68],[0,-r*.96]],'#8a7449');ctx.restore();}
+  ctx.fillStyle='#8a7449';ctx.beginPath();ctx.arc(0,0,r*.34,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d9c593';ctx.beginPath();ctx.arc(0,0,r*.26,0,Math.PI*2);ctx.fill();rect(-r*.12,-r*.1,r*.08,r*.08,'#3d3226');rect(r*.04,-r*.1,r*.08,r*.08,'#3d3226');rect(-r*.08,r*.06,r*.16,r*.1,'#b9402f');}
+ else if(v.kind==='ball'){drawBallSphere(0,0,w/2,time,(v.hp??NYC2.ballHp)/NYC2.ballHp,true);}
  else if(v.kind==='carriage'){const run=v.state==='rolling'?Math.sin(time*18+v.id)*3:0,hc='#6b4528',bk='#26242a';
   rect(L+w*.04,T+h*.34,w*.5,h*.34,bk);poly([[L+w*.04,T+h*.34],[L+w*.1,T+h*.06],[L+w*.38,T+h*.06],[L+w*.54,T+h*.34]],'#34303a');rect(L+w*.04,T+h*.62,w*.5,3,'#c9a24a');rect(L+w*.16,T+h*.14,w*.16,h*.18,glass);
   for(const wx of [.14,.44]){ctx.strokeStyle='#d8cfae';ctx.lineWidth=2;ctx.beginPath();ctx.arc(L+w*wx,T+h*.82,h*.17,0,Math.PI*2);ctx.stroke();rect(L+w*wx-h*.17,T+h*.82-1,h*.34,2,'#d8cfae');}
   rect(L+w*.54,T+h*.5,w*.16,2,'#5a4a34');ctx.fillStyle=hc;ctx.beginPath();ctx.ellipse(L+w*.78,T+h*.42,w*.15,h*.2,0,0,Math.PI*2);ctx.fill();
   poly([[L+w*.88,T+h*.32],[L+w*.95,T+h*.1],[L+w*1,T+h*.16],[L+w*.97,T+h*.3],[L+w*.94,T+h*.44]],hc);poly([[L+w*.88,T+h*.3],[L+w*.9,T+h*.1],[L+w*.94,T+h*.1]],'#2a1a10');
   for(const k of [.68,.74,.84,.9])rect(L+w*k+(k>.8?run:-run),T+h*.56,3,h*.34,hc);poly([[L+w*.64,T+h*.32],[L+w*.55,T+h*.5],[L+w*.6,T+h*.54],[L+w*.66,T+h*.42]],'#2a1a10');}
- else if(v.kind==='bull'){// The Charging Bull: bronze, head down and horns forward, on a low plinth (facing the way it was set down, forward = +x).
-  const bronze='#4b3a2a',hi='#7a5f3c';rect(L-2,T+h*.86,w+4,h*.14,'#6e695c');
+ else if(v.kind==='pole'){// The Bandera Monumental's mast: a long steel pole. Standing: a gold ball on top and the huge flag streaming from it; carried, the flag trails from the tip.
+  const mast='#d9d6c8',shade='#9a9a90',wave=(i:number,n:number)=>Math.sin(time*3+i*.9)*5*(i/n);
+  if(upright(v)){rect(L,T,w,h,mast);rect(L+w*.6,T,w*.4,h,shade);ctx.fillStyle='#e6c25a';ctx.beginPath();ctx.arc(0,T-3,w*.7,0,Math.PI*2);ctx.fill();
+   const fw=Math.round(h*.38),fh=Math.round(h*.24);for(let k=0;k<3;k++){const c=['#2f7a4a','#f1ece0','#b9402f'][k];for(let i=0;i<12;i++){const x0=w/2+i*fw/12,x1=w/2+(i+1)*fw/12;poly([[x0,T+6+k*fh/3+wave(i,12)],[x1,T+6+k*fh/3+wave(i+1,12)],[x1,T+6+(k+1)*fh/3+wave(i+1,12)],[x0,T+6+(k+1)*fh/3+wave(i,12)]],c);}}}
+  else{rect(L,T,w,h,mast);rect(L,T+h*.6,w,h*.4,shade);ctx.fillStyle='#e6c25a';ctx.beginPath();ctx.arc(L+w+2,0,h*.8,0,Math.PI*2);ctx.fill();const fw=h*5,fh=h*3.2;for(let k=0;k<3;k++){const c=['#2f7a4a','#f1ece0','#b9402f'][k];poly([[L+w*.05,T-fh+k*fh/3],[L+w*.05+fw*.55,T-fh+k*fh/3+wave(5,12)+3],[L+w*.05+fw*.55,T-fh+(k+1)*fh/3+wave(5,12)+3],[L+w*.05,T-fh+(k+1)*fh/3]],c);}}}
+ else if(v.kind==='bull'){// The Charging Bull: bright bronze with a dark outline, head down and horns forward, on a stone plinth (forward = +x).
+  const r=(v.hp??BL.hp)/BL.hp,bronze='#6b4f2f',hi='#d9ad5e',dark='#2a1d12',stone='#bdb7a4';
+  rect(L-5,T+h*.8,w+10,h*.2,dark);rect(L-4,T+h*.82,w+8,h*.18,stone);rect(L-4,T+h*.82,w+8,2,'#e2dcc8');rect(L-4,T+h*.9,w+8,1,'#8d8878');
+  ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(-w*.1,T+h*.46,w*.38+1.5,h*.3+1.5,0,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=bronze;ctx.beginPath();ctx.ellipse(-w*.1,T+h*.46,w*.38,h*.3,0,0,Math.PI*2);ctx.fill();
-  poly([[w*.18,T+h*.3],[w*.46,T+h*.34],[w*.5,T+h*.6],[w*.3,T+h*.66],[w*.2,T+h*.52]],bronze);
-  poly([[w*.34,T+h*.34],[w*.46,T+h*.12],[w*.52,T+h*.18],[w*.44,T+h*.38]],hi);poly([[w*.2,T+h*.28],[w*.14,T+h*.1],[w*.22,T+h*.14],[w*.28,T+h*.3]],hi);
-  for(const lx of [-.34,-.2,.04,.18])rect(w*lx-3,T+h*.62,6,h*.26,bronze);rect(-w*.5,T+h*.36,w*.12,4,bronze);ctx.fillStyle=hi;ctx.fillRect(-w*.16,T+h*.26,w*.3,3);}
+  poly([[w*.17,T+h*.28],[w*.47,T+h*.33],[w*.51,T+h*.62],[w*.3,T+h*.68],[w*.19,T+h*.52]],dark);poly([[w*.18,T+h*.3],[w*.46,T+h*.34],[w*.5,T+h*.6],[w*.3,T+h*.66],[w*.2,T+h*.52]],bronze);
+  if(r>=BL.hornAt)poly([[w*.34,T+h*.34],[w*.46,T+h*.1],[w*.53,T+h*.17],[w*.44,T+h*.38]],hi);else poly([[w*.34,T+h*.34],[w*.4,T+h*.26],[w*.44,T+h*.38]],hi);
+  poly([[w*.2,T+h*.28],[w*.14,T+h*.08],[w*.23,T+h*.13],[w*.28,T+h*.3]],hi);
+  for(const lx of [-.34,-.2,.04,.18]){rect(w*lx-4,T+h*.6,8,h*.24,dark);rect(w*lx-3,T+h*.62,6,h*.22,bronze);}rect(-w*.5,T+h*.36,w*.13,4,bronze);ctx.fillStyle=hi;ctx.fillRect(-w*.18,T+h*.24,w*.34,3);ctx.fillRect(-w*.3,T+h*.34,w*.12,2);
+  // Damage: a dent in the flank, then cracks, then a horn gone.
+  if(r<BL.dentAt){ctx.fillStyle=dark;ctx.beginPath();ctx.ellipse(-w*.15,T+h*.42,w*.1,h*.09,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8a6a42';ctx.fillRect(-w*.2,T+h*.38,w*.08,2);}
+  if(r<BL.crackAt){ctx.strokeStyle='#f3dca0';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-w*.3,T+h*.3);ctx.lineTo(-w*.22,T+h*.45);ctx.lineTo(-w*.28,T+h*.55);ctx.moveTo(w*.05,T+h*.34);ctx.lineTo(w*.12,T+h*.46);ctx.lineTo(w*.06,T+h*.58);ctx.stroke();}}
  else if(v.kind==='barrier'){rect(L,T+h*.12,w,h*.88,'#8d8f86');rect(L-2,T,w+4,h*.14,'#a5a69c');for(let k=0;k<3;k++)rect(L+3+k*w/3,T+h*.4,w/6,h*.2,'#d9b45a');}
  else{rect(L,T,w,h*.84,v.color);rect(L,T+h*.56,w,h*.08,'#e8e2c8');for(let k=0;k<5;k++)rect(L+4+k*(w-8)/5,T+h*.14,(w-8)/5-3,h*.3,glass);rect(L+w*.1,T+h*.76,w*.12,h*.24,tire);rect(L+w*.76,T+h*.76,w*.12,h*.24,tire);if(v.label==='TROLLEY'){rect(L+w*.3,T-16,2,16,'#2b2b2b');rect(L+w*.6,T-16,2,16,'#2b2b2b');}}
  if(v.state==='wreck'){ctx.globalAlpha=.38;rect(L,T,w,h,'#1c2629');ctx.globalAlpha=1;rect(L+w*.35,T+h*.1,3,h*.6,'#2b3538');}
@@ -2900,6 +3643,7 @@ function drawCivilian(c:{x:number,variant:number,panicked:boolean},x:number){
  const v=c.variant,run=c.panicked,dir=run?(c.x<player.x+bodyWidth()/2?-1:1):1,step=run?Math.sin(time*18+c.x):0,bob=run?0:Math.sin(time*3+c.x)*.3;
  ctx.save();ctx.translate(Math.round(x+M.civilianW/2),Math.round(groundAt(c.x)-M.civilianH));ctx.scale(dir*M.civilianW/7,M.civilianH/14);ctx.translate(0,bob);
  rect(-2,0,4,4,CIV_SKIN[v]);rect(-2,-1,4,2,CIV_HAIR[v]);if(v===2)rect(-3,0,1,3,CIV_HAIR[v]);
+ if(block.catrinas){rect(-2,0,4,4,'#f2ead8');rect(-2,1,1,1,'#2b2118');rect(1,1,1,1,'#2b2118');rect(-1,3,2,1,'#2b2118');rect(-3,-2,6,2,['#d94b8a','#e5a82a','#7b3f9e'][v]);}// Reforma's crowd wears catrina makeup
  rect(-3,4,6,5,CIV_SHIRT[v]);rect(-3,9,6,2,CIV_PANTS[v]);
  if(run){rect(-4,1,1,4,CIV_SHIRT[v]);rect(3,1,1,4,CIV_SHIRT[v]);rect(-4,0,1,1,CIV_SKIN[v]);rect(3,0,1,1,CIV_SKIN[v]);}
  else{rect(-4,4,1,4,CIV_SHIRT[v]);rect(3,4,1,4,CIV_SHIRT[v]);}
@@ -3072,8 +3816,24 @@ function drawSlab(b:typeof buildings[number]){
  if(k<.4&&particles.length<C.particleCap&&Math.random()<.2)particles.push({x:b.x+Math.random()*b.w,y:top+t,vx:0,vy:60,life:.5,color:'#8a908c',size:2});}
 // Facade decorations for the SF levels (BuildingSpec.deco): drawn instead of the city's own facade, damage marks go on top.
 function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const bw=b.w-7,base=b.base,mood=moodNow();
- const win=(wx:number,wy:number,ww:number,wh:number)=>{rect(wx,wy,ww,wh,'#2a3a42');rect(wx+1,wy+1,ww-2,wh*.45,mood.lights>.5?mood.win:'#8fb0bd');};
+ const win=(wx:number,wy:number,ww:number,wh:number)=>{rect(wx,wy,ww,wh,'#2a3a42');rect(wx+1,wy+1,ww-2,wh*.45,block.moodRamp&&hexOk(mood.win)?mixHex('#8fb0bd',mood.win,thr(mood.lights,.5,.4)):mood.lights>.5?mood.win:'#8fb0bd');};
  switch(b.deco){
+  case 'ruinwall':{// Templo Mayor: the temple's stone base, dressed courses with a carved band and a talud (a sloped lower course), a serpent's head in relief on the west face.
+   rect(x,y,bw,h,'#8a8672');rect(x,y,bw,4,'#b4af98');for(let yy=y+16;yy<base-2;yy+=16)rect(x,yy,bw,1,'#6a6757');
+   for(let yy=y+8,r=0;yy<base-2;yy+=16,r++)for(let xx=x+(r%2?14:4);xx<x+bw-3;xx+=28)rect(xx,yy,1,8,'#6a6757');
+   rect(x,y+h*.28,bw,h*.12,'#9a9680');for(let xx=x+8;xx<x+bw-8;xx+=18)rect(xx,y+h*.3,8,h*.08,'#7d7967');
+   poly([[x,base],[x+14,base-h*.22],[x+bw-14,base-h*.22],[x+bw,base]],'#7a7662');
+   poly([[x+8,y+h*.55],[x+34,y+h*.5],[x+52,y+h*.62],[x+34,y+h*.78],[x+8,y+h*.74]],'#7d7660');rect(x+26,y+h*.58,6,6,'#3fb7a8');
+   break;}
+  case 'mercado':{// The market hall: a gabled iron-and-tile roof on slim piers, open underneath (the crystal glows under it).
+   for(const t of drawnParts(b,x,h)){if(t.grounded){rect(t.x,t.y,t.w,t.h,'#7a6a52');rect(t.x,t.y,t.w,3,'#a99a78');}
+    else{rect(t.x,t.y,t.w,t.h,'#b3604a');poly([[t.x-6,t.y],[t.x+t.w/2,t.y-26],[t.x+t.w+6,t.y]],'#8f4a3a');for(let xx=t.x+6;xx<t.x+t.w-8;xx+=24)rect(xx,t.y+3,12,t.h-5,(xx/24|0)%2?'#e7c07a':'#c2402b');rect(t.x+t.w*.16,t.y+t.h*.12,t.w*.68,t.h*.68,'#263e46');text('MERCADO DE LA MERCED',t.x+t.w/2,t.y+t.h*.62,9,'#eddfa8','center');}}
+   break;}
+  case 'mstall':{// A market stall: a plank counter with crates, under a striped awning (its colour is the run's).
+   const cw=b.w-4;rect(x+2,y+h*.5,cw-2,h*.5,'#6b5a48');rect(x+4,y+h*.55,cw-6,h*.14,'#c9a24a');for(let cx=x+6;cx<x+cw-14;cx+=22){rect(cx,y+h*.74,16,h*.26,'#8a6d44');rect(cx+2,y+h*.78,12,2,'#6b5338');}
+   rect(x+1,y+h*.16,3,h*.84,'#4a3d2a');rect(x+cw-3,y+h*.16,3,h*.84,'#4a3d2a');
+   for(let k=0,n=Math.max(3,Math.round(cw/12));k<n;k++){const sx=x-3+k*(cw+6)/n,sw=(cw+6)/n;poly([[sx,y+h*.1],[sx+sw,y+h*.1],[sx+sw,y+h*.4],[sx,y+h*.4]],k%2?'#efe6cc':b.color);}
+   break;}
   case 'boathouse':{// A boathouse on the dock: weathered planks, a pitched roof and a wide door onto the slip.
    rect(x,y+h*.28,bw,h*.72,'#6b5a48');for(let xx=x+5;xx<x+bw;xx+=7)rect(xx,y+h*.28,1,h*.72,'#54463a');poly([[x-5,y+h*.3],[x+bw/2,y-4],[x+bw+5,y+h*.3]],'#4a3f38');
    rect(x+bw*.3,base-h*.55,bw*.4,h*.55,'#2a2420');rect(x+bw*.3,base-h*.55,bw*.4,3,'#8a7a5a');win(x+bw*.1,y+h*.42,12,14);win(x+bw*.8,y+h*.42,12,14);break;}
@@ -3112,10 +3872,32 @@ function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const b
    rect(x,y,bw,h,'#b9b4a6');for(let k=0;k<5;k++)rect(x+bw*(.1+k*.19),y+h*.1,6,h*.8,'#cfc9ba');rect(x-3,y,bw+6,7,'#9b9688');
    const vx=x+bw/2,vy=base-h*.2,vr=Math.min(bw,h)*.17;ctx.fillStyle='#4f565c';ctx.beginPath();ctx.arc(vx,vy,vr,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8a949a';ctx.beginPath();ctx.arc(vx,vy,vr*.7,0,Math.PI*2);ctx.fill();
    for(let k=0;k<4;k++){const a=k*Math.PI/2+.4;rect(vx+Math.cos(a)*vr*.4-1,vy+Math.sin(a)*vr*.4-1,3,3,'#e7b932');}rect(vx-1,vy-1,3,3,'#e7b932');text('BANK',x+bw/2,y+h*.06+8,9,'#4a463c','center');break;}
+  case 'fountain':{// An Alameda fountain: a stone basin and a tiered bowl, the water running green.
+   rect(x,y+h*.55,bw,h*.45,'#b8b19a');rect(x,y+h*.55,bw,3,'#d6cfba');ctx.fillStyle='#58c46a';ctx.beginPath();ctx.ellipse(x+bw/2,y+h*.58,bw*.44,h*.12,0,0,Math.PI*2);ctx.fill();
+   rect(x+bw*.42,y+h*.14,bw*.16,h*.5,'#a39c86');rect(x+bw*.3,y+h*.2,bw*.4,4,'#b8b19a');ctx.strokeStyle='#8ee07a';ctx.lineWidth=1.5;ctx.beginPath();for(const d of [-1,0,1]){const sw=Math.sin(time*4+d)*2;ctx.moveTo(x+bw/2,y+h*.12);ctx.quadraticCurveTo(x+bw/2+d*bw*.22+sw,y-h*.12,x+bw/2+d*bw*.34,y+h*.56);}ctx.stroke();ctx.lineWidth=1;break;}
+  case 'museo':{// The Museo Nacional de Antropología: a broad concrete roof (the umbrella over the patio) on slim pillars, a carved frieze, the wall behind it dark.
+   rect(x+6,y+h*.27,bw-12,h*.73,'#6f624a');for(let k=x+14;k<x+bw-14;k+=22)rect(k,y+h*.34,10,h*.4,'#8c7c5e');
+   rect(x,y,bw,h*.27,b.color);rect(x-4,y-4,bw+8,6,'#e2d7b4');for(let k=x+8;k<x+bw-10;k+=16){rect(k,y+h*.08,8,5,'#a99a76');rect(k+3,y+h*.14,2,5,'#a99a76');}
+   for(let k=0;k<5;k++)rect(x+k*(bw-14)/4,y+h*.27,14,h*.73,'#d8cdb0');rect(x+bw*.4,y+h*.62,bw*.2,h*.38,'#3f6a52');rect(x+bw*.48,y+h*.3,bw*.04,h*.32,'#cfc3a0');break;}
+  case 'mfloat':{// A Día de Muertos parade float: a flatbed in marigold fringe with a painted figure on top (catrina, skeleton, alebrije or a marigold arch, by position).
+   const v=Math.abs(Math.round(b.x/37))%4,c=b.color,wh='#f4f0e0',mg=['#f2a31c','#e5701b','#f7c63a'];
+   rect(x,y+h*.6,bw,h*.26,c);rect(x,y+h*.6,bw,3,wh);for(let k=0;k<bw-6;k+=8){poly([[x+k,y+h*.86],[x+k+4,y+h*.99],[x+k+8,y+h*.86]],mg[(k/8|0)%3]);}
+   if(v===0){poly([[x+bw*.3,y+h*.6],[x+bw*.5,y+h*.3],[x+bw*.7,y+h*.6]],c);ctx.fillStyle=wh;ctx.beginPath();ctx.arc(x+bw*.5,y+h*.22,h*.14,0,Math.PI*2);ctx.fill();rect(x+bw*.44,y+h*.19,3,3,'#2b2118');rect(x+bw*.54,y+h*.19,3,3,'#2b2118');rect(x+bw*.46,y+h*.27,bw*.08,2,'#2b2118');ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(x+bw*.5,y+h*.1,bw*.3,h*.06,0,0,Math.PI*2);ctx.fill();for(const k of [.3,.5,.7])rect(x+bw*k-3,y+h*.02,6,6,mg[0]);}
+   else if(v===1){ctx.fillStyle=wh;ctx.beginPath();ctx.arc(x+bw*.5,y+h*.2,h*.13,0,Math.PI*2);ctx.fill();rect(x+bw*.45,y+h*.17,3,3,'#2b2118');rect(x+bw*.54,y+h*.17,3,3,'#2b2118');rect(x+bw*.47,y+h*.26,bw*.06,2,'#2b2118');rect(x+bw*.48,y+h*.33,bw*.04,h*.27,wh);for(let k=0;k<3;k++)rect(x+bw*.4,y+h*.36+k*h*.07,bw*.2,2,wh);rect(x+bw*.3,y+h*.3,bw*.2,2,wh);rect(x+bw*.5,y+h*.3,bw*.2,2,wh);rect(x+bw*.26,y+h*.14,2,h*.18,wh);rect(x+bw*.72,y+h*.14,2,h*.18,wh);rect(x+bw*.3,y+h*.1,bw*.4,3,c);}
+   else if(v===2){ctx.fillStyle='#d94b8a';ctx.beginPath();ctx.ellipse(x+bw*.45,y+h*.4,bw*.28,h*.17,0,0,Math.PI*2);ctx.fill();for(let k=0;k<5;k++)rect(x+bw*(.22+k*.1),y+h*.32,bw*.05,h*.16,['#2f9aa6','#f7c63a','#7b3f9e','#5c8a3c','#f2a31c'][k]);ctx.fillStyle='#2f9aa6';ctx.beginPath();ctx.ellipse(x+bw*.76,y+h*.3,bw*.12,h*.12,0,0,Math.PI*2);ctx.fill();poly([[x+bw*.7,y+h*.2],[x+bw*.68,y+h*.04],[x+bw*.74,y+h*.18]],'#f7c63a');poly([[x+bw*.8,y+h*.2],[x+bw*.84,y+h*.04],[x+bw*.84,y+h*.2]],'#f7c63a');rect(x+bw*.74,y+h*.28,3,3,'#2b2118');for(const k of [.28,.38,.52,.6])rect(x+bw*k,y+h*.54,4,h*.1,'#7b3f9e');ctx.strokeStyle='#f7c63a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+bw*.17,y+h*.4);ctx.quadraticCurveTo(x+bw*.05,y+h*.2,x+bw*.12,y+h*.1);ctx.stroke();ctx.lineWidth=1;}
+   else{ctx.strokeStyle=mg[1];ctx.lineWidth=7;ctx.beginPath();ctx.arc(x+bw*.5,y+h*.6,bw*.34,Math.PI,0);ctx.stroke();ctx.lineWidth=1;for(let k=0;k<9;k++){const a=Math.PI+k*Math.PI/8;ctx.fillStyle=mg[k%3];ctx.beginPath();ctx.arc(x+bw*.5+Math.cos(a)*bw*.34,y+h*.6+Math.sin(a)*bw*.34,5,0,Math.PI*2);ctx.fill();}ctx.fillStyle=wh;ctx.beginPath();ctx.arc(x+bw*.5,y+h*.3,h*.11,0,Math.PI*2);ctx.fill();rect(x+bw*.46,y+h*.27,2,3,'#2b2118');rect(x+bw*.53,y+h*.27,2,3,'#2b2118');}
+   for(const k of [.18,.8]){ctx.fillStyle='#22282b';ctx.beginPath();ctx.arc(x+bw*k,base-5,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8a9094';ctx.beginPath();ctx.arc(x+bw*k,base-5,3,0,Math.PI*2);ctx.fill();}break;}
   case 'float':{// A parade float used as a barricade: a flatbed in crepe paper and bunting with a painted figure on top.
    rect(x,y+h*.5,bw,h*.36,b.color);rect(x,y+h*.5,bw,3,'#f4f0e0');for(let k=0;k<bw-6;k+=10)poly([[x+k,y+h*.86],[x+k+5,y+h*.98],[x+k+10,y+h*.86]],k%20?'#f4f0e0':'#b9402f');
    ctx.fillStyle=b.color;ctx.beginPath();ctx.ellipse(x+bw*.5,y+h*.3,bw*.2,h*.22,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f4f0e0';ctx.beginPath();ctx.arc(x+bw*.56,y+h*.24,3,0,Math.PI*2);ctx.fill();rect(x+bw*.3,y+h*.1,3,h*.2,'#ffd34d');rect(x+bw*.64,y+h*.1,3,h*.2,'#ffd34d');
    for(const k of [.18,.8]){ctx.fillStyle='#22282b';ctx.beginPath();ctx.arc(x+bw*k,base-5,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#8a9094';ctx.beginPath();ctx.arc(x+bw*k,base-5,3,0,Math.PI*2);ctx.fill();}break;}
+  case 'choza':{// A chinampa hut: plank walls, a slanting tin roof, a door and a crate of marigolds.
+   rect(x,y+h*.34,bw,h*.66,'#a98a5a');for(let xx=x+6;xx<x+bw;xx+=7)rect(xx,y+h*.34,1,h*.66,'#85693f');poly([[x-4,y+h*.36],[x+bw*.5,y],[x+bw+4,y+h*.36]],'#8a8f90');
+   rect(x+bw*.58,y+h*.52,bw*.24,h*.48,'#3b2d1e');rect(x+bw*.1,y+h*.5,bw*.3,h*.22,'#d8c070');for(let k=0;k<3;k++)rect(x+bw*.1+k*bw*.1,y+h*.74,5,5,['#f2a21e','#e8761e','#f2c230'][k]);break;}
+  case 'estacion':{// The Tren Ligero's stop: a raised platform under a canopy, a light-rail car standing at it (the way in, and the way out).
+   rect(x,base-12,bw,12,'#a9a69b');rect(x,base-14,bw,3,'#cfcbbd');for(let xx=x+6;xx<x+bw-4;xx+=36)rect(xx,y+h*.14,4,h*.66,'#6b6f6e');rect(x-4,y+h*.1,bw+8,6,'#4a6c8a');rect(x-4,y+h*.1,bw+8,2,'#7fa8c9');
+   rect(x+8,base-h*.62,bw-16,h*.5,'#eceae0');rect(x+8,base-h*.4,bw-16,h*.1,'#2f6fb0');for(let xx=x+18;xx<x+bw-26;xx+=30)rect(xx,base-h*.56,18,h*.18,'#2c3a42');rect(x+bw-26,base-h*.58,14,h*.22,'#2c3a42');
+   ctx.fillStyle='#2b2b2b';for(const k of [.16,.84]){ctx.beginPath();ctx.arc(x+bw*k,base-13,3,0,Math.PI*2);ctx.fill();}break;}
   case 'wall':{// A garden retaining wall: dressed stone with a hedge on top.
    rect(x,y,bw,h,'#a39a88');for(let yy=y+8;yy<base-4;yy+=10)rect(x,yy,bw,1,'#857d6c');for(let xx=x+10;xx<x+bw;xx+=26)rect(xx,y+6,1,h-10,'#857d6c');rect(x-3,y-3,bw+6,6,'#c4baa4');
    ctx.fillStyle='#4f7d4a';for(let xx=x;xx<x+bw;xx+=14){ctx.beginPath();ctx.arc(xx+7,y-4,8,Math.PI,0);ctx.fill();}break;}
@@ -3170,7 +3952,7 @@ function drawDeco(b:typeof buildings[number],x:number,y:number,h:number){const b
    for(let f=0;f<floors;f++){const yy=y+f*fh;for(let wx=x+8;wx<x+bw-18;wx+=22)win(wx,yy+10,12,fh*.45);if(f>0){rect(x+3,yy,bw-6,4,paints[(f+Math.floor(b.x/90))%3]);for(let rx=x+5;rx<x+bw-8;rx+=6)rect(rx,yy+4,1,7,paints[(f+Math.floor(b.x/90))%3]);}}
    poly([[x-7,y+6],[x+9,y-9],[x+bw*.34,y-9],[x+bw*.34+14,y+6]],'#2f5a45');rect(x+bw*.1,y-14,4,6,'#c9a441');rect(x+bw*.5,y-3,bw*.4,3,'#3a2d2a');
    rect(x+bw*.3,base-26,bw*.38,26,'#3a2d2a');rect(x+bw*.3,base-26,bw*.38,3,paints[Math.floor(b.x/70)%3]);
-   if(mood.lights>.4)for(let k=0;k<3;k++)rect(x+8+k*(bw-18)/2,y+h*.18,5,7,'#e8401a');break;}
+   {const wa=thr(mood.lights,.4,.3);if(wa>0){ctx.globalAlpha=wa;for(let k=0;k<3;k++)rect(x+8+k*(bw-18)/2,y+h*.18,5,7,'#e8401a');ctx.globalAlpha=1;}}break;}
   case 'fireworks':{// A red shopfront with painted rockets and a gold sign; flashes now and then.
    rect(x,y,bw,h,'#a83a30');rect(x,y,bw,6,'#c9a441');for(let yy=y+10;yy<base-16;yy+=26)for(let wx=x+8;wx<x+bw-18;wx+=22)win(wx,yy,12,12);
    for(let k=0;k<3;k++){const rx=x+10+k*(bw-24)/2,ry=base-52;rect(rx,ry+6,5,24,'#e8dfc4');poly([[rx,ry+6],[rx+2.5,ry-4],[rx+5,ry+6]],'#c0392b');rect(rx+2,ry+30,1,8,'#c9a441');}
@@ -3229,6 +4011,15 @@ function drawLanterns(){for(const s of strings){const a=s.x0-camera,z=s.x1-camer
    if(lit){const f=Math.sin(time*18+i)>0;poly([[x-6,y+8],[x-3,y-6-(f?5:0)],[x,y+2],[x+3,y-9+(f?4:0)],[x+6,y+8]],f?'#ffb13b':'#e8401a');rect(x-3,y+2,6,6,'#ffd84f');}
    else{rect(x-1,y,2,3,'#2b2118');rect(x-4,y+3,8,9,i%2?'#c0392b':'#d94f3f');rect(x-4,y+3,8,2,'#c9a441');rect(x-4,y+10,8,2,'#c9a441');}}
   ctx.lineWidth=1;ctx.globalAlpha=1;}}
+// Papel picado: a sagging string of cut-paper flags between two buildings; a burning one is eaten by a paper flame that runs away from the end it started at.
+function drawPicados(){const cols=['#e0457b','#f2a31c','#2f9aa6','#f7d13a','#7b3f9e','#5c9a3c'];for(const s of picados){if(s.state==='gone')continue;const a=s.x0-camera,z=s.x1-camera;if(z<-40||a>viewW()+40)continue;
+  const y0=groundAt(s.x0)-s.h,y1=groundAt(s.x1)-s.h,sag=PICADO.sag,prog=s.state==='burning'?1-s.t/PICADO.burn:0;
+  ctx.strokeStyle='#4a3a2a';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(a,y0);ctx.quadraticCurveTo((a+z)/2,(y0+y1)/2+sag*2,z,y1);ctx.stroke();
+  for(let i=0;i<s.n;i++){const t=(i+.5)/s.n,x=a+(z-a)*t,y=(1-t)*(1-t)*y0+2*(1-t)*t*((y0+y1)/2+sag*2)+t*t*y1,d=s.from===0?t:1-t;
+   if(s.state==='burning'&&d<prog)continue;
+   if(s.state==='burning'&&d<prog+.14){const f=Math.sin(time*20+i)>0;poly([[x-6,y+12],[x-3,y-4-(f?6:0)],[x,y+4],[x+3,y-8+(f?4:0)],[x+6,y+12]],f?'#ffb13b':'#e8401a');rect(x-3,y+4,6,6,'#ffd84f');continue;}
+   const c=cols[(i+(s.x0|0))%cols.length],sw=Math.sin(time*2+i)*1.2;rect(x-6+sw,y+1,12,14,c);rect(x-2+sw,y+4,4,4,'#f4f0e0');rect(x-5+sw,y+9,2,3,'#f4f0e0');rect(x+3+sw,y+9,2,3,'#f4f0e0');rect(x-6+sw,y+13,2,2,'#f4f0e0');rect(x+4+sw,y+13,2,2,'#f4f0e0');}
+  ctx.lineWidth=1;}}
 function drawSprays(){for(const p of sprays){ctx.globalAlpha=Math.min(1,p.life*1.4);rect(p.x-camera,p.y,3,3,'#bfe8ff');}ctx.globalAlpha=1;}
 // The campaign target: the central crystal, the Ferry Building clock tower, or the SFPD command post.
 function drawObjectiveArt(o:NonNullable<typeof objective>){const x=o.x-camera,gy=groundAt(o.x);
@@ -3313,6 +4104,32 @@ function drawObjectiveArt(o:NonNullable<typeof objective>){const x=o.x-camera,gy
   if(hp<.66)poly([[x-w*.3,top+o.h*.2],[x-w*.24,top+o.h*.5],[x-w*.33,top+o.h*.7],[x-w*.18,gy-6],[x-w*.22,top+o.h*.45]],'#4f5a60');
   if(hp<.33)for(let n=0;n<3;n++)rect(x-w*.2+n*w*.2+Math.sin(time*2+n)*4,top-10-n*10-(time*9%10),12,10,'#69736c');
   text(o.label,x,top-30,10,'#3b504a','center');return;}
+ if(o.art==='palace'){const w=o.w,hp=o.hp/o.maxHP,top=gy-o.h,stone='#b5654a',trim='#dcccaa',dark='#2f3a40';
+  // The Palacio Nacional: a long, low facade of red tezontle with white stone trim, three portals, two rows of windows under a parapet, a clock tower and flag over the middle portal; the police command post (a van with a light bar, cones) in the courtyard beside it.
+  rect(x-w/2,top+o.h*.16,w,o.h*.84,stone);rect(x-w/2-4,top+o.h*.16-5,w+8,6,trim);for(let wx=x-w/2+10;wx<x+w/2-12;wx+=18)rect(wx,top+o.h*.16-9,8,5,trim);
+  for(let wx=x-w/2+12;wx<x+w/2-14;wx+=21){for(const wy of [.3,.56]){rect(wx,top+o.h*wy,9,o.h*.16,dark);rect(wx-2,top+o.h*wy-2,13,2,trim);}}
+  for(const d of [-.34,0,.34]){const px=x+d*w;rect(px-13,gy-o.h*.3,26,o.h*.3,dark);ctx.fillStyle=dark;ctx.beginPath();ctx.arc(px,gy-o.h*.3,13,Math.PI,0);ctx.fill();rect(px-18,gy-o.h*.3-17,36,3,trim);}
+  rect(x-15,top-12,30,o.h*.16+12,stone);rect(x-17,top-16,34,4,trim);rect(x-10,top-34,20,18,trim);ctx.fillStyle=trim;ctx.beginPath();ctx.arc(x,top-34,10,Math.PI,0);ctx.fill();ctx.fillStyle='#2b2118';ctx.beginPath();ctx.arc(x,top-26,5,0,Math.PI*2);ctx.fill();rect(x-1,top-62,2,28,'#c9c9c0');poly([[x+1,top-62],[x+22,top-56],[x+1,top-49]],'#2f7a4a');poly([[x+1,top-56],[x+12,top-53],[x+1,top-50]],'#f1ece0');
+  rect(x-w/2,gy-o.h*.08,w,o.h*.08,trim);
+  const px2=x+w/2+10;rect(px2,gy-18,40,14,'#2f4f78');rect(px2+4,gy-26,22,9,'#2f4f78');rect(px2+6,gy-24,8,6,'#9cc4d6');rect(px2+16,gy-24,8,6,'#9cc4d6');const bl=Math.sin(time*6)>0;rect(px2+8,gy-30,6,4,bl?'#e8401a':'#3a5a8a');rect(px2+16,gy-30,6,4,bl?'#3a5a8a':'#e8401a');rect(px2+2,gy-6,6,6,'#1a1a1a');rect(px2+30,gy-6,6,6,'#1a1a1a');text('POLICÍA',px2+20,gy-10,6,'#e8e2d2','center');for(const cxn of [px2+46,px2+54])poly([[cxn,gy],[cxn+3,gy-9],[cxn+6,gy]],'#f08a24');
+  if(hp<.66)poly([[x-w*.3,top+o.h*.16],[x-w*.24,top+o.h*.5],[x-w*.33,top+o.h*.7],[x-w*.18,gy-6],[x-w*.22,top+o.h*.4]],'#4f5a60');
+  if(hp<.33)for(let n=0;n<3;n++)rect(x-w*.2+n*w*.2+Math.sin(time*2+n)*4,top-10-n*10-(time*9%10),12,10,'#69736c');
+  text(o.label,x,top-70,10,'#3b504a','center');return;}
+ if(o.art==='campo'){const w=o.w,hp=o.hp/o.maxHP,top=gy-o.h,conc='#cfc6b0',shade='#a99f88',dark='#2f3a40',olive='#5b6b4a',mg=MEX2.campo;
+  // Campo Marte, the army's parade ground turned field HQ: a long low grandstand facing the field (rows of seats under a canopy), the command post dug in beneath it, a helipad with helicopters on the ground, tents and parked armour on the field round it.
+  rect(x-w/2-640,gy-3,w+1280,3,'#6f8f4a');for(let k=-5;k<=5;k++)rect(x+k*110,gy-3,3,3,'#e8e4d0');
+  rect(x-w/2,top+o.h*.3,w,o.h*.7,conc);for(let k=0;k<4;k++){rect(x-w/2+6+k*4,top+o.h*.38+k*o.h*.13,w-12-k*8,3,shade);for(let sx=x-w/2+12+k*4;sx<x+w/2-14;sx+=14)rect(sx,top+o.h*.38+k*o.h*.13-4,7,4,k%2?'#5b6b4a':'#8a6f3c');}
+  rect(x-w/2-8,top+o.h*.12,w+16,6,olive);for(let px=x-w/2+4;px<x+w/2;px+=w/6)rect(px,top+o.h*.12,3,o.h*.2,shade);
+  rect(x-w*.13,gy-o.h*.36,w*.26,o.h*.36,dark);for(let sx=x-w*.15;sx<x+w*.15;sx+=10)rect(sx,gy-o.h*.4,9,o.h*.1,'#8a7a5a');rect(x-w*.06,gy-o.h*.3,w*.12,o.h*.12,'#4f7a96');
+  rect(x-1,top-30,2,o.h*.12+30,'#c9c9c0');poly([[x+1,top-30],[x+22,top-24],[x+1,top-17]],'#2f7a4a');poly([[x+1,top-24],[x+12,top-21],[x+1,top-18]],'#f1ece0');rect(x+w*.3,top+o.h*.04,2,o.h*.1,'#9aa0a2');ctx.fillStyle='#9aa0a2';ctx.beginPath();ctx.arc(x+w*.3+1,top+o.h*.04,6,Math.PI,0);ctx.fill();
+  for(const tx of [w/2+60,w/2+140]){poly([[x+tx-34,gy],[x+tx,gy-o.h*.42],[x+tx+34,gy]],olive);poly([[x+tx,gy-o.h*.42],[x+tx+34,gy],[x+tx+10,gy]],'#4a5a3b');rect(x+tx-6,gy-o.h*.22,12,o.h*.22,dark);}
+  {const tx=x+w/2+230;rect(tx-26,gy-16,52,10,'#4a5a3b');rect(tx-14,gy-24,28,9,'#55663f');rect(tx+10,gy-22,28,3,'#3a4a2d');rect(tx-28,gy-7,56,7,'#26302a');}
+  for(let i=0;i<mg.pads.length;i++){const px=x+mg.pads[i];rect(px-46,gy-7,92,7,'#5d6468');ctx.strokeStyle='#e8e4d0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,gy-3,18,Math.PI,0);ctx.stroke();ctx.lineWidth=1;text('H',px,gy-9,9,'#e8e4d0','center');
+   if(!campoLaunched){const hy=gy-22,spin=campoWoke?Math.min(1,campoT/mg.lift):0;ctx.fillStyle='#3e4c3a';ctx.beginPath();ctx.ellipse(px,hy,22,9,0,0,Math.PI*2);ctx.fill();rect(px-44,hy-3,26,4,'#3e4c3a');rect(px-46,hy-9,3,10,'#3e4c3a');rect(px+4,hy-6,12,8,'#9cc4d6');rect(px-4,hy+8,10,4,'#26302a');rect(px-16,hy+10,32,2,'#26302a');
+    rect(px-1,hy-14,2,6,'#26302a');const rl=spin>0?36*(.4+.6*Math.abs(Math.sin(time*40))):36;rect(px-rl,hy-15,rl*2,2,spin>0?'rgba(30,40,30,.5)':'#26302a');}}
+  if(hp<.66)poly([[x-w*.3,top+o.h*.3],[x-w*.24,top+o.h*.6],[x-w*.34,top+o.h*.8],[x-w*.2,gy-4]],'#4f5a60');
+  if(hp<.33)for(let n=0;n<3;n++)rect(x-w*.2+n*w*.2+Math.sin(time*2+n)*4,top-6-n*10-(time*9%10),12,10,'#69736c');
+  text(o.label,x,top-40,10,'#3b504a','center');return;}
  if(o.art==='exchange'){const w=o.w,hp=o.hp/o.maxHP,top=gy-o.h,stone='#d9d4c6',trim='#a9a493',dark='#2f3a40';
   // The NYSE: a columned temple front under a pediment, a flag on the roof; the NYPD command post (a van with a light bar, cones) parked in front.
   rect(x-w/2,top+o.h*.28,w,o.h*.72,stone);rect(x-w/2-6,top+o.h*.28-5,w+12,8,trim);poly([[x-w/2-4,top+o.h*.28-5],[x,top-2],[x+w/2+4,top+o.h*.28-5]],trim);poly([[x-w/2+14,top+o.h*.28-9],[x,top+8],[x+w/2-14,top+o.h*.28-9]],'#c5bfae');
@@ -3349,10 +4166,11 @@ function drawFormation(g:{x:number,hp:number}){const x=g.x-camera,gy=groundAt(g.
  text('CRYSTAL FORMATION',x,gy-h-10,10,'#334b43','center');}
 function drawCampaignObjective(){
  if(objective&&!objective.shattered){drawObjectiveArt(objective);}
- drawClimbScars();drawStreetCrack();
+ drawClimbScars();drawStreetCrack();drawFloodMarks();
  if(rival&&!rival.dead){const r=rival,x=r.x-camera;const tint=CITIES[cityIndex].colors[1];
- ctx.save();if(finale?.climb?.retreat?.phase==='sink'){const gy=groundAt(finale.climb.crackX);ctx.beginPath();ctx.rect(x-200,gy-4000,400,4000+4);ctx.clip();}ctx.globalAlpha=Math.max(0,Math.min(1,r.alpha??1));ctx.translate(Math.round(x+r.w/2+tlezShudder(r)),Math.round(r.y+r.h+C.spriteDrop));ctx.scale(r.face,1);
- if(r.tlez&&hasSprite('Tlézcatl',TLEZ_STAGE)){const [anim,t]=tlezAnim(r);drawSilhouette(ctx,'Tlézcatl',0,0,TLEZ_SCALE,t,false,anim,TLEZ_STAGE);}else{poly([[-36,-16],[-46,-50],[-28,-42],[-32,-82],[-14,-74],[-7,-106],[12,-88],[28,-70],[38,-55],[35,-22]],tint);rect(-25,-75,50,62,'#4e5e59');rect(8,-74,35,27,tint);rect(27,-66,6,4,'#f1a8d4');rect(-26,-14,19,14,'#314b43');rect(10,-14,23,14,'#314b43');if(r.windup>0){rect(12,-48,35,12,'#f2b077');text('!',0,-123,20,'#f0a569','center');}}
+ ctx.save();if(finale?.climb?.retreat?.phase==='sink'||finale?.flood?.retreat?.phase==='sink'){const gy=groundAt((finale.climb??finale.flood)!.crackX);ctx.beginPath();ctx.rect(x-200,gy-4000,400,4000+4);ctx.clip();}ctx.globalAlpha=Math.max(0,Math.min(1,r.alpha??1));ctx.translate(Math.round(x+r.w/2+tlezShudder(r)),Math.round(r.y+r.h+C.spriteDrop));ctx.scale(r.face,1);
+ if(r.belial&&hasSprite('Belial',BEL_STAGE)){if((r.under??0)<=0){const [anim,t]=belAnim(r);drawSilhouette(ctx,'Belial',0,0,BEL_SCALE,t,false,anim,BEL_STAGE);}}
+ else if(r.tlez&&hasSprite('Tlézcatl',TLEZ_STAGE)){const [anim,t]=tlezAnim(r);drawSilhouette(ctx,'Tlézcatl',0,0,TLEZ_SCALE,t,false,anim,TLEZ_STAGE);}else{poly([[-36,-16],[-46,-50],[-28,-42],[-32,-82],[-14,-74],[-7,-106],[12,-88],[28,-70],[38,-55],[35,-22]],tint);rect(-25,-75,50,62,'#4e5e59');rect(8,-74,35,27,tint);rect(27,-66,6,4,'#f1a8d4');rect(-26,-14,19,14,'#314b43');rect(10,-14,23,14,'#314b43');if(r.windup>0){rect(12,-48,35,12,'#f2b077');text('!',0,-123,20,'#f0a569','center');}}
  ctx.restore();
  if((r.alpha??1)>=.6)text(bossName().toUpperCase(),x+r.w/2,r.y-15,11,'#324c44','center');
  for(const shot of r.shots){const sx=shot.x-camera;poly([[sx-10,shot.y],[sx-3,shot.y-6],[sx+9,shot.y],[sx+2,shot.y+6]],'#d694bf');}
@@ -3360,10 +4178,47 @@ function drawCampaignObjective(){
  for(const k of r.rocks??[]){const sx=k.x-camera-KB.rockSize/2;rect(sx,k.y-KB.rockSize/2,KB.rockSize,KB.rockSize,'#8b7b6a');rect(sx,k.y+KB.rockSize/2-2,KB.rockSize,2,'#26343a');}
  if(r.kaiban&&r.windup>0&&r.attack==='stampede'){const x0=r.face>0?r.x+r.w:r.x-KB.stampedeReach;ctx.globalAlpha=.18+.2*Math.abs(Math.sin(time*14));rect(x0-camera,r.y+r.h-16,KB.stampedeReach,16,'#e8401a');ctx.globalAlpha=1;}
  if(r.tlez)drawTlezcatlFx(r);
+ if(r.belial)drawBelialFx(r);
  drawClimbMarks();
  }
 }
 // The Empire State finale's marks: the split street (jagged, glowing, magma pools sit in it), the torn faces where a setback gave way, and the ledge he is about to go to.
+// Estadio Azteca's bowl (finale.flood levels only): seating on the stands, the pitch's stripes and centre spot, the concourse's parapet at the gate, floodlight pylons. Art only.
+function drawBowl(){const fl=finale?.flood;if(!fl)return;const A=AZTECA,P=C.ground,vw=viewW(),gate=asc(A.gate),px0=asc(A.pitch[0]),px1=asc(A.pitch[1]);
+ for(let sx=-8;sx<vw+16;sx+=8){const wx=sx+camera,gy=groundAt(wx);
+  if(wx>=gate-4&&gy<P-2){rect(sx,gy,8,P-gy,'#7d776a');for(let y=gy+5;y<P-3;y+=14)rect(sx,y,8,6,['#c9a14a','#3f6f9c','#b9473b'][(Math.floor(wx/56)+Math.floor((y-gy)/14))%3]);rect(sx,gy,8,3,'#a49c8a');}
+  if(wx>=px0&&wx<px1){rect(sx,P-4,8,4,Math.floor(wx/64)%2?'#3e7a35':'#4b8c3d');}
+  if(wx>gate-130&&wx<gate-4&&Math.floor(wx/24)!==Math.floor((wx-8)/24))rect(sx,gy-28,3,28,'#6d6a62');}
+ rect(gate-130-camera,groundAt(gate-130)-28,126,3,'#6d6a62');
+ const cx=fl.crackX-camera;rect(cx-2,P-5,4,5,'#e8efe0');rect(px0-camera,P-5,3,5,'#e8efe0');rect(px1-3-camera,P-5,3,5,'#e8efe0');
+ for(const wx of [asc(A.lowerTier[0])+30,asc(A.eastLower[1])-30]){const x=wx-camera,y0=groundAt(wx);if(x<-60||x>vw+60)continue;
+  rect(x-5,y0-380,10,380,'#59595c');rect(x-30,y0-410,60,26,'#6e6e72');for(let k=0;k<5;k++)rect(x-26+k*12,y0-405,8,16,'#f4efc9');rect(x-1,y0-380,2,380,'#7f7f84');}}
+// The flood's marks: the split pitch and its drain, the bubbling warning, the crusts, and the rim walkway.
+function drawFloodMarks(){const fl=finale?.flood;if(!fl)return;const F=FLOOD,A=AZTECA,vw=viewW(),P=C.ground;
+ if(fl.crackOpen>0){const gy=P,k=Math.min(1,fl.crackOpen),x=fl.crackX-camera,hw=70*k;
+  if(x>-200&&x<vw+200){poly([[x-hw-12,gy],[x-hw*.6,gy+22],[x-hw*.3,gy+40],[x,gy+58],[x+hw*.3,gy+40],[x+hw*.6,gy+22],[x+hw+12,gy]],'#161a0c');
+   poly([[x-hw,gy],[x-hw*.4,gy+16],[x,gy+40],[x+hw*.4,gy+16],[x+hw,gy]],'#5f8f1c');ctx.globalAlpha=.5+.3*Math.sin(time*6);poly([[x-hw*.6,gy],[x,gy+22],[x+hw*.6,gy]],'#b8e63a');ctx.globalAlpha=1;
+   for(let n=0;n<5;n++)rect(x-hw*.8+n*hw*.4,gy+4,3,22,'#2b3310');rect(x-hw,gy+10,hw*2,3,'#2b3310');rect(x-hw*.7,gy+22,hw*1.4,3,'#2b3310');
+   for(let n=0;n<4;n++){const jx=x+(n-1.5)*hw*.6,ph=((time*30+n*17)%22)/22,jy=gy-3-ph*22;ctx.globalAlpha=Math.max(0,1-ph);rect(jx-1,jy,3,5,'#d9f06a');ctx.globalAlpha=1;}}}
+ // The warning: the drains boil up through the floor that is about to go under (or, once it is wet, across the surface).
+ if(fl.phase==='warn'){const to=P-F.levels[fl.level],lead=1-fl.t/F.warn;
+  for(let sx=-8;sx<vw+16;sx+=14){const wx=sx+camera;if(wx<asc(A.gate)||groundAt(wx)<=to)continue;const by=floodWet()?fl.surface:groundAt(wx),ph=(time*1.6+wx*.021)%1;
+   ctx.globalAlpha=.35+.4*lead;rect(sx,by-2,14,3,'#8fbf22');ctx.globalAlpha=1;if(ph<.7)rect(sx+((wx*5)%9),by-3-ph*(8+16*lead),3+((wx*3)%2),3,F.color.bubble);}}
+ // The rim walkway: the stadium's roof ring, a steel deck across the bowl on pillars. Barricaded (dark, hazard-striped) until it opens.
+ const rm=fl.rim,rx0=rm.x0-camera,rx1=rm.x1-camera;if(rx1>-40&&rx0<vw+40){const a=Math.max(-8,rx0),z=Math.min(vw+8,rx1),open=rm.open;
+  rect(a,rm.y,z-a,9,open?'#8a9096':'#4a4d52');rect(a,rm.y,z-a,2,open?'#d9dee2':'#6a6e74');rect(a,rm.y+9,z-a,3,'#2f3236');
+  for(let wx=Math.ceil((a+camera)/60)*60;wx<z+camera;wx+=60)rect(wx-camera,rm.y-22,3,22,open?'#b9c0c6':'#6a6e74');rect(a,rm.y-22,z-a,2,open?'#b9c0c6':'#6a6e74');
+  for(let wx=Math.ceil((a+camera)/420)*420;wx<z+camera;wx+=420){const px=wx-camera,gy=groundAt(wx);rect(px-6,rm.y+12,12,Math.max(0,gy-rm.y-12),'#5e6166');rect(px-1,rm.y+12,2,Math.max(0,gy-rm.y-12),'#7f8388');}
+  if(!open)for(let wx=Math.ceil((a+camera)/48)*48;wx<z+camera;wx+=48)poly([[wx-camera,rm.y+9],[wx-camera+14,rm.y],[wx-camera+24,rm.y],[wx-camera+10,rm.y+9]],'#c9a22f');
+  for(const [ex,label] of [[rx0,'ANILLO'],[rx1,'ANILLO']] as const)if(ex>-60&&ex<vw+60)text(open?label:'CERRADO',ex+(ex===rx0?40:-40),rm.y-30,9,open?'#e8f0f5':'#c9a22f','center');}}
+// The crusts: cooled lava slabs on the surface of the flood, drawn over the acid (a crust rides on it, it is not under it).
+function drawCrusts(){const fl=finale?.flood;if(!fl)return;const F=FLOOD,vw=viewW();
+ for(const c of fl.crusts){const x=c.x-camera;if(x>vw+40||x+c.w<-40)continue;const warm=Math.max(0,c.life/c.max),crack=c.life<F.crack&&c.life>0||c.life<=0,j=crack?Math.sin(time*40+c.x)*1.4:0,sy=c.y+j,sa=1-c.sink*.8;
+  ctx.globalAlpha=sa;poly([[x,sy],[x+c.w,sy],[x+c.w-8,sy+12],[x+c.w*.72,sy+17],[x+c.w*.46,sy+11],[x+c.w*.22,sy+16],[x+7,sy+11]],'#2c2724');rect(x+2,sy,c.w-4,4,'#6d5c50');
+  ctx.globalAlpha=sa*(.25+.6*warm);rect(x+4,sy,c.w-8,2,'#ff8a1f');rect(x+c.w*.3,sy,c.w*.4,1,'#ffe08a');
+  if(crack){ctx.globalAlpha=sa;for(let n=1;n<5;n++){const cx=x+c.w*n/5;poly([[cx,sy],[cx-4,sy+5],[cx+2,sy+9]],'#d2481a');}}
+  ctx.globalAlpha=1;}
+}
 function drawStreetCrack(){const c=finale?.climb;if(!c||c.crackOpen<=0)return;const gy=groundAt(c.crackX),k=Math.min(1,c.crackOpen),x=c.crackX-camera,hw=46*k;if(x<-200||x>viewW()+200)return;
  poly([[x-hw-10,gy],[x-hw*.6,gy+22],[x-hw*.3,gy+40],[x,gy+58],[x+hw*.3,gy+40],[x+hw*.6,gy+22],[x+hw+10,gy]],'#1a0f0c');
  poly([[x-hw,gy],[x-hw*.4,gy+16],[x,gy+40],[x+hw*.4,gy+16],[x+hw,gy]],'#d2481a');ctx.globalAlpha=.5+.3*Math.sin(time*6);poly([[x-hw*.6,gy],[x,gy+22],[x+hw*.6,gy]],'#ffb13b');ctx.globalAlpha=1;
@@ -3376,7 +4231,7 @@ function drawClimbMarks(){const c=finale?.climb,r=rival;if(!c||!r)return;const m
 // Tlézcatl as a boss: his own Stage 2 sprite, drawn bigger than the kaiju's (the boss body is 78 wide to the player's 48).
 const TLEZ_STAGE=2,TLEZ_SCALE=1.6,TLEZ_ANIMS=['idle','walk','light1','jetStart','jetAim','jetEnd','heavyRear','heavyHold','crouchDown','crouch','dive','slamLand','ultCharge','ultRoar'];
 let tlezLastX=0;
-function tlezShudder(r:Rival){return r.tlez&&r.attack==='erupt'&&r.windup>0?Math.round(Math.sin(time*70)*Math.min(1,1-r.windup/TB.eruptCharge)*3):0;}
+function tlezShudder(r:Rival){return r.tlez&&r.attack==='erupt'&&r.windup>0?Math.round(Math.sin(time*70)*Math.min(1,1-r.windup/TB.eruptCharge)*3):r.belial&&r.attack==='deluge'&&r.windup>0?Math.round(Math.sin(time*70)*Math.min(1,1-r.windup/BB.delugeCharge)*3):0;}
 // The strip and time for what he is doing: telegraphs play their start pose timed to land on the strike, recoveries play the settle.
 function tlezAnim(r:Rival):[string,number]{const total=r.attack==='melee'?P.bossTelegraph:r.attack==='jet'?TB.jetTelegraph:r.attack==='lob'?TB.lobTelegraph:r.attack==='dive'?TB.diveTelegraph:TB.eruptCharge,el=Math.max(0,total-r.windup);
  if(r.flame)return ['jetAim',aimTime('Tlézcatl','jetAim',r.flame.angle,TLEZ_STAGE)];
@@ -3412,6 +4267,40 @@ function drawTlezcatlFx(r:Rival){const cam=camera,flick=(n:number)=>.55+.45*Math
  if(r.ring){const k=r.ring.t/.6;ctx.globalAlpha=1-k;ctx.strokeStyle='#ff9a2e';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(r.ring.x-cam,r.ring.y-4,TB.diveRadius*(.3+k*.9),12*(1-k*.4),0,0,7);ctx.stroke();ctx.globalAlpha=1;ctx.lineWidth=1;}
  if(r.stagger>.3&&r.windup===0&&r.cooldown>0&&!r.dead)text('WINDED',r.x+r.w/2-cam,r.y-28,10,'#f0a569','center');
  tlezLastX=r.x;}
+// Belial as a boss: his own Stage 3 sprite (like Tlezcatl's Stage 2 one), and the marks of his kit.
+const BEL_STAGE=3,BEL_SCALE=1.7,BEL_ANIMS=['idle','walk','light1','vomitStart','vomitAim','vomitEnd','crouchDown','crouch','dive','slamLand','ultCharge','ultRoar'];
+let belLastX=0;
+function belAnim(r:Rival):[string,number]{const total=belialTelegraph(r.attack),el=Math.max(0,total-r.windup);
+ if(r.spew)return ['vomitAim',aimTime('Belial','vomitAim',r.spew.angle,BEL_STAGE)];
+ if(r.leap)return ['dive',r.leap.t];
+ if(r.windup>0){if(r.attack==='melee')return ['light1',Math.max(0,el-(total-animDuration('Belial','light1',BEL_STAGE)))];
+  if(r.attack==='vomit')return ['vomitStart',el];if(r.attack==='deluge')return ['ultCharge',el];
+  return [el<.25?'crouchDown':'crouch',el<.25?el:el-.25];}
+ if(r.stagger>0){if(r.attack==='vomit')return ['vomitEnd',BB.vomitRecover-r.stagger];if(r.attack==='deluge')return ['ultRoar',BB.delugeRecover+BB.delugeSpout-r.stagger];if(r.attack==='pounce'||r.attack==='back')return ['slamLand',(r.attack==='pounce'?BB.pounceRecover:BB.backRecover)-r.stagger];}
+ return Math.abs(r.x-belLastX)>.2?['walk',time]:['idle',time];}
+// The kit's marks: telegraphs (landing marker, landing ring, back-leap arrow, swelling gland), the stream, puddles, the geyser and its rain, the splash ring.
+function drawBelialFx(r:Rival){const cam=camera,flick=(n:number)=>.55+.45*Math.sin(time*13+n),m={x:r.x+r.w/2+r.face*r.w*.45,y:r.y+r.h*.32};
+ const ellipse=(x:number,y:number,rx:number,ry:number,fill:string,alpha:number)=>{ctx.globalAlpha=alpha;ctx.fillStyle=fill;ctx.beginPath();ctx.ellipse(x-cam,y,rx,ry,0,0,7);ctx.fill();ctx.globalAlpha=1;};
+ for(const p of r.puddles??[]){const x=p.x-cam,k=Math.min(1,p.life*1.2);if(x<-80||x>viewW()+80)continue;ctx.globalAlpha=k;rect(x,p.y-5,p.w,5,'#7fb81c');rect(x+3,p.y-8,p.w-6,3,'#b8e63a');
+  const bx=x+((p.x*7+time*14)%Math.max(8,p.w-6));rect(bx,p.y-10-((time*9+p.x)%5),3,3,'#e6ffa0');ctx.globalAlpha=1;}
+ const pulse=.25+.25*Math.abs(Math.sin(time*14));
+ if(r.windup>0&&r.attack==='vomit'){const k=1-r.windup/BB.vomitTelegraph,mk=r.mark??r.x,gy=groundAt(mk);ellipse(mk,gy-3,BB.vomitSplash+6,8,'#9bd62a',pulse);
+  ctx.fillStyle='#b8e63a';ctx.beginPath();ctx.arc(m.x-cam,m.y,4+9*k,0,7);ctx.fill();ctx.globalAlpha=.4;ctx.fillStyle='#e6ffa0';ctx.beginPath();ctx.arc(m.x-cam,m.y,2+4*k,0,7);ctx.fill();ctx.globalAlpha=1;}
+ if(r.windup>0&&r.attack==='pounce'){const cx=r.x+r.w/2,lx=Math.max(cx-BB.pounceRange,Math.min(cx+BB.pounceRange,r.mark??cx)),gy=groundAt(lx),k=1-r.windup/BB.pounceTelegraph;
+  ellipse(lx,gy-3,BB.pounceRadius,10,'#7fb81c',pulse);ctx.strokeStyle='#d6ff7a';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(lx-cam,gy-3,BB.pounceRadius*(1-k*.6),9,0,0,7);ctx.stroke();ctx.lineWidth=1;}
+ if(r.windup>0&&r.attack==='back'){const dir=-r.face,x=r.x+r.w/2-cam,y=r.y+r.h-14;ctx.globalAlpha=.3+.4*Math.abs(Math.sin(time*20));for(let n=0;n<3;n++)poly([[x+dir*(30+n*26),y-14],[x+dir*(58+n*26),y],[x+dir*(30+n*26),y+14]],'#b8e63a');ctx.globalAlpha=1;}
+ if(r.windup>0&&r.attack==='deluge'){const k=1-r.windup/BB.delugeCharge,cx=r.x+r.w/2,gy=groundAt(cx);ellipse(cx,r.y+r.h*.5,40+60*k,30+40*k,'#9bd62a',.15+.3*k*flick(0));
+  ctx.globalAlpha=.12+.12*k;rect(cx-BB.delugeRange-cam,gy-6,BB.delugeRange*2,6,'#9bd62a');ctx.globalAlpha=1;}
+ if(r.windup>0&&r.attack==='submerge')for(let n=0;n<3;n++){ctx.globalAlpha=.5-n*.12;ctx.strokeStyle='#b8e63a';ctx.beginPath();ctx.ellipse(r.x+r.w/2-cam,r.y+r.h-3,30+n*18+(1-r.windup/BB.diveTelegraph)*20,6+n*2,0,0,7);ctx.stroke();ctx.globalAlpha=1;}
+ if((r.under??0)>0){const cx=r.x+r.w/2-cam,fy=r.y+r.h;for(let n=0;n<5;n++){const t=(time*1.6+n*.37)%1;ctx.globalAlpha=1-t;ctx.fillStyle='#d6ff7a';ctx.beginPath();ctx.arc(cx+Math.sin(n*5+time)*26,fy-t*34,2+n%3,0,7);ctx.fill();}ctx.globalAlpha=1;}
+ // The stream: dark green with a bright core, a drop falling off its end.
+ const sp=r.spew;if(sp&&sp.pts.length>1){for(const [w,col] of [[8,'#4f8a12'],[5,'#8fd12a'],[2,'#e6ffa0']] as [number,string][]){ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();sp.pts.forEach(([x,y],i)=>i?ctx.lineTo(x-cam,y):ctx.moveTo(x-cam,y));ctx.stroke();}ctx.lineWidth=1;}
+ // The Deluge: a geyser straight up out of the view while it spouts, then the rain.
+ if(r.rain&&r.rain.t<BB.delugeSpout){const gx=r.x+r.w/2-cam,gy=r.y+r.h*.3;for(const [w,col] of [[26,'#4f8a12'],[16,'#8fd12a'],[7,'#e6ffa0']] as [number,string][]){ctx.fillStyle=col;ctx.fillRect(gx-w/2+Math.sin(time*40+w)*2,0,w,gy);}}
+ for(const d of r.drops??[]){const x=d.x-cam;ctx.strokeStyle='#8fd12a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,d.y-d.vy*.03);ctx.lineTo(x,d.y);ctx.stroke();ctx.lineWidth=1;ctx.fillStyle='#d6ff7a';ctx.beginPath();ctx.arc(x,d.y,d.size*.6,0,7);ctx.fill();}
+ if(r.ring){const k=r.ring.t/.6;ctx.globalAlpha=1-k;ctx.strokeStyle='#b8e63a';ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(r.ring.x-cam,r.ring.y-4,BB.pounceRadius*(.3+k*.9),12*(1-k*.4),0,0,7);ctx.stroke();ctx.globalAlpha=1;ctx.lineWidth=1;}
+ if(r.stagger>.3&&r.windup===0&&r.cooldown>0&&!r.dead&&(r.under??0)<=0)text('WINDED',r.x+r.w/2-cam,r.y-28,10,'#c8ed82','center');
+ belLastX=r.x;}
 // Afterburn: a cluster of flickering flame tongues licking up the wall where the jet hit, dying down over its last second.
 function drawBurns(){for(const f of burns){const z=f.size,x=f.x-camera+f.side*5*z,y=f.b.base-f.y,k=Math.min(1,f.t);if(x<-40||x>viewW()+40)continue;
  for(let n=0;n<2;n++){const cx=x+f.side*n*7*z,hh=(12+9*Math.abs(Math.sin(time*9+n*1.7+f.y*.3)))*k*z,ww=(5+n*2)*z;
@@ -3536,7 +4425,7 @@ function render(){
  if(mode==='ending'){drawEnding(ctx,endingName);return;}
  if(['title','setup','selection','freeplay-select','gallery','settings','scores','confirm','progress','conquered'].includes(mode)){drawMenuBackdrop(ctx,time);if(mode==='selection')paintPreviews();return;}
  ctx.clearRect(0,0,960,540);rect(0,0,960,540,CITIES[cityIndex].sky);ctx.save();if(display.shake&&(shake>0||Math.abs(kickX)+Math.abs(kickY)>.3))ctx.translate(Math.round(Math.sin(time*63)*shake+kickX),Math.round(Math.cos(time*77)*shake*.5+kickY));
- rect(0,0,960,540,CITIES[cityIndex].sky);ctx.save();ctx.translate(0,C.ground);ctx.scale(zoom,zoom);ctx.translate(0,-C.ground+cameraY);background();drawKaiban();drawSubway();drawPits();drawCableLines();if(block.subway)drawTrains(Math.max(-8,block.subway[0][0]-camera),Math.min(viewW()+8,block.subway[0][1]-camera));drawBridge();drawCracks();for(const b of buildings)if(b.topple===2)drawFallen(b);for(const b of buildings)if(b.topple!==1)drawBuilding(b);for(const b of buildings)if(b.topple===1)drawBuilding(b);if(showHitboxes)drawHitboxes();drawMounds();drawBurns();drawDecals();drawPowerLines();drawLanterns();for(const c of chunks){const cx=c.x-camera;if(cx<-20||cx>viewW()+20)continue;ctx.globalAlpha=Math.min(1,c.life/.5);rect(cx,c.y,c.s,c.s,c.color);rect(cx,c.y+c.s-1,c.s,1,'#26343a');ctx.globalAlpha=1;}drawVehicles(0);drawPopulation();drawMilitary(0);drawSprays();drawCampaignObjective();
+ rect(0,0,960,540,CITIES[cityIndex].sky);ctx.save();ctx.translate(0,C.ground);ctx.scale(zoom,zoom);ctx.translate(0,-C.ground+cameraY);background();drawKaiban();drawSubway();drawPits();drawPitRuins();drawRock();drawSoft();drawBowl();drawSinkholes();drawCableLines();drawSubwayTrains();drawTren();drawBridge();drawCracks();for(const b of buildings)if(b.topple===2)drawFallen(b);for(const b of buildings)if(b.topple!==1)drawBuilding(b);for(const b of buildings)if(b.topple===1)drawBuilding(b);if(showHitboxes)drawHitboxes();drawMounds();drawTarps();drawBurns();drawDecals();drawPowerLines();drawLanterns();drawPicados();for(const c of chunks){const cx=c.x-camera;if(cx<-20||cx>viewW()+20)continue;ctx.globalAlpha=Math.min(1,c.life/.5);rect(cx,c.y,c.s,c.s,c.color);rect(cx,c.y+c.s-1,c.s,1,'#26343a');ctx.globalAlpha=1;}drawVehicles(0);drawPopulation();drawMilitary(0);drawSprays();drawCampaignObjective();
  const exitX=worldWidth-65-camera;
  rect(exitX,groundAt(worldWidth-65)-90,5,90,objectiveOpen()?'#c7ee83':'#6a7d75');
  if(objectiveOpen()){poly([[exitX-20,358],[exitX+6,358],[exitX+6,348],[exitX+27,365],[exitX+6,382],[exitX+6,372],[exitX-20,372]],'#c7ee83');text('EXIT',exitX,342,10,'#213d35','center');}
@@ -3572,7 +4461,7 @@ function render(){
   rect(x+d*6*z-3*z,groundAt(wave.x)-(62*z+j*2),6*z,6*z,'#c9a77c');rect(x-d*8*z-2*z,groundAt(wave.x)-(48*z-j*2),4*z,4*z,'#8d7a66');
   rect(Math.min(x,x+d*40*z),groundAt(wave.x),40*z,3,'#ffe0a8');}
  if(combat.superTime>0){const x=player.x-camera;rect(x-7,player.y-7,bodyWidth()+14,bodyHeight()+10,Math.sin(time*10)>0?'#c47cab':'#8d799e');}
- drawEruptionGlow();drawTornado(false);if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawSlopes();drawVehicles(1);drawMilitary(1);drawGeysers();drawVents();drawBalloons();drawBallFall();drawRiverFront();drawTelegraphs();drawCityFx();
+ drawEruptionGlow();drawTornado(false);if(hurtFlash>0)ctx.filter=hurtRed&&hurtFlash<MF.hurtFlash*.55?'sepia(1) saturate(8) hue-rotate(-40deg) brightness(1.1)':'brightness(0) invert(1)';if(!drowningHidden()&&!(combat.mercy>0&&drown?.phase!=='sink'&&Math.floor(time*14)%2===0))monster(player.x-camera+eruptionShudder()+hurtJolt,player.y,player.face,player.crouched,player.pose);ctx.filter='none';drawBodyMarks();drawEruptionHeat();drawJet();drawSpew();drawGeyser();drawEruption();drawRails();drawSlopes();drawVehicles(1);drawMilitary(1);drawGeysers();drawVents();drawSeeps();drawBalloons();drawBallFall();drawRiverFront();drawAxolotls();drawAshWater();drawSoftFront();drawCrusts();drawTelegraphs();drawCityFx();
  if(combat.transform>0){const x=player.x-camera+bodyWidth()/2,y=player.y+bodyHeight()/2;const radius=bodyHeight()*.75;poly([[x,y-radius],[x+radius*.6,y],[x,y+radius],[x-radius*.6,y]],'#f4b0d8');poly([[x,y-radius*.85],[x+radius*.35,y],[x,y+radius*.8],[x-radius*.35,y]],'#ffe0f1');}
  if(combat.ultimateTime>0)text(ultimateLabel(),player.x-camera+bodyWidth()/2,player.y-24,10,'#fff1d8','center');
  // Launched tail quill: bone-white spike pointing along its flight, dark base, faint motion streak.
@@ -3597,7 +4486,7 @@ function render(){
 }
  if(hive&&hive.t<.18)rect(0,0,960,540,`rgba(236,170,255,${((.18-hive.t)/.18*.45).toFixed(3)})`);
  // The downpour greens the whole sky while it lasts.
- if(rain.length)rect(0,0,960,540,`rgba(150,210,40,${Math.min(.14,rain.length*.004+.04*Math.sin(time*7)**2).toFixed(3)})`);drawRain2();drawFog();hud();
+ if(rain.length)rect(0,0,960,540,`rgba(150,210,40,${Math.min(.14,rain.length*.004+.04*Math.sin(time*7)**2).toFixed(3)})`);drawAsh();drawRain2();drawFog();hud();
 }
 // The clock starts on the first animation frame (dt 0), not at script load: load time otherwise leaked into the first step,
 // making runs nondeterministic. The clamp still guards against a timestamp going backwards.
@@ -3611,19 +4500,41 @@ if((window as any).__kaijuTest)Object.defineProperty(window,'kaijuTest',{value:{
  gotoCity:(id:string,bi:number,px?:number)=>{if(!run||cityIndexOf(id)<0)return false;cityIndex=cityIndexOf(id);activeKaiju=run.kaiju;score=0;citySettled=false;combat=createCombat();blockIndex=bi;run.block=bi;run.phase='playing';cleared=false;loadBlock(false);if(px!==undefined)teleport(px);return true;},
  goto:(bi:number,px?:number)=>{if(!run)return false;blockIndex=bi;run.block=bi;run.phase='playing';cleared=false;loadBlock(false);if(px!==undefined)teleport(px);return true;},
  teleport:(px:number)=>teleport(px),
+ // Put the camera's centre at world x without moving the kaiju (the mood ramp reads the camera: tests/nyc-mood.test.ts).
+ setCamera:(cx:number)=>{camera=cx-viewW()/2;},
  // Play as another kaiju (the campaign forces Kaiban in New York; tests that need a weaker carrier switch here).
  setKaiju:(k:string)=>{activeKaiju=k;},
  // Set building i alight, or smash the most valuable buildings until the block is `frac` destroyed.
- torch:(i:number)=>!!buildings[i]&&setAlight(buildings[i]),smash:(i:number)=>{const b=buildings[i];if(b&&b.hpNow>0)hit(b,b.hpNow,false,1);},
- spawnUnit:(type:string,x:number)=>{spawnUnit(military,type as any,x);},spawnUnitOn:(type:string,x:number,y:number)=>{const u=spawnUnit(military,type as any,x);u.y=y-u.h;},perchOn:(i:number)=>{const b=buildings[i];if(!b)return;player.x=b.x+b.w/2-bodyWidth()/2;player.y=b.base-b.h-bodyHeight()-2;player.vy=0;},smashSpan:(i:number)=>{const sp=spans[i];if(sp&&sp.alive)hitSpan(sp,1e9);},
+ torch:(i:number)=>!!buildings[i]&&setAlight(buildings[i]),hitTarget:(n:number)=>{if(objective&&!objective.shattered)hitObjective(n);},smash:(i:number,dir=1)=>{const b=buildings[i];if(b&&b.hpNow>0)hit(b,b.hpNow,false,dir);},
+ spawnVehicle:(kind:string,x:number)=>{if(kind==='trajinera'){vehicles.push(newBoat(x));return;}vehicles.push(...createFleet(kind as any,[x],nextVehicle++,'#6d8f5f'));}, spawnBoat:(x:number,variant:'plain'|'food'|'mariachi'='plain',moored=false)=>{const v=newBoat(x,variant,moored);vehicles.push(v);return v.id;}, lobVehicle:(kind:string,x:number,y:number)=>{const v=kind==='trajinera'?newBoat(x):createFleet(kind as any,[x],nextVehicle++,'#6d8f5f')[0];v.y=y;launch(v,0,0,0);vehicles.push(v);return v.id;}, igniteVehicle:(id:number)=>{const v=vehicles.find(o=>o.id===id);return v?igniteVehicle(v):false;}, setCurrent:(speed:number)=>{if(block.current)block={...block,current:[block.current[0],speed]};}, spawnUnit:(type:string,x:number)=>{spawnUnit(military,type as any,x);},spawnUnitOn:(type:string,x:number,y:number)=>{const u=spawnUnit(military,type as any,x);u.y=y-u.h;},perchOn:(i:number)=>{const b=buildings[i];if(!b)return;player.x=b.x+b.w/2-bodyWidth()/2;player.y=b.base-b.h-bodyHeight()-2;player.vy=0;},smashSpan:(i:number)=>{const sp=spans[i];if(sp&&sp.alive)hitSpan(sp,1e9);},
  // Bring balloon i down (or up) to altitude `alt` over its tether, so a test can reach it with a flame, a shot or a thrown wreck.
  // The Empire State finale: stand Tlézcatl on ledge i (woken, erupted), so a test can start from any ledge.
  perchRival:(i:number)=>{const f=finale,c=f?.climb,r=rival;if(!f||!c||!r)return false;f.woke=true;r.dormant=false;r.alpha=1;c.crackOpen=1;c.emerge=0;c.move=null;c.pending=null;c.fall=null;if(i>=0)r.x=standX(c.perches[i],r);else r.x=c.crackX-r.w/2;setPerch(r,c,i);r.cooldown=2;return true;},
  // Keep the kaiju safe for `s` seconds (long climbs and falls in a test).
  shield:(sec:number)=>{combat.mercy=sec;},
- setBalloonAlt:(i:number,alt:number)=>{const b=balloons[i];if(b)b.alt=alt;},hurtRival:(d:number)=>strikeRival(d,0,1),fillUltimate:()=>{combat.ultimate=B.ultimateMax;},smashRail:(i:number)=>{const r=rails[i];if(r&&r.alive)hitRail(r,1e9);},sinkCutter:()=>hitObjective(1e9),
- growTo:(n:number)=>{setGrowth(combat,n,3);},smashSlope:(i:number)=>{const s=slopes[i];if(s&&s.alive)hitSlope(s,1e9);},
+ setBalloonAlt:(i:number,alt:number)=>{const b=balloons[i];if(b)b.alt=alt;},
+ // Put Times Square's ball down on the street at x, parked (as if it had rolled to rest), with a few civilians standing at the given xs.
+ // Count n hard impacts against the ball (as if thrown), so a test or screenshot can reach a damaged or shattered ball.
+ chipBall:(n:number)=>{const v=vehicles.find(o=>o.kind==='ball');if(!v)return false;v.tossed=true;for(let i=0;i<n;i++){ballChipT=-9;ballChip(v,1);}return true;},
+ placeBall:(x:number,crowd:number[]=[])=>{vehicles=vehicles.filter(o=>o.kind!=='ball');const v=makeProp(nextVehicle++,'ball',x,'#e8ecff');v.state='parked';v.glide=NYC2.ballGlide;v.hp=NYC2.ballHp;v.y=groundAt(x+v.w/2)-v.h;vehicles.push(v);crowd.forEach((cx,i)=>population.civilians.push({x:cx,variant:i%3,escaped:false,squashed:false,panicked:false}));return true;},hurtRival:(d:number)=>strikeRival(d,0,1),setRivalX:(x:number)=>{if(rival){rival.x=x;rival.y=groundAt(x+rival.w/2)-rival.h;}},
+ setRivalHP:(f:number)=>{if(rival)rival.hp=Math.max(1,rival.maxHP*f);},
+ // Belial's debug hooks: start a move's telegraph now (`rivalMove('vomit')`), set the stacks on the kaiju, give the kit a flood stub (the level has none until card 7).
+ rivalMove:(move:string,crustIndex?:number)=>{if(!rival?.belial)return false;rival.windup=0;rival.cooldown=0;rival.stagger=0;beginBelial(rival,move as never,{x:player.x,y:player.y,w:bodyWidth(),h:bodyHeight()},crustIndex===undefined?null:(floodStub?.crusts[crustIndex]??null));return true;},
+ setKaijuCorrosion:(n:number)=>{if(rival?.kcorr){rival.kcorr.stacks=n;rival.kcorr.expo=n*BB.corrodePerStack;rival.kcorr.touched=true;}},
+ setFlood:(f:{surface:number,crusts:Crust[]}|null)=>{floodStub=f;},
+ // Estadio Azteca's finale (src/game.ts tickFloodFinale): `wakeBoss` wakes the rival at once (no emerge), `setFloodLevel(n)` puts the flood at level n (the n health breaks done, the surface up, no warning), `lava` drops
+ // a glob that falls onto x (`kind` dive/glob = a Magma Dive glob, eruption = an Eruption glob, bomb = a volcanic bomb), `splashLava` is the Magma Dive's own splash (its pool under the impact included).
+ wakeBoss:()=>{const f=finale,fl=f?.flood,r=rival;if(!f||!r)return false;f.woke=true;r.dormant=false;r.alpha=1;if(fl){fl.crackOpen=1;fl.emerge=0;r.y=groundAt(r.x+r.w/2)-r.h;}else r.y=groundAt(r.x+r.w/2)-r.h;r.cooldown=0;return true;},
+ setFloodLevel:(n:number)=>{const f=finale,fl=f?.flood;if(!fl)return false;fl.level=n;fl.broken=n;f!.nextBreak=Math.min(n,block.finale!.breaks.length);fl.phase='idle';fl.surface=n>0?C.ground-FLOOD.levels[n-1]:C.ground+400;fl.from=fl.to=fl.surface;if(n>=FLOOD.rimFrom)fl.rim.open=true;const sp=waterSpans()[0];if(sp)sp[2]=fl.surface;return true;},
+ lava:(x:number,kind:'glob'|'dive'|'eruption'|'bomb'='glob',h=200)=>{const y=(finale?.flood?.surface??C.ground)-h;globs.push({x,y,vx:0,vy:200,life:3,damage:10,size:8,...(kind==='eruption'?{ult:true}:kind==='bomb'?{ult:true,bomb:true}:{})} as never);},
+ splashLava:(x:number,feet:number,poolW=0)=>splashLava(x,feet,60,1,2,poolW,0),
+ floodCrust:(x:number,w:number)=>floodCrust(x,w),
+ dropAt:(px:number,feetY:number)=>{player.x=px;player.y=feetY-bodyHeight();player.vy=0;player.grounded=false;safeX=px;},rimFrom:(n:number)=>{FLOOD.rimFrom=n;},dissolveCrust:(i:number)=>{const c=finale?.flood?.crusts[i];if(c)c.dissolved=true;return !!c;},fillUltimate:()=>{combat.ultimate=B.ultimateMax;},smashRail:(i:number)=>{const r=rails[i];if(r&&r.alive)hitRail(r,1e9);},sinkCutter:()=>hitObjective(1e9),
+ growTo:(n:number)=>{setGrowth(combat,n,3);},
+ // Popocatépetl: jump to a skyline state (0-4); `on:true` arms the `volcanoOn:'target'` trigger and `ashLate` sets the state-2 ash line. `volcanoPuff` is the one-off puff hook.
+ hitTrain:(i:number,d:number)=>{const t=trains[i];if(!t)return false;hitTrain(t,d);return true;},
+ setVolcano:(state:number,o?:{on?:boolean,ashLate?:number})=>setVolcano(state,o),volcanoPuff:()=>volcanoPuff(),smashSlope:(i:number)=>{const s=slopes[i];if(s&&s.alive)hitSlope(s,1e9);},
  shear:(i:number,frac:number)=>{const b=buildings[i];return !!b&&tryShear(b,1e6,{x:b.x+b.w/2,y:b.base-b.h*frac},false,1);},place:(px:number,py:number)=>{player.x=px;player.y=py-bodyHeight();player.vy=0;player.grounded=false;},
  demolish:(frac:number)=>{for(const b of [...buildings].sort((p,q)=>q.value-p.value)){if(destruction(buildings)>=frac)break;if(b.hpNow>0)hit(b,b.hpNow,false,1);}}}});
 function teleport(px:number){player.x=px;player.y=groundAt(px+bodyWidth()/2)-bodyHeight();player.vy=0;camera=Math.max(0,Math.min(worldWidth-viewW(),px-viewW()*.34));safeX=px;}
-Object.defineProperty(window,'kaijuDebug',{get:()=>({ventList:vents.map(v=>({x:v.x,state:v.state,t:v.t,auto:v.auto})),ventBlinded,ventScalded,balloons:balloons.map(b=>({x:b.x,y:b.y,alt:b.alt,shape:b.shape,state:b.state,hp:b.hp,tether:b.tether?{x:b.tether.x,y:b.tether.y,state:b.tether.state,w:b.tether.w,h:b.tether.h}:null,cover:b.cover?{...b.cover}:null})),balloonStats:{...balloonStats},sheltered:[...sheltered.entries()].map(([id,b])=>({id,x:b.x})),yard:{drops:yardDrops,buildings:yardBuildings,falling:yardFall.size,list:[...yardFall].map(([b,f])=>({x:b.x,w:b.w,h:b.h,base:b.base,sunk:f.sunk,depth:f.depth,lean:f.lean,dir:f.dir}))},bull:(()=>{const v=vehicles.find(o=>o.kind==='bull');return v?{x:v.x,y:v.y,w:v.w,h:v.h,state:v.state,vx:v.vx,vy:v.vy}:null;})(),band:footBand(),drowning:drown?drown.phase:null,safeX,mercy:combat.mercy,floor:combat.floor,pitDepth:pitDepth(),blockName:block.name,pocketHP:pocketRoof?pocketRoof.hpNow:null,pocketMax:pocketRoof?pocketRoof.hp:null,shows:shows.length,lanterns:strings.map(q=>({x0:q.x0,x1:q.x1,n:q.n,lit:q.lit.filter(Boolean).length,burning:q.burn.filter(v=>v>0).length,fall:q.fall??null})),slopes:slopes.map(s=>({x0:s.x0,y0:s.y0,x1:s.x1,y1:s.y1,alive:s.alive})),trucks:[...trucks].map(([v,t])=>({x:v.x,mode:t.mode})),guardCalled,formationHP:growths.find(g=>g.big)?.hp??null,formationX:growths.find(g=>g.big)?.x??null,capNow:combat.cap,objective:objective?{x:objective.x,w:objective.w,h:objective.h,art:objective.art,hp:objective.hp,shattered:objective.shattered}:null,depth:(x:number)=>depthAt(x),boats:military.units.filter(u=>u.type==='boat').map(u=>({id:u.id,x:u.x,y:u.y,hp:u.hp})),sinking:sinkers.length,rails:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,alive:r.alive,hp:r.hp})),railTrains:railTrains.length,tunnels:tunnels.size,alert,geysers:geysers.length,bombs:bombQueue.length,militaryTier:military.tier,ground:(x:number)=>groundAt(x),street:(x:number)=>bedAt(x),blazeList:[...blazes.keys()].map(b=>buildings.indexOf(b as typeof buildings[number])),blazes:blazes.size,mounds:moundList().length,sunk:buildings.filter(b=>b.sink>0).length,swaying:buildings.filter(b=>b.sway>0).length,damageTaken:combat.damageTaken,spans:spans.map(s=>({x0:s.x0,x1:s.x1,hp:s.hp,alive:s.alive})),pits:pitList().map(p=>({...p})),trains:trains.filter(t=>!t.crashed).length,trainsWrecked:wrecked,trainWrecks:trains.filter(t=>t.crashed).length,trainList:trains.map(t=>({x:t.x,dir:t.dir,hp:t.hp,crashed:t.crashed})),cutOff:{...military.cutOff},inWater:submerged(player.x+bodyWidth()/2),rampage:{heat:rampage.heat,mult:rampageMult(rampage),level:rampageLevel(rampage)},power:[...power],roofs:roofs.map(p=>({kind:p.kind,hp:p.hp,dead:p.dead,call:p.call,x:roofBox(p).x,y:roofBox(p).y})),wires:wires.length,poles:poles.map(v=>({x:v.x,upright:upright(v),snapped:!!v.snapped})),creaking:buildings.filter(b=>b.creak>0).length,roles:buildings.filter(b=>b.role).map(b=>({role:b.role,x:b.x,hp:b.hpNow})),barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],airJumps,brewing:brew?brew.t:null,swarmReleased:swarm?swarm.released:null,wasps:wasps.length,waspTargets:wasps.filter(w=>w.target&&w.target.hp!==undefined&&!w.target.base).length,face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({role:b.role,prop:b.prop,deco:b.deco,explosive:!!b.explosive,floors:b.floors.length,base:b.base,x:b.x,y:b.base-b.h,w:b.w,h:b.h,parts:hitParts(b).map(p=>({x:p.x,y:p.y,w:p.w,h:p.h,solid:p.solid})),hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown,vx:v.vx,plows:v.plows})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire&&!p.acid&&!p.venom).length,venomGlobs:globs.filter(g=>g.venom).length,venomGlobY:globs.filter(g=>g.venom).map(g=>g.y),venomGlobX:globs.filter(g=>g.venom).map(g=>g.x),venomPools:pools.filter(p=>p.venom).length,clouds:clouds.map(c=>({x:c.x,y:c.y,r:c.r})),venomPoolX:pools.filter(p=>p.venom).map(p=>p.x+p.w/2),poisoned:poison.size,acidPools:pools.filter(p=>p.acid).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,delugeSpout:!!deluge?.spout&&deluge.spoutT<deluge.spoutLen,delugeActive:!!deluge,rainDrops:rain.length,delugeSpawned:deluge?.spawned??0,delugeLandings:[...delugeLandings],delugePools:pools.filter(p=>p.acid&&p.ult).length,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,spewLand:spewState.land,spewLandOn:spewState.landOn,spewPts:spewState.pts.length,corrosion:buildings.map(b=>corr.get(b)?.stacks??0),unitCorrosion:military.units.map(u=>corr.get(u)?.stacks??0),jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,growthCap:combat.cap,growthFloor:combat.floor,cityCode:CITIES[cityIndex].code,level:{name:block.name,startStage:block.startStage,cap:block.cap,capLift:block.capLift,police:!!block.police},hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,stun:u.stun,cooldown:u.cooldown,burst:u.burst,windup:u.windup})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length,...act2Debug(),...act3Debug(),...nycDebug()})});
+Object.defineProperty(window,'kaijuDebug',{get:()=>({...mex2Debug(),...mex3Debug(),...xochiDebug(),...floodDebug(),seepList:seeps.map(v=>({x:v.x,state:v.state,t:v.t,puddle:v.puddle,auto:v.auto})),seepBurned,seepWrecked,seepEaten,seepBursts,pole:{swung:poleSwung,thrown:poleThrown,stops:poleStops,cool:poleCool},pitOut,pitPuffs,tarpBridges,blazeCount:blazes.size,blazing:[...blazes.keys()].map(o=>buildings.indexOf(o as typeof buildings[number])),ventList:vents.map(v=>({x:v.x,state:v.state,t:v.t,auto:v.auto})),ventBlinded,ventScalded,balloons:balloons.map(b=>({x:b.x,y:b.y,alt:b.alt,shape:b.shape,state:b.state,hp:b.hp,tether:b.tether?{x:b.tether.x,y:b.tether.y,state:b.tether.state,w:b.tether.w,h:b.tether.h}:null,cover:b.cover?{...b.cover}:null})),balloonStats:{...balloonStats},sheltered:[...sheltered.entries()].map(([id,b])=>({id,x:b.x})),yard:{drops:yardDrops,buildings:yardBuildings,falling:yardFall.size,list:[...yardFall].map(([b,f])=>({x:b.x,w:b.w,h:b.h,base:b.base,sunk:f.sunk,depth:f.depth,lean:f.lean,dir:f.dir}))},bull:(()=>{const v=vehicles.find(o=>o.kind==='bull');return v?{x:v.x,y:v.y,w:v.w,h:v.h,state:v.state,vx:v.vx,vy:v.vy,hp:v.hp,freed:!!v.freed}:null;})(),bullBroken,bullBreaks,band:footBand(),drowning:drown?drown.phase:null,safeX,mercy:combat.mercy,floor:combat.floor,pitDepth:pitDepth(),blockName:block.name,pocketHP:pocketRoof?pocketRoof.hpNow:null,pocketMax:pocketRoof?pocketRoof.hp:null,shows:shows.length,lanterns:strings.map(q=>({x0:q.x0,x1:q.x1,n:q.n,lit:q.lit.filter(Boolean).length,burning:q.burn.filter(v=>v>0).length,fall:q.fall??null})),slopes:slopes.map(s=>({x0:s.x0,y0:s.y0,x1:s.x1,y1:s.y1,alive:s.alive})),trucks:[...trucks].map(([v,t])=>({x:v.x,mode:t.mode})),guardCalled,formationHP:growths.find(g=>g.big)?.hp??null,formationX:growths.find(g=>g.big)?.x??null,capNow:combat.cap,objective:objective?{x:objective.x,w:objective.w,h:objective.h,art:objective.art,hp:objective.hp,shattered:objective.shattered}:null,depth:(x:number)=>depthAt(x),boats:military.units.filter(u=>u.type==='boat').map(u=>({id:u.id,x:u.x,y:u.y,hp:u.hp})),sinking:sinkers.length,rails:rails.map(r=>({x0:r.x0,x1:r.x1,y:r.y,alive:r.alive,hp:r.hp})),railTrains:railTrains.length,tunnels:tunnels.size,alert,geysers:geysers.length,bombs:bombQueue.length,militaryTier:military.tier,ground:(x:number)=>groundAt(x),street:(x:number)=>bedAt(x),blazeList:[...blazes.keys()].map(b=>buildings.indexOf(b as typeof buildings[number])),blazes:blazes.size,wind:windDir(),mounds:moundList().length,sunk:buildings.filter(b=>b.sink>0).length,swaying:buildings.filter(b=>b.sway>0).length,damageTaken:combat.damageTaken,spans:spans.map(s=>({x0:s.x0,x1:s.x1,hp:s.hp,alive:s.alive})),pits:pitList().map(p=>({...p})),trains:trains.filter(t=>!t.crashed).length,trainsWrecked:wrecked,trainWrecks:trains.filter(t=>t.crashed).length,trainList:trains.map(t=>({x:t.x,dir:t.dir,hp:t.hp,crashed:t.crashed})),cutOff:{...military.cutOff},inWater:submerged(player.x+bodyWidth()/2),rampage:{heat:rampage.heat,mult:rampageMult(rampage),level:rampageLevel(rampage)},power:[...power],roofs:roofs.map(p=>({kind:p.kind,hp:p.hp,dead:p.dead,call:p.call,x:roofBox(p).x,y:roofBox(p).y})),wires:wires.length,poles:poles.map(v=>({x:v.x,upright:upright(v),snapped:!!v.snapped})),creaking:buildings.filter(b=>b.creak>0).length,roles:buildings.filter(b=>b.role).map(b=>({role:b.role,x:b.x,hp:b.hpNow})),barges,cameraY,zoom,camera,mode,clinging:!!clingTo,running,diving:!!dive,rolling:!!roll,anim:currentAnim()[0],airJumps,brewing:brew?brew.t:null,swarmReleased:swarm?swarm.released:null,wasps:wasps.length,waspTargets:wasps.filter(w=>w.target&&w.target.hp!==undefined&&!w.target.base).length,face:player.face,grounded:player.grounded,vy:player.vy,cooldown:combat.cooldown,rangedCooldown:combat.rangedCooldown,canAct:canAct(combat),blockKind:block.kind,cityScore:Math.round(cityScore()),banked:run?.banked??0,buildings:buildings.map(b=>({lean:b.lean??0,tarp:b.tarp,sink:b.sink,tilt:b.tilt,role:b.role,prop:b.prop,deco:b.deco,explosive:!!b.explosive,floors:b.floors.length,base:b.base,x:b.x,y:b.base-b.h,w:b.w,h:b.h,parts:hitParts(b).map(p=>({x:p.x,y:p.y,w:p.w,h:p.h,solid:p.solid})),hp:b.hpNow,kind:b.kind,landmark:!!b.landmark,cache:!!b.cache,topple:b.topple,tiltDir:b.tiltDir,holes:b.holes.length,lifted:b.lifted})),hitstop,chunks:chunks.length,held:held?held.kind:null,vehicles:vehicles.map(v=>({id:v.id,kind:v.kind,label:v.label,hp:v.hp,state:v.state,x:v.x,y:v.y,w:v.w,h:v.h,angle:v.angle,traffic:v.traffic,dir:v.dir,panic:v.panic,burn:v.burn??0,thrown:!!v.thrown,vx:v.vx,vy:v.vy,plows:v.plows})),rival:rival?{x:rival.x,y:rival.y,w:rival.w,h:rival.h,hp:rival.hp,windup:rival.windup,attack:rival.attack}:null,militaryUnits:military.units.map(u=>({type:u.type,x:u.x,y:u.y,hp:u.hp,windup:u.windup,pending:u.pending,stun:u.stun,spotter:u.spotter})),fireballs:fireballs.length,banner:banner?.label??null,action:actionTime>0?action:null,hurtFlash,entityCounts:{units:military.units.length,enemyShots:military.projectiles.length,effects:military.effects.length,wrecks:military.wrecks.length,waves:waves.length,tremorWaves:waves.filter(w=>!w.ult).length,shards:shards.length,particles:particles.length,civilians:population.civilians.length,growths:growths.length,playerShots:shots.length,rocks:rocks.length,lavaGlobs:globs.length,lavaPools:pools.filter(p=>!p.fire&&!p.acid&&!p.venom).length,venomGlobs:globs.filter(g=>g.venom).length,venomGlobY:globs.filter(g=>g.venom).map(g=>g.y),venomGlobX:globs.filter(g=>g.venom).map(g=>g.x),venomPools:pools.filter(p=>p.venom).length,clouds:clouds.map(c=>({x:c.x,y:c.y,r:c.r})),venomPoolX:pools.filter(p=>p.venom).map(p=>p.x+p.w/2),poisoned:poison.size,acidPools:pools.filter(p=>p.acid).length,jetFires:pools.filter(p=>p.fire).length,burning:burns.length},stampeding:!!stampede?.charging,erupting:!!eruption?.blasted,delugeSpout:!!deluge?.spout&&deluge.spoutT<deluge.spoutLen,delugeActive:!!deluge,rainDrops:rain.length,delugeSpawned:deluge?.spawned??0,delugeLandings:[...delugeLandings],delugePools:pools.filter(p=>p.acid&&p.ult).length,eruptGlobs:globs.filter(g=>g.ult).length,eruptPools:pools.filter(p=>p.ult).length,eruptPoolX:pools.filter(p=>p.ult).map(p=>p.x+p.w/2),eruptSpat:eruption?.spat??0,eruptLandings:[...eruptLandings],jet:jet?jet.phase:null,jetFuel,jetLocked,jetAngle:jet?.angle??0,jetLen:jet?.len??0,spewLand:spewState.land,spewLandOn:spewState.landOn,spewPts:spewState.pts.length,corrosion:buildings.map(b=>corr.get(b)?.stacks??0),unitCorrosion:military.units.map(u=>corr.get(u)?.stacks??0),jetOrigin:jet?[jet.ox,jet.oy]:null,activeKaiju,selectedKaiju,introCount,introElapsed,gallery:[...permanent.gallery],freeChoice:{...freeChoice},score:netScore(),destruction:destruction(buildings),exitOpen:objectiveOpen(),x:player.x,y:player.y,crouched:player.crouched,buildingHP:buildings.map(b=>b.hpNow),particleCount:particles.length,shotCount:shots.length,shotY:shots.map(s=>s.y),stage:combat.stage,growthCap:combat.cap,growthFloor:combat.floor,cityCode:CITIES[cityIndex].code,level:{name:block.name,startStage:block.startStage,cap:block.cap,capLift:block.capLift,police:!!block.police},hp:combat.hp,ultimate:combat.ultimate,ultimateTime:combat.ultimateTime,superCharge:combat.superCharge,superTime:combat.superTime,transform:combat.transform,width:bodyWidth(),height:bodyHeight(),charging:combat.charging,charge:combat.charge,combo:combat.combo,shards:shards.length,growths:growths.length,session,cityIndex,blockIndex,worldWidth,objectiveHP:objective?.hp??null,bossHP:rival?.hp??null,bossName:rival?bossName():null,particleDrift:particles.length?particles.reduce((a,q)=>a+q.vx,0)/particles.length:0,checkpoint:checkpoint?{...checkpoint}:null,highScores:permanent.scores.map(r=>({...r})),military:military.units.map(u=>({type:u.type,x:u.x,y:u.y,w:u.w,h:u.h,hp:u.hp,stun:u.stun,cooldown:u.cooldown,burst:u.burst,windup:u.windup})),enemyShots:military.projectiles.length,damageTaken:combat.damageTaken,civilians:population.civilians.filter(c=>!c.squashed&&!c.escaped).length,cars:vehicles.filter(v=>v.state!=='flat').length,...act2Debug(),...act3Debug(),...nycDebug(),volcano:{state:volcano,ash:ashActive(),flare:volcanoFlare,flares:volcanoFlares,puffs:volcanoPuffs.length,queued:volcanoQueue.length,bombs:globs.filter(g=>g.bomb).length,dropped:volcanoDropped,blown:volcanoBlown,mood:{smog:!!moodNow().smog,sun:moodNow().sun,top:moodNow().top}}})});

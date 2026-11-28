@@ -2,7 +2,7 @@ import type {Part} from './hitbox.ts';
 // `landmark`: a named, high-value tower drawn with its own crown and always-visible name banner.
 // `cache`: an ordinary-looking building hiding a crystal vein; it glints faintly and pays out when destroyed.
 // `role`: a structure with a job in the city (src/city.ts). `roof`: a rooftop fixture on an ordinary building.
-export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',upperDeck?:boolean,label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant'|'powerhouse',roof?:'radar'|'tank'|'sign'|'crab'|'helipad'|'billboard'|'ball',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean,board?:boolean};
+export type BuildingSpec={x:number,w:number,h:number,hp:number,value:number,kind:'tiny'|'medium'|'large',upperDeck?:boolean,label:string,color:string,landmark?:boolean,cache?:boolean,role?:'substation'|'depot'|'armory'|'hydrant'|'powerhouse',roof?:'radar'|'tank'|'sign'|'crab'|'helipad'|'billboard'|'ball',shape?:string,prop?:string,parts?:Part[],deco?:string,explosive?:boolean,slab?:boolean,board?:boolean,lean?:number,tarp?:number};
 // `parts`: the hitbox silhouette (src/hitbox.ts); omitted means one box, the whole footprint.
 // `prop`: street junk (a walk-through breakable: hot dog cart, trash can, taco stand, advertising column, café table, market stall,
 // vending machine), drawn per kind.
@@ -29,14 +29,14 @@ const NEW_YORK_BLOCK_ONE_AUTHORED:BuildingSpec[]=[
  {x:3460,w:100,h:122,hp:90,value:100,kind:'medium',label:'SHOP',color:'#b2826f'},
 ];
 
-import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2} from './config.ts';
+import {CONFIG,BUILDING_PRESETS,MAINS,SF,GAS,BRIDGE,GATE,EMPIRE,CONEY,NYC2,NYC5,BULL,MEX1,MEX2,MEX3,LEAN,FLAG,TARP,ANGEL,STONE,AZTECA,XOCHI} from './config.ts';
 import {shapeParts} from './hitbox.ts';
 import {VEHICLE_SPECS} from './vehicles.ts';
 import {profileFrom,profileY} from './terrain.ts';
 // Each city's look (phase 4): `mood` is its sky and light (lights 0 = broad day .. 1 = night: lit windows, neon), `style` picks the
 // facade drawing, `material` how its buildings break, `taxi`/`cars` its street colours, `ink` the HUD text colour over its sky.
 export type Mood={top:string,bottom:string,far:string,mid:string,near:string,win:string,lights:number,sun:string,rain?:boolean,smog?:boolean};
-export type CityStyle='nyc'|'mex'|'par'|'hkg'|'tyo';
+export type CityStyle='nyc'|'mex'|'par'|'hkg'|'tyo'|'syd';
 // A city is a place; a kaiju is optional. `kaiju`: the playable kaiju a campaign plays there (absent = the run's chosen kaiju carries
 // on, today's rule for the five original cities). `boss`: the final boss of its last level. `difficulty`: the military/rival scaling
 // step (src/military.ts, src/rival.ts), kept per city so adding a city never shifts another city's tuning.
@@ -51,16 +51,17 @@ export const CITIES:City[]=[
  {id:'nyc',name:'New York',code:'NYC',kaiju:'Kaiban',boss:'Tlézcatl',difficulty:0,sky:'#95b0b2',haze:'#c8cbb5',colors:['#8a4e3e','#b36d57','#62708b','#7a5546','#a0634c'],signs:['DELI','MARKET','ARCADE','BODEGA'],
   mood:{top:'#86aac2',bottom:'#e8d5a9',far:'#9aa9ab',mid:'#7b8d8f',near:'#566a6e',win:'#e9cf86',lights:.15,sun:'#ffe4a6'},style:'nyc',
   material:{debris:['#8a4e3e','#6f3a2e','#b9a58c'],slab:1},taxi:'#f2c230',cars:['#3c4a5c','#8e9aa3','#7d2f2f','#2e3d36','#b7b2a6'],ink:'#2f4740'},
- {id:'mex',name:'Mexico City',code:'MEX',boss:'Tlézcatl',difficulty:1,sky:'#d3a476',haze:'#f0c98a',colors:['#d9846a','#e7c07a','#8fb39a','#c9879c','#e2d6b8'],signs:['MERCADO','CAFE','HOTEL','TIENDA'],
+ // Mexico City (MEX rework): Tlézcatl plays here, the final boss is Belial (the next city's kaiju).
+ {id:'mex',name:'Mexico City',code:'MEX',kaiju:'Tlézcatl',boss:'Belial',difficulty:1,sky:'#d3a476',haze:'#f0c98a',colors:['#d9846a','#e7c07a','#8fb39a','#c9879c','#e2d6b8'],signs:['MERCADO','CAFE','HOTEL','TIENDA'],
   mood:{top:'#b7845e',bottom:'#f4c886',far:'#b48d78',mid:'#94735f',near:'#6f5a4d',win:'#ffd89a',lights:.45,sun:'#ffb35c',smog:true},style:'mex',
   material:{debris:['#e2d6b8','#d9846a','#c9b79c'],slab:.9},taxi:'#e8789f',cars:['#c25b3c','#6d8f5f','#d8c27a','#4f6f8f','#e4dccb'],ink:'#4a2f22'},
  {id:'par',name:'Paris',code:'PAR',boss:'Belial',difficulty:2,sky:'#a5bbca',haze:'#d7d6c0',colors:['#d8ccae','#cfc2a3','#e0d6bd','#c8bc9e'],signs:['CAFE','CINEMA','HOTEL','LIBRAIRIE'],
   mood:{top:'#9fb0bd',bottom:'#dcdbcf',far:'#a3acb2',mid:'#8b969c',near:'#6e7a80',win:'#efd9a0',lights:.25,sun:'#f4efe0'},style:'par',
   material:{debris:['#d8ccae','#bfb293','#e6dcc4'],slab:1.45},taxi:'#2b2f33',cars:['#7a8c99','#b9473b','#d6cdb5','#4b5d4f','#9aa0a6'],ink:'#33404a'},
- {id:'hkg',name:'Hong Kong',code:'HKG',boss:'Myrmex',difficulty:3,sky:'#1c2740',haze:'#3b3f63',colors:['#c9c3b4','#a9b8b9','#d3b8a8','#9fb3a8'],signs:['MARKET','HOTEL','ARCADE','CAFE'],
+ {id:'hkg',name:'Hong Kong',code:'HKG',boss:'Sargathoth',difficulty:3,sky:'#1c2740',haze:'#3b3f63',colors:['#c9c3b4','#a9b8b9','#d3b8a8','#9fb3a8'],signs:['MARKET','HOTEL','ARCADE','CAFE'],
   mood:{top:'#0e1628',bottom:'#3a3460',far:'#1f2a44',mid:'#18223a',near:'#141c30',win:'#ffd36e',lights:1,sun:'#f2ecd6'},style:'hkg',
   material:{debris:['#bfe3f0','#c9c3b4','#8fb6c6'],slab:.8,glass:true},taxi:'#c2312b',cars:['#d8d8d8','#2b3440','#6b7f99','#a0332e','#e2c46a'],ink:'#dfe7f2'},
- {id:'tyo',name:'Tokyo',code:'TYO',boss:'Sargathoth',difficulty:4,sky:'#1c212d',haze:'#3a3550',colors:['#4d5a6e','#5d6a7a','#3f4b5c','#6c7480'],signs:['ARCADE','CAFE','HOTEL','MARKET'],
+ {id:'tyo',name:'Tokyo',code:'TYO',boss:'Atomotitan',difficulty:4,sky:'#1c212d',haze:'#3a3550',colors:['#4d5a6e','#5d6a7a','#3f4b5c','#6c7480'],signs:['ARCADE','CAFE','HOTEL','MARKET'],
   mood:{top:'#141924',bottom:'#3b3451',far:'#232a39',mid:'#1c2230',near:'#151a26',win:'#9fe6ff',lights:1,sun:'#e8eef6',rain:true},style:'tyo',
   material:{debris:['#9aa3ad','#5d6a7a','#bfe3f0'],slab:1,frame:true},taxi:'#2c3e6b',cars:['#e8e8e6','#b8bcc0','#33373d','#5f7f9c','#c9b28a'],ink:'#dfe7f2'},
  // The old New York blocks, off the route: a test fixture city (tests boot it through kaijuTest.gotoCity). Not in CAMPAIGN, so it
@@ -68,6 +69,16 @@ export const CITIES:City[]=[
  {id:'nyc-classic',name:'New York (classic)',code:'NYC',boss:'Kaiban',difficulty:0,sky:'#95b0b2',haze:'#c8cbb5',colors:['#8a4e3e','#b36d57','#62708b','#7a5546','#a0634c'],signs:['DELI','MARKET','ARCADE','BODEGA'],
   mood:{top:'#86aac2',bottom:'#e8d5a9',far:'#9aa9ab',mid:'#7b8d8f',near:'#566a6e',win:'#e9cf86',lights:.15,sun:'#ffe4a6'},style:'nyc',
   material:{debris:['#8a4e3e','#6f3a2e','#b9a58c'],slab:1},taxi:'#f2c230',cars:['#3c4a5c','#8e9aa3','#7d2f2f','#2e3d36','#b7b2a6'],ink:'#2f4740'},
+ // Sydney (route shuffle card 2; on the route after Paris since card 3). Appended after nyc-classic so no city index moved.
+ // Placeholder parity with Hong Kong under bright, hard harbour daylight: sandstone low-rise and pale-glass CBD towers; Myrmex is its boss.
+ {id:'syd',name:'Sydney',code:'SYD',boss:'Myrmex',difficulty:2.5,sky:'#7fb6dc',haze:'#d6e6ea',colors:['#d9b98a','#cfa877','#b8cdd6','#c9d8dc','#e2c99c'],signs:['CAFE','PUB','SURF','BOTTLE-O'],
+  mood:{top:'#4f97d0',bottom:'#cfe7ef',far:'#8fb3c4',mid:'#6f93a3',near:'#4f6f7c',win:'#fff1c4',lights:.15,sun:'#fffbe6'},style:'syd',
+  material:{debris:['#d9b98a','#b8cdd6','#e8dcc0'],slab:1,glass:true},taxi:'#f2c230',cars:['#f3f3ef','#2d5f8a','#b8bcc0','#c0392b','#2e3d36'],ink:'#1f3340'},
+ // The old Mexico City districts, off the route: a test fixture city (tests boot it through kaijuTest.gotoCity). Not in CAMPAIGN, so it
+ // never reaches Free Play, the campaign map, records or progress. Appended after syd so no city index moved.
+ {id:'mex-classic',name:'Mexico City (classic)',code:'MEX',boss:'Tlézcatl',difficulty:1,sky:'#d3a476',haze:'#f0c98a',colors:['#d9846a','#e7c07a','#8fb39a','#c9879c','#e2d6b8'],signs:['MERCADO','CAFE','HOTEL','TIENDA'],
+  mood:{top:'#b7845e',bottom:'#f4c886',far:'#b48d78',mid:'#94735f',near:'#6f5a4d',win:'#ffd89a',lights:.45,sun:'#ffb35c',smog:true},style:'mex',
+  material:{debris:['#e2d6b8','#d9846a','#c9b79c'],slab:.9},taxi:'#e8789f',cars:['#c25b3c','#6d8f5f','#d8c27a','#4f6f8f','#e4dccb'],ink:'#4a2f22'},
 ];
 // `start`: open layouts set a mid-map spawn x; the player can roam both ways and leave by either end once the quota is met.
 // Blocks without it keep the classic west spawn and single eastern exit.
@@ -80,18 +91,25 @@ export const CITIES:City[]=[
 // New York Act 1 (NYC rework card 2), opt-in: `vents` x of steam-vent manholes (src/config.ts STEAM): they puff now and then, and a slam or pound
 // near one bursts it into a steam jet that scalds troops, launches cars and blinds helicopters (it never sets a building alight, unlike SF's gas
 // mains). `bull` x of the Charging Bull, a heavy bronze prop (src/config.ts BULL: grabbable by a strong kaiju, thrown short and hard, immune to
-// street damage). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
+// street damage, destructible only by deliberate force; the street round it is cleared into a plaza). Target art `fort` is Castle Clinton, `exchange` the NYSE command post. `spawn` x the kaiju starts at (like `start` but
 // without making the level a there-and-back with a west exit): The Battery starts in the harbour, over a `bands` water span with a seabed `ground` profile.
-export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],
- target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
+export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'boss',startStage?:1|2|3,cap?:1|2|3,capLift?:2|3,tier?:number,secret?:boolean,buildings:BuildingSpec[],street:number[],cars:number[],start?:number,grids?:[number,number][],poles?:number[],ground?:[number,number][],water?:[number,number,number][],bridge?:{x0:number,x1:number,spans:number,rise?:number,more?:[number,number,number][]},subway?:[number,number][],elevated?:[number,number],bands?:boolean,tunnel?:'deep',boats?:number[],wind?:1|-1,
+ target?:{x:number,label:string,art:'clock'|'command'|'pyramid'|'cutter'|'fort'|'exchange'|'arena'|'terminal'|'palace'|'campo',scale?:number,launch?:boolean},pocket?:{x0:number,x1:number,hp:number},garage?:[number,number][],police?:boolean,air?:number[],swat?:number[],
  guard?:boolean,lanterns?:[number,number,number][],crystal?:number,streetcars?:number[],cablecars?:number[],trolleys?:number[],firetrucks?:number[],pier?:{x0:number,x1:number},
  // Phase 4 (SF Act 2), all opt-in. See the notes below.
  units?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number,number?][],garrison?:[('police'|'patrol'|'soldier'|'helicopter'|'apc'|'tank'|'emplacement'|'artillery'),number][],cableLines?:[number,number][],tumble?:[number,number],
  exits?:{west?:string,east?:string},after?:string,fog?:{from:number,to:number,max:number},sealions?:number[],kaiban?:{x:number,wade:[number,number]},
  buses?:number[],elevatedLook?:'park'|'freeway',ramps?:[number,number][],coastguard?:number[],
+ // Mexico City rework (card 1), opt-in: `sinking` makes the lake-bed ground soft on this level (src/game.ts sinkAround): a heavy landing sinks the
+ // buildings round it and one sunk far enough gives way. Set on Templo Mayor and the five `mex-classic` blocks only.
+ sinking?:true,
+ // Mexico City rework (card 2), opt-in: `volcano` is Popocatépetl's state on this level (1 wisp, 2 plume, 3 ash, 4 erupting; absent = today's skyline, state 0;
+ // src/game.ts, CONFIG VOLCANO). `volcanoOn:'target'` (a level that starts at 3) switches to 4 when its stronghold target dies, once. `ashLate:x` (state 2) starts ash
+ // falling after the kaiju passes x. Only the Mexico City route levels set them; the other cities and `mex-classic` never do.
+ volcano?:1|2|3|4,volcanoOn?:'target',ashLate?:number,
  // Phase 5 (SF Act 3), all opt-in. See the notes below.
  cracks?:number[],gas?:boolean,fireCap?:number,elevatedDecks?:2,approach?:number,deckApproach?:number,
- finale?:{x:number,wake:number,breaks:number[],perches?:{x0:number,x1:number,h:number}[],tower?:number,crack?:number},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
+ finale?:{x:number,wake:number,breaks:number[],perches?:{x0:number,x1:number,h:number}[],tower?:number,crack?:number,flood?:true},warships?:['gunboat'|'destroyer',number][],deckUnits?:[('tank'|'soldier'|'apc'|'artillery'|'emplacement'),number][],
  // Phase 6 (Alcatraz), all opt-in. `exitAt`: the destruction a district needs before its exits open (default CONFIG.exitThreshold).
  // `secretId`: clearing this secret level in the campaign unlocks it in Free Play and adds its gallery entry (src/campaign.ts).
  // `lore`: one results-screen line. `hazmat`: this level's soldiers are drawn in hazmat suits (a reskin, nothing else changes).
@@ -100,10 +118,39 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
  vents?:number[],bull?:number,spawn?:number,
  // New York Act 2 (NYC rework card 3), all opt-in. See the notes below.
  night?:boolean,concourse?:[number,number],zoo?:number[],carriages?:number[],
+ // NYC fix card 4, opt-in. See the notes below.
+ moodRamp?:[x:number,mood:Mood|'day'|'night'|'dusk'|'dawn'|'golden'|'predawn'][],
  // New York Act 3 (NYC rework card 5), all opt-in. See the notes below.
  ventsAuto?:boolean,yard?:{x0:number,x1:number,spans:number},balloons?:[number,number][],
  // New York secret level (NYC rework card 7), all opt-in. See the notes below.
- wheel?:number,coaster?:[number,number]};
+ wheel?:number,coaster?:[number,number],
+ // Mexico City Act 1 (MEX rework card 3), all opt-in. See the notes below.
+ pole?:number,seeps?:number[],pit?:{x0:number,x1:number,floor:number,slabX:number,slabH:number,ramp:number,short:number},
+ // Mexico City Act 2 (MEX rework card 4), all opt-in. See the notes below.
+ banners?:[number,number,number][],domeSeep?:number,angel?:number,stone?:number,catrinas?:boolean,lakeGreen?:[number,number][],
+ // Mexico City Act 3 (MEX rework card 6), all opt-in. See the notes below.
+ seepsAuto?:boolean,rock?:[number,number][],sinkholes?:[number,number][],tren?:[number,number],
+ // Mexico City secret level (MEX rework card 8, Xochimilco), all opt-in. `current:[band, speed]`: the water span `band` (an index into `water`) carries a current, px/s signed (+ east): anything
+ // floating on that span drifts with it (trajineras, and wrecks and debris that land in it, which float for XOCHI.floatLife s instead of sinking at once); powered boats ignore it, and so does every other span.
+ // `soft`: world-x ranges of chinampa ground (ankle-deep: wading speed, no running). `trajineras`: [x, variant, moored] floating boats (variant art only; moored ones stay at the dock until disturbed).
+ // `axolotls`: x spots on the canal bed that bolt from the kaiju. `dolls`: a world-x range where dolls hang from the ahuejotes (art only). `ashWater`: grey ash floats on the water (art only).
+ current?:[number,number],soft?:[number,number][],trajineras?:[number,'plain'|'food'|'mariachi',0|1][],axolotls?:number[],dolls?:[number,number],ashWater?:boolean};
+// Mexico City Act 3 (MEX rework card 6), opt-in. `seepsAuto`: the level's `seeps` burst on their own every ACID.auto.every s after a warning, no slam needed, one after another in the order of the list (the counterpart
+// of `ventsAuto`). `rock` [x0,x1] ranges of volcanic ground (src/config.ts ROCK): Tlézcatl's lava pools on it last longer and spread wider; drawn as dark broken rock. `sinkholes` [x0,x1] marked
+// stretches of street (drawn cracked) that cave into a pit under a heavy landing and take what stands on them (src/config.ts SINKHOLE); never traps the kaiju. `tren` [x0,x1] the Tren Ligero's surface
+// line: light-rail trains run beside the road (src/config.ts MEX3.tren), attacked like the subway's and grabbable at Stage 3 with no pit needed. Target art `command` is the Calzada's field HQ.
+// Mexico City Act 2 (MEX rework card 4), opt-in. `banners` [x0,x1,height]: papel picado strung across the street between two buildings (src/config.ts PICADO): fire touching a string burns it,
+// and the building at its far end catches. `domeSeep`: the index in `seeps` of the seep beside Bellas Artes whose first burst drops the dome (src/config.ts MEX2.dome). `angel`: x of El Ángel's
+// column (ANGEL). `stone`: x of the Sun Stone, vehicle kind `stone` (STONE). `catrinas`: the street crowds are drawn in catrina makeup. `lakeGreen`: x ranges of the lake drawn green by the storm drains (art only).
+// Target art `campo` is Campo Marte (MEX2.campo). A building's deco `mfloat` is a Día de Muertos parade float (a BARRIER reskinned); `fountain` and `museo` are Alameda's and Chapultepec's art.
+// Mexico City Act 1 (MEX rework card 3), opt-in. A building's `lean` (degrees, signed, + leans east; src/config.ts LEAN) draws it tilted about its base corner and
+// sets the side it topples to when it is destroyed; on a `sinking` level each sink step adds lean and a building past LEAN.topple gives way. Templo Mayor starts in
+// a pit (an authored `ground` dip with a steep west wall and, at its east end, a stone platform with a rubble ramp up to its foot: climb its face or hop from the ramp, src/config.ts MEX1). `pole` x of the Zócalo's flagpole (src/config.ts FLAG): a
+// heavy grabbable prop of vehicle kind `pole`, never loose, swung as a long-reach club and thrown like a spear; its plinth is cleared of street clutter. Target art `palace`
+// is the Palacio Nacional: a long, low arcaded facade with the police command post in its courtyard. A building's `tarp` is a run id: stalls sharing an id are joined by a
+// canopy and fire runs along it TARP.spread x faster (src/config.ts TARP). `seeps` x of storm drains that leak acid (src/config.ts ACID): a slam or pound near one bursts it
+// into a spray that burns troops, wrecks cars and eats a building's base; never fire. `pit` the excavation's x0/x1, floor depth, platform (x of its west face, height) and rubble ramp (world units, for
+// drawing the stone ruins and for the climb-out trigger that makes Popocatépetl puff; the dip itself is in `ground`).
 // New York secret level (NYC rework card 7, Coney Island), opt-in: `wheel` x of the Ferris wheel's centre (src/config.ts CONEY): a huge round body standing on its
 // base, a `deco:'wheelbase'` building; when the base is broken the wheel comes off and rolls (src/rolling.ts), speeding up on any slope, bowling through the buildings it
 // flattens and wrecking against the first it cannot. `coaster` [x0, x1] the roller coaster's run: a raised wooden track of `deco:'track'` buildings (each a stack of
@@ -115,9 +162,17 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // under the deck); breaking a span opens a pit down to the yard floor and whatever stands on it goes down too (src/config.ts NYC3). `balloons`
 // [x, altitude] parade balloons (src/config.ts PARADE): x of the tether on the street, altitude the balloon's centre above the street, both world
 // units. Target art `arena` is Madison Square Garden: a drum with the Army field HQ at its foot. Building deco `float` is a parade float.
+// NYC fix card 4, opt-in: `moodRamp` [x, mood][] gives the level a light that changes along it: mood stops by world x (ascending). The game blends the stops at the
+// camera's centre (colours and `lights` lerp, `rain`/`smog` come from the nearer stop), so the sky, stars, sun and moon, windows, fire glow and billboard halos all move
+// continuously. A name is the city's day mood ('day'), NYC2.night ('night'), or NYC2.dusk/dawn/golden/predawn; a Mood object is used as given. Without it a level keeps its
+// hard mood (`night` or the city's). SoHo, Times Square and Grand Central are the only levels that set it.
+// NYC fix card 5, opt-in and art/props only: the New York route levels (`cityLevel('nyc', ...)`, option `clutter:true`) add walk-through street clutter (src/config.ts NYC5: sidewalk
+// sheds, subway entrances, cabs, vendor carts and newsstands, all `tiny` props in street gaps, so none blocks the street and each smashes or lifts like a newsstand). The `y` and `u`
+// presets are the chunky NYC towers that replace the needles `x` and `n` there (height at most 4.5x width; named landmarks are exempt; tests/nyc-density.test.ts). The back row of
+// buildings, the far skyline and the busier facades are drawn by src/game.ts for the levels named in `NYC_DISTRICT`, keyed by name: no field, no hitbox.
 // New York Act 2 (NYC rework card 3), opt-in: `night` repaints the level with the night mood (src/config.ts NYC2.night) wherever the game reads
 // the city's mood; on a level with power grids a destroyed substation then blacks out that grid's windows and billboards. A building's `board`
-// is a facade billboard (a big neon screen), the roof fixture `billboard` a rooftop one, and the roof fixture `ball` is One Times Square's ball:
+// is a facade billboard (a big neon screen), the roof fixture `billboard` a rooftop one, and the roof fixture `ball` is One Times Square's ball (once dropped it can be carried, thrown and shattered: src/config.ts NYC2):
 // break it and it drops and rolls down the street. Target art `terminal` is Grand Central Terminal (a wide stone facade, a clock, the statue
 // group). `concourse` [x0, x1]: the Main Concourse under a roof building (deco `concourse`): break the roof and the street under it
 // opens into a pit full of commuters and police. A single-deck `elevatedLook: 'freeway'` is the Park Avenue Viaduct, and `deckUnits` troops stand
@@ -154,6 +209,7 @@ export type BlockDef={name:string,screens:number,kind:'district'|'stronghold'|'b
 // `approach`: the length of the ramp at each end of an elevated deck (SF: the roof park and the freeway), climbing from the street to the deck
 // and walkable; `deckApproach`: the same for an upper bridge deck, a ramp climbing to it from the west. World units.
 // `elevated`: an elevated railway over [x0, x1] (Tokyo); world units.
+// `wind`: Sydney's southerly buster blows this way along x (+1 east, -1 west) on the level; read only in the 'syd' style (TWISTS).
 // `water`: river spans [from, to, surfaceY]; `bridge`: a deck at street level over [x0, x1] in `spans` breakable spans; `subway`: x ranges
 // with a subway line under the street (slams cave it in). All world units.
 // `ground`: the street profile as world [x, y] points (src/terrain.ts); absent = flat.
@@ -194,15 +250,15 @@ function district(city:string,name:string,screens:number,entries:Entry[],street:
    const b=scaled({...BUILDING_PRESETS[key],x,label,color,landmark:true,...(shape?{shape}:{})});return {...b,shape:shape||'tower',parts:shapeParts(shape||'tower',theme.style,b.w,b.h)};}
   if(key==='S'||key==='F'||key==='K')return scaled({...BUILDING_PRESETS[key],x,label:key==='K'?'ARMORY':'',color:key==='S'?'#7f8c88':key==='F'?'#c4bea6':'#8a5444',role:key==='S'?'substation':key==='F'?'depot':'armory'});
   if(key==='P')return scaled({...BUILDING_PRESETS[key],x,label:'CABLE CAR POWERHOUSE',color:'#8a5a44',role:'powerhouse',deco:'powerhouse'});
-  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='vault'?{cache:true,deco:'vault',label:'VAULT'}:tag==='factory'?{deco:'factory',roof:'sign',label:'CHOCOLATE'}:tag==='radar'||tag==='tank'||tag==='sign'||tag==='crab'||tag==='helipad'||tag==='billboard'||tag==='ball'?{roof:tag}:tag==='board'?{board:true}:tag&&DECOS.has(tag)?{deco:tag,label:'',...(tag==='fireworks'?{explosive:true,label:'FIREWORKS'}:{})}:{})});
+  return scaled({...BUILDING_PRESETS[key],x,label:key==='b'?'BARRIER':key==='t'?'NEWS':key==='l'||key==='x'||key==='n'||key==='y'||key==='u'?'':theme.signs[i%theme.signs.length],color:theme.colors[i%theme.colors.length],...(tag==='cache'?{cache:true}:tag==='vault'?{cache:true,deco:'vault',label:'VAULT'}:tag==='factory'?{deco:'factory',roof:'sign',label:'CHOCOLATE'}:tag==='radar'||tag==='tank'||tag==='sign'||tag==='crab'||tag==='helipad'||tag==='billboard'||tag==='ball'?{roof:tag}:tag==='board'?{board:true}:tag&&DECOS.has(tag)?{deco:tag,label:'',...(tag==='fireworks'?{explosive:true,label:'FIREWORKS'}:{})}:{})});
  });
  // Water mains: a fire hydrant on the pavement beside every MAINS.every-th street spot (never inside a building), in district and
  // stronghold blocks. Appended after the authored buildings so their order is untouched.
  const solids=built.filter(b=>b.kind!=='tiny'),w=Math.round(10*CONFIG.cityScale),h=Math.round(16*CONFIG.cityScale);
  const hydrants:BuildingSpec[]=kind==='boss'?[]:street.filter((_,k)=>k%MAINS.every===1).map(x=>sc(x+40)).filter(x=>!solids.some(b=>x+w>b.x-6&&x<b.x+b.w+6)).map(x=>({x,w,h,hp:1,value:5,kind:'tiny',label:'',color:'#c0392b',role:'hydrant'}));
  // Street junk: each city's own clutter beside the other street spots (the first kind of the pair where k%3 is 0, the second at 2).
- const JUNK:Record<string,[string,string]>={nyc:['hotdog','trash'],mex:['taco','trash'],par:['morris','cafe'],hkg:['stall','trash'],tyo:['vending','trash']};
- const DIMS:Record<string,[number,number,number]>={hotdog:[26,28,40],trash:[12,18,10],taco:[30,30,40],morris:[16,46,40],cafe:[24,20,20],stall:[34,32,40],vending:[16,36,30]};
+ const JUNK:Record<string,[string,string]>={nyc:['hotdog','trash'],mex:['taco','trash'],par:['morris','cafe'],hkg:['stall','trash'],tyo:['vending','trash'],syd:['shelter','bin']};
+ const DIMS:Record<string,[number,number,number]>={hotdog:[26,28,40],trash:[12,18,10],taco:[30,30,40],morris:[16,46,40],cafe:[24,20,20],stall:[34,32,40],vending:[16,36,30],shelter:[40,34,40],bin:[12,20,10]};
  // Placed in the real gaps between solid buildings: up to three per gap, spaced along it, alternating the city's two kinds.
  const junk:BuildingSpec[]=[];if(kind!=='boss'&&name!=='Combat Drills'){
   const edges=[...solids].sort((p,q)=>p.x-q.x),lo=200,hi=sc(screens*960)-70,keep=[...built.filter(b=>b.kind==='tiny'),...hydrants];let n=0;
@@ -242,13 +298,13 @@ export function cityIndexOf(id:string){return CITIES.findIndex(c=>c.id===id);}
 // before each level is authored. A pattern is comma-separated tokens: a preset key (optionally `key:tag`, tag as in Entry), `_` a
 // street (240 wide, a street spot and a parked car in it) or `=` an open lot (420). Buildings stand 4 apart. Landmarks ('L') take the
 // next name from `landmarks`. A stronghold keeps its middle clear for the crystal, ringed by barricades; a boss level is an arena.
-type CityLevelRest=[name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts?:{target?:number,ring?:number[],from?:number}];
+type CityLevelRest=[name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts?:{target?:number,ring?:number[],from?:number,clutter?:boolean}];
 type Growth={startStage:1|2|3,cap:1|2|3,capLift?:2|3,tier:number,secret?:boolean};
 // Extra pattern tokens (SF Act 2): `~N` a bare gap of N (a hillside ramp: no street spot, no car); `^R` a new terrace at rise R
 // (authored, above the base street) starting at the current x: the ramp is the gap just before it (`~N` right before the `^R`).
 // The block gets `terraces` (consumed by terraced()) listing [rampStart, start, rise].
 type Terraces=[number,number,number][];
-function cityLevel(city:string,name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts:{target?:number,ring?:number[],from?:number}={}):BlockDef&{terraces?:Terraces}{
+function cityLevel(city:string,name:string,screens:number,kind:BlockDef['kind'],pattern:string,landmarks:string[],growth:Growth,opts:{target?:number,ring?:number[],from?:number,clutter?:boolean}={}):BlockDef&{terraces?:Terraces}{
  const W=screens*960,mid=opts.target??W/2,entries:Entry[]=[],street:number[]=[175],cars:number[]=[230],terraces:Terraces=[];let x=opts.from??400,l=0,lastGap=0;
  const clear=kind==='stronghold'?[mid-900,mid+560]:null;
  if(clear)for(const o of opts.ring??[-770,-440,-190,180,460])entries.push([mid+o,'b']);
@@ -263,8 +319,30 @@ function cityLevel(city:string,name:string,screens:number,kind:BlockDef['kind'],
   const label=key==='L'?landmarks[l++]:tag;entries.push(label===undefined?[x,key]:[x,key,label]);x+=w+4;lastGap=0;
  }
  entries.sort((a,b)=>a[0]-b[0]);
- return {...district(city,name,screens,entries,[...new Set(street)].filter(v=>v<W-60).sort((a,b)=>a-b),[...new Set(cars)].filter(v=>v<W-60).sort((a,b)=>a-b),kind),...growth,...(terraces.length?{terraces}:{})};
+ const built=district(city,name,screens,entries,[...new Set(street)].filter(v=>v<W-60).sort((a,b)=>a-b),[...new Set(cars)].filter(v=>v<W-60).sort((a,b)=>a-b),kind);
+ return {...(opts.clutter?nycClutter(built,kind==='stronghold'?mid:undefined):built),...growth,...(terraces.length?{terraces}:{})};
 }
+// NYC fix card 5, opt-in (`clutter` in the cityLevel options, set by the New York route levels): walk-through street clutter, the city's own. Every piece is a `tiny` prop
+// in a real gap between solid buildings (so none ever walls off the street, and each smashes or lifts like a newsstand), stood on the pavement beside the street junk
+// district() places: sidewalk sheds (`scaffold`), subway entrances (`kiosk`), parked cabs (`cab`), vendor carts (`cart`) and newsstands (`news`, the preset `t`).
+// None is a vehicle (so VEHICLES.vehicleCap is untouched). Kept off the exits (the world's ends), a stronghold's target and an open lot wider than `NYC5.lotMax`.
+// Levels with vents, the Bull, balloon tethers or a deck drop the pieces that fall on them afterwards.
+export const NYC_CLUTTER=['kiosk','cab','cart','scaffold','news'] as const;
+function nycClutter(b:BlockDef,target?:number):BlockDef{
+ const solids=b.buildings.filter(x=>x.kind!=='tiny').sort((p,q)=>p.x-q.x),tiny=b.buildings.filter(x=>x.kind==='tiny'),lo=sc(NYC5.edge),hi=levelWidth(b)-sc(NYC5.edge);
+ const gaps:[number,number][]=[];let from=lo;for(const s of solids){if(s.x>from)gaps.push([from,s.x]);from=Math.max(from,s.x+s.w);}if(hi>from)gaps.push([from,hi]);
+ const add:BuildingSpec[]=[];let n=0;
+ for(const [g0,g1] of gaps){if(g1-g0>sc(NYC5.lotMax)||g1-g0<sc(100))continue;let placed=0;
+  // Rotate through the kinds, putting each at the first free spot along the gap (scanned in 14px steps from the west), a margin clear of anything already there.
+  for(let tries=0;tries<NYC_CLUTTER.length&&placed<NYC5.perGap;tries++){const prop=NYC_CLUTTER[(n+tries)%NYC_CLUTTER.length],[dw,dh,value,hp]=NYC5.dims[prop],w=sc(dw),h=sc(dh);
+   for(let px=g0+10;px+w<=g1-10;px+=14){
+    if(target!==undefined&&Math.abs(px+w/2-target)<sc(NYC5.targetClear))continue;
+    if([...tiny,...add].some(t=>px<t.x+t.w+10&&px+w>t.x-10))continue;
+    add.push(prop==='news'?{...BUILDING_PRESETS.t,x:px,w,h,label:'NEWS',color:'#ca9a50'}:{x:px,w,h,hp,value,kind:'tiny',label:'',color:prop==='cab'?'#f2c230':'#7a8a66',prop});placed++;n++;break;}}}
+ return {...b,buildings:[...b.buildings,...add]};}
+// Drop street clutter standing within `r` of any x (a vent, the Bull, a balloon tether): an opt-in pass for the levels that put a mechanic in the street.
+const isClutter=(x:BuildingSpec)=>x.kind==='tiny'&&(x.prop?(NYC_CLUTTER as readonly string[]).includes(x.prop):x.label==='NEWS');
+function clearProps(b:BlockDef,xs:number[],r:number):BlockDef{return {...b,buildings:b.buildings.filter(x=>!isClutter(x)||!xs.some(v=>x.x+x.w>v-r&&x.x<v+r))};}
 function sfLevel(...a:CityLevelRest):ReturnType<typeof cityLevel>{return cityLevel('sfo',...a);}
 // Terraced hillside: buildings stand on flat terraces, the slopes are the ramp gaps (authored: each terrace rise, `^R` in the pattern).
 // Returns the block with its ground profile and `ramps` (world x ranges), minus the `terraces` bookkeeping. `base` is the rise before the first terrace.
@@ -578,7 +656,7 @@ const nycRep=(unit:string,n:number)=>Array(n).fill(unit).join(',');
 // SeaGlass carousel, the Whitehall terminal over the South Ferry subway loop, a deep tunnel that caves in) and north-east to Castle Clinton.
 function nycBattery():BlockDef{
  const T=6000,START=520,SHORE=2000,W=8*960;
- let b=cityLevel('nyc','The Battery',8,'stronghold',`>3300,s,m,h,_,l,s,m,_,h,r,_,n,s,m,_,>6700,s,m,_,h,r,n`,[],{startStage:1,cap:1,tier:1},{target:T,ring:[-770,-440,-190,180,460]});
+ let b=cityLevel('nyc','The Battery',8,'stronghold',`>3300,s,m,h,_,l,s,m,_,h,r,_,u,s,m,_,>6700,s,m,_,h,r,u`,[],{startStage:1,cap:1,tier:1},{target:T,ring:[-770,-440,-190,180,460],clutter:true});
  // The harbour: seabed 38 under the start (wading at Stage 1), shoaling up to the shore.
  const D:[number,number|null][]=[[0,38],[1450,38],[1700,22],[1900,12],[2010,null],[W,null]];
  const ground:[number,number][]=D.map(([x,d])=>[sc(x),d===null?CONFIG.ground:CONFIG.ground+6+d]);
@@ -602,14 +680,20 @@ function nycBattery():BlockDef{
 function nycWallStreet():BlockDef{
  const T=4300,BULL_X=560;
  let b=cityLevel('nyc','Wall Street',7,'stronghold',
-  `=,x,n,_,>1500,L,_,x,n,x,l,n,x,h:vault,n,x,_,x,n,l,x,n,>5050,n,x,n,_,x,n,x,l,n`,['TRINITY CHURCH|twin'],{startStage:1,cap:1,tier:2},{target:T,ring:[-840,-700,-560,440,500]});
+  `=,y,_,>1500,L,_,y,u,l,y,h:vault,y,_,y,l,y,>5050,y,u,_,y,u,l,u`,['TRINITY CHURCH|twin'],{startStage:1,cap:1,tier:2},{target:T,ring:[-840,-700,-560,440,500],clutter:true});
  // Supertall: the canyon towers are half as tall again as the presets (all within a jump of each other) (the camera has no ceiling), the roofs kept within a step or two of each other.
- const tall=(x:BuildingSpec)=>x.kind==='tiny'||x.landmark||x.role||x.h<sc(450)?x:{...x,h:sc(x.h/CONFIG.cityScale>=500?760:740)};
+ // NYC fix card 5: the wide `y` towers are stretched (never narrower than a quarter of their height, so none is a needle), alternating 760/740 for a ragged skyline.
+ let ti=0;const tall=(x:BuildingSpec)=>x.kind==='tiny'||x.landmark||x.role||x.h<sc(450)?x:{...x,h:sc(ti++%2?740:760)};
  b={...b,buildings:b.buildings.map(x=>x.deco==='vault'?{...x,label:'FEDERAL RESERVE',color:'#9a9c97'}:tall(x))};
  // Two towers flank the command post close enough that a toppled one lands on it (toppling damage reaches a target), and two more close the canyon.
- const flank=[[4010,900],[4450,900],[3860,720],[4590,720]].map(([x,h],i)=>scaled({...BUILDING_PRESETS.x,x,h,label:'',color:cityById('nyc').colors[i+1]}));
+ // The 900s are 204 wide (4.4:1); the 720 is the plain wide tower. (The fourth tower that used to close the east end is gone: a wide one no longer fits before the barricades.)
+ const flank=[[4000,900],[4450,900],[3800,720]].map(([x,h],i)=>scaled({...BUILDING_PRESETS.y,x,h,...(h===900?{w:204}:{}),label:'',color:cityById('nyc').colors[i+1]}));
  b={...b,buildings:[...b.buildings,...flank]};
- return {...b,subway:[[sc(1800),sc(3350)]],bull:sc(BULL_X),
+ // The line's ends are tunnel portals, so each sits in a cross-street gap rather than mid-block under a tower.
+ // A little plaza round the Bull: no parked cars, cart, hydrant or crowd within BULL.clear (the loop also clears parked rows and lamps there).
+ const bx=sc(BULL_X),near=(x:number,w=0)=>x+w>bx-BULL.clear&&x<bx+BULL.w+BULL.clear;
+ b={...b,cars:b.cars.filter(x=>!near(x,60)),street:b.street.filter(x=>!near(x,8)),buildings:b.buildings.filter(x=>!(x.kind==='tiny'&&near(x.x,x.w)))};
+ return {...b,subway:[[portalGap(b,sc(1800)),portalGap(b,sc(3350))]],bull:bx,
   target:{x:sc(T),label:'NYSE COMMAND POST',art:'exchange'},police:true,swat:[sc(2600),sc(2900),sc(3300),sc(5300)].map(x=>x),air:[sc(3000),sc(5200)],
   units:[['police',sc(1100)],['soldier',sc(2300)],['soldier',sc(3000)]]};
 }
@@ -621,11 +705,13 @@ function streetGaps(b:BlockDef,from:number,to:number,minGap:number):number[]{
  const s=b.buildings.filter(x=>x.kind!=='tiny'&&!x.landmark).sort((p,q)=>p.x-q.x),out:number[]=[];
  for(let i=1;i<s.length;i++){const a=s[i-1].x+s[i-1].w,c=s[i].x;if(c-a>=sc(minGap)&&a>=sc(from)&&c<=sc(to))out.push(Math.round((a+c)/2));}
  return out;}
+// The middle of the cross-street gap nearest x (a gap at least 60px wide), so a subway line can end in the street.
+function portalGap(b:BlockDef,x:number):number{const g=streetGaps(b,0,1e6,60/CONFIG.cityScale);return g.length?g.reduce((p,q)=>Math.abs(q-x)<Math.abs(p-x)?q:p):x;}
 function nycSoho():BlockDef{
  const CRYSTAL=3900,loft='r:brick,m:tank,r:brick,_,s:brick,m:brick,r:brick,_,m:tank,s:brick,r:brick';
  let b=cityLevel('nyc','SoHo and Canal Street',7,'district',
   `${loft},_,r:brick,m:tank,r:brick,_,s:brick,m:brick,r:brick,>5950,r:brick,m:tank,s:brick`,[],
-  {startStage:1,cap:1,capLift:2,tier:2});
+  {startStage:1,cap:1,capLift:2,tier:2},{clutter:true});
  b=clearClutter(b,[[CRYSTAL-260,CRYSTAL+260]]);
  // Canal Street: vendor stalls in the open stretch either side of the crystal; the Holland Tunnel's portal at the east end.
  const stalls=[3420,3500,3580,4200,4260].map(x=>scaled({x,w:34,h:32,hp:10,value:40,kind:'tiny' as const,label:'',color:'#c2312b',prop:'stall'}));
@@ -636,8 +722,11 @@ function nycSoho():BlockDef{
  const gaps=streetGaps(b,300,5950,200).filter(x=>Math.abs(x-sc(CRYSTAL))>sc(420));
  // Manholes in the Canal Street gaps, and two in the middle of the tunnel jam (steam among the stopped cars).
  const vents=[...gaps.slice(0,6),sc(5000),sc(5600)].sort((p,q)=>p-q);
+ b=clearProps(b,vents,sc(70));
  return {...b,cars:[...b.cars.filter(c=>c<sc(4300)),...jam],crystal:sc(CRYSTAL),guard:true,police:true,vents,
-  swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)]};
+  swat:[sc(3050),sc(3200),sc(3350)],air:[sc(3000)],
+  // Day for most of it; golden hour from about two-thirds in, dusk at the east exit (the next level opens at dusk).
+  moodRamp:[[0,'day'],[levelWidth(b)*.55,'day'],[levelWidth(b)*.72,'golden'],[levelWidth(b)-700,'dusk']]};
 }
 // ---- New York Act 3 (NYC rework card 5): Hudson Yards and Herald Square ----
 // Level 7. Hudson Boulevard's towers, the High Line (a roof park on an elevated deck: no buses under it), the Vessel, then the Hudson Yards
@@ -646,15 +735,16 @@ function nycSoho():BlockDef{
 function nycHudson():BlockDef{
  const HL:[number,number]=[1900,3200],APPROACH=400,YARD:[number,number]=[4300,6700],N=6,SPAN=(YARD[1]-YARD[0])/N;
  let b=cityLevel('nyc','Hudson Yards',8,'district',
-  `n,x,l,_,x,n,h,_,>3700,L,_,>6800,x,n,l,_,x,h,n,_,m,s`,['THE VESSEL|lattice'],{startStage:3,cap:3,tier:4});
+  `y,l,_,y,h,_,>3700,L,_,>6800,y,l,_,u,h,u,_,m,s`,['THE VESSEL|lattice'],{startStage:3,cap:3,tier:4},{clutter:true});
  b=clearClutter(b,[[HL[0]-APPROACH,HL[1]+APPROACH],YARD]);
  // The platform's towers, one or two to a span, each wholly inside its span (so a span going takes exactly the towers standing on it). Supertall.
- const colors=cityById('nyc').colors,on=(k:number,key:'x'|'l'|'n'|'m',h:number,off?:number)=>{const w=BUILDING_PRESETS[key].w;return scaled({...BUILDING_PRESETS[key],x:YARD[0]+k*SPAN+(off??Math.round((SPAN-w)/2)),h,label:'',color:colors[(k+1)%colors.length]});};
- const deck:BuildingSpec[]=[on(1,'x',760),on(2,'l',680),on(3,'x',720),on(4,'l',640),on(5,'n',700,40),on(5,'m',420,190)];
+ const colors=cityById('nyc').colors,on=(k:number,key:'y'|'l'|'m',h:number,off?:number,ww?:number)=>{const w=ww??BUILDING_PRESETS[key].w;return scaled({...BUILDING_PRESETS[key],w,x:YARD[0]+k*SPAN+(off??Math.round((SPAN-w)/2)),h,label:'',color:colors[(k+1)%colors.length]});};
+ const deck:BuildingSpec[]=[on(1,'y',760),on(2,'l',680,undefined,170),on(3,'y',720),on(4,'l',640),on(5,'y',700,10),on(5,'m',420,200)];
  b={...b,buildings:[...b.buildings,...deck]};
  // Geysers: in the cross-street gaps either side of the platform and in the gaps between its towers.
  // The open stretches (under the High Line, round the Vessel, the plaza's west end) have no neighbours to find gaps between: those are authored.
  const vents=[...streetGaps(b,300,1500,200),...[2150,2500,2850,3350,3550,3950,4150,4480,4620,6760].map(sc),...streetGaps(b,YARD[0]-20,YARD[1]+20,150),...streetGaps(b,6700,7500,200)].sort((p,q)=>p-q);
+ b=clearProps(b,vents,sc(70));
  return {...b,vents,ventsAuto:true,guard:true,police:true,
   elevated:[sc(HL[0]),sc(HL[1])],elevatedLook:'park',approach:sc(APPROACH),
   yard:{x0:sc(YARD[0]),x1:sc(YARD[1]),spans:N},bridge:{x0:sc(YARD[0]),x1:sc(YARD[1]),spans:N},subway:[[sc(YARD[0]),sc(YARD[1])]],tunnel:'deep',
@@ -666,14 +756,15 @@ function nycHudson():BlockDef{
 function nycHerald():BlockDef{
  const T=5600,PENN:[number,number]=[1750,3550],BALLOONS:[number,number][]=[[857,560],[1307,640],[1821,600],[2857,560],[3357,620],[3986,700],[5100,600]];
  let b=cityLevel('nyc','Herald Square',8,'stronghold',
-  `s,m,h,_,l,_,>1500,L,_,>2420,m,s,h,_,l,m,_,s,n,m,_,>4200,h,m,s,_,>6160,x,n,l,_,x,h,n,_,m,s`,
-  ["MACY'S|tower"],{startStage:3,cap:3,tier:4},{target:T,ring:[-840,-640,-440,-190,180,460]});
+  `s,m,h,_,l,_,>1500,L,_,>2420,m,s,h,_,l,m,_,s,u,m,_,>4200,h,m,s,_,>6160,y,l,_,u,h,u,_,m,s`,
+  ["MACY'S|tower"],{startStage:3,cap:3,tier:4},{target:T,ring:[-840,-640,-440,-190,180,460],clutter:true});
  // Parade floats stand where the barricades would: low flatbeds with a painted figure on top (a Gore Charge breaks them).
  const fcol=['#d9822b','#3a6ea5','#b9402f','#4f9a62','#8a5fa0','#d4b13a'];let f=0;
  b={...b,buildings:b.buildings.map(x=>x.label==='BARRIER'?{...x,label:'PARADE FLOAT',deco:'float',color:fcol[f++%fcol.length],w:Math.round(x.w*2),h:Math.round(x.h*1.5)}:x)};
  // Penn Station's head house over the line, Macy's at the west end.
  b=clearClutter(b,[[PENN[0]+180,PENN[0]+620]]);
  b={...b,buildings:[...b.buildings,hall(PENN[0]+210,380,120,'PENN STATION','#9a8f78','ferry',420)]};
+ b=clearProps(b,BALLOONS.map(([x])=>sc(x)),sc(80));
  return {...b,subway:[[sc(PENN[0]),sc(PENN[1])]],balloons:BALLOONS.map(([x,a])=>[sc(x),a] as [number,number]),
   target:{x:sc(T),label:'MADISON SQUARE GARDEN',art:'arena'},guard:true,police:true,
   // The full military: Guard soldiers and armour along the avenue, artillery and an emplacement behind the floats, and a helicopter sheltering
@@ -735,19 +826,25 @@ const NYC_POLES=(from:number,to:number)=>{const out:number[]=[];for(let x=from;x
 // grid, a substation each, and destroying one blacks out its windows and screens. One Times Square stands in the middle of the square
 // with the ball on its roof: break the ball loose and it rolls down Broadway. Crowds fill the street spots and flee.
 function nycTimesSquare():BlockDef{
- const pattern=['m,h:board,l:board,s,m:billboard,h:board,x:billboard,m:board,s:board,_',
-  'h:board,n:billboard,m:board,S,_',
+ const pattern=['m,h:board,l:board,s,m:billboard,h:board,u:billboard,m:board,s:board,_',
+  'h:board,u:billboard,m:board,S,_',
   '>2750,=,L,=',
-  'x:billboard,h:board,l:board,m,s:board,h:board,m:billboard,n:billboard,l:board,_',
-  'h:board,S,n:billboard,_,m:board,s,h:board,m:board'].join(',');
- let b=cityLevel('nyc','Times Square',7,'district',pattern,['ONE TIMES SQUARE|tower'],{startStage:2,cap:2,tier:2});
+  'm:billboard,h:board,l:board,m,s:board,h:board,m:billboard,u:billboard,l:board,_',
+  'h:board,S,u:billboard,_,m:board,s,h:board,m:board'].join(',');
+ let b=cityLevel('nyc','Times Square',7,'district',pattern,['ONE TIMES SQUARE|tower'],{startStage:2,cap:2,tier:2},{clutter:true});
  // The ball sits on One Times Square's roof.
  b={...b,buildings:b.buildings.map(x=>x.landmark?{...x,roof:'ball' as const}:x)};
+ // The ball's run down Broadway stays clear of street clutter (carts and cabs would crush and catch it).
+ {const lx=b.buildings.find(x=>x.landmark)!.x;b=clearProps(b,[lx+sc(3000)],sc(3000));
+ // ...and so does the stretch where the ball is first set down to be picked up: no parked row starts in the square's west approach.
+ b={...b,cars:b.cars.filter(c=>c<lx-sc(1200)||c>lx-sc(800))};}
  b=powered(b,[[0,3360],[3360,6720]],NYC_POLES(220,6700));
  // The square is packed: extra street spots (a crowd each) round One Times Square and along both avenues.
  b={...b,street:[...b.street,...[700,1100,2800,2900,3000,3480,3600,3700,3800,3900,4300,4600].map(sc)].sort((p,q)=>p-q)};
  return {...b,night:true,guard:true,police:true,air:[sc(2400),sc(4800)],
-  units:[['police',sc(1600)],['patrol',sc(2000)],['soldier',sc(2500)],['apc',sc(3900)],['soldier',sc(4100)],['soldier',sc(4600)],['apc',sc(5400)],['soldier',sc(5700)],['helicopter',sc(3100),560]]};
+  units:[['police',sc(1600)],['patrol',sc(2000)],['soldier',sc(2500)],['apc',sc(3900)],['soldier',sc(4100)],['soldier',sc(4600)],['apc',sc(5400)],['soldier',sc(5700)],['helicopter',sc(3100),560]],
+  // Opens at dusk (where SoHo ends), full night within about a screen, night through the square, pre-dawn toward the east exit.
+  moodRamp:[[0,'dusk'],[1500,'night'],[levelWidth(b)*.66,'night'],[levelWidth(b)-700,'predawn']]};
 }
 // Level 5. Grand Central. Park Avenue South climbs onto the Park Avenue Viaduct (a single-deck elevated, the freeway look, the Guard's tanks
 // and troops on it), which ends at the terminal's yard. The terminal is the target, with the Main Concourse's roof behind it: break that roof
@@ -757,9 +854,9 @@ function nycTimesSquare():BlockDef{
 function nycGrandCentral():BlockDef{
  const T=3400,DECK:[number,number]=[1150,2380],APPROACH=420,CONC:[number,number]=[3500,190];
  let b=cityLevel('nyc','Grand Central',7,'stronghold',
-  `s,m,h,>3980,h,m,_,s,>4700,L,_,m,h,_,s,m,h,_,l,s`,['CHRYSLER'],{startStage:2,cap:2,tier:3},{target:T,ring:[-440,-190]});
+  `s,m,h,>3980,h,m,_,s,>4700,L,_,m,h,_,s,m,h,_,l,s`,['CHRYSLER'],{startStage:2,cap:2,tier:3},{target:T,ring:[-440,-190],clutter:true});
  b=clearClutter(b,[[DECK[0]-APPROACH,DECK[1]+APPROACH]]);
- const metlife=landmarkAt(3710,'MET LIFE','#a9a9a0'),front=scaled({...BUILDING_PRESETS.x,x:3070,label:'',color:cityById('nyc').colors[2]});
+ const metlife=landmarkAt(3710,'MET LIFE','#a9a9a0'),front=scaled({...BUILDING_PRESETS.u,x:3070,h:520,label:'',color:cityById('nyc').colors[2]});
  const concourse=hall(CONC[0],CONC[1],70,'MAIN CONCOURSE','#b7ab8d','concourse',NYC2.concourseHP);
  b={...b,buildings:[...b.buildings,metlife,front,concourse]};
  // Commuters in the terminal's yard and on the avenue under the viaduct, parked cars along it.
@@ -769,7 +866,9 @@ function nycGrandCentral():BlockDef{
   // The Guard on the viaduct deck (tanks and troops), then the garrison round the terminal.
   deckUnits:[['tank',sc(1400)],['soldier',sc(1560)],['apc',sc(1760)],['soldier',sc(1960)],['tank',sc(2160)],['soldier',sc(2300)]],
   units:[['soldier',sc(700)],['apc',sc(900)],['helicopter',sc(2600),560],['helicopter',sc(4300),600]],
-  garrison:[['tank',-420],['soldier',-250],['apc',-130],['soldier',170],['tank',420],['soldier',560]]};
+  garrison:[['tank',-420],['soldier',-250],['apc',-130],['soldier',170],['tank',420],['soldier',560]],
+  // Opens at dawn and is in full day by a third of the way in.
+  moodRamp:[[0,'dawn'],[levelWidth(b)/3,'day']]};
 }
 // Level 6. Central Park, a there-and-back level (open layout, an exit at each end) entered from Central Park South. West to east: the main exit
 // (to Hudson Yards), a rock outcrop, the Great Lawn (the Guard dug in with APCs), another outcrop, Bethesda Terrace, the Pond under Gapstow
@@ -854,16 +953,302 @@ const NYC_CLASSIC:BlockDef[]=[
  riverworks(district('nyc','East River Offensive',8,[[220,'h'],[350,'m'],[462,'s'],[548,'K'],[700,'x'],[808,'L','UN HQ'],[998,'l'],[1260,'t'],[1380,'m'],[1492,'s'],[1572,'h'],[1702,'m','cache'],[2000,'n'],[2064,'l'],[2214,'m'],[2440,'t'],[2560,'h'],[2690,'L','CITICORP'],[2880,'x'],[2988,'s'],[3260,'m'],[3372,'h'],[4140,'s'],[4220,'m'],[4332,'n'],[4396,'h','cache'],[4720,'t'],[4840,'l'],[4990,'x'],[5098,'L','MET LIFE'],[5288,'m'],[6060,'n'],[6290,'t'],[6400,'m'],[6512,'h'],[6642,'L','SEAPORT'],[6832,'s'],[6930,'K'],[7110,'m'],[7222,'h']],[150,640,1230,1330,1940,2380,2500,3200,3560,3720,4000,4080,4700,4780,5500,5700,6250,6360,7040,7520],[170,650,1240,1340,1960,2400,2510,3540,3700,4010,4740,4790,5520,5720,6270,6370,7060,7540],'district',3840),{ground:[[0,0],[5410,0],[5470,-40],[5990,-40],[6050,0],[7680,0]],water:[5420,6040,-10],bridge:[5400,6060,3],subway:[400,3700]}),
  district('nyc','Kaiban Arena',4,[[500,'m'],[890,'l'],[1300,'s'],[1720,'t'],[2130,'h'],[2550,'l'],[2980,'m'],[3370,'s']],[340,780,1210,1650,2400,3190],[350,1150,1580,2350,3200],'boss'),
 ];
+// Sydney (route shuffle card 2; on the route since card 3): Hong Kong's five districts mirrored one for one (4/6/8/8/4, same kinds, same
+// slots), every spot nudged east so no layout repeats. The Rocks and the Milsons Point side climb gentle sandstone terraces (half
+// Hong Kong's rises); George Street, the CBD spine, is flat. `wind`: the southerly buster's direction on each level (TWISTS in src/config.ts).
+const SYDNEY:BlockDef[]=[
+ terrain(district('syd','The Rocks',4,[[408,'s','tank'],[494,'n'],[561,'m','tank'],[676,'L','SYDNEY OPERA HOUSE|sails'],[1034,'h'],[1168,'s'],[1251,'x'],[1366,'m'],[2099,'h','radar'],[2232,'L','CUSTOMS HOUSE|dome'],[2433,'m','tank'],[2784,'m','tank'],[2903,'m','cache'],[3018,'m'],[3134,'L','AMP BUILDING|tower'],[3469,'n'],[3541,'s'],[3626,'s']],[218,838,1508,2008,2688,3308],[538,1138,1718,2318,2998,3628],'district',1920),[[0,0],[388,0],[880,0],[1020,11],[1492,11],[2085,22],[2559,22],[2770,33],[3338,33],[3455,44],[3840,44]]),
+ district('syd','George Street',6,[[408,'m','cache'],[524,'m','tank'],[641,'l'],[797,'L','QUEEN VICTORIA BUILDING|dome'],[1188,'s','tank'],[1271,'m'],[1389,'n'],[1459,'m'],[1867,'m'],[1987,'h','cache'],[2124,'h'],[2258,'h'],[3054,'m','tank'],[3173,'L','GPO SYDNEY|tower'],[3462,'m','tank'],[3893,'m'],[4009,'h'],[4143,'x','radar'],[4256,'s'],[4632,'m'],[4748,'L','SYDNEY TOWER|needle'],[5003,'m'],[5358,'l'],[5511,'x'],[5622,'n']],[218,938,1578,2258,2938,3608,4348,5058,5668],[548,1248,1938,2568,3288,3998,4668,5368],'district',2880),
+ district('syd','Barangaroo Bastion',8,[[408,'m'],[528,'l'],[685,'s'],[773,'n'],[844,'l'],[1000,'h'],[1138,'h'],[1272,'l'],[1427,'s'],[1512,'h'],[1649,'l'],[1805,'m'],[1923,'l'],[2079,'h'],[2214,'m'],[2333,'x'],[2444,'h'],[2577,'s'],[2662,'m'],[2782,'l'],[2936,'m'],[3051,'s'],[3338,'b'],[3598,'b'],[3768,'b'],[4028,'b'],[4318,'b'],[4448,'h'],[4582,'s'],[4668,'l'],[4824,'n'],[4891,'x'],[5006,'m'],[5126,'l'],[5282,'h'],[5415,'h'],[5552,'x'],[5664,'s'],[5749,'s'],[5834,'m'],[5950,'x'],[6065,'s'],[6151,'h'],[6285,'m'],[6405,'s'],[6491,'m'],[6610,'h'],[6744,'x'],[6855,'m'],[6975,'l'],[7130,'l'],[7284,'m'],[7400,'m'],[7518,'n']],[208,1088,1958,2788,4558,5408,6278,7158],[648,1508,2388,3188,4538,5388,6248,7108],'stronghold'),
+ terrain(district('syd','Harbour Bridge Assault',8,[[408,'m','cache'],[525,'m','tank'],[644,'l'],[798,'s','tank'],[1108,'L','LUNA PARK|arch'],[1411,'m'],[1774,'h','cache'],[1911,'l'],[2066,'x'],[2182,'h'],[2576,'h'],[2714,'n'],[2786,'s'],[2870,'L','TOWN HALL|tower'],[3141,'m'],[3259,'m'],[3375,'x'],[3491,'m'],[3976,'h'],[4113,'l'],[4270,'h'],[4405,'h'],[4833,'L','ST MARY\'S CATHEDRAL|twin'],[5073,'s','tank'],[5158,'x'],[5473,'m','tank'],[5590,'h'],[5724,'x','radar'],[5838,'l'],[6267,'s'],[6350,'l'],[6505,'l'],[6659,'L','CROWN SYDNEY|needle'],[7005,'x'],[7119,'l'],[7272,'m'],[7392,'h']],[228,988,1698,2388,3078,3818,4508,5248,6018,6688,7448],[598,1308,2018,2738,3428,4138,4908,5608,6308,7088],'district',3840),[[0,0],[388,0],[892,0],[1094,11],[1537,11],[1760,22],[2326,22],[2562,33],[3617,33],[3962,44],[4549,44],[4819,44],[5280,44],[5459,44],[6002,44],[6253,44],[6863,44],[6991,44],[7680,44]]),
+ district('syd','Myrmex Arena',4,[[528,'l'],[988,'m'],[1408,'h'],[1848,'t'],[2228,'s'],[2628,'l'],[3088,'m'],[3498,'s']],[358,858,1288,2108,2958,3378],[388,1268,2078,2948],'boss')
+].map((b,i)=>({...b,wind:([1,-1,1,-1,1] as const)[i]}));
+// ---- Mexico City (MEX rework scaffold, docs/MEX_REWORK.md) ----
+// Nine route levels plus the secret Xochimilco, as placeholders drawn with cityLevel() and the existing presets. Names, screens, kind,
+// growth, exits and the rejoin are final; the layouts and each level's one new mechanic come in the later cards. Tlézcatl plays here.
+const MEX_ROW='s,m,h,_,l,s,m,_,h,r,_,n,s,m,_',MEX_TALL='x,n,l,x,h,_,n,x,l,n,_',MEX_LOW='r,s,r,m,_,r,s,m,s,_';
+const mexRep=(unit:string,n:number)=>Array(n).fill(unit).join(',');
+
+// ---- Mexico City Act 1 (MEX rework card 3): Templo Mayor, the Zócalo, La Merced and Tepito ----
+// An open hall: a roof beam raised on slim pillars that can be hit but are not solid (the kaiju walks in under the roof), so a pillar never walls off what is inside.
+function hallParts(w:number,h:number,beam:number,pillars:number):Part[]{return [...Array.from({length:pillars},(_,i)=>({x:Math.round(i*(w-14)/(pillars-1)),w:14,top:h-beam,spire:true})),{x:0,w,top:h,base:h-beam}];}
+const COLONIAL='r,m,s,_,h,r,_,m,s,r,_,s,m,r,_';
+// Level 1. Templo Mayor: the kaiju starts at the bottom of the excavation, below street level. A ruined temple gateway stands across the pit: climb its piers and walk
+// the top (the first lesson is climbing) or walk under it and up the rubble ramp at the east end (the fallback, so a player who cannot climb is never stuck). Then east along
+// Calle Moneda and Seminario, colonial blocks leaning on their foundations (some already tilted; the ground gives way under a heavy landing, `sinking`).
+function mexTemplo():BlockDef{
+ const P=MEX1.pit,D=P.depth,START=240;
+ let b=cityLevel('mex','Templo Mayor',7,'district',`>${P.x1+P.exit+80},${mexRep(COLONIAL,6)}`,[],{startStage:1,cap:1,tier:1});
+ // The street dips into the excavation (a steep west wall), runs flat across the floor under the stone platform and climbs back to the street just past the east rim.
+ b=terrain(b,[[0,0],[P.x0,0],[P.x0+P.wall,-D],[P.x1,-D],[P.x1+P.exit,0]]);
+ // The excavation is bare stone: no street junk, parked cars, crowds or hydrants in or just beside it.
+ const lim=sc(P.x1+P.exit+40);
+ b={...b,buildings:b.buildings.filter(x=>!(x.x<lim&&(x.kind==='tiny'||x.role==='hydrant'))),street:b.street.filter(x=>x>lim),cars:b.cars.filter(x=>x>lim)};
+ // The platform: the Templo Mayor's stone base, standing on the pit floor from slabX to the east rim, its roof a good way above the street. A rubble ramp climbs to near its top.
+ const slab=scaled({x:P.slabX,w:P.x1-P.slabX,h:P.slabH,hp:1400,value:250,kind:'large',label:'',color:'#8d8a78',deco:'ruinwall'});
+ // A few colonial blocks start out leaning (the ones tall enough to topple: only those can fall the way they lean).
+ const tilt=[-4,3,-3.5,4.5,-2.5,3.5];let li=0;
+ const buildings=[slab,...b.buildings].map(x=>x.kind==='medium'&&!x.landmark&&!x.deco&&x.h>=sc(200)&&x.x>sc(P.x1+P.exit+120)&&x.x<sc(4200)&&li++%2===0?{...x,lean:tilt[(li>>1)%tilt.length]}:x);
+ return {...b,buildings,spawn:sc(START),pit:{x0:sc(P.x0),x1:sc(P.x1),floor:sc(D),slabX:sc(P.slabX),slabH:sc(P.slabH),ramp:sc(P.ramp),short:P.short},sinking:true,volcano:1,police:true,air:[sc(3600)],
+  units:[['patrol',sc(2300)],['police',sc(3000)],['patrol',sc(4200)]]};
+}
+// Level 2. The Zócalo: a giant open plaza with no cover to speak of (a barricade line, parked buses, the flag's plinth), the Palacio Nacional at its east end with the police
+// command post in its courtyard, and the Metropolitan Cathedral standing at the plaza's west edge, leaning towards the palace: bring it down and it falls across the target. The
+// Bandera Monumental's mast stands at the plaza's west entrance: lift it and it is a long-reach club and a spear.
+function mexZocalo():BlockDef{
+ const T=3660,POLE=2640,CATH_X=2860;
+ let b=cityLevel('mex','Zócalo',7,'stronghold',`${mexRep(MEX_ROW,3)}`,[],{startStage:1,cap:1,tier:2},{target:T,ring:[-520,-300,-60,220,420]});
+ const theme=cityById('mex'),cath=(()=>{const c=scaled({...BUILDING_PRESETS.L,x:CATH_X,label:'CATEDRAL METROPOLITANA',color:'#cdbf9f',landmark:true,shape:'twin'});return {...c,parts:shapeParts('twin',theme.style,c.w,c.h),lean:LEAN.landmarkTilt};})();
+ const pz=sc(POLE),near=(x:number,w=0)=>x+w>pz-FLAG.clear&&x<pz+FLAG.clear;
+ // Parked buses and a stage across the plaza are the only cover; the plinth is bare.
+ const cars=[...b.cars.filter(x=>!near(x,60)),...[3000,3300,3900,4100].map(sc)].sort((p,q)=>p-q);
+ b={...b,cars,street:b.street.filter(x=>!near(x,8)),buildings:[...b.buildings.filter(x=>!near(x.x,x.w)),cath]};
+ return {...b,pole:pz,volcano:1,target:{x:sc(T),label:'PALACIO NACIONAL',art:'palace'},police:true,air:[sc(3000),sc(5200)],
+  units:[['patrol',sc(1500)],['police',sc(2200)],['soldier',sc(4300)],['patrol',sc(5000)]]};
+}
+// Level 3. La Merced and Tepito: colonial blocks, then market rows (stalls joined by tarps: fire runs along a canopy, not across the street), the Metro running underneath, the
+// market hall with the crystal under its roof (the cap lifts to 2) and acid seeps in the storm drains. The Guardia Nacional rolls in at the exit.
+function mexMerced():BlockDef{
+ const HALL=3720,HALL_W=360,HALL_H=150,CRYSTAL=HALL+HALL_W/2;
+ let b=cityLevel('mex','La Merced and Tepito',7,'district',`>400,r,m,s,_,h,r,_,>3040,r,m,_,s,>5420,r,s,m,_,>6180,s,m,r`,[],{startStage:1,cap:1,capLift:2,tier:2});
+ // Market rows: stalls with room between them (wider than the ordinary fire reach, so only the canopy carries the flame), each run its own tarp.
+ const run=(id:number,x0:number,n:number,color:string)=>Array.from({length:n},(_,i)=>({x:sc(x0)+i*(TARP.stallW+Math.round(TARP.gap*.62)),w:TARP.stallW,h:TARP.stallH+(i%2?6:0),hp:TARP.hp,value:50,kind:'medium' as const,label:'',color:i%2?color:'#d9a441',deco:'mstall',tarp:id}));
+ const stalls=[...run(1,1560,5,'#c2402b'),...run(2,2330,4,'#3f7fa6'),...run(3,4400,4,'#c2402b'),...run(4,5030,3,'#5e9a58')];
+ const hall=scaled({x:HALL,w:HALL_W,h:HALL_H,hp:700,value:400,kind:'large',label:'',color:'#9c8466',deco:'mercado',parts:hallParts(HALL_W,HALL_H,40,4)});
+ b={...b,buildings:[...b.buildings,...stalls,hall]};
+ b=clearClutter(b,[[HALL-120,HALL+HALL_W+120]]);
+ // Seeps in the storm drains: beside the foot of a building (acid pools against its base), one by each market row, one by the hall approach.
+ const edges=b.buildings.filter(x=>x.kind!=='tiny'&&x.deco!=='mercado').sort((p,q)=>p.x-q.x),cand:number[]=[];
+ for(let i=1;i<edges.length;i++){const a=edges[i-1].x+edges[i-1].w,g=edges[i].x-a;if(g>=sc(70)&&a>sc(500)&&a<levelWidth(b)-sc(500))cand.push(g<sc(160)?Math.round(a+g/2):a+sc(30));}
+ const far=cand.filter(x=>Math.abs(x-sc(CRYSTAL))>sc(300)),seeps=Array.from({length:Math.min(8,far.length)},(_,i)=>far[Math.floor(i*far.length/Math.min(8,far.length))]);
+ b=clearProps(b,seeps,sc(40));
+ return {...b,subway:[[portalGap(b,sc(1350)),portalGap(b,sc(5300))]],crystal:sc(CRYSTAL),seeps,volcano:1,guard:true,police:true,air:[sc(3000)],swat:[sc(2900),sc(4400)],
+  units:[['patrol',sc(1800)],['police',sc(3300)],['soldier',sc(5200)]]};
+}
+
+// ---- Mexico City Act 2 (MEX rework card 4): Alameda and Bellas Artes, Paseo de la Reforma, Chapultepec ----
+// Consecutive solid, ordinary buildings (no landmark, role or deco) with `min`..`max` px of street between them, between x `lo` and `hi`: the gaps a banner is strung across and a float stands in.
+function gapPairs(b:BlockDef,min:number,max:number,lo:number,hi:number):[BuildingSpec,BuildingSpec][]{
+ const e=b.buildings.filter(x=>x.kind!=='tiny'&&!x.landmark&&!x.role&&!x.deco).sort((p,q)=>p.x-q.x),out:[BuildingSpec,BuildingSpec][]=[];
+ for(let i=1;i<e.length;i++){const g=e[i].x-(e[i-1].x+e[i-1].w);if(g>=min&&g<=max&&e[i-1].x+e[i-1].w>lo&&e[i].x<hi)out.push([e[i-1],e[i]]);}return out;}
+const spread=<T>(xs:T[],n:number):T[]=>{const k=Math.min(n,xs.length);return Array.from({length:k},(_,i)=>xs[Math.floor(i*xs.length/k)]);};
+// Park trees along [x0,x1] (authored x) except the `skip` ranges and any spot on a slope, in water or on a ramp (when the level has terrain).
+function parkTrees(x0:number,x1:number,skip:[number,number][],seed0:number,ground?:[number,number][]):BuildingSpec[]{
+ let seed=seed0;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;},out:BuildingSpec[]=[];
+ for(let x=x0;x<x1;x+=13+Math.floor(rnd()*20)){const sx=sc(x);
+  const h=64+Math.floor(rnd()*44),col=['#4f7d4a','#5c8a4e','#436f43'][Math.floor(rnd()*3)];
+  if(skip.some(([a,z])=>x+30>a&&x<z))continue;
+  if(ground&&(Math.abs(profileY(ground,sx)-profileY(ground,sx+sc(30)))>1||Math.abs(profileY(ground,sx)-profileY(ground,sx-sc(30)))>1||profileY(ground,sx)>CONFIG.ground+4))continue;
+  out.push(scaled({x,w:27,h,hp:10,value:15,kind:'tiny' as const,label:'',color:col,prop:'tree'}));}
+ return out;}
+const fountain=(x:number)=>scaled({x,w:96,h:34,hp:60,value:60,kind:'tiny' as const,label:'',color:'#9aa69a',deco:'fountain'});
+// Level 4. Alameda and Bellas Artes: colonial rows under papel picado (strings across the cross streets: the one place fire jumps the street), Bellas Artes (a dome the lake bed
+// has already swallowed to its shoulders) with an acid seep beside it, the Alameda's trees and green-running fountains, the Torre Latinoamericana (a tall climbable landmark) and the
+// Guardia's soldiers and APCs in the avenues.
+function mexAlameda():BlockDef{
+ const BELLAS=2000,TORRE=4180,FOUNT=[2880,3540],theme=cityById('mex');
+ let b=cityLevel('mex','Alameda and Bellas Artes',7,'district',`>400,r,m,s,_,h,r,_,m,s,r,_,>${BELLAS},L,_,>4560,m,s,_,h,r,_,s,m,r,_,m,h,s,_,r,m`,['PALACIO DE BELLAS ARTES|dome'],{startStage:2,cap:2,tier:2});
+ const ts=scaled({...BUILDING_PRESETS.L,x:TORRE,h:640,label:'TORRE LATINOAMERICANA',color:'#a9a9a0',landmark:true,shape:'tower'}),torre={...ts,parts:shapeParts('tower',theme.style,ts.w,ts.h)};
+ const dome=b.buildings.find(x=>x.landmark&&x.shape==='dome')!;
+ const trees=parkTrees(2450,4120,[[FOUNT[0]-20,FOUNT[0]+110],[FOUNT[1]-20,FOUNT[1]+110],[TORRE-20,TORRE+210]],11);
+ b={...b,buildings:[...b.buildings,torre,...FOUNT.map(fountain),...trees]};
+ b=clearClutter(b,[[TORRE-40,TORRE+240]]);
+ // The strings: across the cross streets between two ordinary buildings, well wider than the ordinary fire reach, so only the paper carries the flame.
+ const banners=spread(gapPairs(b,sc(200),sc(460),sc(500),levelWidth(b)-sc(400)),6).map(([l,r])=>[l.x+l.w,r.x,Math.max(sc(70),Math.min(sc(150),Math.round(Math.min(l.h,r.h)*.6)))] as [number,number,number]);
+ // Seeps in the storm drains along the street (beside the foot of a building, so the acid pools against its base); the first is the one by Bellas Artes (its burst drops the dome).
+ const edges=b.buildings.filter(x=>x.kind!=='tiny'&&!x.deco).sort((p,q)=>p.x-q.x),cand:number[]=[];
+ for(let i=1;i<edges.length;i++){const a=edges[i-1].x+edges[i-1].w,g=edges[i].x-a;if(g>=sc(70)&&a>sc(500)&&a<levelWidth(b)-sc(500)&&!edges[i-1].landmark&&Math.abs(a-(dome.x+dome.w))>sc(300))cand.push(g<sc(160)?Math.round(a+g/2):a+sc(30));}
+ const seeps=[dome.x+dome.w+sc(36),...spread(cand,4)];
+ b=clearProps(b,seeps,sc(40));
+ return {...b,banners,seeps,domeSeep:0,volcano:2,guard:true,police:true,air:[sc(2400),sc(4800)],
+  units:[['soldier',sc(1400)],['patrol',sc(2300)],['apc',sc(3300)],['soldier',sc(3900)],['soldier',sc(5000)],['apc',sc(5600)],['soldier',sc(6100)]]};
+}
+// Level 5. Paseo de la Reforma: glass towers down a long straight avenue under the Día de Muertos parade (floats stand where the barricades would, the army's tanks sheltering
+// behind them, an acid seep under each), El Ángel on its column mid-avenue (break it and it falls along the avenue, on the convoy parked in its lane) and Campo Marte at the end.
+// The level reads west to east like every level, so the parade heads towards the screen's west and Campo Marte is the east end.
+function mexReforma():BlockDef{
+ const T=6000,ANGEL_X=3250,theme=cityById('mex');
+ let b=cityLevel('mex','Paseo de la Reforma',8,'stronghold',
+  `>400,u,x,_,h,l,_,L,_,x,n,u,_,m,h,_,>3560,u,h,_,L,_,x,l,_,n,x,h,_,u,l,_,h,x,u,_,m,l,h,_,n,x,u,l`,['TORRE MAYOR|tower','TORRE REFORMA|tower'],{startStage:2,cap:2,tier:3},{target:T,ring:[-840,-640,-440,-190,180,460]});
+ // The floats: every barricade is a parade float (its own colour set), and more stand in the avenue's cross streets where there is room for a float and a tank behind it.
+ const P=MEX2.parade;let f=0;
+ const skin=(x:BuildingSpec):BuildingSpec=>({...x,label:'',deco:'mfloat',color:P.colors[f++%P.colors.length],w:P.w,h:P.h});
+ b={...b,buildings:b.buildings.map(x=>x.label==='BARRIER'?skin(x):x)};
+ // Spots in the street (between any two solid buildings, landmarks included) with room for a float and a tank behind it, outside the target's ring, the column's fall and the first screen.
+ const solid=b.buildings.filter(x=>x.kind!=='tiny').sort((p,q)=>p.x-q.x),spots:number[]=[],room=P.w+sc(115);
+ for(let i=1;i<solid.length;i++){let x=solid[i-1].x+solid[i-1].w+sc(10);while(x+room<=solid[i].x-sc(10)){if(x>sc(900)&&x<sc(T-900)&&Math.abs(x-sc(ANGEL_X))>ANGEL.length+sc(100))spots.push(x);x+=room+sc(150);}}
+ const extra=spread(spots,9).map(x=>skin({...BUILDING_PRESETS.b,x,label:'BARRIER',color:'#fff'}));
+ // El Ángel: the Independence Column, an `angel`-shaped landmark ANGEL.length tall: it falls through the ordinary topple, the way it was hit, crushing a span as long as it is tall.
+ const ang={...BUILDING_PRESETS.L,x:sc(ANGEL_X),w:ANGEL.w,h:ANGEL.length,hp:520,value:900,label:'EL ÁNGEL',color:'#d8cfb4',landmark:true,shape:'angel'};
+ b={...b,buildings:[...b.buildings,...extra,{...ang,parts:shapeParts('angel',theme.style,ang.w,ang.h)}]};
+ b=clearClutter(b,[[ANGEL_X-60,ANGEL_X+110]]);
+ // A tank behind each float and an acid seep under it, in the glorietas.
+ const floats=b.buildings.filter(x=>x.deco==='mfloat').sort((p,q)=>p.x-q.x),solids=b.buildings.filter(x=>x.kind!=='tiny'&&x.deco!=='mfloat'),armour:number[]=[];
+ for(const fl of floats){const x=fl.x+fl.w+sc(50);if(Math.abs(x-sc(T))>sc(900)&&Math.abs(x-sc(ANGEL_X))>sc(700)&&!solids.some(o=>x+sc(60)>o.x&&x-sc(60)<o.x+o.w)&&!floats.some(o=>o!==fl&&x+sc(60)>o.x&&x-sc(60)<o.x+o.w))armour.push(x);}
+ const tanks=spread(armour,6),seeps=tanks.slice();
+ b=clearProps(b,seeps,sc(40));
+ // The convoy parked in El Ángel's lane (the fall's span): armour and cars the column crushes.
+ const lane=[3000,3110,3390,3500].map(sc);
+ return {...b,seeps,angel:sc(ANGEL_X),catrinas:true,volcano:2,
+  target:{x:sc(T),label:'CAMPO MARTE',art:'campo'},guard:true,police:true,
+  units:[...tanks.map(x=>['tank',x] as ['tank',number]),['soldier',sc(1200)],['apc',sc(1700)],['soldier',sc(2300)],['soldier',sc(2650)],['apc',lane[0]],['tank',lane[1]],['apc',lane[2]],['soldier',lane[3]],['soldier',sc(4300)],['apc',sc(4700)],['soldier',sc(6700)],['tank',sc(7000)]],
+  garrison:[['tank',-560],['tank',-400],['soldier',-300],['soldier',-240],['emplacement',-170],['soldier',250],['tank',330],['soldier',390],['apc',470],['artillery',600],['emplacement',700]],air:[sc(2600),sc(4400)]};
+}
+// Level 6. Chapultepec: there and back from the park gates in mid-map. East of the gates the zoo's pens, the Museo Nacional de Antropología and the castle's hill (a rock outcrop you climb,
+// the crystal on its top, the Guardia dug in on the slopes) with the Sun Stone standing beside the crystal; then the lake (over a Stage 2 kaiju's head, wading depth at Stage 3, the
+// Reservoir's rule) and the east exit to Xochimilco beyond it; the west exit leads on to Ciudad Universitaria. Ash starts to fall once the kaiju is past the castle.
+function mexChapultepec():BlockDef{
+ const START=3840,W=8*960,CASTLE=5530,CRYSTAL=5800,STONE_X=5905,L=MEX2.lake,theme=cityById('mex');
+ let b=cityLevel('mex','Chapultepec',8,'district',`>400,r,m,s,_,h,r,_,m,s,_,r,m,_,>3150,h,m,_`,[],{startStage:2,cap:2,capLift:3,tier:3});
+ const D:[number,number|null][]=[[0,null],[5300,null],[5500,-56],[6000,-56],[6180,null],[L.x0,null],[L.x0+140,L.depth],[L.x1-140,L.depth],[L.x1,null],[W,null]];
+ const ground:[number,number][]=D.map(([x,d])=>[sc(x),d===null?CONFIG.ground:d>0?CONFIG.ground+6+d:CONFIG.ground+Math.round(d*CONFIG.cityScale)]);
+ const waterLine=CONFIG.ground+6;
+ const pens=[4150,4320,4490].map(x=>hall(x,150,52,'','#7a6a4a','zoopen',140));
+ const museum=scaled({x:4800,w:440,h:150,hp:700,value:400,kind:'large' as const,label:'MUSEO NACIONAL DE ANTROPOLOGÍA',color:'#cbbd98',deco:'museo',parts:hallParts(440,150,40,5)});
+ const cs=scaled({...BUILDING_PRESETS.L,x:CASTLE,h:300,label:'CASTILLO DE CHAPULTEPEC',color:'#c3b48d',landmark:true,shape:'dome'}),castle={...cs,parts:shapeParts('dome',theme.style,cs.w,cs.h)};
+ const solids=[...pens,museum,castle],trees=parkTrees(150,7400,[[CASTLE-40,CASTLE+230],[CRYSTAL-120,STONE_X+160],[START-170,START+170],[3100,3400],...solids.map(o=>[o.x/CONFIG.cityScale-20,(o.x+o.w)/CONFIG.cityScale+20] as [number,number])],7,ground);
+ b=clearClutter(b,[[300,W]]);
+ b={...b,buildings:[...b.buildings.filter(x=>x.role!=='hydrant'),...solids,...trees]};
+ return {...b,ground,start:sc(START),water:[[sc(L.x0),sc(L.x1),waterLine]],bands:true,
+  ramps:[[5500,5300],[6000,6180]].map(([a,z])=>[sc(Math.min(a,z)),sc(Math.max(a,z))] as [number,number]),
+  crystal:sc(CRYSTAL),stone:sc(STONE_X),zoo:[4200,4280,4360,4440,4520,4600].map(sc),lakeGreen:[[sc(L.x0),sc(L.x0+300)],[sc(L.x1-300),sc(L.x1)]],
+  volcano:2,ashLate:sc(CASTLE+200),guard:true,police:true,
+  cars:[],street:[...b.street].sort((p,q)=>p-q),
+  units:[['soldier',sc(1500)],['apc',sc(2200)],['soldier',sc(3000)],['soldier',sc(5330)],['apc',sc(5420)],['soldier',sc(6060)],['tank',sc(6140)],['soldier',sc(4100)],['soldier',sc(6900)],['apc',sc(7300)]],air:[sc(3000),sc(5000)],
+  exits:{west:'Ciudad Universitaria',east:'Xochimilco'}};
+}
+
+// ---- Mexico City Act 3 (MEX rework card 6): Ciudad Universitaria and Calzada de Tlalpan ----
+// `n` storm-drain spots from sc(x0) to sc(x1): the gaps between solid buildings (so the acid pools against a wall), topped up with open street where there are too few.
+function seepSpots(b:BlockDef,x0:number,x1:number,n:number):number[]{
+ const lo=sc(x0),hi=sc(x1),edges=b.buildings.filter(x=>x.kind!=='tiny'&&!x.deco).sort((p,q)=>p.x-q.x),cand:number[]=[];
+ for(let i=1;i<edges.length;i++){const a=edges[i-1].x+edges[i-1].w,g=edges[i].x-a;if(g>=sc(70)&&a>lo&&a<hi)cand.push(g<sc(160)?Math.round(a+g/2):a+sc(30));}
+ const out=spread(cand,n);
+ for(let k=0;out.length<n&&k<n*16;k++){const x=Math.round(lo+(hi-lo)*(k+.5)/(n*16));if(!out.some(v=>Math.abs(v-x)<sc(100))&&!edges.some(o=>x+sc(40)>o.x&&x-sc(40)<o.x+o.w))out.push(x);}
+ return out.sort((p,q)=>p-q);}
+// Level 7. Ciudad Universitaria: Insurgentes Sur and its Metrobús lane (buses), the Periférico's double-deck freeway on the Pedregal (troops on the lower deck), then UNAM: the Central
+// Library's mosaic tower and the Estadio Olímpico. Seeps burst on their own, a run of them one after another along Insurgentes and another on the lava field under UNAM (Belial is close);
+// the ground on the Pedregal is dark volcanic rock where Tlézcatl's lava pools last. Ash falls (volcano 3). Act 3's busiest hazards are here, so the military is light.
+function mexCU():BlockDef{
+ const M=MEX3.cu,F=M.freeway;
+ let b=cityLevel('mex','Ciudad Universitaria',8,'district',
+  `>400,x,n,l,_,h,x,_,n,l,x,_,h,n,_,>${F[1]+M.approach+60},x,n,_,>${M.library},L,_,h,x,l,_,n,x,_,>${M.stadium},L,_,n,h,x,_,l,n,x,_,h,n`,['BIBLIOTECA CENTRAL|tower','ESTADIO OLÍMPICO|dome'],{startStage:3,cap:3,tier:4});
+ // The Periférico's ramps and the deck's footprint are clear of buildings (the SF freeway's rule); the library's plaza is open street.
+ b=clearClutter(b,[[F[0]-M.approach,F[1]+M.approach]],true);
+ b=clearClutter(b,[[M.library-80,M.library+260]]);
+ // A run of drains along Insurgentes and another across the lava field: they go off in list order, one after another, as if something were moving underneath.
+ const seeps=[...seepSpots(b,M.run[0].x0,M.run[0].x1,M.run[0].n),...seepSpots(b,M.run[1].x0,M.run[1].x1,M.run[1].n)];
+ b=clearProps(b,seeps,sc(40));
+ const cars=b.cars.filter(x=>!seeps.some(v=>Math.abs(v-x)<sc(60)));
+ return {...b,cars,seeps,seepsAuto:true,rock:M.rock.map(([a,z])=>[sc(a),sc(z)] as [number,number]),volcano:3,guard:true,police:true,
+  // Insurgentes' Metrobús lane: buses in a row down the avenue's west half.
+  buses:[700,1050,1400,1750].map(sc),
+  elevated:[sc(F[0]),sc(F[1])],elevatedLook:'freeway',elevatedDecks:2,approach:sc(M.approach),
+  deckUnits:[['soldier',sc(F[0]+300)],['apc',sc(F[0]+800)],['soldier',sc(F[0]+1300)]],
+  air:[sc(2600),sc(5200)],units:[['soldier',sc(1000)],['patrol',sc(1700)],['apc',sc(2000)],['soldier',sc(4500)],['soldier',sc(5400)],['apc',sc(6700)]]};
+}
+// Level 8. Calzada de Tlalpan: south down the avenue. The Tren Ligero runs on its own track along the open stretch (grab a train at Stage 3), a convoy waits on a hollowed stretch of the road
+// (the acid has eaten the ground: a heavy landing drops it into the pit), and the army's last line stands round the field HQ with its barricades on another sinkhole. The full military,
+// heavier than level 7. When the HQ falls Popocatépetl erupts (volcano 3 -> 4); a few troops stand between the HQ and the exit for the first volcanic Eruption.
+function mexTlalpan():BlockDef{
+ const M=MEX3.tlalpan,T=M.T,[L0,L1]=M.tren;
+ let b=cityLevel('mex','Calzada de Tlalpan',8,'stronghold',
+  `>400,s,m,h,_,l,s,m,_,h,r,_,>${L1+160},s,m,_,h,l,_,>4380,m,s,_,>${T+640},h,m,s,_,l,r,m,_,h,s`,[],{startStage:3,cap:3,tier:4},{target:T,ring:[-760,-560,-330,-170,190,420]});
+ // The Tren's right of way is open street (stations at each end); everything solid is cleared off it.
+ b=clearClutter(b,[[L0-60,L1+60]],true);
+ // The sinkholes: the convoy's stretch and the car park (marked in the road), and one under the HQ's barricade ring: wherever its west walls stand.
+ const ring=b.buildings.filter(x=>x.label==='BARRIER'&&x.x>=sc(T+M.wall.x0-120)&&x.x<=sc(T+M.wall.x1+120)),wx0=ring.length?Math.min(...ring.map(x=>x.x))-sc(12):sc(T+M.wall.x0),wx1=ring.length?Math.max(...ring.map(x=>x.x+x.w))+sc(12):sc(T+M.wall.x1);
+ const sinkholes:[number,number][]=[...M.holes.map(([a,z])=>[sc(a),sc(z)] as [number,number]),[wx0,wx1]].sort((p,q)=>p[0]-q[0]);
+ b=clearClutter(b,M.holes.map(([a,z])=>[a,z] as [number,number]));
+ // A convoy of cars stops on the first hollow, and a line of cars in the car park.
+ const hx=M.holes[0],cars=[...b.cars.filter(x=>!(x>sc(hx[0])&&x<sc(hx[1]))),...[hx[0]+60,hx[0]+200,hx[0]+340].map(sc)].sort((p,q)=>p-q);
+ return {...b,cars,sinkholes,tren:[sc(L0),sc(L1)],volcano:3,volcanoOn:'target',
+  target:{x:sc(T),label:'FIELD HQ',art:'command'},guard:true,police:true,
+  // The full military down the avenue; the convoy sits on the first sinkhole; a few troops stand between the HQ and the exit.
+  units:[['tank',sc(1500)],['apc',sc(2700)],['tank',sc(hx[0]+120)],['apc',sc(hx[0]+260)],['soldier',sc(hx[0]+380)],['artillery',sc(4300)],
+   ['soldier',sc(T-1100)],['tank',sc(T-950)],['emplacement',sc(T-900)],['soldier',sc(T+720)],['apc',sc(T+1000)],['soldier',sc(T+1280)],['helicopter',sc(2400),620]],
+  garrison:[['tank',-420],['emplacement',-230],['soldier',250],['tank',330],['apc',470],['artillery',600]],air:[sc(2000),sc(4200)]};
+}
+// Level 9. Estadio Azteca: two screens of the stadium's concourse (the last military push, standing at the upper tier's height), then the bowl: the stands step DOWN through the lower tier to the
+// pitch and back up the other side to a long upper tier. Passing `finale.wake` splits the pitch at centre field and Belial comes up out of the drain. `finale.flood` (src/config.ts FLOOD): at each
+// health break acid floods the bowl, one tier higher each time (a water band over the whole bowl; the surface starts below the pitch); the rim walkway is a platform one jump over the upper tier.
+// The tiers are plain ground profile (terrain never blocks walking); the flood, crusts and rim are runtime state in src/game.ts.
+function mexAzteca():BlockDef{
+ const A=AZTECA,P=CONFIG.ground,Y2=P-A.upper,Y1=P-A.lower;
+ let b=cityLevel('mex','Estadio Azteca',6,'boss',`r,s,m,h,_,s,m,l,_,m,s,h,_,s,m,l,_,r,s,m,_,h,s,m,_`,[],{startStage:3,cap:3,tier:5});
+ const W=levelWidth(b),gate=sc(A.gate)-sc(120);
+ // Only the concourse has buildings, street spots and parked cars: the bowl is stands and pitch.
+ b={...b,buildings:b.buildings.filter(x=>x.x+x.w<=gate),street:b.street.filter(x=>x<gate),cars:b.cars.filter(x=>x<gate-sc(420))};
+ const g=A.gate,ground:[number,number][]=[[0,Y2],[sc(g),Y2],[sc(A.lowerTier[0]),Y1],[sc(A.lowerTier[1]),Y1],[sc(A.pitch[0]),P],[sc(A.pitch[1]),P],[sc(A.eastLower[0]),Y1],[sc(A.eastLower[1]),Y1],[sc(A.eastLower[1]+A.riser),Y2],[W,Y2]];
+ return {...b,ground,bands:true,water:[[sc(g),W,P+400]],volcano:4,police:true,guard:true,
+  finale:{x:sc(A.crack),wake:sc(A.wake),breaks:A.breaks,crack:sc(A.crack),flood:true},
+  // The last military push on the concourse, ahead of the wake: armour, artillery, infantry, air cover.
+  units:[['soldier',sc(500)],['apc',sc(800)],['tank',sc(1000)],['soldier',sc(1200)],['tank',sc(1500)],['artillery',sc(1700)],['emplacement',sc(1600)],['soldier',sc(1850)],['helicopter',sc(1400),520]],air:[sc(1300)]};
+}
+// ---- Mexico City secret level (MEX rework card 8): Xochimilco ----
+// Level S. Xochimilco: fire on water. West to east: the Tren Ligero's stop and the embarcadero (moored trajineras, food and mariachi boats, crowds that flee down the dock), the long canal
+// (wading depth at Stage 3, with a current that drifts the free boats east into a jam against the first chinampa), a chinampa of ahuejotes and huts, a side canal, the island of the dolls
+// (atmosphere only: no score, no target), another side canal, a last chinampa and the Tren's stop to leave by. Fire does not cross water, so a burning trajinera is the carrier: set one
+// alight (Tlézcatl's lava and flame, or a blazing hut beside the canal) and it burns on as it drifts, lighting the boats it bumps and the chinampa it brushes. Ash floats on the water (volcano 3).
+// Light military (the Guardia on boats, a helicopter or two, an emplacement on the dock): a break before the stadium. The canal profile, boats and chinampa soft ground are set here.
+function mexXochimilco():BlockDef{
+ const X=XOCHI,G=CONFIG.ground,SURF=G+6,D1=SURF+60,D2=SURF+50,W=5*960;
+ const CANAL:[number,number][]=[[640,2900],[3380,3660],[4080,4300]],SOFT:[number,number][]=[[2900,3380],[3660,4080],[4300,4560]],ISLE:[number,number]=[3660,4080];
+ const ground:[number,number][]=[[0,G],[640,G],[780,D1],[2760,D1],[2900,G],[3380,G],[3460,D2],[3580,D2],[3660,G],[4080,G],[4140,D2],[4240,D2],[4300,G],[W,G]].map(([x,y])=>[sc(x),y] as [number,number]);
+ let b=district('mex','Xochimilco',5,[],[100,360,480,560,3000,3140,3300,4380,4480],[],'district');
+ // The tree line: tall thin ahuejotes along a chinampa (`tiny` props, but they catch fire, see burnable() in src/game.ts), seeded so the level is the same every build.
+ let seed=7;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+ const trees=(x0:number,x1:number,step:number,value:number)=>{const out:BuildingSpec[]=[];for(let x=x0;x<x1;x+=step+Math.floor(rnd()*14))out.push(scaled({x,w:20,h:78+Math.floor(rnd()*28),hp:60,value,kind:'tiny' as const,label:'',color:['#5f8a4f','#6c9556','#527a45'][Math.floor(rnd()*3)],prop:'ahuejote'}));return out;};
+ const hut=(x:number,label='')=>hall(x,58,44,label,'#b99a6a','choza',90);
+ const dock=[hall(150,180,64,'ESTACIÓN','#d9d6c8','estacion',260),hall(372,44,46,'','#c0392b','mstall',60),hall(432,44,48,'','#d9a441','mstall',60)];
+ const east=hall(4550,170,64,'ESTACIÓN','#d9d6c8','estacion',260);
+ const fixtures=[...trees(2906,3370,46,25),hut(3040),hut(3300),...trees(3668,4070,40,0),hut(3860),...trees(4308,4552,44,25),hut(4400)];
+ b={...b,buildings:[...dock,east,...fixtures],cars:[]};
+ const boat=(x:number,v:'plain'|'food'|'mariachi',m:0|1)=>[sc(x),v,m] as [number,'plain'|'food'|'mariachi',0|1];
+ return {...b,startStage:3,cap:3,tier:5,secret:true,ground,water:CANAL.map(([a,z])=>[sc(a),sc(z),SURF] as [number,number,number]),bands:true,
+  current:[0,X.current],soft:SOFT.map(([a,z])=>[sc(a),sc(z)] as [number,number]),dolls:[sc(ISLE[0]),sc(ISLE[1])],ashWater:true,volcano:3,fireCap:X.fireCap,
+  // The dock's boats are tied up; the rest of the flotilla is adrift, and the last three have already drifted into the jam against the first chinampa.
+  trajineras:[boat(720,'plain',1),boat(880,'food',1),boat(1040,'mariachi',1),boat(1500,'plain',0),boat(1860,'mariachi',0),boat(2170,'food',0),boat(2523,'plain',0),boat(2636,'mariachi',0),boat(2749,'food',0)],
+  axolotls:[820,1150,1480,1800,2150,2480,3520,4190].map(sc),
+  after:'Ciudad Universitaria',secretId:'xochimilco',lore:'THE TREN LIGERO RUNS SOUTH TO THE CANALS.',guard:true,police:true,
+  coastguard:[sc(1300),sc(2250)],units:[['soldier',sc(300)],['emplacement',sc(560)],['soldier',sc(3100)],['soldier',sc(3320)],['apc',sc(4420)],['soldier',sc(4500)],['helicopter',sc(1700),540]],air:[sc(2400)]};
+}
+const MEXICO_CITY:BlockDef[]=[
+ // 1. Act 1 (Stage 1, cap 1). Templo Mayor: the pit start, leaning colonial blocks and the only level with the sinking twist (MEX rework card 3).
+ mexTemplo(),
+ // 2. The Zócalo and the Palacio Nacional: the open plaza, the leaning cathedral and the flagpole.
+ mexZocalo(),
+ // 3. La Merced and Tepito: the crystal under the market hall lifts the cap to 2, the Guardia Nacional rolls in; tarp runs and acid seeps.
+ mexMerced(),
+ // 4. Act 2 (Stage 2, cap 2). Alameda and Bellas Artes: papel picado strings that carry fire across the street, the sunk dome with its seep, the Torre Latinoamericana (MEX rework card 4).
+ mexAlameda(),
+ // 5. Paseo de la Reforma: the Día de Muertos parade, El Ángel's column and Campo Marte at the end.
+ mexReforma(),
+ // 6. Chapultepec: there and back from mid-map. The castle's crystal lifts the cap to 3 and the Sun Stone stands beside it. West exit leads to Ciudad Universitaria (the main
+ // route); the east exit, past the lake, leads to the secret Xochimilco.
+ mexChapultepec(),
+ // 7. Act 3 (Stage 3, cap 3). Ciudad Universitaria: auto seeps, the Periférico, volcanic ground (MEX rework card 6).
+ mexCU(),
+ // 8. Calzada de Tlalpan: the Tren Ligero, sinkholes and the field HQ whose fall erupts Popocatépetl.
+ mexTlalpan(),
+ // 9. Estadio Azteca (boss): two screens of concourse, then the bowl. Belial comes up through the pitch and the acid floods the stands (MEX rework card 7).
+ mexAzteca(),
+ // Secret. Xochimilco, reached from Chapultepec's east exit; rejoins the route at Ciudad Universitaria (MEX rework card 8).
+ mexXochimilco(),
+];
+// The old five Mexico City blocks, kept verbatim as the off-route fixture city 'mex-classic' (not in CAMPAIGN, never shown in Free Play,
+// the map or the records). Each is soft lake-bed ground (`sinking`), as the whole city was before the rework.
+const MEX_CLASSIC:BlockDef[]=[
+ {...district('mex','Centro Histórico',4,[[400,'l'],[557,'m','tank'],[672,'L','CATEDRAL|twin'],[876,'S'],[1151,'h','cache'],[1287,'m','tank'],[1403,'l'],[1556,'x'],[2128,'L','BELLAS ARTES|dome'],[2350,'x','radar'],[2466,'h','cache'],[2610,'S'],[2850,'h'],[2985,'h'],[3118,'s','tank'],[3206,'L','TORRE LATINO|tower'],[3410,'F'],[3562,'h'],[3697,'n']],[190,640,1260,1780,2320,2940,3500],[380,1220,1740,2300,2930,3490],'district',1920),sinking:true as const},
+ {...district('mex','Reforma Avenue',6,[[400,'x'],[512,'h'],[650,'x'],[765,'L','EL ÁNGEL|needle'],[969,'F'],[1166,'x'],[1278,'n'],[1348,'m','cache'],[1464,'x'],[1586,'S'],[1746,'l'],[1899,'l'],[2052,'s','tank'],[2135,'h'],[2564,'l'],[3059,'m','tank'],[3179,'L','TORRE MAYOR|tower'],[3636,'m','cache'],[3751,'x'],[3864,'h'],[4000,'x','radar'],[4122,'S'],[4311,'h'],[4449,'n'],[4518,'m','tank'],[4636,'n'],[4714,'F'],[4891,'L','MONUMENTO A LA REVOLUCIÓN|arch'],[5130,'n'],[5201,'h'],[5557,'n']],[220,870,1470,2010,2670,3270,3930,4580,5400],[520,1190,1660,2330,3010,3550,4240,4770,5440],'district',2880),sinking:true as const},
+ {...district('mex','Crystal Bastion',8,[[400,'x'],[516,'l'],[672,'l'],[829,'h'],[965,'x'],[1081,'s'],[1169,'m'],[1287,'x'],[1399,'h'],[1534,'n'],[1606,'h'],[1743,'l'],[1896,'m'],[2016,'h'],[2151,'m'],[2266,'h'],[2399,'h'],[2532,'m'],[2649,'h'],[2782,'m'],[2898,'h'],[3260,'b'],[3550,'b'],[3720,'b'],[4020,'b'],[4260,'b'],[4390,'h'],[4526,'x'],[4639,'x'],[4750,'h'],[4884,'s'],[4971,'s'],[5057,'l'],[5211,'h'],[5344,'m'],[5461,'n'],[5531,'m'],[5646,'m'],[5762,'l'],[5920,'l'],[6078,'h'],[6214,'h'],[6351,'x'],[6466,'l'],[6623,'m'],[6739,'n'],[6807,'x'],[6920,'l'],[7078,'x'],[7194,'m'],[7311,'s'],[7399,'h'],[7535,'n']],[500,1410,2300,3090,4510,5390,6200,7060],[560,1440,2250,3110,4480,5350,6160,7050],'stronghold'),sinking:true as const},
+ {...district('mex','Chapultepec Assault',8,[[400,'x'],[514,'h'],[647,'h'],[784,'s','tank'],[1075,'L','CASTILLO DE CHAPULTEPEC|twin'],[1300,'s','tank'],[1386,'m','cache'],[1512,'S'],[1793,'x'],[1909,'h'],[2047,'x'],[2163,'l'],[2327,'F'],[2589,'m'],[2707,'m','cache'],[2827,'L','MUSEO SOUMAYA|dome'],[3254,'n'],[3326,'h'],[3464,'x'],[3577,'m'],[3930,'x','radar'],[4042,'h'],[4175,'m','tank'],[4292,'m','tank'],[4661,'h'],[4794,'L','TORRE REFORMA|tower'],[5043,'h'],[5187,'F'],[5454,'m'],[5574,'m'],[5689,'h'],[5823,'s'],[5917,'S'],[6164,'l'],[6320,'m'],[6440,'l'],[6598,'L','ESTELA DE LUZ|needle'],[6897,'s'],[6982,'n'],[7054,'m'],[7169,'h']],[220,950,1650,2360,3120,4040,4730,5500,6230,6950],[590,1320,2030,2770,3650,4390,5100,5840,6580,7300],'district',3840),sinking:true as const},
+ {...district('mex','Tlézcatl Arena',4,[[510,'h'],[940,'m'],[1360,'l'],[1800,'s'],[2220,'t'],[2600,'m'],[3040,'h'],[3450,'s']],[370,820,1670,2480,3330],[390,1240,2080,2930],'boss'),sinking:true as const},
+];
 export const LEVELS:BlockDef[][]=[
  SAN_FRANCISCO,
  NEW_YORK,
- [
- district('mex','Centro Histórico',4,[[400,'l'],[557,'m','tank'],[672,'L','CATEDRAL|twin'],[876,'S'],[1151,'h','cache'],[1287,'m','tank'],[1403,'l'],[1556,'x'],[2128,'L','BELLAS ARTES|dome'],[2350,'x','radar'],[2466,'h','cache'],[2610,'S'],[2850,'h'],[2985,'h'],[3118,'s','tank'],[3206,'L','TORRE LATINO|tower'],[3410,'F'],[3562,'h'],[3697,'n']],[190,640,1260,1780,2320,2940,3500],[380,1220,1740,2300,2930,3490],'district',1920),
- district('mex','Reforma Avenue',6,[[400,'x'],[512,'h'],[650,'x'],[765,'L','EL ÁNGEL|needle'],[969,'F'],[1166,'x'],[1278,'n'],[1348,'m','cache'],[1464,'x'],[1586,'S'],[1746,'l'],[1899,'l'],[2052,'s','tank'],[2135,'h'],[2564,'l'],[3059,'m','tank'],[3179,'L','TORRE MAYOR|tower'],[3636,'m','cache'],[3751,'x'],[3864,'h'],[4000,'x','radar'],[4122,'S'],[4311,'h'],[4449,'n'],[4518,'m','tank'],[4636,'n'],[4714,'F'],[4891,'L','MONUMENTO A LA REVOLUCIÓN|arch'],[5130,'n'],[5201,'h'],[5557,'n']],[220,870,1470,2010,2670,3270,3930,4580,5400],[520,1190,1660,2330,3010,3550,4240,4770,5440],'district',2880),
- district('mex','Crystal Bastion',8,[[400,'x'],[516,'l'],[672,'l'],[829,'h'],[965,'x'],[1081,'s'],[1169,'m'],[1287,'x'],[1399,'h'],[1534,'n'],[1606,'h'],[1743,'l'],[1896,'m'],[2016,'h'],[2151,'m'],[2266,'h'],[2399,'h'],[2532,'m'],[2649,'h'],[2782,'m'],[2898,'h'],[3260,'b'],[3550,'b'],[3720,'b'],[4020,'b'],[4260,'b'],[4390,'h'],[4526,'x'],[4639,'x'],[4750,'h'],[4884,'s'],[4971,'s'],[5057,'l'],[5211,'h'],[5344,'m'],[5461,'n'],[5531,'m'],[5646,'m'],[5762,'l'],[5920,'l'],[6078,'h'],[6214,'h'],[6351,'x'],[6466,'l'],[6623,'m'],[6739,'n'],[6807,'x'],[6920,'l'],[7078,'x'],[7194,'m'],[7311,'s'],[7399,'h'],[7535,'n']],[500,1410,2300,3090,4510,5390,6200,7060],[560,1440,2250,3110,4480,5350,6160,7050],'stronghold'),
- district('mex','Chapultepec Assault',8,[[400,'x'],[514,'h'],[647,'h'],[784,'s','tank'],[1075,'L','CASTILLO DE CHAPULTEPEC|twin'],[1300,'s','tank'],[1386,'m','cache'],[1512,'S'],[1793,'x'],[1909,'h'],[2047,'x'],[2163,'l'],[2327,'F'],[2589,'m'],[2707,'m','cache'],[2827,'L','MUSEO SOUMAYA|dome'],[3254,'n'],[3326,'h'],[3464,'x'],[3577,'m'],[3930,'x','radar'],[4042,'h'],[4175,'m','tank'],[4292,'m','tank'],[4661,'h'],[4794,'L','TORRE REFORMA|tower'],[5043,'h'],[5187,'F'],[5454,'m'],[5574,'m'],[5689,'h'],[5823,'s'],[5917,'S'],[6164,'l'],[6320,'m'],[6440,'l'],[6598,'L','ESTELA DE LUZ|needle'],[6897,'s'],[6982,'n'],[7054,'m'],[7169,'h']],[220,950,1650,2360,3120,4040,4730,5500,6230,6950],[590,1320,2030,2770,3650,4390,5100,5840,6580,7300],'district',3840),
- district('mex','Tlézcatl Arena',4,[[510,'h'],[940,'m'],[1360,'l'],[1800,'s'],[2220,'t'],[2600,'m'],[3040,'h'],[3450,'s']],[370,820,1670,2480,3330],[390,1240,2080,2930],'boss'),
- ],
+ MEXICO_CITY,
  [
  district('par','Left Bank',4,[[400,'n'],[468,'l'],[625,'L','NOTRE-DAME|twin'],[829,'S'],[1208,'h','cache'],[1344,'m','tank'],[1462,'l'],[1618,'h','cache'],[2085,'s','tank'],[2171,'L','PANTHÉON|dome'],[2423,'l'],[2587,'S'],[2825,'l','radar'],[2980,'m','tank'],[3097,'h'],[3231,'L','TOUR MONTPARNASSE|tower'],[3435,'F'],[3573,'l']],[200,810,1370,2010,2730,3360],[460,1020,1640,2180,3060,3590],'district',1920),
  district('par','Grand Boulevards',6,[[400,'n'],[471,'m','tank'],[588,'n'],[655,'s','tank'],[749,'F'],[939,'L','ARC DE TRIOMPHE|arch'],[1248,'s'],[1336,'m','cache'],[1462,'S'],[1723,'h'],[1861,'l'],[2019,'m','cache'],[2136,'m'],[2525,'h'],[3102,'L','OPÉRA GARNIER|dome'],[3353,'m','tank'],[3695,'m','tank'],[3812,'n'],[3879,'s'],[3965,'h'],[4109,'S'],[4349,'l'],[4502,'h'],[4640,'m'],[4757,'L','GALERIES LAFAYETTE|tower'],[4961,'F'],[5151,'m'],[5269,'s'],[5353,'h'],[5491,'x','radar']],[210,840,1510,2110,2810,3670,4270,4960,5590],[500,1180,1800,2470,3090,3910,4580,5270],'district',2880),
@@ -876,16 +1261,18 @@ export const LEVELS:BlockDef[][]=[
  terrain(district('hkg','Nathan Road',6,[[400,'m','cache'],[516,'m','tank'],[633,'l'],[789,'L','PENINSULA HOTEL|twin'],[1180,'s','tank'],[1263,'m'],[1381,'n'],[1451,'m'],[1859,'m'],[1979,'h','cache'],[2116,'h'],[2250,'h'],[3046,'m','tank'],[3165,'L','CLOCK TOWER|tower'],[3454,'m','tank'],[3885,'m'],[4001,'h'],[4135,'x','radar'],[4248,'s'],[4624,'m'],[4740,'L','ICC TOWER|needle'],[4995,'m'],[5350,'l'],[5503,'x'],[5614,'n']],[210,930,1570,2250,2930,3600,4340,5050,5660],[540,1240,1930,2560,3280,3990,4660,5360],'district',2880),[[0,0],[380,0],[993,0],[1166,22],[1577,22],[1845,44],[2394,44],[3032,66],[3580,66],[3871,88],[4342,88],[4610,88],[5121,88],[5336,88],[5760,88]]),
  district('hkg','Harbour Stronghold',8,[[400,'m'],[520,'l'],[677,'s'],[765,'n'],[836,'l'],[992,'h'],[1130,'h'],[1264,'l'],[1419,'s'],[1504,'h'],[1641,'l'],[1797,'m'],[1915,'l'],[2071,'h'],[2206,'m'],[2325,'x'],[2436,'h'],[2569,'s'],[2654,'m'],[2774,'l'],[2928,'m'],[3043,'s'],[3330,'b'],[3590,'b'],[3760,'b'],[4020,'b'],[4310,'b'],[4440,'h'],[4574,'s'],[4660,'l'],[4816,'n'],[4883,'x'],[4998,'m'],[5118,'l'],[5274,'h'],[5407,'h'],[5544,'x'],[5656,'s'],[5741,'s'],[5826,'m'],[5942,'x'],[6057,'s'],[6143,'h'],[6277,'m'],[6397,'s'],[6483,'m'],[6602,'h'],[6736,'x'],[6847,'m'],[6967,'l'],[7122,'l'],[7276,'m'],[7392,'m'],[7510,'n']],[200,1080,1950,2780,4550,5400,6270,7150],[640,1500,2380,3180,4530,5380,6240,7100],'stronghold'),
  terrain(district('hkg','Victoria Assault',8,[[400,'m','cache'],[517,'m','tank'],[636,'l'],[790,'s','tank'],[1100,'L','BANK OF CHINA|needle'],[1403,'m'],[1766,'h','cache'],[1903,'l'],[2058,'x'],[2174,'h'],[2568,'h'],[2706,'n'],[2778,'s'],[2862,'L','IFC TWO|tower'],[3133,'m'],[3251,'m'],[3367,'x'],[3483,'m'],[3968,'h'],[4105,'l'],[4262,'h'],[4397,'h'],[4825,'L','HSBC BUILDING|tower'],[5065,'s','tank'],[5150,'x'],[5465,'m','tank'],[5582,'h'],[5716,'x','radar'],[5830,'l'],[6259,'s'],[6342,'l'],[6497,'l'],[6651,'L','CENTRAL PLAZA|needle'],[6997,'x'],[7111,'l'],[7264,'m'],[7384,'h']],[220,980,1690,2380,3070,3810,4500,5240,6010,6680,7440],[590,1300,2010,2730,3420,4130,4900,5600,6300,7080],'district',3840),[[0,0],[380,0],[884,0],[1086,22],[1529,22],[1752,44],[2318,44],[2554,66],[3609,66],[3954,88],[4541,88],[4811,88],[5272,88],[5451,88],[5994,88],[6245,88],[6855,88],[6983,88],[7680,88]]),
- district('hkg','Myrmex Arena',4,[[520,'l'],[980,'m'],[1400,'h'],[1840,'t'],[2220,'s'],[2620,'l'],[3080,'m'],[3490,'s']],[350,850,1280,2100,2950,3370],[380,1260,2070,2940],'boss'),
+ district('hkg','Sargathoth Arena',4,[[520,'l'],[980,'m'],[1400,'h'],[1840,'t'],[2220,'s'],[2620,'l'],[3080,'m'],[3490,'s']],[350,850,1280,2100,2950,3370],[380,1260,2070,2940],'boss'),
  ],
  [
  railway(district('tyo','Shinjuku District',4,[[400,'m','cache'],[515,'h'],[650,'L','METROPOLITAN GOVT|twin'],[854,'S'],[1161,'x'],[1274,'n'],[1345,'x'],[1456,'m','cache'],[2024,'x'],[2137,'L','KABUKICHO TOWER|tower'],[2410,'x','radar'],[2532,'S'],[2774,'l'],[2927,'m','tank'],[3047,'m','tank'],[3166,'L','HANAZONO SHRINE|pagoda'],[3474,'m'],[3592,'m']],[190,840,1490,2130,2830,3470],[470,1180,1860,2460,3150],'district',1920),300,3500),
  railway(district('tyo','Chuo Corridor',6,[[400,'m','cache'],[519,'x'],[634,'m','tank'],[751,'s','tank'],[845,'F'],[1106,'L','TOKYO STATION|dome'],[1307,'l'],[1460,'m','cache'],[1586,'S'],[1833,'l'],[1989,'n'],[2058,'h'],[2192,'x'],[2575,'l'],[3003,'m','tank'],[3121,'L','GINZA WAKO|tower'],[3549,'m','tank'],[3669,'l'],[3823,'n'],[3891,'x','radar'],[4013,'S'],[4256,'n'],[4326,'m'],[4444,'l'],[4602,'l'],[4766,'F'],[4986,'L','KABUKI-ZA|pagoda'],[5228,'m'],[5348,'s']],[220,960,1690,2370,3070,3790,4510,5250],[620,1300,2010,2760,3390,4150,4880,5570],'district',2880),300,5400),
  district('tyo','Crystal Heart',8,[[400,'h'],[534,'s'],[619,'h'],[753,'m'],[869,'h'],[1006,'l'],[1159,'m'],[1274,'l'],[1431,'m'],[1551,'m'],[1670,'s'],[1756,'l'],[1910,'x'],[2026,'l'],[2182,'l'],[2335,'x'],[2450,'l'],[2607,'m'],[2723,'h'],[2861,'l'],[3015,'s'],[3102,'x'],[3360,'b'],[3600,'b'],[3760,'b'],[4020,'b'],[4290,'b'],[4420,'h'],[4553,'l'],[4708,'h'],[4842,'s'],[4928,'n'],[4999,'l'],[5157,'l'],[5313,'m'],[5433,'l'],[5589,'m'],[5709,'x'],[5823,'n'],[5893,'h'],[6027,'n'],[6095,'h'],[6232,'m'],[6349,'s'],[6434,'l'],[6590,'h'],[6727,'s'],[6815,'h'],[6950,'n'],[7021,'s'],[7107,'n'],[7175,'m'],[7294,'s'],[7382,'m'],[7499,'n']],[200,1100,1960,2850,4540,5440,6350,7210],[650,1530,2390,3210,4510,5410,6290,7160],'stronghold'),
  railway(district('tyo','Tokyo Final Offensive',8,[[400,'h','cache'],[538,'l'],[693,'n'],[761,'m','cache'],[1103,'L','TOKYO TOWER|lattice'],[1306,'s','tank'],[1389,'l'],[1553,'S'],[1817,'m','tank'],[1935,'h'],[2072,'h'],[2209,'x'],[2331,'F'],[2538,'m'],[2656,'l'],[2811,'m'],[2929,'L','SKYTREE|needle'],[3357,'m'],[3474,'h'],[3970,'l'],[4127,'l'],[4535,'n'],[4602,'x'],[4717,'l'],[4870,'L','SENSŌ-JI|pagoda'],[5074,'F'],[5283,'x','radar'],[5395,'l'],[5551,'m','tank'],[5667,'l'],[5831,'S'],[6048,'h'],[6186,'l'],[6341,'s','tank'],[6427,'h'],[6791,'L','SHIBUYA 109|tower'],[7038,'l'],[7192,'x'],[7493,'m']],[200,960,1690,2410,3170,3910,4620,5390,6150,6900],[580,1300,2040,2780,3520,4270,5020,5760,6510,7290],'district',3840),300,7300),
- district('tyo','Sargathoth Arena',4,[[530,'h'],[980,'l'],[1440,'m'],[1850,'s'],[2250,'t'],[2630,'h'],[3070,'l'],[3510,'s']],[360,860,1320,2130,2940,3390],[390,1280,2090,2920],'boss'),
+ district('tyo','Atomotitan Arena',4,[[530,'h'],[980,'l'],[1440,'m'],[1850,'s'],[2250,'t'],[2630,'h'],[3070,'l'],[3510,'s']],[360,860,1320,2130,2940,3390],[390,1280,2090,2920],'boss'),
  ],
  NYC_CLASSIC,
+ SYDNEY,
+ MEX_CLASSIC,
 ];
 // City systems for every city's open blocks (and Midtown): a west and an east grid and, outside Paris (cables run underground there),
 // a line of power poles down the street. Their substations, fuel stations, radars and rooftop tanks are in the entries above.
@@ -902,5 +1289,8 @@ for(const [n,grids,poles] of [
  ['Victoria Assault',[[0, 3840], [3840, 7680]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 4140, 4420, 4700, 4980, 5260, 5540, 5820, 6100, 6380, 6660, 6940, 7220]],
  ['Shinjuku District',[[0, 1920], [1920, 3840]],[220, 500, 780, 1060, 1340, 1620, 2180, 2460, 2740, 3020, 3300, 3580]],
  ['Chuo Corridor',[[0, 2880], [2880, 5760]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 3860, 4140, 4420, 4700, 4980, 5260, 5540]],
+ ['The Rocks',[[0, 1920], [1920, 3840]],[220, 500, 780, 1060, 1340, 1620, 2180, 2460, 2740, 3020, 3300, 3580]],
+ ['George Street',[[0, 2880], [2880, 5760]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 3860, 4140, 4420, 4700, 4980, 5260, 5540]],
+ ['Harbour Bridge Assault',[[0, 3840], [3840, 7680]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 4140, 4420, 4700, 4980, 5260, 5540, 5820, 6100, 6380, 6660, 6940, 7220]],
  ['Tokyo Final Offensive',[[0, 3840], [3840, 7680]],[220, 500, 780, 1060, 1340, 1620, 1900, 2180, 2460, 2740, 3020, 3300, 3580, 4140, 4420, 4700, 4980, 5260, 5540, 5820, 6100, 6380, 6660, 6940, 7220]]] as [string,[number,number][],number[]][])for(const city of LEVELS){const i=city.findIndex(b=>b.name===n);if(i>=0)city[i]=powered(city[i],grids,poles);}
 export function levelWidth(block:BlockDef){return sc(block.screens*CONFIG.width);}

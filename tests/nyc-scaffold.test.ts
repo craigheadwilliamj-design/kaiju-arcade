@@ -50,7 +50,7 @@ test('Central Park has two exits; the west leads on, the east leads to Coney Isl
 test('NYC forces Kaiban whatever the run picked; Tlézcatl is the boss and the conquest unlocks him and Mexico City',()=>{
  const ny=CITIES[NYC];assert.equal(ny.name,'New York');assert.equal(ny.kaiju,'Kaiban');assert.equal(ny.boss,'Tlézcatl');assert.equal(ny.difficulty,0);assert.equal(ny.style,'nyc');
  assert.equal(CAMPAIGN[1],'nyc');for(const k of KAIJU)assert.equal(kaijuFor({kaiju:k,city:1}),'Kaiban');
- assert.equal(campaignCity(1).boss,'Tlézcatl');assert.equal(CITIES[cityIndexOf('mex')].boss,'Tlézcatl','Mexico City keeps its own boss');
+ assert.equal(campaignCity(1).boss,'Tlézcatl');assert.equal(CITIES[cityIndexOf('mex')].boss,'Belial','Mexico City has its own boss, Belial');
  const p=emptyPermanent(),r=newRun('ABC','Mogurodon');r.city=1;restartCity(r);
  assert.equal(conquerCity(p,r,100,'Tlézcatl'),false,'not before the last route level');
  for(const i of routeLevels(NYC).slice(0,-1)){assert.equal(r.block,i);assert.ok(latchBlock(r));assert.ok(nextBlock(r,100));}

@@ -60,7 +60,7 @@ export function checkParts(b:Shape):string[]{if(!b.parts?.length)return [];const
  return out;
 }
 
-// Parts for the drawn landmark silhouettes ('tower', 'lattice', 'dome', 'twin', 'arch', 'bow', 'needle', 'pagoda'), sized to the
+// Parts for the drawn landmark silhouettes ('tower', 'lattice', 'dome', 'twin', 'arch', 'bow', 'needle', 'pagoda', 'sails', 'angel'), sized to the
 // building's world w and h and matching what drawLandmarkShape (src/game.ts) paints for that city style. Change one, change both.
 // Lattices and arches keep their openings: small kaiju can walk through the gap under the Eiffel Tower or an arch.
 export function shapeParts(shape:string,style:string,w:number,h:number):Part[]{
@@ -75,7 +75,13 @@ export function shapeParts(shape:string,style:string,w:number,h:number):Part[]{
    if(style==='mex')parts.push(P(c-bw*.22,bw*.44,.86*h,top-2),P(c-3,6,h,.86*h-2,true));return parts;}
   // Cupid's Span: the bow's two buried ends stand on the street and its curve spans over an opening; the arrow is trim.
   case 'bow':{const ry=Math.min(.5*h,bw*.42);return [P(0,bw*.2,.8*ry),P(bw*.8,bw*.2,.8*ry),P(bw*.08,bw*.84,ry,.78*ry)];}
-  case 'needle':if(style==='tyo')return [P(bw*.2,bw*.6,.4*h),P(c-bw*.18,bw*.36,.7*h),P(c-18,36,.72*h),P(c-14,28,.85*h),P(c-7,14,h-30),P(c-2,4,h+40,h-34,true)];
+  // The Opera House: a low podium and three shells rising off it, tallest first (one column part per shell); Sydney only for now.
+  case 'sails':return [P(0,bw,.22*h),P(bw*.06,bw*.34,h),P(bw*.4,bw*.3,.8*h),P(bw*.7,bw*.26,.58*h)];
+  // Sydney Tower: a podium, a slim shaft, the golden turret held up on it near the top, a cap, and the mast as a spire.
+  // El Ángel (Mexico City Act 2): a broad stepped plinth, the slim shaft, the winged Victory as the head; the whole column is the silhouette so it falls as one body.
+  case 'angel':return [P(c-bw*.42,bw*.84,.12*h),P(c-bw*.2,bw*.4,.3*h),P(c-bw*.13,bw*.26,.84*h),P(c-bw*.3,bw*.6,h-6,.84*h-2),P(c-1,2,h+10,h-8,true)];
+  case 'needle':if(style==='syd')return [P(c-bw*.14,bw*.28,.2*h),P(c-7,14,.74*h),P(c-bw*.22,bw*.44,.86*h,.74*h-2),P(c-4,8,h,.86*h-2),P(c-1,2,h+46,h-4,true)];
+   if(style==='tyo')return [P(bw*.2,bw*.6,.4*h),P(c-bw*.18,bw*.36,.7*h),P(c-18,36,.72*h),P(c-14,28,.85*h),P(c-7,14,h-30),P(c-2,4,h+40,h-34,true)];
    {// The drawn lattice is a polygon: straight up the left edge to 0.7h, rising to the peak over the middle and falling to 0.85h on the right.
     // Narrow columns follow its outline (each as tall as the outline at its centre), so the hitbox is the silhouette rather than a block.
     const N=8,cw=bw/N,out:Part[]=[];for(let k=0;k<N;k++){const m=(k+.5)*cw,top=m<=c?h*(.7+.3*m/c):h*(1-.15*(m-c)/(bw-c));out.push(P(k*cw,cw,top));}

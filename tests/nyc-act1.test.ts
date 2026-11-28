@@ -45,11 +45,11 @@ test('Act 1 data: three levels, the right goals and screens, Kaiban at Stage 1, 
  assert.ok(WALL.buildings.some(b=>b.landmark&&b.label==='TRINITY CHURCH'&&b.shape==='twin'),'Trinity Church');
  assert.ok(WALL.buildings.some(b=>b.cache&&b.deco==='vault'&&b.label==='FEDERAL RESERVE'),'the Federal Reserve vault cache');
  const canyon=WALL.buildings.filter(b=>b.kind!=='tiny'&&!b.landmark&&b.h>=sc(700)&&b.x<WALL.target!.x-sc(700)||b.kind!=='tiny'&&!b.landmark&&b.h>=sc(700)&&b.x>WALL.target!.x+sc(700));
- assert.ok(canyon.length>=12,`a canyon of supertall towers (${canyon.length})`);assert.ok(Math.min(...canyon.map(b=>b.h))>=sc(740),'every canyon tower is supertall (10x the kaiju)');
+ assert.ok(canyon.length>=8,`a canyon of supertall towers (${canyon.length})`);assert.ok(Math.min(...canyon.map(b=>b.h))>=sc(740),'every canyon tower is supertall (10x the kaiju)');
  assert.ok(Math.max(...canyon.map(b=>b.h))-Math.min(...canyon.map(b=>b.h))<=sc(40),'roofs within a jump of each other: the rooftop route');
  const t=WALL.target!,flank=WALL.buildings.filter(b=>b.kind!=='tiny'&&b.h>=sc(850));assert.ok(flank.length>=2);
  assert.ok(flank.some(b=>b.x+b.w<t.x&&t.x-NYC1.exchangeW/2-(b.x+b.w)<b.h)&&flank.some(b=>b.x>t.x&&b.x-(t.x+NYC1.exchangeW/2)<b.h),'one flank tower either side is close enough to land on the target');
- const tight=canyon.sort((p,q)=>p.x-q.x).filter((b,i,a)=>i>0&&b.x-(a[i-1].x+a[i-1].w)<8).length;assert.ok(tight>=8,`towers stand shoulder to shoulder (${tight})`);
+ const solids=WALL.buildings.filter(b=>b.kind!=='tiny').sort((p,q)=>p.x-q.x),tight=solids.filter((b,i,a)=>i>0&&b.x-(a[i-1].x+a[i-1].w)<8).length;assert.ok(tight>=8,`towers stand shoulder to shoulder (${tight})`);
  // SoHo: lofts with roof tanks, the stalls, the jam, the steam vents, the crystal, the Guard.
  assert.ok(SOHO.buildings.filter(b=>b.roof==='tank').length>=4,'roof water tanks');assert.ok(SOHO.buildings.filter(b=>b.deco==='brick').length>=12,'cast-iron lofts');
  assert.ok(SOHO.buildings.filter(b=>b.prop==='stall').length>=4,'Canal Street vendor stalls');assert.ok(SOHO.buildings.some(b=>b.deco==='portal'&&b.label==='HOLLAND TUNNEL'),'the Holland Tunnel portal');
@@ -67,8 +67,8 @@ test('Act 1 data: three levels, the right goals and screens, Kaiban at Stage 1, 
 });
 
 test('opt-in: no other level sets the new fields; no other city\'s target art, vents or bull',()=>{
- const mine=[BAT,WALL,SOHO],hudson=LEVELS[NYC].find(x=>x.name==='Hudson Yards')!;// Hudson Yards (Act 3) reuses the steam vents as geysers
- for(const b of LEVELS.flat().filter(x=>!mine.includes(x)&&x!==hudson)){for(const k of ['vents','bull','spawn'])assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);assert.ok(!['fort','exchange'].includes(b.target?.art??''),`${b.name} keeps its own target art`);}
+ const mine=[BAT,WALL,SOHO],hudson=LEVELS[NYC].find(x=>x.name==='Hudson Yards')!,templo=LEVELS[cityIndexOf('mex')][0];// Hudson Yards (Act 3) reuses the steam vents as geysers; Templo Mayor (Mexico City Act 1) starts in a pit with a `spawn`
+ for(const b of LEVELS.flat().filter(x=>!mine.includes(x)&&x!==hudson&&x!==templo)){for(const k of ['vents','bull','spawn'])assert.equal((b as any)[k],undefined,`${b.name} has no ${k}`);assert.ok(!['fort','exchange'].includes(b.target?.art??''),`${b.name} keeps its own target art`);}
  assert.deepEqual(mine.map(b=>[b.vents!==undefined,b.bull!==undefined,b.spawn!==undefined]),[[false,false,true],[false,true,false],[true,false,false]]);
  // The Bull is not a loose street object, so nothing that sweeps the street (stomps, waves, blasts, steam) can reach it.
  const bull={kind:'bull',state:'parked'} as any;assert.equal(loose(bull),false);assert.equal(loose({...bull,state:'wreck'}),false);assert.equal(loose({kind:'car',state:'parked'} as any),true);
@@ -262,4 +262,65 @@ test('real loop: SoHo: the Guard roll in when the exit opens; Wall Street and th
   let s=h.state();assert.equal(s.guardCalled,false);assert.equal(s.exitOpen,false);h.test().demolish(.78);h.step(20);s=h.state();assert.equal(s.exitOpen,true);assert.equal(s.guardCalled,true,'the Guard are called');
  }finally{h.release();h.cleanup();}
  for(const b of [0,1]){const g=await boot(b);try{assert.equal(g.state().ventList.length,0,'no vents');assert.equal(g.state().bull!==null,b===1,'the Bull is Wall Street\'s alone');}finally{g.release();g.cleanup();}}
+});
+
+// Card 2 of the NYC playtest fixes: the Bull is easy to see, gives feedback, wins the grab, and can be destroyed by deliberate force only.
+const bullOf=(h:any)=>h.state().vehicles.find((v:any)=>v.kind==='bull');
+// Walk up, pick the Bull up, and throw it along the street; true once it lands (or breaks).
+const throwBull=(h:any,probe?:{delta:number})=>{const b=bullOf(h);if(!b)return false;standWest(h,b);h.step(2);if(!grab(h,'bull'))return false;h.tap('KeyH');let prev=h.state().score;for(let n=0;n<240;n++){h.step();const v=bullOf(h),sc=h.state().score;if(!v&&probe)probe.delta=sc-prev;prev=sc;if(!v||(n>8&&v.state==='parked'))return true;}return false;};
+
+test('the Bull stands in its own plaza and no other level has one',()=>{
+ const bx=WALL.bull!;for(const x of WALL.cars)assert.ok(x+60<bx-BL.clear||x>bx+BL.w+BL.clear,`no parked car in the plaza (${x})`);
+ assert.ok(!WALL.buildings.some(b=>b.kind==='tiny'&&b.x+b.w>bx-BL.clear&&b.x<bx+BL.w+BL.clear),'no cart or junk in the plaza');
+ assert.ok(!WALL.street.some(x=>x+8>bx-BL.clear&&x<bx+BL.w+BL.clear),'no crowd standing in front of it');
+ for(const [ci,city] of LEVELS.entries())for(const b of city)if(b!==WALL)assert.equal(b.bull,undefined,`${b.name} (city ${ci}) has no Bull`);
+ assert.ok(BL.hp>0&&BL.breakPoints>0);
+});
+
+test('real loop: the Bull plaza is clear in the real level, the hint shows once, a car cannot steal the grab, and walking into it clangs',async()=>{
+ const h=await boot(1);
+ try{
+  const b=bullOf(h);assert.equal(b.hp,BL.hp,'full health');
+  assert.ok(!h.state().vehicles.some((v:any)=>['car','van','bus'].includes(v.kind)&&v.x+v.w>b.x-BL.clear&&v.x<b.x+b.w+BL.clear),'no traffic parked round the Bull');
+  // Standing in reach shows the one-time hint.
+  standWest(h,b);h.step(6);assert.equal(h.state().banner,'GRAB · THE BULL');for(let n=0;n<240;n++)h.step();h.test().teleport(b.x-300);h.step(4);standWest(h,b);h.step(6);assert.notEqual(h.state().banner,'GRAB · THE BULL','shown once');
+  // The Bull wins the grab even with a car in reach.
+  const s=h.state();h.test().teleport(b.x-s.width+10);h.step(2);assert.ok(grab(h,'bull'),'grabbed the Bull first');h.tap('KeyH');h.step(120);
+ }finally{h.release();h.cleanup();}
+});
+
+test('real loop: the Bull clangs when walked into, and street damage and a weak kaiju leave its hp alone',async()=>{
+ const h=await boot(1);
+ try{
+  const b=bullOf(h);h.test().setKaiju('Mogurodon');standWest(h,b);h.step(2);h.tap('KeyH');h.step(3);assert.equal(h.state().held,null,'too heavy for a weak kaiju');
+  hit(h,20);slam(h);assert.equal(bullOf(h).hp,BL.hp,'a weak kaiju and street damage do not hurt it');
+  h.test().setKaiju('Kaiban');h.test().teleport(b.x-h.state().width*.6);h.step(2);h.down('KeyD');let clang=false;for(let n=0;n<120&&!clang;n++){h.step();clang=h.state().action==='CLANG';}h.up('KeyD');assert.ok(clang,'a clang when walking into it');
+  assert.equal(bullOf(h).hp,BL.hp,'a bump is not damage');assert.deepEqual([bullOf(h).x,bullOf(h).state],[b.x,'parked'],'it does not budge');
+ }finally{h.release();h.cleanup();}
+});
+
+test('real loop: a thrown Bull is dented by each landing, three or four hard throws break it, the points come once, and chunks and a prop remain',async()=>{
+ const h=await boot(1);
+ try{
+  const hp:number[]=[];let n=0,mostChunks=0;const probe={delta:0};
+  for(;n<6&&bullOf(h);n++){if(!throwBull(h,probe))break;const v=bullOf(h);hp.push(v?v.hp:0);mostChunks=Math.max(mostChunks,h.state().chunks);if(n===0){assert.ok(v&&v.hp<BL.hp&&v.hp>0,`one throw dents it (${v?.hp})`);}if(!v)break;}
+  assert.ok(!bullOf(h),`the Bull is broken (hp ${hp})`);assert.ok(hp.length>=3&&hp.length<=4,`three or four throws (${hp.length}: ${hp})`);
+  assert.ok(hp.every((x,i)=>i===0||x<hp[i-1]),'each throw hurts it more');
+  const s=h.state();assert.equal(s.banner,'THE BULL IS DOWN');assert.ok(mostChunks>=10,`bronze chunks fly (${mostChunks})`);
+  assert.ok(probe.delta>=BL.breakPoints,`the break frame pays out (${probe.delta})`);
+  const head=s.vehicles.find((v:any)=>v.kind==='lamp'&&v.label==='bull head');assert.ok(head,'the horns are left as a prop');
+  h.step(180);assert.equal(h.state().bullBreaks,1,'paid once');assert.equal(h.state().vehicles.filter((v:any)=>v.kind==='bull').length,0);
+  // (The horns can land among wrecked cars and slide as they settle: stand beside them afresh each time, and throw any car that is grabbed first out of the way.)
+  let horns=false;for(let k=0;k<5&&!horns;k++){const hd=h.state().vehicles.find((v:any)=>v.kind==='lamp'&&v.label==='bull head')!;standWest(h,hd);h.step(2);horns=grab(h,'lamp');if(!horns&&h.state().held){h.tap('KeyH');h.step(30);}}
+  assert.ok(horns,'the horns can be picked up and thrown');
+ }finally{h.release();h.cleanup();}
+});
+
+test('real loop: once it is pried loose a slam hurts the Bull, but before that it is bolted down',async()=>{
+ const h=await boot(1);
+ try{
+  let b=bullOf(h);standWest(h,b);h.step(2);h.test().teleport(b.x+b.w/2-h.state().width/2);h.step(2);slam(h);assert.equal(bullOf(h).hp,BL.hp,'bolted down: a slam does nothing');
+  assert.ok(throwBull(h));b=bullOf(h);const hp0=b.hp;assert.ok(hp0<BL.hp,'the landing dented it');
+  h.test().teleport(b.x+b.w/2-h.state().width/2);h.step(2);slam(h);assert.ok(bullOf(h)===undefined||bullOf(h).hp<hp0,'a slam on the loose Bull hurts it');
+ }finally{h.release();h.cleanup();}
 });
