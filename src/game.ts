@@ -2606,7 +2606,7 @@ function update(dt:number){
  if(roll&&player.grounded&&steer===-roll.dir)endRoll(false);
  running=!roll&&!jet&&!!steer&&canAct(combat)&&!player.crouched&&!clingTo&&!combat.charging&&!dive&&(player.grounded?keys.has('ShiftLeft')||keys.has('ShiftRight')||runLatch:airRun)&&bandRuns(footBand())&&!softFeet();
  const gait=dive?MV.diveSteer:running?(dashT>0&&player.grounded?MV.dashSpeed:MV.runSpeed):1;
- let dx=roll?roll.dir*C.moveSpeed*MV.rollSpeed*Math.sqrt(scale(combat))*dt:!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*(jet?(isBelial()?B.vomitSlow:B.jetSlow):1)*(brew?MV.cloudSlow:1)*wadeFactor()*dt;
+ let dx=roll?roll.dir*C.moveSpeed*MV.rollSpeed*Math.sqrt(scale(combat))*dt:!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(activeKaiju==='Sargathoth'?SARG.moveSpeed:1)*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*(jet?(isBelial()?B.vomitSlow:B.jetSlow):1)*(brew?MV.cloudSlow:1)*wadeFactor()*dt;
  if(dx)player.face=dx>0?1:-1;
  const inputDx=dx;
  const kb=combat.transform>0||combat.ultimateTime>0?0:combat.knockback*dt;

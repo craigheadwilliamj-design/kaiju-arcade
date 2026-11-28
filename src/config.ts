@@ -930,4 +930,6 @@ export const XOCHI = {
 export const SARG = {lashReach:[1,1.2,1.6] as number[],lashPull:24,
  // Undertow (heavy): the strike lands on the slam strip's crash frame, reaches undertowReach x the normal heavy reach (the flattened wave body),
  // and rolls a surge wave on ahead (surgeRange px, surgeDamage x the heavy's damage). Charging a heavy is super armor: hits hurt but can't stagger him.
- undertowReach:1.9,surgeRange:300,surgeDamage:.4,surgeSpeed:520};
+ undertowReach:1.9,surgeRange:300,surgeDamage:.4,surgeSpeed:520,
+ // Slowest kaiju on the roster: walking and running (shift, or a double-tap dash) both scale by moveSpeed, so his run is a lumbering surge, not a sprint.
+ moveSpeed:.8};

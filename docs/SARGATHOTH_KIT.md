@@ -59,6 +59,7 @@ Kelp anchors with a holdfast, so this is his stance.
   (`sargFallGravity`) and sinks slowly in water. Keep it subtle: Myrmex is the floaty one, and Sargathoth gets no extra jumps.
 - **Super armour while charging a heavy.**
 - **Walk** at `sargMoveSpeed` of normal.
+  - **Implemented (Stage 1):** `SARG.moveSpeed` (.8) scales both walking and running (shift or double-tap dash), so his run is a lumbering surge, not a sprint; the run strip is `tools/sargathoth_s1_run.py`. No water speed-up yet (open question 1).
 
 ## Moves
 
