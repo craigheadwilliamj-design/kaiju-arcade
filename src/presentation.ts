@@ -60,6 +60,10 @@ const S2_NATIVE={scale:194/256,anchor:31+128*194/256};
 // Tlézcatl Stage 1 strips: the tlezcatl-s1 base still, a 128x59 sprite at x=64 in a 256x192 frame, keyed with tools/key_render.py.
 const TZ1_NATIVE={scale:128/256,anchor:64+128*128/256};
 // Tlézcatl Stage 1 attack strips: generated from the same base shifted 40px left (sprite at x=24) so lunges and the tail whip stay in the frame.
+// Sargathoth Stage 1 strips: the sargathoth-s1 base still, a 128x49 kelp mound at x=64 in a 256x192 frame, keyed with tools/key_render.py.
+const SG1_NATIVE={scale:128/256,anchor:64+128*128/256};
+// Sargathoth Stage 1 attack strips: the base shifted 40px left (sprite at x=24) so the fronds have room to lash.
+const SG1_LEFT={scale:128/256,anchor:24+128*128/256};
 const TZ1_LEFT={scale:128/256,anchor:24+128*128/256};
 // Tlézcatl Stage 2 strips: the tlezcatl-s2 base still, a 157x125 semi-upright sprite at x=49 in a 256x192 frame, keyed with tools/key_render.py.
 const TZ2_NATIVE={scale:157/256,anchor:49+128*157/256};
@@ -927,6 +931,11 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
   spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}},
   stages:{1:MYRMEX_S1,3:MYRMEX_S3}},
+ // Sargathoth (mass of kelp grown through maritime debris). Stage 1 so far: the base still as a one-frame idle, plus the Frond Lash light
+ // combo (swipe, backhand, net-wrapping whip). Everything else falls back to the idle until it is animated; see docs/SARGATHOTH_KIT.md.
+ 'Sargathoth':{width:120,anims:{idle:{src:'assets/sargathoth-s1-idle.png',frames:1,fps:1,...SG1_NATIVE},
+  light1:{src:'assets/sargathoth-s1-light1.png',frames:8,fps:24,once:true,...SG1_LEFT},light2:{src:'assets/sargathoth-s1-light2.png',frames:8,fps:21,once:true,...SG1_LEFT},
+  light3:{src:'assets/sargathoth-s1-light3.png',frames:8,fps:20,once:true,...SG1_LEFT}}},
 };
 // Resolves the form drawn for a kaiju at a stage (stage omitted = base form).
 function form(name:string,stage?:number):Form|undefined{const s=SPRITES[name];return s&&((stage&&s.stages?.[stage])||s);}
