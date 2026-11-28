@@ -927,4 +927,7 @@ export const XOCHI = {
 
 // Sargathoth (docs/SARGATHOTH_KIT.md). Frond Lash is his light combo: reach is the shared melee reach times lashReach[combo-1], and the
 // third hit wraps small units and pulls them in to lashPull px in front of him instead of knocking them back. Provisional; tune in play.
-export const SARG = {lashReach:[1,1.2,1.6] as number[],lashPull:24};
+export const SARG = {lashReach:[1,1.2,1.6] as number[],lashPull:24,
+ // Undertow (heavy): the strike lands on the slam strip's crash frame, reaches undertowReach x the normal heavy reach (the flattened wave body),
+ // and rolls a surge wave on ahead (surgeRange px, surgeDamage x the heavy's damage). Charging a heavy is super armor: hits hurt but can't stagger him.
+ undertowReach:1.9,surgeRange:300,surgeDamage:.4,surgeSpeed:520};
