@@ -64,7 +64,7 @@ Kelp anchors with a holdfast, so this is his stance.
 - **Walk** at `sargMoveSpeed` of normal.
   - **Implemented (Stage 1):** `SARG.moveSpeed` (.8) scales both walking and running (shift or double-tap dash), so his run is a lumbering surge, not a sprint; the run strip is `tools/sargathoth_s1_run.py`. No water speed-up yet (open question 1).
 
-- **Climb strips (Stage 1, done):** `climb-grab` / `climb` (loop) / `climb-punch` / `climb-mantle` from `tools/sargathoth_s1_climb.py`: his walk rotated a quarter turn (belly to the wall), so the slime crawls up; grab tips him onto his side, mantle tips him back upright onto the roof. No kit changes; climbing uses the shared climb rules.
+- **Climb strips (Stage 1, done):** `climb-grab` / `climb` (loop) / `climb-punch` / `climb-mantle` from `tools/sargathoth_s1_climb.py`: his walk rotated a quarter turn (belly to the wall), so the slime crawls up; grab tips him onto his side, mantle tips him back upright onto the roof. Climbing uses the shared climb rules at `SARG.climbSpeed` (.8) of normal speed, matching his walk.
 
 ## Moves
 

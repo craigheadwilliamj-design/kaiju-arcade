@@ -2657,7 +2657,7 @@ function update(dt:number){
  player.face=player.x+w/2<p.x+p.w/2?1:-1;
  // Pushing into the wall climbs just like W.
  const into=player.face>0?keys.has('KeyD'):keys.has('KeyA');
- climbDir=(keys.has('KeyS')?1:0)-(keys.has('KeyW')||into&&!keys.has('KeyS')?1:0);climbing=true;player.vy=climbDir*C.climbSpeed;player.y+=player.vy*dt;
+ climbDir=(keys.has('KeyS')?1:0)-(keys.has('KeyW')||into&&!keys.has('KeyS')?1:0);climbing=true;player.vy=climbDir*C.climbSpeed*(activeKaiju==='Sargathoth'?SARG.climbSpeed:1);player.y+=player.vy*dt;
  if(climbDir<0&&player.y+h<=roof+8&&mantle(b,p,w,h)){climbing=false;prevBottom=roof-.01;}
  }
  if(!climbing){player.vy+=C.gravity*gravityScale()*dt;
