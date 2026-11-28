@@ -2229,7 +2229,7 @@ function detonate(v:Vehicle){
  if(cy>groundAt(cx)-80)decal(cx-r*.5,r,'scorch');
  v.damage=0;v.vx*=VC.blastKeep;v.vy=Math.min(v.vy,-VC.blastBounce/Math.sqrt(m));v.spin=dir*(8+Math.random()*6);v.burn=MF.wreckBurn;
  action=`${v.kind.toUpperCase()} DETONATED`;actionTime=.9;}
-function grabBox(){const w=bodyWidth(),reach=VC.grabReach*scale(combat),gx=player.face>0?player.x+w*.5:player.x-reach;
+function grabBox(){const w=bodyWidth(),reach=VC.grabReach*scale(combat)*(activeKaiju==='Sargathoth'?SARG.grabReach:1),gx=player.face>0?player.x+w*.5:player.x-reach;
  // Over banded water the reach is down to just under the surface, where boats float (not down at the bed).
  const s=bands()?waterAt(gx+(w*.5+reach)/2):null,base=s!==null&&submerged(gx+(w*.5+reach)/2)?Math.min(groundAt(gx),s+12):groundAt(gx);
  return {x:gx,y:base-46,w:w*.5+reach,h:46};}

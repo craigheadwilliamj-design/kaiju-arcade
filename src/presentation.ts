@@ -945,9 +945,9 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   // Climb (tools/sargathoth_s1_climb.py, 256x256 frames): his walk turned a quarter, belly to the wall (belly edge on the hitbox line at frame x=175), so the slime crawls up the wall. Grab tips him onto his side, mantle tips him back upright onto the roof.
   climbGrab:{src:'assets/sargathoth-s1-climb-grab.png',frames:5,fps:20,once:true,...SG1_NATIVE},climb:{src:'assets/sargathoth-s1-climb.png',frames:8,fps:10,...SG1_NATIVE},
   climbPunch:{src:'assets/sargathoth-s1-climb-punch.png',frames:8,fps:24,once:true,impact:4,...SG1_NATIVE},climbMantle:{src:'assets/sargathoth-s1-climb-mantle.png',frames:9,fps:20,once:true,...SG1_NATIVE},
-  // Grab (tools/sargathoth_s1_grab.py): a frond lashes out of the crown, snags the prop at his feet and hauls it up onto the top of the mound; the hold points follow the frond's tip.
+  // Grab (tools/sargathoth_s1_grab.py, PixelLab art): a kelp tentacle rears out of the crown, whips to the street, coils round the prop and hauls it onto the crown, then withdraws; the hold points follow its tip.
   // Carry rides the prop on the crown over his idle, carry-walk over his walk (hold = the crown top, lowered into the fronds; the grab ends on the same world point).
-  grab:{src:'assets/sargathoth-s1-grab.png',frames:9,fps:20,once:true,...SG1_LEFT,hold:[[152,188],[152,188],[152,188],[152,188],[152,188],[150,180],[140,168],[118,150],[88,152]]},
+  grab:{src:'assets/sargathoth-s1-grab.png',frames:13,fps:22,once:true,...SG1_LEFT,hold:[[205,188],[205,188],[205,188],[221,184],[212,184],[170,168],[157,176],[152,166],[118,128],[88,152],[88,152],[88,152],[88,152]]},
   carry:{src:'assets/sargathoth-s1-idle.png',frames:8,fps:8,...SG1_NATIVE,hold:[[138,113],[138,110],[138,108],[138,110],[138,113],[138,116],[138,118],[138,116]]},
   carryWalk:{src:'assets/sargathoth-s1-walk.png',frames:8,fps:10,...SG1_NATIVE,hold:[[136,113],[138,118],[138,121],[138,119],[136,113],[134,107],[132,104],[134,107]]},
   light1:{src:'assets/sargathoth-s1-light1.png',frames:8,fps:24,once:true,...SG1_LEFT},light2:{src:'assets/sargathoth-s1-light2.png',frames:8,fps:21,once:true,...SG1_LEFT},
