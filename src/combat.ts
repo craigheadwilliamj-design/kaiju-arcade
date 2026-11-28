@@ -52,12 +52,16 @@ export function creditDamage(s:CombatState,actual:number,source:Source='player',
 export const vulnerability={k:1};
 // Super armor while charging a heavy (Sargathoth): hits still hurt but cannot stagger or cancel the charge. Set per frame by the game.
 export const chargeArmor={on:false};
+// Sargathoth's Holdfast (docs/SARGATHOTH_KIT.md): while anchored, hits take `resist` less damage and never stagger or knock him back.
+export const holdfast={on:false,resist:0};
+// Healing that isn't a crystal: up to the HP cap, never charges Super.
+export function regenHP(s:CombatState,value:number){if(s.dead||value<=0)return;s.hp=Math.min(capHP(s.cap),s.hp+value);reconcileStage(s);}
 export function receiveHit(s:CombatState,raw:number,source:Source,strength=0,direction=1){
  if(s.dead||raw<=0||source==='player'||invulnerable(s))return 0;
- const actual=Math.min(s.hp,raw*vulnerability.k*B.stageResistance[s.stage-1]*(s.superTime>0?B.superResistance:1));
+ const actual=Math.min(s.hp,raw*vulnerability.k*B.stageResistance[s.stage-1]*(s.superTime>0?B.superResistance:1)*(holdfast.on?1-holdfast.resist:1));
  s.hp=Math.max(0,s.hp-actual);s.damageTaken+=actual;s.penalty+=actual*B.scorePenaltyPerHP;
  if(s.hp===0){s.dead=true;s.superTime=0;s.ultimateTime=0;cancelCharge(s);return actual;}
- if(strength>0&&s.staggerGuard<=0&&!(chargeArmor.on&&s.charging)){s.stagger=B.staggerSeconds;s.staggerGuard=B.staggerProtection;s.knockback=strength*direction;cancelCharge(s);}
+ if(strength>0&&s.staggerGuard<=0&&!holdfast.on&&!(chargeArmor.on&&s.charging)){s.stagger=B.staggerSeconds;s.staggerGuard=B.staggerProtection;s.knockback=strength*direction;cancelCharge(s);}
  reconcileStage(s);return actual;
 }
 // The HP lost for drowning: goes through whatever invincibility is up, never kills, and never shrinks the kaiju below its floor stage.

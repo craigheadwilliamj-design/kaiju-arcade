@@ -15,7 +15,7 @@ import {NEW_YORK_BLOCK_ONE,DRILL_BLOCK,WATER_DRILL,CITIES,LEVELS,levelWidth,city
 import type {BlockDef,Mood} from './levels.ts';
 import {createBuildings,damageBuilding,destruction,exitUnlocked,perfectBonus,solid,overlaps,canExitBlock,damageObjective,separateHorizontal,canTopple,toppleSpan,crushDamage,liftable} from './rules.ts';
 import {wearFloor,floorAt,floorHeightOf} from './rules.ts';
-import {createCombat,setGrowth,liftCap,canAct,scale,damageMultiplier,collectCrystal,creditDamage,tickCombat,light,beginHeavy,releaseHeavy,ranged,activateUltimate,activateSuper,cancelCharge,receiveHit,vulnerability,chargeArmor} from './combat.ts';
+import {createCombat,setGrowth,liftCap,canAct,scale,damageMultiplier,collectCrystal,creditDamage,tickCombat,light,beginHeavy,releaseHeavy,ranged,activateUltimate,activateSuper,cancelCharge,receiveHit,vulnerability,chargeArmor,holdfast,regenHP} from './combat.ts';
 import type {Strike} from './combat.ts';
 import {createMilitary,tickMilitary,spawnUnit,hitUnit as hitUnitBase,intercept,segmentHits,captureUnit,callStrike,GRABBABLE_UNITS,UNITS,WEAPONS,roadLane,ROAD_UNITS,smallArmsScale,blast,NAVAL_UNITS,setNavyUnderDecks,cruiseY,setCover,floatY} from './military.ts';
 import type {MilitaryEvent} from './military.ts';
@@ -419,7 +419,7 @@ const LIGHT_ANIMS=['light1','light2','light3'];let attack:{anim:string,t:number}
 // Idle/walk loops restart at frame 0 whenever they begin (attacks start and end on idle frame 0).
 let loopAnim='idle',loopT=0;
 // Holding heavy: rear back once, then loop the hold pose until release triggers heavySlam.
-let heavyT=0;
+let heavyT=0,holdfastT=0;
 // Crouch: entering plays crouchDown, leaving plays crouchUp, before the next loop starts. The old 0.6 vertical squash is only a
 // fallback for forms with no crouch art; a form that has it draws every strip (heavy hold, attacks) at full size while crouched.
 let loopIntro:string|null=null;
@@ -438,11 +438,11 @@ let roll:{dir:number,t:number,t0:number,power:number,bounced:boolean,hits:Set<ob
 const bargeHits=new Map<object,number>();
 // Run-up for barges: distance covered running one way on the ground; a wall hit spends it, so pushing into a wall can't repeat.
 let runUp=0,runDir=0;
-function jumpVelocity(){return C.jumpVelocity*scale(combat)**MV.jumpStageExp*(isMyrmex()?MV.myrmexJump:1);}
+function jumpVelocity(){return C.jumpVelocity*scale(combat)**MV.jumpStageExp*(isMyrmex()?MV.myrmexJump:activeKaiju==='Sargathoth'?SARG.jump:1);}
 // Myrmex's wing-beat jumps left in this flight (refilled on the ground or a wall).
 let airJumps=0;
 // Gravity multiplier: Myrmex floats (lighter going up, much lighter coming down) except in a slam dive or roll.
-function gravityScale(){return isMyrmex()&&!dive&&!roll?(player.vy<0?MV.myrmexRiseGravity:MV.myrmexFallGravity):1;}
+function gravityScale(){return isMyrmex()&&!dive&&!roll?(player.vy<0?MV.myrmexRiseGravity:MV.myrmexFallGravity):activeKaiju==='Sargathoth'&&!dive&&!roll&&player.vy>0?SARG.fallGravity:1;}
 function currentAnim():[string,number]{
  if(attack)return [attack.anim,attack.t];
  // A form with an ultSettle strip plays it over the last stretch of the Ultimate, so it comes down from the Ultimate pose and lands on
@@ -2580,6 +2580,9 @@ function update(dt:number){
  if(attack){attack.t+=dt;if(attack.t>=animDuration(activeKaiju,attack.anim,combat.stage))attack=null;}
  if(tremor){tremor.t-=dt;if(tremor.t<=0)launchTremor();}
  chargeArmor.on=activeKaiju==='Sargathoth';
+ {const sg=activeKaiju==='Sargathoth'&&player.crouched&&player.grounded&&canAct(combat);holdfastT=sg?holdfastT+dt:0;const was=holdfast.on;holdfast.on=sg&&holdfastT>=SARG.holdfastDelay;holdfast.resist=SARG.holdfastResistance;
+  if(holdfast.on&&!was){action='HOLDFAST';actionTime=.8;}
+  if(holdfast.on&&(moodNow().rain||footBand()!=='dry'||submerged(player.x+bodyWidth()/2)))regenHP(combat,SARG.holdfastRegen*dt);}
  if(undertow){if(combat.dead||combat.stagger>0)undertow=null;else{undertow.t-=dt;if(undertow.t<=0){const s=undertow.strike;undertow=null;performStrike(s,true);}}}
  if(debris){debris.t-=dt;if(debris.t<=0)launchDebris();}
  // Venom Bomb: brew while L is held; releasing throws it (a hit or anything that stops him acting drops the brew).
@@ -2606,7 +2609,7 @@ function update(dt:number){
  if(roll&&player.grounded&&steer===-roll.dir)endRoll(false);
  running=!roll&&!jet&&!!steer&&canAct(combat)&&!player.crouched&&!clingTo&&!combat.charging&&!dive&&(player.grounded?keys.has('ShiftLeft')||keys.has('ShiftRight')||runLatch:airRun)&&bandRuns(footBand())&&!softFeet();
  const gait=dive?MV.diveSteer:running?(dashT>0&&player.grounded?MV.dashSpeed:MV.runSpeed):1;
- let dx=roll?roll.dir*C.moveSpeed*MV.rollSpeed*Math.sqrt(scale(combat))*dt:!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*(jet?(isBelial()?B.vomitSlow:B.jetSlow):1)*(brew?MV.cloudSlow:1)*wadeFactor()*dt;
+ let dx=roll?roll.dir*C.moveSpeed*MV.rollSpeed*Math.sqrt(scale(combat))*dt:!canAct(combat)||player.crouched||clingTo?0:steer*C.moveSpeed*gait*(activeKaiju==='Sargathoth'?SARG.moveSpeed:1)*(combat.superTime>0?B.superSpeed:1)*(combat.charging?B.chargeSlow:1)*(held?VC.holdSlow:1)*(jet?(isBelial()?B.vomitSlow:B.jetSlow):1)*(brew?MV.cloudSlow:1)*wadeFactor()*dt;
  if(dx)player.face=dx>0?1:-1;
  const inputDx=dx;
  const kb=combat.transform>0||combat.ultimateTime>0?0:combat.knockback*dt;

@@ -45,6 +45,8 @@ A heap of kelp and old net lying on the street.
 ## Passive — Holdfast
 
 Kelp anchors with a holdfast, so this is his stance.
+- **Crouch strips (Stage 1, done):** `crouch-down` / `crouch` (loop) / `crouch-up` from `tools/sargathoth_s1_crouch.py`, about .6 of his height. Holdfast itself isn't implemented yet and can reuse them.
+- **Implemented (Stage 1):** crouching on the ground for `SARG.holdfastDelay` anchors him (`holdfast` in `src/combat.ts`): `holdfastResistance` less damage, no stagger or knockback, and `holdfastRegen` HP/s in water or rain only (`regenHP`, which never charges Super). It reuses the crouch strips and flashes HOLDFAST when it sets. Kelp Line range x`holdfastRange` and the crouch-light Kelp Snare wait on those moves.
 - **Entering it:** hold crouch for `holdfastDelay` and he anchors (`holdfast-down` → `holdfast-idle` loop → `holdfast-up`).
 - **While anchored:**
   - He can't be knocked back or staggered.
@@ -56,9 +58,11 @@ Kelp anchors with a holdfast, so this is his stance.
   turf. (Regen from squashing civilians was considered and dropped: it would make crowd-hunting the best play, where water
   makes positioning and weather the skill.)
 - **Gas bladders:** he has the worst ground jump on the roster (`sargJump`), but falls a little slower than normal
+  - **Implemented (Stage 1):** `SARG.jump` (.85 launch speed, so about .72x the height) and `SARG.fallGravity` (.85, falling only, not in a dive or roll); strips `jump-rise` / `jump-air` / `jump-land` from `tools/sargathoth_s1_jump.py`. Sinking slowly in water is not done.
   (`sargFallGravity`) and sinks slowly in water. Keep it subtle: Myrmex is the floaty one, and Sargathoth gets no extra jumps.
 - **Super armour while charging a heavy.**
 - **Walk** at `sargMoveSpeed` of normal.
+  - **Implemented (Stage 1):** `SARG.moveSpeed` (.8) scales both walking and running (shift or double-tap dash), so his run is a lumbering surge, not a sprint; the run strip is `tools/sargathoth_s1_run.py`. No water speed-up yet (open question 1).
 
 ## Moves
 
