@@ -2229,7 +2229,7 @@ function detonate(v:Vehicle){
  if(cy>groundAt(cx)-80)decal(cx-r*.5,r,'scorch');
  v.damage=0;v.vx*=VC.blastKeep;v.vy=Math.min(v.vy,-VC.blastBounce/Math.sqrt(m));v.spin=dir*(8+Math.random()*6);v.burn=MF.wreckBurn;
  action=`${v.kind.toUpperCase()} DETONATED`;actionTime=.9;}
-function grabBox(){const w=bodyWidth(),reach=VC.grabReach*scale(combat),gx=player.face>0?player.x+w*.5:player.x-reach;
+function grabBox(){const w=bodyWidth(),reach=VC.grabReach*scale(combat)*(activeKaiju==='Sargathoth'?SARG.grabReach:1),gx=player.face>0?player.x+w*.5:player.x-reach;
  // Over banded water the reach is down to just under the surface, where boats float (not down at the bed).
  const s=bands()?waterAt(gx+(w*.5+reach)/2):null,base=s!==null&&submerged(gx+(w*.5+reach)/2)?Math.min(groundAt(gx),s+12):groundAt(gx);
  return {x:gx,y:base-46,w:w*.5+reach,h:46};}
@@ -2304,7 +2304,7 @@ function throwHeld(){if(!held||!canAct(combat))return;
   attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,4);action=up?'LOB · UP':'BOWL';actionTime=.7;return;}
  // The Bull is thrown short and hard: a low flat lob that carries BL.throwDamage.
  const bull=v.kind==='bull';
- launch(v,player.face*(up?VC.upSpeed:bull?BL.throwSpeed:VC.throwSpeed/Math.pow(m,VC.throwMassExp)),-(up?VC.upLift:bull?BL.throwLift:v.kind==='lamp'?VC.lampLift:VC.throwLift)/(up?Math.sqrt(m):1),(bull?BL.throwDamage:VC.throwDamage*impact(v))*damageMultiplier(combat));
+ launch(v,player.face*(up?VC.upSpeed:bull?BL.throwSpeed:VC.throwSpeed/Math.pow(m,VC.throwMassExp))*(activeKaiju==='Sargathoth'&&!bull?SARG.throwSpeed:1),-(up?VC.upLift:bull?BL.throwLift:v.kind==='lamp'?VC.lampLift:VC.throwLift)/(up?Math.sqrt(m):1),(bull?BL.throwDamage:VC.throwDamage*impact(v))*damageMultiplier(combat));
  v.lane=1;v.thrown=EXPLOSIVE.has(v.kind);rewardVehicle(v);attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,3);action=up?'THROW · UP':'THROW';actionTime=.7;}
 function dropHeld(){if(!held)return;const v=held;held=null;if(v.kind==='tether'){const b=balloons.find(o=>o.tether===v);if(b)floatAway(b,0);else vehicles=vehicles.filter(o=>o!==v);return;}launch(v,0,0,0);v.thrown=false;if(attack?.anim==='grab')attack=null;}
 // Thrown/punted vehicles crash into buildings, troops, the rival, objectives and other vehicles (which get knocked flying too).
@@ -2657,7 +2657,7 @@ function update(dt:number){
  player.face=player.x+w/2<p.x+p.w/2?1:-1;
  // Pushing into the wall climbs just like W.
  const into=player.face>0?keys.has('KeyD'):keys.has('KeyA');
- climbDir=(keys.has('KeyS')?1:0)-(keys.has('KeyW')||into&&!keys.has('KeyS')?1:0);climbing=true;player.vy=climbDir*C.climbSpeed;player.y+=player.vy*dt;
+ climbDir=(keys.has('KeyS')?1:0)-(keys.has('KeyW')||into&&!keys.has('KeyS')?1:0);climbing=true;player.vy=climbDir*C.climbSpeed*(activeKaiju==='Sargathoth'?SARG.climbSpeed:1);player.y+=player.vy*dt;
  if(climbDir<0&&player.y+h<=roof+8&&mantle(b,p,w,h)){climbing=false;prevBottom=roof-.01;}
  }
  if(!climbing){player.vy+=C.gravity*gravityScale()*dt;

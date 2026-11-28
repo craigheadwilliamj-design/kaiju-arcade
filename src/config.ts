@@ -928,6 +928,12 @@ export const XOCHI = {
 // Sargathoth (docs/SARGATHOTH_KIT.md). Frond Lash is his light combo: reach is the shared melee reach times lashReach[combo-1], and the
 // third hit wraps small units and pulls them in to lashPull px in front of him instead of knocking them back. Provisional; tune in play.
 export const SARG = {lashReach:[1,1.2,1.6] as number[],lashPull:24,
+ // Grab: a kelp tentacle lashes out to the street, so his grab box reaches grabReach x as far as the others' (the strip's tentacle lands about 124 world units ahead).
+ grabReach:2,
+ // Throw: the tentacle whip flings a held prop throwSpeed x as fast as the others' generic throw (flat or lobbed), so thrown cars and wrecks carry farther (his Range 4).
+ throwSpeed:1.25,
+ // Climbing: the slime crawls up a wall at climbSpeed x the normal climb speed (up and down), matching his walk.
+ climbSpeed:.8,
  // Undertow (heavy): the strike lands on the slam strip's crash frame, reaches undertowReach x the normal heavy reach (the flattened wave body),
  // and rolls a surge wave on ahead (surgeRange px, surgeDamage x the heavy's damage). Charging a heavy is super armor: hits hurt but can't stagger him.
  undertowReach:1.9,surgeRange:300,surgeDamage:.4,surgeSpeed:520,

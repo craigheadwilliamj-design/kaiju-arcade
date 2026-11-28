@@ -934,7 +934,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
   spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}},
   stages:{1:MYRMEX_S1,3:MYRMEX_S3}},
- // Sargathoth (mass of kelp grown through maritime debris). Stage 1 so far: breathing idle, lumbering walk, surging run (tools/sargathoth_s1_run.py), bladder jump (tools/sargathoth_s1_jump.py), crouch (tools/sargathoth_s1_crouch.py), the Frond Lash light combo
+ // Sargathoth (mass of kelp grown through maritime debris). Stage 1 so far: breathing idle, lumbering walk, surging run (tools/sargathoth_s1_run.py), bladder jump (tools/sargathoth_s1_jump.py), crouch (tools/sargathoth_s1_crouch.py), climb (tools/sargathoth_s1_climb.py), grab, carry and throw (tools/sargathoth_s1_grab.py, tools/sargathoth_s1_throw.py), the Frond Lash light combo
  // (swipe, backhand with a wind-up behind the mound, net-wrapping whip) and the Undertow heavy strips (rear, hold, slam). Everything else falls back to the idle until it is animated;
  // see docs/SARGATHOTH_KIT.md.
  'Sargathoth':{width:120,anims:{idle:{src:'assets/sargathoth-s1-idle.png',frames:8,fps:8,...SG1_NATIVE},walk:{src:'assets/sargathoth-s1-walk.png',frames:8,fps:10,...SG1_NATIVE},run:{src:'assets/sargathoth-s1-run.png',frames:8,fps:16,...SG1_NATIVE},
@@ -942,6 +942,16 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   jumpRise:{src:'assets/sargathoth-s1-jump-rise.png',frames:6,fps:24,once:true,...SG1_NATIVE},jumpAir:{src:'assets/sargathoth-s1-jump-air.png',frames:4,fps:10,...SG1_NATIVE},jumpLand:{src:'assets/sargathoth-s1-jump-land.png',frames:5,fps:20,once:true,...SG1_NATIVE},
   // Crouch (tools/sargathoth_s1_crouch.py): the strips carry the squash (a form with crouch art is drawn at full size), about 0.6 of his height.
   crouchDown:{src:'assets/sargathoth-s1-crouch-down.png',frames:5,fps:22,once:true,...SG1_NATIVE},crouch:{src:'assets/sargathoth-s1-crouch.png',frames:4,fps:6,...SG1_NATIVE},crouchUp:{src:'assets/sargathoth-s1-crouch-up.png',frames:5,fps:22,once:true,...SG1_NATIVE},
+  // Climb (tools/sargathoth_s1_climb.py, 256x256 frames): his walk turned a quarter, belly to the wall (belly edge on the hitbox line at frame x=175), so the slime crawls up the wall. Grab tips him onto his side, mantle tips him back upright onto the roof.
+  climbGrab:{src:'assets/sargathoth-s1-climb-grab.png',frames:5,fps:20,once:true,...SG1_NATIVE},climb:{src:'assets/sargathoth-s1-climb.png',frames:8,fps:10,...SG1_NATIVE},
+  climbPunch:{src:'assets/sargathoth-s1-climb-punch.png',frames:8,fps:24,once:true,impact:4,...SG1_NATIVE},climbMantle:{src:'assets/sargathoth-s1-climb-mantle.png',frames:9,fps:20,once:true,...SG1_NATIVE},
+  // Grab (tools/sargathoth_s1_grab.py, PixelLab art): a kelp tentacle rears out of the crown, whips to the street, coils round the prop and hauls it onto the crown, then withdraws; the hold points follow its tip.
+  // Carry rides the prop on the crown over his idle, carry-walk over his walk (hold = the crown top, lowered into the fronds; the grab ends on the same world point).
+  grab:{src:'assets/sargathoth-s1-grab.png',frames:13,fps:22,once:true,...SG1_LEFT,hold:[[205,188],[205,188],[205,188],[221,184],[212,184],[170,168],[157,176],[152,166],[118,128],[88,152],[88,152],[88,152],[88,152]]},
+  carry:{src:'assets/sargathoth-s1-idle.png',frames:8,fps:8,...SG1_NATIVE,hold:[[138,113],[138,110],[138,108],[138,110],[138,113],[138,116],[138,118],[138,116]]},
+  carryWalk:{src:'assets/sargathoth-s1-walk.png',frames:8,fps:10,...SG1_NATIVE,hold:[[136,113],[138,118],[138,121],[138,119],[136,113],[134,107],[132,104],[134,107]]},
+  // Throw (tools/sargathoth_s1_throw.py, PixelLab art): the prop leaves on the key press, so it starts mid-whip: a tentacle snaps forward and up off the crown, recoils, and he settles on the base.
+  throw:{src:'assets/sargathoth-s1-throw.png',frames:8,fps:18,once:true,...SG1_LEFT},
   light1:{src:'assets/sargathoth-s1-light1.png',frames:8,fps:24,once:true,...SG1_LEFT},light2:{src:'assets/sargathoth-s1-light2.png',frames:8,fps:21,once:true,...SG1_LEFT},
   light3:{src:'assets/sargathoth-s1-light3.png',frames:8,fps:20,once:true,...SG1_LEFT},
   // Undertow (heavy): the mound swells into a tall column whose crest curls forward (tools/sargathoth_s1_heavy.py), trembles while held, then topples and crashes flat like a breaking wave, spraying debris.
