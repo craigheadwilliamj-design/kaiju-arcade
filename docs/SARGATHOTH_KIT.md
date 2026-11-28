@@ -46,6 +46,7 @@ A heap of kelp and old net lying on the street.
 
 Kelp anchors with a holdfast, so this is his stance.
 - **Crouch strips (Stage 1, done):** `crouch-down` / `crouch` (loop) / `crouch-up` from `tools/sargathoth_s1_crouch.py`, about .6 of his height. Holdfast itself isn't implemented yet and can reuse them.
+- **Implemented (Stage 1):** crouching on the ground for `SARG.holdfastDelay` anchors him (`holdfast` in `src/combat.ts`): `holdfastResistance` less damage, no stagger or knockback, and `holdfastRegen` HP/s in water or rain only (`regenHP`, which never charges Super). It reuses the crouch strips and flashes HOLDFAST when it sets. Kelp Line range x`holdfastRange` and the crouch-light Kelp Snare wait on those moves.
 - **Entering it:** hold crouch for `holdfastDelay` and he anchors (`holdfast-down` → `holdfast-idle` loop → `holdfast-up`).
 - **While anchored:**
   - He can't be knocked back or staggered.
