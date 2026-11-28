@@ -2304,7 +2304,7 @@ function throwHeld(){if(!held||!canAct(combat))return;
   attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,4);action=up?'LOB · UP':'BOWL';actionTime=.7;return;}
  // The Bull is thrown short and hard: a low flat lob that carries BL.throwDamage.
  const bull=v.kind==='bull';
- launch(v,player.face*(up?VC.upSpeed:bull?BL.throwSpeed:VC.throwSpeed/Math.pow(m,VC.throwMassExp)),-(up?VC.upLift:bull?BL.throwLift:v.kind==='lamp'?VC.lampLift:VC.throwLift)/(up?Math.sqrt(m):1),(bull?BL.throwDamage:VC.throwDamage*impact(v))*damageMultiplier(combat));
+ launch(v,player.face*(up?VC.upSpeed:bull?BL.throwSpeed:VC.throwSpeed/Math.pow(m,VC.throwMassExp))*(activeKaiju==='Sargathoth'&&!bull?SARG.throwSpeed:1),-(up?VC.upLift:bull?BL.throwLift:v.kind==='lamp'?VC.lampLift:VC.throwLift)/(up?Math.sqrt(m):1),(bull?BL.throwDamage:VC.throwDamage*impact(v))*damageMultiplier(combat));
  v.lane=1;v.thrown=EXPLOSIVE.has(v.kind);rewardVehicle(v);attack={anim:animDuration(activeKaiju,'throw',combat.stage)?'throw':'heavySlam',t:0};player.pose=.3;shake=Math.max(shake,3);action=up?'THROW · UP':'THROW';actionTime=.7;}
 function dropHeld(){if(!held)return;const v=held;held=null;if(v.kind==='tether'){const b=balloons.find(o=>o.tether===v);if(b)floatAway(b,0);else vehicles=vehicles.filter(o=>o!==v);return;}launch(v,0,0,0);v.thrown=false;if(attack?.anim==='grab')attack=null;}
 // Thrown/punted vehicles crash into buildings, troops, the rival, objectives and other vehicles (which get knocked flying too).

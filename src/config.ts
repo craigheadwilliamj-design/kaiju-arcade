@@ -930,6 +930,8 @@ export const XOCHI = {
 export const SARG = {lashReach:[1,1.2,1.6] as number[],lashPull:24,
  // Grab: a kelp tentacle lashes out to the street, so his grab box reaches grabReach x as far as the others' (the strip's tentacle lands about 124 world units ahead).
  grabReach:2,
+ // Throw: the tentacle whip flings a held prop throwSpeed x as fast as the others' generic throw (flat or lobbed), so thrown cars and wrecks carry farther (his Range 4).
+ throwSpeed:1.25,
  // Climbing: the slime crawls up a wall at climbSpeed x the normal climb speed (up and down), matching his walk.
  climbSpeed:.8,
  // Undertow (heavy): the strike lands on the slam strip's crash frame, reaches undertowReach x the normal heavy reach (the flattened wave body),

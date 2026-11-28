@@ -19,3 +19,17 @@ test('Grab: his tentacle reaches well past the normal grab box',async()=>{
  const {SARG,VEHICLES}=await import('../src/config.ts');
  assert.ok(SARG.grabReach>1&&VEHICLES.grabReach*SARG.grabReach+24>100,'reaches past 100 world units ahead of his centre');
 });
+
+// Grab a car in front of him and throw it; its launch speed is SARG.throwSpeed times another kaiju's.
+const throwSpeed=async(kaiju:string)=>{
+ const {bootCampaign}=await import('./helpers/game-harness.ts');const h=await bootCampaign(.75,{kaiju});
+ try{
+  h.step(40);const s=h.state();h.test().spawnVehicle('car',s.x+s.width+6);h.step(2);
+  let ok=false;for(let n=0;n<8&&!ok;n++){h.tap('KeyH');h.step(4);ok=h.state().held==='car';}assert.ok(ok,'grabbed the car');
+  h.step(30);h.tap('KeyH');h.step(1);const car=h.state().vehicles.find((v:any)=>v.kind==='car'&&v.state==='flying');assert.ok(car,'the car is flying');return Math.abs(car.vx);
+ }finally{h.release();h.cleanup();}
+};
+test('Throw: a thrown car leaves his tentacle SARG.throwSpeed times as fast as another kaiju\'s throw',async()=>{
+ const {SARG}=await import('../src/config.ts');const s=await throwSpeed('Sargathoth'),m=await throwSpeed('Mogurodon');
+ assert.ok(Math.abs(s/m-SARG.throwSpeed)<.05,`throw ${s} vs ${m}`);
+});
