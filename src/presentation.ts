@@ -940,7 +940,7 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
  'Sargathoth':{width:120,anims:{idle:{src:'assets/sargathoth-s1-idle.png',frames:8,fps:8,...SG1_NATIVE},walk:{src:'assets/sargathoth-s1-walk.png',frames:8,fps:10,...SG1_NATIVE},
   light1:{src:'assets/sargathoth-s1-light1.png',frames:8,fps:24,once:true,...SG1_LEFT},light2:{src:'assets/sargathoth-s1-light2.png',frames:8,fps:21,once:true,...SG1_LEFT},
   light3:{src:'assets/sargathoth-s1-light3.png',frames:8,fps:20,once:true,...SG1_LEFT},
-  // Undertow (heavy): the mound heaves up with a fan of fronds bunched on its right side, shudders while held, then slams down and throws debris.
+  // Undertow (heavy): the mound swells into a tall column whose crest curls forward (tools/sargathoth_s1_heavy.py), trembles while held, then topples and crashes flat like a breaking wave, spraying debris.
   heavyRear:{src:'assets/sargathoth-s1-heavy-rear.png',frames:5,fps:20,once:true,...SG1_LEFT},heavyHold:{src:'assets/sargathoth-s1-heavy-hold.png',frames:4,fps:10,...SG1_LEFT},
   heavySlam:{src:'assets/sargathoth-s1-heavy-slam.png',frames:9,fps:18,once:true,...SG1_LEFT}}},
 };
