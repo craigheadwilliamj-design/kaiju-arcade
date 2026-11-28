@@ -56,6 +56,7 @@ Kelp anchors with a holdfast, so this is his stance.
   turf. (Regen from squashing civilians was considered and dropped: it would make crowd-hunting the best play, where water
   makes positioning and weather the skill.)
 - **Gas bladders:** he has the worst ground jump on the roster (`sargJump`), but falls a little slower than normal
+  - **Implemented (Stage 1):** `SARG.jump` (.85 launch speed, so about .72x the height) and `SARG.fallGravity` (.85, falling only, not in a dive or roll); strips `jump-rise` / `jump-air` / `jump-land` from `tools/sargathoth_s1_jump.py`. Sinking slowly in water is not done.
   (`sargFallGravity`) and sinks slowly in water. Keep it subtle: Myrmex is the floaty one, and Sargathoth gets no extra jumps.
 - **Super armour while charging a heavy.**
 - **Walk** at `sargMoveSpeed` of normal.

@@ -438,11 +438,11 @@ let roll:{dir:number,t:number,t0:number,power:number,bounced:boolean,hits:Set<ob
 const bargeHits=new Map<object,number>();
 // Run-up for barges: distance covered running one way on the ground; a wall hit spends it, so pushing into a wall can't repeat.
 let runUp=0,runDir=0;
-function jumpVelocity(){return C.jumpVelocity*scale(combat)**MV.jumpStageExp*(isMyrmex()?MV.myrmexJump:1);}
+function jumpVelocity(){return C.jumpVelocity*scale(combat)**MV.jumpStageExp*(isMyrmex()?MV.myrmexJump:activeKaiju==='Sargathoth'?SARG.jump:1);}
 // Myrmex's wing-beat jumps left in this flight (refilled on the ground or a wall).
 let airJumps=0;
 // Gravity multiplier: Myrmex floats (lighter going up, much lighter coming down) except in a slam dive or roll.
-function gravityScale(){return isMyrmex()&&!dive&&!roll?(player.vy<0?MV.myrmexRiseGravity:MV.myrmexFallGravity):1;}
+function gravityScale(){return isMyrmex()&&!dive&&!roll?(player.vy<0?MV.myrmexRiseGravity:MV.myrmexFallGravity):activeKaiju==='Sargathoth'&&!dive&&!roll&&player.vy>0?SARG.fallGravity:1;}
 function currentAnim():[string,number]{
  if(attack)return [attack.anim,attack.t];
  // A form with an ultSettle strip plays it over the last stretch of the Ultimate, so it comes down from the Ultimate pose and lands on
