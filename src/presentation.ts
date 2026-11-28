@@ -934,10 +934,10 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   spitBrew:{src:'assets/myrmex-s2-spit-brew.png',frames:5,fps:8,once:true,...MX2_LEFT},spitHold:{src:'assets/myrmex-s2-spit-hold.png',frames:4,fps:8,...MX2_LEFT},
   spitThrow:{src:'assets/myrmex-s2-spit-throw.png',frames:7,fps:18,once:true,impact:1,...MX2_LEFT,mouth:[122,112]}},
   stages:{1:MYRMEX_S1,3:MYRMEX_S3}},
- // Sargathoth (mass of kelp grown through maritime debris). Stage 1 so far: breathing idle, lumbering walk, the Frond Lash light combo
+ // Sargathoth (mass of kelp grown through maritime debris). Stage 1 so far: breathing idle, lumbering walk, surging run (tools/sargathoth_s1_run.py), the Frond Lash light combo
  // (swipe, backhand with a wind-up behind the mound, net-wrapping whip) and the Undertow heavy strips (rear, hold, slam). Everything else falls back to the idle until it is animated;
  // see docs/SARGATHOTH_KIT.md.
- 'Sargathoth':{width:120,anims:{idle:{src:'assets/sargathoth-s1-idle.png',frames:8,fps:8,...SG1_NATIVE},walk:{src:'assets/sargathoth-s1-walk.png',frames:8,fps:10,...SG1_NATIVE},
+ 'Sargathoth':{width:120,anims:{idle:{src:'assets/sargathoth-s1-idle.png',frames:8,fps:8,...SG1_NATIVE},walk:{src:'assets/sargathoth-s1-walk.png',frames:8,fps:10,...SG1_NATIVE},run:{src:'assets/sargathoth-s1-run.png',frames:8,fps:16,...SG1_NATIVE},
   light1:{src:'assets/sargathoth-s1-light1.png',frames:8,fps:24,once:true,...SG1_LEFT},light2:{src:'assets/sargathoth-s1-light2.png',frames:8,fps:21,once:true,...SG1_LEFT},
   light3:{src:'assets/sargathoth-s1-light3.png',frames:8,fps:20,once:true,...SG1_LEFT},
   // Undertow (heavy): the mound swells into a tall column whose crest curls forward (tools/sargathoth_s1_heavy.py), trembles while held, then topples and crashes flat like a breaking wave, spraying debris.
