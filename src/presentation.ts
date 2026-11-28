@@ -942,8 +942,8 @@ export const SPRITES:Record<string,Form&{stages?:Record<number,Form>}>={
   jumpRise:{src:'assets/sargathoth-s1-jump-rise.png',frames:6,fps:24,once:true,...SG1_NATIVE},jumpAir:{src:'assets/sargathoth-s1-jump-air.png',frames:4,fps:10,...SG1_NATIVE},jumpLand:{src:'assets/sargathoth-s1-jump-land.png',frames:5,fps:20,once:true,...SG1_NATIVE},
   // Crouch (tools/sargathoth_s1_crouch.py): the strips carry the squash (a form with crouch art is drawn at full size), about 0.6 of his height.
   crouchDown:{src:'assets/sargathoth-s1-crouch-down.png',frames:5,fps:22,once:true,...SG1_NATIVE},crouch:{src:'assets/sargathoth-s1-crouch.png',frames:4,fps:6,...SG1_NATIVE},crouchUp:{src:'assets/sargathoth-s1-crouch-up.png',frames:5,fps:22,once:true,...SG1_NATIVE},
-  // Climb (tools/sargathoth_s1_climb.py): he pours into a tall column hugging the wall (wall edge on the hitbox line at frame x=175), inches up, punches a frond-fist in, and spills over the roof.
-  climbGrab:{src:'assets/sargathoth-s1-climb-grab.png',frames:5,fps:20,once:true,...SG1_NATIVE},climb:{src:'assets/sargathoth-s1-climb.png',frames:8,fps:12,...SG1_NATIVE},
+  // Climb (tools/sargathoth_s1_climb.py, 256x256 frames): his walk turned a quarter, belly to the wall (belly edge on the hitbox line at frame x=175), so the slime crawls up the wall. Grab tips him onto his side, mantle tips him back upright onto the roof.
+  climbGrab:{src:'assets/sargathoth-s1-climb-grab.png',frames:5,fps:20,once:true,...SG1_NATIVE},climb:{src:'assets/sargathoth-s1-climb.png',frames:8,fps:10,...SG1_NATIVE},
   climbPunch:{src:'assets/sargathoth-s1-climb-punch.png',frames:8,fps:24,once:true,impact:4,...SG1_NATIVE},climbMantle:{src:'assets/sargathoth-s1-climb-mantle.png',frames:9,fps:20,once:true,...SG1_NATIVE},
   light1:{src:'assets/sargathoth-s1-light1.png',frames:8,fps:24,once:true,...SG1_LEFT},light2:{src:'assets/sargathoth-s1-light2.png',frames:8,fps:21,once:true,...SG1_LEFT},
   light3:{src:'assets/sargathoth-s1-light3.png',frames:8,fps:20,once:true,...SG1_LEFT},
