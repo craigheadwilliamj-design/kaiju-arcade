@@ -924,3 +924,7 @@ export const XOCHI = {
  // Light military: the Guardia on boats (they sail on their own), a few helicopters, an emplacement on the dock. The level sets its own `fireCap` (fire runs a long way here).
  fireCap:12,
 };
+
+// Sargathoth (docs/SARGATHOTH_KIT.md). Frond Lash is his light combo: reach is the shared melee reach times lashReach[combo-1], and the
+// third hit wraps small units and pulls them in to lashPull px in front of him instead of knocking them back. Provisional; tune in play.
+export const SARG = {lashReach:[1,1.2,1.6] as number[],lashPull:24};
