@@ -1,4 +1,4 @@
-import {XOCHI,CONEY,CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,BELIAL_BOSS as BB,EMPIRE as EMP,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST,NYC2,NYC5,VOLCANO as VO,MEX1,MEX2,MEX3,ROCK,SINKHOLE,PICADO,STONE,LEAN,FLAG,TARP,ACID,AZTECA,FLOOD} from './config.ts';
+import {SARG,XOCHI,CONEY,CONFIG as C,COMBAT as B,MILITARY as M,MILITARY_FEEL as MF,CAMPAIGN as P,EXPLORE as X,FEEL as F,VEHICLES as VC,MOVE as MV,CITY as Y,FLOORS as FL,RIVER as R,FIRE as FI,RUBBLE as RB,TWISTS as TW,RESPONSE as RS,MAINS as MN,TUNNEL as TN,ELEVATED as EL,WATER as W,SF as SFC,RUNAWAY as RN,SF2,FOG as FOGC,CRACK as CK,GAS as GS,BRIDGE as BR,GATE as GT,KAIBAN_BOSS as KB,TLEZCATL_BOSS as TB,BELIAL_BOSS as BB,EMPIRE as EMP,NYC1,NYC3,PARADE as PD,BULL as BL,STEAM as ST,NYC2,NYC5,VOLCANO as VO,MEX1,MEX2,MEX3,ROCK,SINKHOLE,PICADO,STONE,LEAN,FLAG,TARP,ACID,AZTECA,FLOOD} from './config.ts';
 import {groundAt,groundUnder,setTerrain,terrainPoints,hasTerrain,profileFrom,submerged,waterAt,waterSpans,bedAt,addMound,moundList,deckAt,pitAt,pitList,addPit,depthAt,setPlatforms,platformFloor} from './terrain.ts';
 import {bandAt,bandSpeed,bandRuns,bandJump,blockedStep,drowning,safeGround,nearestDry,startDrown,tickDrown,slideX} from './water.ts';
 import type {Band,Drown} from './water.ts';
@@ -2148,13 +2148,16 @@ function performStrike(strike:Strike|null){
  // Myrmex: L starts brewing a Venom Bomb (thrown on release), on the ground, in the air or on a wall.
  if(kind==='ranged'&&isMyrmex()){if(!brew&&!spit){attack=null;brew={t:0};}return;}
  if(kind==='ranged'){if(shots.length<B.rangedMax)shots.push({x:player.x+w/2+player.face*w*.52,y,vx:player.face*C.projectileSpeed,life:1.8,damage,knockback:strike.knockback});return;}
- const reach=(C.meleeReach+(kind==='heavy'?20:0))*scale(combat)+poleExtra;
+ const lash=kind==='light'&&activeKaiju==='Sargathoth'&&!clingTo,reach=(C.meleeReach+(kind==='heavy'?20:0))*scale(combat)*(lash?SARG.lashReach[strike.combo-1]??1:1)+poleExtra;
  const box={x:player.face===1?player.x+w-10:player.x-reach+10,y:player.y-8,w:reach,h:h+16};
  if(objective&&!objective.shattered&&overlaps(box,obox()))hitObjective(damage);
  popBalloonsIn(box);
  if(rival&&!rival.dead&&overlaps(box,rival)){strikeRival(damage,strike.knockback,player.face);if(rival.dead)return;}
  let struck=rival&&!rival.dead&&overlaps(box,rival);
- for(const u of military.units)if(u.hp>0&&overlaps(box,u)){hitUnit(military,u,damage,'player',strike.knockback,player.face,false,strike.kind==='ranged'?'ranged':'melee');struck=true;}
+ const reel=lash&&strike.combo===3;
+ for(const u of military.units)if(u.hp>0&&overlaps(box,u)){hitUnit(military,u,damage,'player',reel?0:strike.knockback,player.face,false,strike.kind==='ranged'?'ranged':'melee');struck=true;
+  // Kelp-blade whip: wraps what it hits and hauls it in to his feet.
+  if(reel&&u.hp>0&&!UNITS[u.type].air){const edge=player.face===1?player.x+w+SARG.lashPull*scale(combat):player.x-SARG.lashPull*scale(combat)-u.w;u.x=player.face===1?Math.min(u.x,edge):Math.max(u.x,edge);}}
  if(struck)freeze(Math.min(F.hitstopMax,F.hitstopBase+damage*F.hitstopPerDamage));
  for(const p of military.projectiles)if(!p.dead&&overlaps(box,{x:p.x-7,y:p.y-7,w:14,h:14}))intercept(military,p);
  for(const v of vehicles)if(loose(v)&&overlaps(box,vehicleBox(v)))puntVehicle(v,damage,player.face);
